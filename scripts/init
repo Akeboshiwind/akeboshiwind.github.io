@@ -1,0 +1,13 @@
+#!/bin/sh
+# init
+
+
+# >> Make directory if it doesn't exist
+
+mkdir -p _site
+
+
+
+# >> Clone gh-pages branch into the _site directory
+
+git clone --single-branch --branch gh-pages $(git remote get-url origin) _site

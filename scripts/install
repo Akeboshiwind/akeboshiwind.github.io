@@ -1,0 +1,28 @@
+#!/bin/sh
+# install
+
+
+# >> Build project
+
+bundle exec jekyll build
+
+
+
+# >> Enter _site directory
+
+cd _site
+
+
+
+# >> Add build to git
+
+git checkout gh-pages
+git add -A
+git commit -m "Built at $(date)"
+git push
+
+
+
+# >> Reset working directory
+
+cd ..
