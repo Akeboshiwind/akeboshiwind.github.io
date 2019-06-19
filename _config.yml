@@ -34,6 +34,7 @@ plugins:
 exclude:
   - Gemfile
   - Gemfile.lock
+  - CNAME
   - scripts
   - node_modules
   - vendor/bundle/
