@@ -21,5 +21,5 @@ bundle exec jekyll serve --drafts
 After you've committed your changes to the master branch you can run the following command to release the changes to the live site:
 
 ```bash
-./scripts/install
+./scripts/release
 ```
