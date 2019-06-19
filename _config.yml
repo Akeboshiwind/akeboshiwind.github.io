@@ -35,6 +35,7 @@ exclude:
   - Gemfile
   - Gemfile.lock
   - CNAME
+  - README.md
   - scripts
   - node_modules
   - vendor/bundle/
