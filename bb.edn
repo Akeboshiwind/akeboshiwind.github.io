@@ -1,24 +1,37 @@
 ;; TODO: Add README
-;; TODO: Render to github pages (separate branch?)
-;; TODO: Use github actions to build site on merge to master
-;; TODO: Style
+;; TODO: Style? (maybe not for now)
 
 {:deps {io.github.borkdude/quickblog
         #_"v2.3.0"
         {:git/sha "6a865f135fdcf73f9ae33e5a562a387a9aeb86a6"}}
  :tasks
  {:requires ([quickblog.cli :as cli])
-  :init (def opts {:blog-author "Oliver Marshall"
-                   ;; TODO: Think of a better title
-                   :blog-title "Blog by the Rocks"
-                   ;:blog-description "A blog mostly about Clojure and ClojureScript."
-                   :out-dir "public"
-                   :blog-root "https://blog.bythe.rocks/"})
-                   ;; TODO: How to handle discussion
-                   ;:discuss-link "https://github.com/borkdude/blog/discussions/categories/posts"
-                   ;:twitter-handle "borkdude"
-                   ;:about-link "https://michielborkent.nl"
-                   ;:favicon true
-  ;; TODO: Add other commands so I can just do `bb watch`, `bb render`
+  :init (do
+          (def opts {:blog-author "Oliver Marshall"
+                     ;; TODO: Think of a better title
+                     :blog-title "Blog by the Rocks"
+                     ;:blog-description "A blog mostly about Clojure and ClojureScript."
+                     :out-dir "public"
+                     :blog-root "https://blog.bythe.rocks/"})
+                     ;; TODO: How to handle discussion
+                     ;:discuss-link "https://github.com/borkdude/blog/discussions/categories/posts"
+                     ;:twitter-handle "borkdude"
+                     ;:about-link "https://michielborkent.nl"
+                     ;:favicon true
+          (defn- run-command [cmd-name opts]
+            (apply cli/dispatch opts cmd-name *command-line-args*)))
+
+  new {:doc "Create new blog article"
+       :task (run-command "new" opts)}
+
+  render {:doc "Render blog"
+          :task (run-command "render" opts)}
+
+  watch  {:doc "Watch posts and templates and render file changes"
+          :task (run-command "watch" opts)}
+
+  clean {:doc "Remove cache and output directories"
+         :task (run-command "clean" opts)}
+
   quickblog {:doc "Start blogging quickly! Run `bb quickblog help` for details."
              :task (cli/dispatch opts)}}}
