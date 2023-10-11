@@ -25,7 +25,10 @@
        :task (run-command "new" opts)}
 
   render {:doc "Render blog"
-          :task (run-command "render" opts)}
+          :extra-paths ["src"]
+          :requires ([blog :as blog])
+          :task (do (run-command "render" opts)
+                    (blog/spit-404 opts))}
 
   watch  {:doc "Watch posts and templates and render file changes"
           :task (run-command "watch" opts)}

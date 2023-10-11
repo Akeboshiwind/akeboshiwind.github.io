@@ -37,7 +37,7 @@ jobs:
           bb: latest
 
       - name: Build site
-        run: bb quickblog render
+        run: bb render
           
       - name: Setup Pages
         uses: actions/configure-pages@v3
