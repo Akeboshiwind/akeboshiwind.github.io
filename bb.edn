@@ -14,7 +14,7 @@
                      :blog-root "https://blog.bythe.rocks/"
                      ;; TODO: How to handle discussion
                      ;:discuss-link "https://github.com/borkdude/blog/discussions/categories/posts"
-                     ;:about-link "https://michielborkent.nl"
+                     :about-link "https://github.com/Akeboshiwind"
                      :favicon true})
           (defn- run-command [cmd-name opts]
             (apply cli/dispatch opts cmd-name *command-line-args*)))
