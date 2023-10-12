@@ -12,12 +12,12 @@
                      :blog-title "Blog by the Rocks"
                      ;:blog-description "A blog mostly about Clojure and ClojureScript."
                      :out-dir "public"
-                     :blog-root "https://blog.bythe.rocks/"})
+                     :blog-root "https://blog.bythe.rocks/"
                      ;; TODO: How to handle discussion
                      ;:discuss-link "https://github.com/borkdude/blog/discussions/categories/posts"
                      ;:twitter-handle "borkdude"
                      ;:about-link "https://michielborkent.nl"
-                     ;:favicon true
+                     :favicon true})
           (defn- run-command [cmd-name opts]
             (apply cli/dispatch opts cmd-name *command-line-args*)))
 
