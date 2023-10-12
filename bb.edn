@@ -14,7 +14,6 @@
                      :blog-root "https://blog.bythe.rocks/"
                      ;; TODO: How to handle discussion
                      ;:discuss-link "https://github.com/borkdude/blog/discussions/categories/posts"
-                     ;:twitter-handle "borkdude"
                      ;:about-link "https://michielborkent.nl"
                      :favicon true})
           (defn- run-command [cmd-name opts]
