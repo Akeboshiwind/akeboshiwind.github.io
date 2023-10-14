@@ -1,6 +1,4 @@
 ;; TODO: Add README
-;; TODO: Style? (maybe not for now)
-
 {:deps {io.github.borkdude/quickblog
         #_"v2.3.0"
         {:git/sha "6a865f135fdcf73f9ae33e5a562a387a9aeb86a6"}}
@@ -12,8 +10,7 @@
                      :blog-description "A blog about programming, likely Clojure."
                      :out-dir "public"
                      :blog-root "https://blog.bythe.rocks/"
-                     ;; TODO: How to handle discussion
-                     ;:discuss-link "https://github.com/borkdude/blog/discussions/categories/posts"
+                     :discuss-link "https://github.com/Akeboshiwind/akeboshiwind.github.io/discussions/categories/posts"
                      :about-link "https://github.com/Akeboshiwind"
                      :favicon true})
           (defn- run-command [cmd-name opts]
