@@ -1,6 +1,7 @@
 Title: Solving Container Update Woes with Clojure and Babashka
 Date: 2023-10-15
 Tags: clojure, docker, babashka
+Discuss: https://github.com/Akeboshiwind/akeboshiwind.github.io/discussions/1
 
 At home I run a small server for running home assistant and other small projects, but I've been running into a problem recently: updates.
 
