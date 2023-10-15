@@ -22,6 +22,8 @@ All I want to do is:
 
 Write my own of course, that never goes wrong 😅.
 
+<!-- end-of-preview -->
+
 I started by looking for some tools to actually query the data that I wanted:
 - The list of labels for upstream docker containers
 - The list of locally running containers & their tags
