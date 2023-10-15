@@ -69,4 +69,6 @@ ul.index {
 
 code {
   white-space: pre;
+  background: #f5f2f0;
+  border-radius: 5px;
 }
