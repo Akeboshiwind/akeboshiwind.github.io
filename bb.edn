@@ -1,4 +1,3 @@
-;; TODO: Add README
 {:deps {io.github.borkdude/quickblog
         #_"v2.3.0"
         {:git/sha "6a865f135fdcf73f9ae33e5a562a387a9aeb86a6"}}
