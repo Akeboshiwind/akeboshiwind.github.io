@@ -7,7 +7,7 @@
   :init (do
           (def opts {:blog-author "Oliver Marshall"
                      :blog-title "Blog by the Rocks"
-                     :blog-description "A blog about programming, likely Clojure."
+                     :blog-description "Things that interest me"
                      :out-dir "public"
                      :blog-root "https://blog.bythe.rocks/"
                      :discuss-link "https://github.com/Akeboshiwind/akeboshiwind.github.io/discussions/categories/posts"
