@@ -6,6 +6,14 @@
     <a href="{{ "blog" | relURL }}">Remove filter</a>
   </small>
   {{ end }}
+  {{ if and hugo.IsDevelopment (not .Site.BuildDrafts) }}
+    <div class="admonition admonition-info">
+      <div class="admonition-title">Note</div>
+      <div class="admonition-content">
+        Use <code>hugo server -D</code> to view draft posts. Draft posts are marked with <span style="color: #c05b4d; font-style: italic;">[DRAFT]</span>
+      </div>
+    </div>
+  {{ end }}
   <ul class="blog-posts">
     {{ range .Pages }}
     <li>
