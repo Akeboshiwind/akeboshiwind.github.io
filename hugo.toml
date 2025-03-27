@@ -21,9 +21,6 @@ ignoreErrors = ["error-disable-taxonomy"]
   
   # Use ISO date format
   dateFormat = "2006-01-02"
-  
-  # Hide the "Made with" line
-  hideMadeWithLine = true
 
 # Main menu
 [menu]
