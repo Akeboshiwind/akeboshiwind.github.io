@@ -17,6 +17,9 @@
         </i>
       </span>
       <a href="{{ .Permalink }}">{{ .Title }}</a>
+      {{ if .Draft }}
+      <span style="color: #c05b4d; font-style: italic;">[DRAFT]</span>
+      {{ end }}
     </li>
     {{ else }}
     <li>
