@@ -25,3 +25,10 @@ ignoreErrors = ["error-disable-taxonomy"]
   
   # Hide the "Made with" line
   hideMadeWithLine = true
+
+# Main menu
+[menu]
+  [[menu.main]]
+    name = "Blog"
+    url = "/blog/"
+    weight = 10
