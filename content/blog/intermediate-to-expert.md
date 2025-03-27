@@ -1,6 +1,8 @@
-Title: Intermediate to Expert
-Date: 2023-10-10
-Tags: programming, learning, skill
+---
+title: "Intermediate to Expert"
+date: 2023-10-10
+draft: true
+---
 
 <!--
 # Alternate titles:
@@ -28,8 +30,6 @@ NOTE: This blog will not be about these other skills, but it should be noted tha
 
 When talking about pure programming though I see myself as an intermediate.
 Recently I've been thinking about how to go beyond this, what actual concrete steps should I take to master this skill?
-
-<!-- end-of-preview -->
 
 Some thoughts I've had:
 1. Analyse my own code & processes

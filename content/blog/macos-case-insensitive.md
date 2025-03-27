@@ -1,6 +1,8 @@
-Title: Making a Case Sensitive folder on MacOS
-Date: 2025-03-10
-Tags: macos
+---
+title: Making a Case Sensitive folder on MacOS
+date: 2025-03-10
+draft: true
+---
 
 First we need to figure out which disk to create our new volume on:
 

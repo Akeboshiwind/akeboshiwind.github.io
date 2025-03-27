@@ -1,6 +1,8 @@
-Title: Intro to Quickblog
-Date: 2023-10-10
-Tags: clojure, babashka, blog, guide
+---
+title: "Intro to Quickblog"
+date: 2023-10-10
+draft: true
+---
 
 After reading [@borkdude's](https://github.com/borkdude) [series](https://blog.michielborkent.nl/migrating-octopress-to-babashka.html) [of](https://blog.michielborkent.nl/writing-clojure-highlighter.html) [posts](https://blog.michielborkent.nl/better-clojure-highlighting.html) about his blog, and reading the transcript of Julia Evans' talk [Making Hard Things Easy](https://jvns.ca/blog/2023/10/06/new-talk--making-hard-things-easy/) I got interested in hacking on a blog.
 
@@ -41,11 +43,9 @@ $ tree
 0 directories, 0 files
 ```
 
-<!-- end-of-preview -->
-
 Then there was babashka:
 
-```clojure name:bb.edn
+{{< codeblock filename="bb.edn" lang="clojure" >}}
 {:deps {io.github.borkdude/quickblog
         #_"v2.3.0"
         {:git/sha "6a865f135fdcf73f9ae33e5a562a387a9aeb86a6"}}
@@ -54,7 +54,7 @@ Then there was babashka:
   :init (def opts { #_"We'll do this bit later" })
   quickblog {:doc "Start blogging quickly! Run `bb quickblog help` for details."
              :task (cli/dispatch opts)}}}
-```
+{{< /codeblock >}}
 
 So that `quickblog` can run let's add a dummy post:
 
@@ -116,7 +116,7 @@ $ tree
 
 Clearly `public/` is the rendered website, but we've also gotten `templates/` for free. What's in there?
 
-```html name:templates/tags.html
+{{< codeblock filename="templates/tags.html" lang="html" >}}
 <div style="width: 600px">
     <h1>{{title}}</h1>
     <ul class="index">
@@ -125,7 +125,7 @@ Clearly `public/` is the rendered website, but we've also gotten `templates/` fo
         {% endfor %}
     </ul>
 </div>
-```
+{{< /codeblock >}}
 
 As the name would suggest, they're templates. This one in particular is for rendering `public/tags.html`.
 

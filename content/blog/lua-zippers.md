@@ -1,6 +1,8 @@
-Title: Zippers in Lua
-Date: 2023-11-18
-Tags: lua, programming
+---
+title: "Zippers in Lua"
+date: 2023-11-18
+draft: true
+---
 
 <!--
 # Alternate titles:
@@ -20,5 +22,3 @@ The problem is that this project requires that I work in Lua.
 A quick google search found nothing, but a [skim of github](https://github.com/Odie/gitabra/blob/c8edfbe27325ab32150b0d0a4efde5e3b2993fe5/lua/gitabra/zipper.lua#L2) found two interesting leads:
 - [A stub](https://github.com/the80srobot/luafn/blob/88652e7edb6639299d836f9e67e4048f1d954a24/zipper.lua) (so not useful right now)
 - [A seemingly complete zipper implementation](https://github.com/Odie/gitabra/blob/c8edfbe27325ab32150b0d0a4efde5e3b2993fe5/lua/gitabra/zipper.lua)
-
-<!-- end-of-preview -->

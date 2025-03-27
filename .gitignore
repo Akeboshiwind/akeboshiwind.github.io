@@ -1,21 +1,25 @@
-.bundle
+# Generated files by hugo
+/public/
+/resources/_gen/
+/assets/jsconfig.json
+hugo_stats.json
+
+# Executable may be added to repository
+hugo.exe
+hugo.darwin
+hugo.linux
+
+# Temporary lock file while building
+/.hugo_build.lock
+
+# Node modules if using npm/yarn for theme development
+/node_modules/
+
+# OS generated files
 .DS_Store
-.sass-cache
-.gist-cache
-.pygments-cache
-_deploy
-public
-sass.old
-source.old
-source/_stash
-source/stylesheets/screen.css
-vendor
-node_modules
-Gemfile.lock
-.cache
-.work
-.clj-kondo/rewrite-clj
-.cpcache
-.shadow-cljs
-report.html
-classes
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

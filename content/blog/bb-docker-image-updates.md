@@ -1,7 +1,8 @@
-Title: Solving Container Update Woes with Clojure and Babashka
-Date: 2023-10-15
-Tags: clojure, docker, babashka
-Discuss: https://github.com/Akeboshiwind/akeboshiwind.github.io/discussions/1
+---
+title: "Solving Container Update Woes with Clojure and Babashka"
+date: 2023-10-15
+discussLink: "https://github.com/Akeboshiwind/akeboshiwind.github.io/discussions/1"
+---
 
 At home I run a small server for running home assistant and other small projects, but I've been running into a problem recently: updates.
 
@@ -21,8 +22,6 @@ All I want to do is:
 # The solution
 
 Write my own of course, that never goes wrong 😅.
-
-<!-- end-of-preview -->
 
 I started by looking for some tools to actually query the data that I wanted:
 - The list of labels for upstream docker containers
@@ -60,7 +59,7 @@ $ regctl tags ls ubuntu
 A newline separated list, what could be easier?
 Let's parse it:
 
-```clojure name:src/regctl.clj
+{{< codeblock filename="src/regctl.clj" lang="clojure" >}}
 (ns regctl
   (:require
     [babashka.process :refer [sh]]
@@ -80,7 +79,7 @@ Let's parse it:
   (count (tags "ghcr.io/akeboshiwind/rss-filter")) ; => 6
   (count (tags "does-not-exist")) ; => 0
   ,)
-```
+{{< /codeblock >}}
 
 Of course there's no error handling here, but I said I wanted this to be simple right?
 
@@ -95,7 +94,7 @@ For those that don't I'll figure out something in the future I guess 😅.
 
 Writing some code to parse versions wasn't too hard, but it was fiddly getting the comparison right:
 
-```clojure name:src/semver.clj
+{{< codeblock filename="src/semver.clj" lang="clojure" >}}
 (ns semver)
 
 (defn semver? [tag]
@@ -120,7 +119,7 @@ Writing some code to parse versions wasn't too hard, but it was fiddly getting t
 
 (defn >semver [a b]
   (> (compare-semver a b) 0))
-```
+{{< /codeblock >}}
 
 I'm not happy with that regex, maybe using a parser (for this and for docker later) would have been clearer?
 Or maybe just using a library someone else wrote?
@@ -173,7 +172,7 @@ postgres
 
 Time to parse that using clojure:
 
-```clojure name:src/docker.clj
+{{< codeblock filename="src/docker.clj" lang="clojure" >}}
 (ns docker
   (:require
     [babashka.process :refer [sh]]
@@ -198,7 +197,7 @@ Time to parse that using clojure:
   (->> (docker "ps" "--format" "{{.Image}} {{.Labels}}")
        str/split-lines
        (map parse-ps)))
-```
+{{< /codeblock >}}
 
 I ended up adding `{{.Labels}}` too because I want to use them to ignore containers.
 
@@ -208,7 +207,7 @@ I ended up adding `{{.Labels}}` too because I want to use them to ignore contain
 I have all the pieces, let's put them together.
 First we want to get the latest tag for a given image:
 
-```clojure name:src/core.cljs
+{{< codeblock filename="src/core.cljs" lang="clojure" >}}
 (ns core
   (:require
     [docker :as d]
@@ -221,15 +220,15 @@ First we want to get the latest tag for a given image:
        (filter semver?)
        (sort-by semver compare-semver)
        last))
-```
+{{< /codeblock >}}
 
 Next, `docker ps` gives us both an image and a tag (but only sometimes) so let's parse those:
 
-```clojure name:src/core.cljs
+{{< codeblock filename="src/core.cljs" lang="clojure" >}}
 (defn name&tag [full-name]
   (let [[name tag] (str/split full-name #":")]
     {:name name :tag tag}))
-```
+{{< /codeblock >}}
 
 I'm not super happy with that function name, but something like `image-name` seemed like it should really split out the `:registry` and `:repo` too which I don't want to do here.
 

@@ -1,6 +1,8 @@
-Title: Mind magic for beginners
-Date: 2023-10-16
-Tags:
+---
+title: "Mind magic for beginners"
+date: 2023-10-16
+draft: true
+---
 
 Note of caution: As a beginner myself, I feel like I ought to be an expert on what things are "beginner level".
 But I'll admit I'm not as much an expert on each of the topics themselves.

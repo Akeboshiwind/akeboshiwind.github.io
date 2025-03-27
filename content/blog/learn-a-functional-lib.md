@@ -1,6 +1,8 @@
-Title: Learning a Functional Library
-Date: 2023-10-17
-Tags: clojure
+---
+title: "Learning a Functional Library"
+date: 2023-10-17
+draft: true
+---
 
 I really wanted to get the language metaphor to work but I think a tools analogy works much better.
 
