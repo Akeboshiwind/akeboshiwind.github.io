@@ -1,7 +1,6 @@
 baseURL = 'https://blog.bythe.rocks/'
 languageCode = 'en-us'
 title = 'My Blog'
-theme = 'hugo-bearblog'
 
 # Enable robots.txt
 enableRobotsTXT = true
