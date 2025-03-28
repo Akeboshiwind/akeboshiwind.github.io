@@ -1,0 +1,298 @@
+---
+title: Bill Splitter
+date: 2025-03-28
+layout: react
+---
+
+const { useState } = React;
+
+const Component = () => {
+  // Preset names as requested
+  const [people, setPeople] = useState(['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']);
+  const [personShares, setPersonShares] = useState({});
+  const [itemAssignments, setItemAssignments] = useState({});
+  
+  // Receipt data from the image
+  const items = [
+    { id: 1, name: 'Ribeye Medium R', price: 24.00, quantity: 1 },
+    { id: 2, name: 'Ribeye Rare', price: 24.00, quantity: 2 },
+    { id: 3, name: 'Fajitas Beef', price: 18.50, quantity: 2 },
+    { id: 4, name: 'Fajitas Pork', price: 16.00, quantity: 1 },
+    { id: 5, name: 'Ribs de Cerdo', price: 20.00, quantity: 1 },
+    { id: 6, name: 'Papas Fritas PR', price: 5.00, quantity: 1 },
+    { id: 7, name: 'Espárragos Verd', price: 5.00, quantity: 1 },
+    { id: 8, name: 'Papas Canarias', price: 5.00, quantity: 1 },
+    { id: 9, name: 'Agua', price: 3.50, quantity: 1 },
+    { id: 10, name: 'Fanta Naranja', price: 2.90, quantity: 1 },
+    { id: 11, name: 'Fanta Limón', price: 2.90, quantity: 1 },
+    { id: 12, name: 'Jarra', price: 4.10, quantity: 2 },
+    { id: 13, name: 'Cuba Libre', price: 5.80, quantity: 1 }
+  ];
+
+  // Expand items by quantity
+  const expandedItems = items.flatMap(item => 
+    Array(item.quantity).fill().map((_, i) => ({
+      ...item,
+      uniqueId: `${item.id}-${i}`,
+      originalQuantity: item.quantity,
+      quantity: 1
+    }))
+  );
+
+  // Assign item to a single person (100%)
+  const assignItemTo = (itemUniqueId, person) => {
+    // Create new assignments object
+    const newAssignments = { ...itemAssignments };
+    
+    // Check if this item already has multiple people
+    const currentAssignees = newAssignments[itemUniqueId] || [];
+    
+    // If clicking the same person again, remove them
+    if (currentAssignees.length === 1 && currentAssignees[0] === person) {
+      delete newAssignments[itemUniqueId];
+    } else {
+      // Assign only to this person (replacing any previous assignments)
+      newAssignments[itemUniqueId] = [person];
+    }
+    
+    setItemAssignments(newAssignments);
+    
+    // Update shares to reflect this assignment
+    updateSharesFromAssignments(newAssignments);
+  };
+
+  // Split item between multiple people
+  const splitItemBetween = (itemUniqueId, selectedPeople) => {
+    if (selectedPeople.length === 0) return;
+    
+    const newAssignments = { ...itemAssignments };
+    newAssignments[itemUniqueId] = selectedPeople;
+    setItemAssignments(newAssignments);
+    
+    // Update shares evenly
+    updateSharesFromAssignments(newAssignments);
+  };
+
+  // Update shares based on assignments (evenly split)
+  const updateSharesFromAssignments = (assignments) => {
+    const newShares = {};
+    
+    Object.entries(assignments).forEach(([itemUniqueId, assignedPeople]) => {
+      if (!newShares[itemUniqueId]) {
+        newShares[itemUniqueId] = {};
+      }
+      
+      // Reset shares for this item
+      people.forEach(person => {
+        newShares[itemUniqueId][person] = 0;
+      });
+      
+      // Evenly divide among assigned people
+      const sharePerPerson = 100 / assignedPeople.length;
+      assignedPeople.forEach(person => {
+        newShares[itemUniqueId][person] = sharePerPerson;
+      });
+    });
+    
+    setPersonShares(newShares);
+  };
+
+  // Manual adjustment of shares for multi-person items
+  const handleShareChange = (itemUniqueId, person, share) => {
+    const shareValue = parseInt(share, 10) || 0;
+    
+    setPersonShares(prev => {
+      const updated = { ...prev };
+      if (!updated[itemUniqueId]) {
+        updated[itemUniqueId] = {};
+      }
+      updated[itemUniqueId][person] = shareValue;
+      return updated;
+    });
+  };
+
+  // Calculate total percentage for an item
+  const getTotalPercentForItem = (itemUniqueId) => {
+    if (!personShares[itemUniqueId]) return 0;
+    return Object.values(personShares[itemUniqueId]).reduce((sum, share) => sum + share, 0);
+  };
+
+  // Calculate what each person owes
+  const calculatePersonTotal = (person) => {
+    let total = 0;
+    
+    expandedItems.forEach(item => {
+      if (personShares[item.uniqueId] && personShares[item.uniqueId][person]) {
+        const sharePercent = personShares[item.uniqueId][person];
+        total += (item.price * (sharePercent / 100));
+      }
+    });
+    
+    return total.toFixed(2);
+  };
+
+  // Calculate overall bill total
+  const billTotal = expandedItems.reduce((sum, item) => sum + item.price, 0).toFixed(2);
+
+  // Calculate allocated amount
+  const allocatedTotal = people.reduce((sum, person) => sum + parseFloat(calculatePersonTotal(person)), 0).toFixed(2);
+
+  // Check if an item is assigned to multiple people
+  const isMultiAssigned = (itemUniqueId) => {
+    return itemAssignments[itemUniqueId]?.length > 1;
+  };
+
+  return (
+    <div className="p-4 max-w-4xl mx-auto text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800">
+      {/* Instructions */}
+      <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded text-sm">
+        <p><strong>Instructions:</strong></p>
+        <ol className="list-decimal pl-5 space-y-1">
+          <li>Click on a person's name button to assign an item to them</li>
+          <li>Click "Split All" to divide an item equally among everyone</li>
+          <li>For custom splits, adjust percentages manually</li>
+        </ol>
+      </div>
+
+      {/* Items table */}
+      <div className="mb-6 overflow-x-auto">
+        <h2 className="text-lg font-semibold mb-2">Assign Items</h2>
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-100 dark:bg-gray-700">
+              <th className="border dark:border-gray-600 p-2 text-left">Item</th>
+              <th className="border dark:border-gray-600 p-2 text-right">Price (€)</th>
+              <th className="border dark:border-gray-600 p-2">Assigned To</th>
+              {/* Only show percentages column if at least one item has multiple people */}
+              {Object.values(itemAssignments).some(assignees => assignees?.length > 1) && (
+                <th className="border dark:border-gray-600 p-2 text-center">Split %</th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {expandedItems.map((item) => {
+              const totalPercent = getTotalPercentForItem(item.uniqueId);
+              const isComplete = totalPercent === 100;
+              const isOverallocated = totalPercent > 100;
+              const assignees = itemAssignments[item.uniqueId] || [];
+              
+              return (
+                <tr key={item.uniqueId} className={`
+                  ${isComplete ? 'bg-green-50 dark:bg-green-900/20' : ''}
+                  ${isOverallocated ? 'bg-red-50 dark:bg-red-900/20' : ''}
+                  hover:bg-gray-50 dark:hover:bg-gray-700
+                `}>
+                  <td className="border dark:border-gray-600 p-2">
+                    {item.name} 
+                    {item.originalQuantity > 1 && ` (${parseInt(item.uniqueId.split('-')[1]) + 1}/${item.originalQuantity})`}
+                  </td>
+                  <td className="border dark:border-gray-600 p-2 text-right">{item.price.toFixed(2)}</td>
+                  
+                  {/* Assigned To Column with Quick-Assign Buttons */}
+                  <td className="border dark:border-gray-600 p-2">
+                    <div className="flex flex-wrap gap-1">
+                      {people.map(person => (
+                        <button
+                          key={person}
+                          onClick={() => assignItemTo(item.uniqueId, person)}
+                          className={`px-2 py-1 text-xs rounded-full 
+                            ${assignees.includes(person) 
+                              ? 'bg-blue-500 text-white' 
+                              : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                            }`}
+                        >
+                          {person}
+                        </button>
+                      ))}
+                      
+                      {/* Split evenly button */}
+                      <button
+                        onClick={() => splitItemBetween(item.uniqueId, people)}
+                        className="px-2 py-1 text-xs rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300"
+                      >
+                        Split All
+                      </button>
+                    </div>
+                  </td>
+                  
+                  {/* Percentages Column - Only shown if at least one item has multiple assignees */}
+                  {Object.values(itemAssignments).some(assignees => assignees?.length > 1) && (
+                    <td className="border dark:border-gray-600 p-2">
+                      {isMultiAssigned(item.uniqueId) ? (
+                        <div className="flex flex-col space-y-2">
+                          {assignees.map(person => (
+                            <div key={person} className="flex items-center">
+                              <span className="mr-2 w-20">{person}</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={personShares[item.uniqueId]?.[person] || 0}
+                                onChange={(e) => handleShareChange(item.uniqueId, person, e.target.value)}
+                                className="w-16 p-1 text-right dark:bg-gray-600 dark:border-gray-500"
+                              />
+                              <span className="ml-1">%</span>
+                            </div>
+                          ))}
+                          
+                          {/* Total percentage indicator */}
+                          <div className={`text-sm mt-1 ${
+                            isComplete ? 'text-green-600 dark:text-green-400' : 
+                            isOverallocated ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'
+                          }`}>
+                            Total: {totalPercent}%
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-center">-</span>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Summary section */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-2">Summary</h2>
+        <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {/* What each person owes */}
+            <div className="p-2 rounded bg-white dark:bg-gray-800">
+              <h3 className="font-semibold mb-2">Items Breakdown</h3>
+              {people.map((person, i) => (
+                <div key={i} className="flex justify-between py-1 border-b dark:border-gray-700">
+                  <span>{person}:</span>
+                  <span className="font-semibold">€{calculatePersonTotal(person)}</span>
+                </div>
+              ))}
+            </div>
+            
+            {/* Total bill information */}
+            <div className="p-2 rounded bg-white dark:bg-gray-800">
+              <h3 className="font-semibold mb-2">Bill Information</h3>
+              <div className="flex justify-between py-1 border-b dark:border-gray-700">
+                <span className="font-bold">Total Bill:</span>
+                <span className="font-bold">€{billTotal}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className={`font-semibold ${parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                  Allocated:
+                </span>
+                <span className={`font-semibold ${parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                  €{allocatedTotal} 
+                  {parseFloat(allocatedTotal) !== parseFloat(billTotal) && 
+                    ` (${(parseFloat(allocatedTotal) - parseFloat(billTotal)).toFixed(2)})`
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
