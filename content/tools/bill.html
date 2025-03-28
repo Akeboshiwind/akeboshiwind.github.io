@@ -4,13 +4,37 @@ date: 2025-03-28
 layout: react
 ---
 
-const { useState } = React;
+const { useState, useEffect } = React;
 
 const Component = () => {
+  // Load data from localStorage on initial render
+  const loadFromLocalStorage = (key, defaultValue) => {
+    try {
+      const savedData = localStorage.getItem(`billSplitter_${key}`);
+      return savedData ? JSON.parse(savedData) : defaultValue;
+    } catch (error) {
+      console.error(`Error loading ${key} from localStorage:`, error);
+      return defaultValue;
+    }
+  };
+
   // Preset names as requested
-  const [people, setPeople] = useState(['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']);
-  const [personShares, setPersonShares] = useState({});
-  const [itemAssignments, setItemAssignments] = useState({});
+  const [people, setPeople] = useState(loadFromLocalStorage('people', ['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']));
+  const [personShares, setPersonShares] = useState(loadFromLocalStorage('personShares', {}));
+  const [itemAssignments, setItemAssignments] = useState(loadFromLocalStorage('itemAssignments', {}));
+  
+  // Save to localStorage when state changes
+  useEffect(() => {
+    localStorage.setItem('billSplitter_people', JSON.stringify(people));
+  }, [people]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_personShares', JSON.stringify(personShares));
+  }, [personShares]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_itemAssignments', JSON.stringify(itemAssignments));
+  }, [itemAssignments]);
   
   // Receipt data from the image
   const items = [
@@ -141,17 +165,41 @@ const Component = () => {
   const isMultiAssigned = (itemUniqueId) => {
     return itemAssignments[itemUniqueId]?.length > 1;
   };
+  
+  // Reset all saved data
+  const resetData = () => {
+    // Clear localStorage
+    localStorage.removeItem('billSplitter_people');
+    localStorage.removeItem('billSplitter_personShares');
+    localStorage.removeItem('billSplitter_itemAssignments');
+    
+    // Reset state
+    setPeople(['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']);
+    setPersonShares({});
+    setItemAssignments({});
+  };
 
   return (
     <div className="p-4 max-w-4xl mx-auto text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800">
-      {/* Instructions */}
+      {/* Instructions and Reset Button */}
       <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded text-sm">
-        <p><strong>Instructions:</strong></p>
-        <ol className="list-decimal pl-5 space-y-1">
-          <li>Click on a person's name button to assign an item to them</li>
-          <li>Click "Split All" to divide an item equally among everyone</li>
-          <li>For custom splits, adjust percentages manually</li>
-        </ol>
+        <div className="flex justify-between items-start">
+          <div>
+            <p><strong>Instructions:</strong></p>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>Click on a person's name button to assign an item to them</li>
+              <li>Click "Split All" to divide an item equally among everyone</li>
+              <li>For custom splits, adjust percentages manually</li>
+            </ol>
+            <p className="mt-2 text-xs italic">Your selections are automatically saved between page visits.</p>
+          </div>
+          <button 
+            onClick={resetData}
+            className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm"
+          >
+            Reset Data
+          </button>
+        </div>
       </div>
 
       {/* Items table */}
