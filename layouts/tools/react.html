@@ -1,0 +1,34 @@
+{{ define "main" }}
+  <h1>{{ .Title }}</h1>
+  <div id="shadow-host"></div>
+
+  <!-- CDN Scripts -->
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.5/babel.min.js"></script>
+  
+  <!-- Component Script with Shadow DOM -->
+  <script type="text/babel">
+    // Create shadow DOM
+    const shadowHost = document.getElementById('shadow-host');
+    const shadowRoot = shadowHost.attachShadow({mode: 'open'});
+    
+    // Create a div for React to render into
+    const reactRoot = document.createElement('div');
+    reactRoot.id = 'react-root';
+    shadowRoot.appendChild(reactRoot);
+    
+    // Add Tailwind CSS to Shadow DOM
+    const tailwindLink = document.createElement('link');
+    tailwindLink.rel = 'stylesheet';
+    tailwindLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css';
+    shadowRoot.appendChild(tailwindLink);
+    
+    // Add component content
+    {{ .Content }}
+    
+    // Create React root in Shadow DOM
+    const root = ReactDOM.createRoot(reactRoot);
+    root.render(<Component />);
+  </script>
+{{ end }}
