@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tools on Blog by the Rocks</title><link>https://blog.bythe.rocks/tools/</link><description>Recent content in Tools on Blog by the Rocks</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Fri, 28 Mar 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://blog.bythe.rocks/tools/index.xml" rel="self" type="application/rss+xml"/><item><title>Bill Splitter</title><link>https://blog.bythe.rocks/tools/bill/</link><pubDate>Fri, 28 Mar 2025 00:00:00 +0000</pubDate><guid>https://blog.bythe.rocks/tools/bill/</guid><description>const { useState, useEffect } = React;
+
+const Component = () => {
+ // Load data from localStorage on initial render
+ const loadFromLocalStorage = (key, defaultValue) => {
+ try {
+ const savedData = localStorage.getItem(`billSplitter_${key}`);
+ 
+ // Special handling for currency and exchangeRate which are not JSON objects
+ if (key === 'currency' || key === 'homeCurrency') {
+ return savedData || defaultValue;
+ }
+ 
+ if (key === 'exchangeRate') {
+ return savedData ? parseFloat(savedData) : defaultValue;
+ }
+ 
+ // For other data, use JSON parsing
+ return savedData ? JSON.parse(savedData) : defaultValue;
+ } catch (error) {
+ console.error(`Error loading ${key} from localStorage:`, error);
+ return defaultValue;
+ }
+ };
+
+ // Default receipt data
+ const defaultItems = [
+ { name: 'Ribeye Medium R', price: 24.00, quantity: 1 },
+ { name: 'Ribeye Rare', price: 24.00, quantity: 2 },
+ { name: 'Fajitas Beef', price: 18.50, quantity: 2 },
+ { name: 'Fajitas Pork', price: 16.00, quantity: 1 },
+ { name: 'Ribs de Cerdo', price: 20.00, quantity: 1 },
+ { name: 'Papas Fritas PR', price: 5.00, quantity: 1 },
+ { name: 'Espárragos Verd', price: 5.00, quantity: 1 },
+ { name: 'Papas Canarias', price: 5.00, quantity: 1 },
+ { name: 'Agua', price: 3.50, quantity: 1 },
+ { name: 'Fanta Naranja', price: 2.90, quantity: 1 },
+ { name: 'Fanta Limón', price: 2.90, quantity: 1 },
+ { name: 'Jarra', price: 4.10, quantity: 2 },
+ { name: 'Cuba Libre', price: 5.80, quantity: 1 }
+ ].map((item, index) => ({ ...item, id: index + 1 }));
+ 
+ // Initialize state with localStorage or defaults
+ const [people, setPeople] = useState(loadFromLocalStorage('people', ['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']));
+ const [personShares, setPersonShares] = useState(loadFromLocalStorage('personShares', {}));
+ const [itemAssignments, setItemAssignments] = useState(loadFromLocalStorage('itemAssignments', {}));
+ const [items, setItems] = useState(loadFromLocalStorage('items', defaultItems));
+ const [expandedRows, setExpandedRows] = useState(loadFromLocalStorage('expandedRows', {}));
+ const [processingError, setProcessingError] = useState(null);
+ const [currency, setCurrency] = useState(loadFromLocalStorage('currency', '£'));
+ const [homeCurrency, setHomeCurrency] = useState(loadFromLocalStorage('homeCurrency', '£'));
+ const [exchangeRate, setExchangeRate] = useState(loadFromLocalStorage('exchangeRate', 1));
+ const [showCurrencySettings, setShowCurrencySettings] = useState(loadFromLocalStorage('showCurrencySettings', false));
+ const [showPeopleSettings, setShowPeopleSettings] = useState(loadFromLocalStorage('showPeopleSettings', true));
+ 
+ const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price, and quantity. Also identify the currency used in the receipt (£, $, €, etc.).
+
+Format the output as a JSON object with two fields:
+1. "items": An array of items, each with name, price (as a number), and quantity (as a number)
+2. "currency": The currency symbol used in the receipt (£, $, €, etc.)
+
+If this is not a receipt, simply respond with: "Not a receipt"
+
+Here's an example of the expected format with sample data:
+{
+ "items": ${JSON.stringify(defaultItems.map(({id, ...item}) => item))},
+ "currency": "£"
+}`;
+ 
+ // Save to localStorage when state changes
+ useEffect(() => {
+ localStorage.setItem('billSplitter_people', JSON.stringify(people));
+ }, [people]);
+ 
+ useEffect(() => {
+ localStorage.setItem('billSplitter_personShares', JSON.stringify(personShares));
+ }, [personShares]);
+ 
+ useEffect(() => {
+ localStorage.setItem('billSplitter_itemAssignments', JSON.stringify(itemAssignments));
+ 
+ // Clean up expanded rows for items that can't be split
+ setExpandedRows(prev => {
+ const newState = { ...prev };
+ let hasChanges = false;
+ 
+ // Check each expanded row
+ Object.keys(newState).forEach(itemId => {
+ if (!canItemBeSplit(itemId)) {
+ delete newState[itemId];
+ hasChanges = true;
+ }
+ });
+ 
+ // Only update if something changed
+ return hasChanges ? newState : prev;
+ });
+ }, [itemAssignments]);
+ 
+ useEffect(() => {
+ localStorage.setItem('billSplitter_items', JSON.stringify(items));
+ }, [items]);
+ 
+ useEffect(() => {
+ localStorage.setItem('billSplitter_expandedRows', JSON.stringify(expandedRows));
+ }, [expandedRows]);
+ 
+ useEffect(() => {
+ localStorage.setItem('billSplitter_currency', currency);
+ }, [currency]);
+ 
+ useEffect(() => {
+ localStorage.setItem('billSplitter_homeCurrency', homeCurrency);
+ }, [homeCurrency]);
+ 
+ useEffect(() => {
+ localStorage.setItem('billSplitter_exchangeRate', exchangeRate.toString());
+ }, [exchangeRate]);
+ 
+ useEffect(() => {
+ localStorage.setItem('billSplitter_showCurrencySettings', JSON.stringify(showCurrencySettings));
+ }, [showCurrencySettings]);
+ 
+ useEffect(() => {
+ localStorage.setItem('billSplitter_showPeopleSettings', JSON.stringify(showPeopleSettings));
+ }, [showPeopleSettings]);
+
+ // Expand items by quantity
+ const expandedItems = items.flatMap(item => 
+ Array(item.quantity).fill().map((_, i) => ({
+ ...item,
+ uniqueId: `${item.id}-${i}`,
+ originalQuantity: item.quantity,
+ quantity: 1
+ }))
+ );
+
+
+ // Add or remove a person from an item's assignments
+ const togglePersonAssignment = (itemUniqueId, person) => {
+ const newAssignments = { ...itemAssignments };
+ const currentAssignees = newAssignments[itemUniqueId] || [];
+ 
+ // Check if person is already assigned
+ if (currentAssignees.includes(person)) {
+ // Remove person from assignments
+ newAssignments[itemUniqueId] = currentAssignees.filter(p => p !== person);
+ // If no one is assigned anymore, delete the entry
+ if (newAssignments[itemUniqueId].length === 0) {
+ delete newAssignments[itemUniqueId];
+ }
+ } else {
+ // Add person to assignments
+ newAssignments[itemUniqueId] = [...currentAssignees, person];
+ }
+ 
+ setItemAssignments(newAssignments);
+ 
+ // Update shares evenly
+ updateSharesFromAssignments(newAssignments);
+ };
+
+ // Helper function to create an equal split distribution
+ const createEqualSplit = (people) => {
+ const sharePerPerson = Math.floor((100 / people.length) * 100) / 100; // Round to 2 decimal places
+ const shares = {};
+ 
+ // Initialize shares to zero
+ people.forEach(person => {
+ shares[person] = 0;
+ });
+ 
+ // Distribute shares and handle rounding error
+ let totalAllocated = 0;
+ people.forEach((person, index) => {
+ // For the last person, make sure we hit exactly 100%
+ if (index === people.length - 1) {
+ shares[person] = 100 - totalAllocated;
+ } else {
+ shares[person] = sharePerPerson;
+ totalAllocated += sharePerPerson;
+ }
+ });
+ 
+ return shares;
+ };
+ 
+ // Update shares based on assignments (evenly split)
+ const updateSharesFromAssignments = (assignments) => {
+ const newShares = {};
+ 
+ Object.entries(assignments).forEach(([itemUniqueId, assignedPeople]) => {
+ if (assignedPeople.length > 0) {
+ newShares[itemUniqueId] = createEqualSplit(assignedPeople);
+ }
+ });
+ 
+ setPersonShares(newShares);
+ };
+
+ // Manual adjustment of shares for multi-person items
+ const handleShareChange = (itemUniqueId, person, share) => {
+ const shareValue = parseInt(share, 10) || 0;
+ 
+ setPersonShares(prev => {
+ const updated = { ...prev };
+ if (!updated[itemUniqueId]) {
+ updated[itemUniqueId] = {};
+ }
+ updated[itemUniqueId][person] = shareValue;
+ return updated;
+ });
+ };
+
+ // Calculate total percentage for an item
+ const getTotalPercentForItem = (itemUniqueId) => {
+ if (!personShares[itemUniqueId]) return 0;
+ const total = Object.values(personShares[itemUniqueId]).reduce((sum, share) => sum + share, 0);
+ 
+ // Handle floating point rounding issues
+ if (Math.abs(total - 100) &lt; 0.1) {
+ return 100;
+ }
+ return Math.round(total * 100) / 100; // Round to 2 decimal places
+ };
+
+ // Helper function to convert to home currency if needed
+ const convertToHomeCurrency = (amount) => {
+ // If currencies are the same or exchange rate is 1, no conversion needed
+ if (currency === homeCurrency || exchangeRate === 1) {
+ return amount;
+ }
+ return amount * exchangeRate;
+ };
+
+ // Calculate what each person owes
+ const calculatePersonTotal = (person) => {
+ let total = 0;
+ 
+ expandedItems.forEach(item => {
+ if (personShares[item.uniqueId] &amp;&amp; personShares[item.uniqueId][person]) {
+ const sharePercent = personShares[item.uniqueId][person];
+ total += (item.price * (sharePercent / 100));
+ }
+ });
+ 
+ return total.toFixed(2);
+ };
+ 
+ // Update item name
+ const updateItemName = (id, newName) => {
+ setItems(prevItems => 
+ prevItems.map(item => 
+ item.id === id ? { ...item, name: newName } : item
+ )
+ );
+ };
+ 
+ // Update item price
+ const updateItemPrice = (id, newPrice) => {
+ const price = parseFloat(newPrice) || 0;
+ setItems(prevItems => 
+ prevItems.map(item => 
+ item.id === id ? { ...item, price } : item
+ )
+ );
+ };
+
+ // Calculate overall bill total
+ const billTotal = expandedItems.reduce((sum, item) => sum + item.price, 0).toFixed(2);
+
+ // Calculate allocated amount
+ const allocatedTotal = people.reduce((sum, person) => sum + parseFloat(calculatePersonTotal(person)), 0).toFixed(2);
+
+ // Check if an item is assigned to multiple people
+ const isMultiAssigned = (itemUniqueId) => {
+ return itemAssignments[itemUniqueId]?.length > 1;
+ };
+ 
+ // Check if an item can be split (has 2+ people assigned)
+ const canItemBeSplit = (itemUniqueId) => {
+ return (itemAssignments[itemUniqueId]?.length ?? 0) >= 2;
+ };
+ 
+ // Toggle expanded row
+ const toggleExpandedRow = (itemUniqueId) => {
+ // Only allow toggling if the item can be split
+ if (!canItemBeSplit(itemUniqueId)) return;
+ 
+ setExpandedRows(prev => {
+ const newState = { ...prev };
+ 
+ // Toggle state (either add or remove)
+ if (newState[itemUniqueId]) {
+ delete newState[itemUniqueId]; // Close row
+ } else {
+ newState[itemUniqueId] = true; // Open row
+ }
+ 
+ return newState;
+ });
+ };
+ 
+ // Reset all saved data
+ const resetData = () => {
+ // Clear localStorage
+ localStorage.removeItem('billSplitter_people');
+ localStorage.removeItem('billSplitter_personShares');
+ localStorage.removeItem('billSplitter_itemAssignments');
+ localStorage.removeItem('billSplitter_items');
+ localStorage.removeItem('billSplitter_expandedRows');
+ localStorage.removeItem('billSplitter_currency');
+ localStorage.removeItem('billSplitter_homeCurrency');
+ localStorage.removeItem('billSplitter_exchangeRate');
+ localStorage.removeItem('billSplitter_showCurrencySettings');
+ localStorage.removeItem('billSplitter_showPeopleSettings');
+ 
+ // Reset state
+ setPeople(['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']);
+ setPersonShares({});
+ setItemAssignments({});
+ setItems(defaultItems);
+ setExpandedRows({});
+ setProcessingError(null);
+ setCurrency('£');
+ setHomeCurrency('£');
+ setExchangeRate(1);
+ setShowCurrencySettings(false);
+ setShowPeopleSettings(true);
+ };
+
+ return (
+ &lt;div className="p-2 sm:p-4 max-w-4xl mx-auto text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800">
+ {/* Instructions and Reset Button */}
+ &lt;div className="mb-6 bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded text-sm">
+ &lt;div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+ &lt;div>
+ &lt;div className="flex justify-between items-center mb-1">
+ &lt;p>&lt;strong>Instructions:&lt;/strong>&lt;/p></description></item></channel></rss>

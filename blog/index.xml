@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Blog on Blog by the Rocks</title><link>https://blog.bythe.rocks/blog/</link><description>Recent content in Blog on Blog by the Rocks</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Thu, 23 Nov 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://blog.bythe.rocks/blog/index.xml" rel="self" type="application/rss+xml"/><item><title>Clojure Function Spotlight: bound-fn</title><link>https://blog.bythe.rocks/blog/spotlight-bound-fn/</link><pubDate>Thu, 23 Nov 2023 00:00:00 +0000</pubDate><guid>https://blog.bythe.rocks/blog/spotlight-bound-fn/</guid><description>&lt;p>While reading some internal code at &lt;a href="https://juxt.pro">JUXT&lt;/a> I came across a function I&amp;rsquo;d not seen before: &lt;code>bound-fn&lt;/code>&lt;/p>
+&lt;p>After researching a little it turns out to be quite interesting!&lt;/p>
+&lt;h2 id="starting-with-a-definition">Starting with a definition&lt;/h2>
+&lt;blockquote>
+&lt;p>&lt;code>(bound-fn &amp;amp; fntail)&lt;/code>&lt;/p>
+&lt;p>Returns a function defined by the given fntail, which will install the
+same bindings in effect as in the thread at the time bound-fn was called.
+This may be used to define a helper function which runs on a different
+thread, but needs the same bindings in place.&lt;/p></description></item><item><title>Solving Container Update Woes with Clojure and Babashka</title><link>https://blog.bythe.rocks/blog/bb-docker-image-updates/</link><pubDate>Sun, 15 Oct 2023 00:00:00 +0000</pubDate><guid>https://blog.bythe.rocks/blog/bb-docker-image-updates/</guid><description>&lt;p>At home I run a small server for running home assistant and other small projects, but I&amp;rsquo;ve been running into a problem recently: updates.&lt;/p>
+&lt;p>All the containers I have running in my system run with specific version tags.
+I do this because I prefer to manually update each container as a new version comes out.
+That way I&amp;rsquo;m up to date on new features (and can stay mostly on top of breaking changes 😅).&lt;/p></description></item></channel></rss>
