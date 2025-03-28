@@ -18,26 +18,8 @@ const Component = () => {
     }
   };
 
-  // Preset names as requested
-  const [people, setPeople] = useState(loadFromLocalStorage('people', ['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']));
-  const [personShares, setPersonShares] = useState(loadFromLocalStorage('personShares', {}));
-  const [itemAssignments, setItemAssignments] = useState(loadFromLocalStorage('itemAssignments', {}));
-  
-  // Save to localStorage when state changes
-  useEffect(() => {
-    localStorage.setItem('billSplitter_people', JSON.stringify(people));
-  }, [people]);
-  
-  useEffect(() => {
-    localStorage.setItem('billSplitter_personShares', JSON.stringify(personShares));
-  }, [personShares]);
-  
-  useEffect(() => {
-    localStorage.setItem('billSplitter_itemAssignments', JSON.stringify(itemAssignments));
-  }, [itemAssignments]);
-  
-  // Receipt data from the image
-  const items = [
+  // Default receipt data
+  const defaultItems = [
     { id: 1, name: 'Ribeye Medium R', price: 24.00, quantity: 1 },
     { id: 2, name: 'Ribeye Rare', price: 24.00, quantity: 2 },
     { id: 3, name: 'Fajitas Beef', price: 18.50, quantity: 2 },
@@ -52,6 +34,29 @@ const Component = () => {
     { id: 12, name: 'Jarra', price: 4.10, quantity: 2 },
     { id: 13, name: 'Cuba Libre', price: 5.80, quantity: 1 }
   ];
+  
+  // Initialize state with localStorage or defaults
+  const [people, setPeople] = useState(loadFromLocalStorage('people', ['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']));
+  const [personShares, setPersonShares] = useState(loadFromLocalStorage('personShares', {}));
+  const [itemAssignments, setItemAssignments] = useState(loadFromLocalStorage('itemAssignments', {}));
+  const [items, setItems] = useState(loadFromLocalStorage('items', defaultItems));
+  
+  // Save to localStorage when state changes
+  useEffect(() => {
+    localStorage.setItem('billSplitter_people', JSON.stringify(people));
+  }, [people]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_personShares', JSON.stringify(personShares));
+  }, [personShares]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_itemAssignments', JSON.stringify(itemAssignments));
+  }, [itemAssignments]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_items', JSON.stringify(items));
+  }, [items]);
 
   // Expand items by quantity
   const expandedItems = items.flatMap(item => 
@@ -154,6 +159,25 @@ const Component = () => {
     
     return total.toFixed(2);
   };
+  
+  // Update item name
+  const updateItemName = (id, newName) => {
+    setItems(prevItems => 
+      prevItems.map(item => 
+        item.id === id ? { ...item, name: newName } : item
+      )
+    );
+  };
+  
+  // Update item price
+  const updateItemPrice = (id, newPrice) => {
+    const price = parseFloat(newPrice) || 0;
+    setItems(prevItems => 
+      prevItems.map(item => 
+        item.id === id ? { ...item, price } : item
+      )
+    );
+  };
 
   // Calculate overall bill total
   const billTotal = expandedItems.reduce((sum, item) => sum + item.price, 0).toFixed(2);
@@ -172,11 +196,13 @@ const Component = () => {
     localStorage.removeItem('billSplitter_people');
     localStorage.removeItem('billSplitter_personShares');
     localStorage.removeItem('billSplitter_itemAssignments');
+    localStorage.removeItem('billSplitter_items');
     
     // Reset state
     setPeople(['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']);
     setPersonShares({});
     setItemAssignments({});
+    setItems(defaultItems);
   };
 
   return (
@@ -187,11 +213,12 @@ const Component = () => {
           <div>
             <p><strong>Instructions:</strong></p>
             <ol className="list-decimal pl-5 space-y-1">
+              <li>Edit item names and prices as needed</li>
               <li>Click on a person's name button to assign an item to them</li>
               <li>Click "Split All" to divide an item equally among everyone</li>
               <li>For custom splits, adjust percentages manually</li>
             </ol>
-            <p className="mt-2 text-xs italic">Your selections are automatically saved between page visits.</p>
+            <p className="mt-2 text-xs italic">All your changes are automatically saved between page visits.</p>
           </div>
           <button 
             onClick={resetData}
@@ -224,6 +251,11 @@ const Component = () => {
               const isOverallocated = totalPercent > 100;
               const assignees = itemAssignments[item.uniqueId] || [];
               
+              // Only show edit fields on the first instance of each item (for items with quantity > 1)
+              const isFirstInstance = item.uniqueId.endsWith('-0');
+              // Find original item to edit
+              const originalItem = items.find(i => i.id === item.id);
+              
               return (
                 <tr key={item.uniqueId} className={`
                   ${isComplete ? 'bg-green-50 dark:bg-green-900/20' : ''}
@@ -231,10 +263,32 @@ const Component = () => {
                   hover:bg-gray-50 dark:hover:bg-gray-700
                 `}>
                   <td className="border dark:border-gray-600 p-2">
-                    {item.name} 
+                    {isFirstInstance ? (
+                      <input
+                        type="text"
+                        value={originalItem.name}
+                        onChange={(e) => updateItemName(originalItem.id, e.target.value)}
+                        className="w-full border dark:border-gray-500 p-1 rounded dark:bg-gray-600"
+                      />
+                    ) : (
+                      <span>{item.name}</span>
+                    )}
                     {item.originalQuantity > 1 && ` (${parseInt(item.uniqueId.split('-')[1]) + 1}/${item.originalQuantity})`}
                   </td>
-                  <td className="border dark:border-gray-600 p-2 text-right">{item.price.toFixed(2)}</td>
+                  <td className="border dark:border-gray-600 p-2">
+                    {isFirstInstance ? (
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={originalItem.price}
+                        onChange={(e) => updateItemPrice(originalItem.id, e.target.value)}
+                        className="w-20 border dark:border-gray-500 p-1 rounded text-right dark:bg-gray-600"
+                      />
+                    ) : (
+                      <span className="text-right block">{item.price.toFixed(2)}</span>
+                    )}
+                  </td>
                   
                   {/* Assigned To Column with Quick-Assign Buttons */}
                   <td className="border dark:border-gray-600 p-2">
