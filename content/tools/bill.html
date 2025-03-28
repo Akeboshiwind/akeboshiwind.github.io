@@ -41,6 +41,18 @@ const Component = () => {
   const [itemAssignments, setItemAssignments] = useState(loadFromLocalStorage('itemAssignments', {}));
   const [items, setItems] = useState(loadFromLocalStorage('items', defaultItems));
   const [expandedRows, setExpandedRows] = useState(loadFromLocalStorage('expandedRows', {}));
+  const [processingError, setProcessingError] = useState(null);
+  
+  const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price, and quantity. Format the output as a JSON array of items.
+
+Each item should have a name, price (as a number), and quantity (as a number) property.
+
+If this is not a receipt, simply respond with: "Not a receipt"
+
+Here's an example of the expected format with sample data:
+${JSON.stringify(
+  defaultItems.map(({id, ...item}) => item),
+)}`;
   
   // Save to localStorage when state changes
   useEffect(() => {
@@ -262,6 +274,7 @@ const Component = () => {
     setItemAssignments({});
     setItems(defaultItems);
     setExpandedRows({});
+    setProcessingError(null);
   };
 
   return (
@@ -272,6 +285,7 @@ const Component = () => {
           <div>
             <p><strong>Instructions:</strong></p>
             <ol className="list-decimal pl-5 space-y-1">
+              <li>Scan a receipt or use the default items</li>
               <li>Edit item names and prices as needed</li>
               <li>Click on person buttons to assign people to items</li>
               <li>When 2+ people are assigned, click the <strong>Split</strong> button</li>
@@ -286,6 +300,104 @@ const Component = () => {
             Reset Data
           </button>
         </div>
+      </div>
+      
+      {/* Claude Prompt */}
+      <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded">
+        <h3 className="font-semibold mb-2">Scan Receipt with Claude</h3>
+        <p className="mb-2 text-sm">
+          To scan a receipt with Claude, take a photo of your receipt and visit <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">claude.ai</a>. 
+          Upload the image and copy-paste the prompt below:
+        </p>
+        <div className="bg-white dark:bg-gray-700 p-3 rounded border border-gray-300 dark:border-gray-600 mb-3 text-sm whitespace-pre-wrap font-mono text-xs">
+          {claudePromptText}
+        </div>
+        <button 
+          onClick={() => {
+            navigator.clipboard.writeText(claudePromptText);
+          }}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm"
+        >
+          Copy Prompt
+        </button>
+      </div>
+      
+      {/* Manual JSON Entry */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-2">Enter Claude Response</h2>
+        <p className="text-sm mb-2">Paste Claude's JSON response here:</p>
+        <div className="flex flex-col">
+          <textarea
+            className="w-full border dark:border-gray-600 p-2 mb-2 rounded dark:bg-gray-700 font-mono text-sm"
+            rows="6"
+            placeholder='[{"name": "Coffee", "price": 3.50, "quantity": 1}, {"name": "Sandwich", "price": 7.99, "quantity": 1}]'
+            value={processingError ? '' : ''}
+            onChange={(e) => {
+              const inputText = e.target.value.trim();
+              
+              // Check for the "Not a receipt" response
+              if (inputText === "Not a receipt") {
+                setProcessingError("Claude couldn't find a receipt in the uploaded image.");
+                return;
+              }
+              
+              try {
+                const data = JSON.parse(inputText);
+                
+                if (Array.isArray(data)) {
+                  // Direct array format - map the items to our format
+                  const newItems = data.map((item, index) => ({
+                    id: index + 1,
+                    name: item.name || 'Unnamed Item',
+                    price: parseFloat(item.price) || 0,
+                    quantity: parseInt(item.quantity) || 1
+                  }));
+                  
+                  setItems(newItems);
+                  setPersonShares({});
+                  setItemAssignments({});
+                  setExpandedRows({});
+                  setProcessingError(null);
+                } else if (data.ok && Array.isArray(data.result)) {
+                  // Support the old format too (for backward compatibility)
+                  const newItems = data.result.map((item, index) => ({
+                    id: index + 1,
+                    name: item.name || 'Unnamed Item',
+                    price: parseFloat(item.price) || 0,
+                    quantity: parseInt(item.quantity) || 1
+                  }));
+                  
+                  setItems(newItems);
+                  setPersonShares({});
+                  setItemAssignments({});
+                  setExpandedRows({});
+                  setProcessingError(null);
+                } else if (data.ok === false) {
+                  setProcessingError(data.reason || 'Invalid receipt data');
+                } else {
+                  setProcessingError('Invalid JSON format. The response should be an array of items with name, price, and quantity properties.');
+                }
+              } catch (error) {
+                // Only show error if there's content (don't show for empty field)
+                if (inputText) {
+                  setProcessingError('Invalid JSON format. Make sure to copy the entire response from Claude.');
+                } else {
+                  setProcessingError(null);
+                }
+              }
+            }}
+          />
+          <div className="text-xs text-gray-500 dark:text-gray-400 italic mb-2">
+            Copy the entire JSON output from Claude and paste it above.
+          </div>
+        </div>
+        
+        {/* Error message */}
+        {processingError && (
+          <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded text-sm">
+            <strong>Error:</strong> {processingError}
+          </div>
+        )}
       </div>
 
       {/* Items table */}
