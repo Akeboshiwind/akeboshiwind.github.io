@@ -2,3 +2,9 @@
 {{ range .Site.Menus.main }}
 <a href="{{ .URL }}">{{ .Name }}</a>
 {{ end }}
+{{ with .Site.GetPage "/blog" }}
+  {{ with .OutputFormats.Get "rss" }}
+      <a href={{ .Permalink }} >Feed</a>
+  {{ end }}
+{{ end }}
+
