@@ -1,6 +1,6 @@
 baseURL = 'https://blog.bythe.rocks/'
 languageCode = 'en-us'
-title = 'My Blog'
+title = 'Blog by the Rocks'
 
 # Enable robots.txt
 enableRobotsTXT = true
