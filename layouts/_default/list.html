@@ -1,5 +1,6 @@
 {{ define "main" }}
 <content>
+  {{ .Content }}
   {{ if and hugo.IsDevelopment (not .Site.BuildDrafts) }}
     <div class="admonition admonition-info">
       <div class="admonition-title">Note</div>
