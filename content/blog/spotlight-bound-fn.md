@@ -1,13 +1,12 @@
-Title: Clojure Function Spotlight: bound-fn
-Date: 2023-11-23
-Tags: clojure
-Discuss: https://github.com/Akeboshiwind/akeboshiwind.github.io/discussions/4
+---
+title: "Clojure Function Spotlight: bound-fn"
+date: 2023-11-23
+discussLink: "https://github.com/Akeboshiwind/akeboshiwind.github.io/discussions/4"
+---
 
 While reading some internal code at [JUXT](https://juxt.pro) I came across a function I'd not seen before: `bound-fn`
 
 After researching a little it turns out to be quite interesting!
-
-<!-- end-of-preview -->
 
 ## Starting with a definition
 

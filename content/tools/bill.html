@@ -1,0 +1,943 @@
+---
+title: Bill Splitter
+date: 2025-03-28
+layout: react
+---
+
+const { useState, useEffect } = React;
+
+const Component = () => {
+  // Load data from localStorage on initial render
+  const loadFromLocalStorage = (key, defaultValue) => {
+    try {
+      const savedData = localStorage.getItem(`billSplitter_${key}`);
+      
+      // Special handling for currency and exchangeRate which are not JSON objects
+      if (key === 'currency' || key === 'homeCurrency') {
+        return savedData || defaultValue;
+      }
+      
+      if (key === 'exchangeRate') {
+        return savedData ? parseFloat(savedData) : defaultValue;
+      }
+      
+      // For other data, use JSON parsing
+      return savedData ? JSON.parse(savedData) : defaultValue;
+    } catch (error) {
+      console.error(`Error loading ${key} from localStorage:`, error);
+      return defaultValue;
+    }
+  };
+
+  // Default receipt data
+  const defaultItems = [
+    { name: 'Ribeye Medium R', price: 24.00, quantity: 1 },
+    { name: 'Ribeye Rare', price: 24.00, quantity: 2 },
+    { name: 'Fajitas Beef', price: 18.50, quantity: 2 },
+    { name: 'Fajitas Pork', price: 16.00, quantity: 1 },
+    { name: 'Ribs de Cerdo', price: 20.00, quantity: 1 },
+    { name: 'Papas Fritas PR', price: 5.00, quantity: 1 },
+    { name: 'Espárragos Verd', price: 5.00, quantity: 1 },
+    { name: 'Papas Canarias', price: 5.00, quantity: 1 },
+    { name: 'Agua', price: 3.50, quantity: 1 },
+    { name: 'Fanta Naranja', price: 2.90, quantity: 1 },
+    { name: 'Fanta Limón', price: 2.90, quantity: 1 },
+    { name: 'Jarra', price: 4.10, quantity: 2 },
+    { name: 'Cuba Libre', price: 5.80, quantity: 1 }
+  ].map((item, index) => ({ ...item, id: index + 1 }));
+  
+  // Initialize state with localStorage or defaults
+  const [people, setPeople] = useState(loadFromLocalStorage('people', ['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']));
+  const [personShares, setPersonShares] = useState(loadFromLocalStorage('personShares', {}));
+  const [itemAssignments, setItemAssignments] = useState(loadFromLocalStorage('itemAssignments', {}));
+  const [items, setItems] = useState(loadFromLocalStorage('items', defaultItems));
+  const [expandedRows, setExpandedRows] = useState(loadFromLocalStorage('expandedRows', {}));
+  const [processingError, setProcessingError] = useState(null);
+  const [currency, setCurrency] = useState(loadFromLocalStorage('currency', '£'));
+  const [homeCurrency, setHomeCurrency] = useState(loadFromLocalStorage('homeCurrency', '£'));
+  const [exchangeRate, setExchangeRate] = useState(loadFromLocalStorage('exchangeRate', 1));
+  const [showCurrencySettings, setShowCurrencySettings] = useState(loadFromLocalStorage('showCurrencySettings', false));
+  const [showPeopleSettings, setShowPeopleSettings] = useState(loadFromLocalStorage('showPeopleSettings', true));
+  
+  const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price, and quantity. Also identify the currency used in the receipt (£, $, €, etc.).
+
+Format the output as a JSON object with two fields:
+1. "items": An array of items, each with name, price (as a number), and quantity (as a number)
+2. "currency": The currency symbol used in the receipt (£, $, €, etc.)
+
+If this is not a receipt, simply respond with: "Not a receipt"
+
+Here's an example of the expected format with sample data:
+{
+  "items": ${JSON.stringify(defaultItems.map(({id, ...item}) => item))},
+  "currency": "£"
+}`;
+  
+  // Save to localStorage when state changes
+  useEffect(() => {
+    localStorage.setItem('billSplitter_people', JSON.stringify(people));
+  }, [people]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_personShares', JSON.stringify(personShares));
+  }, [personShares]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_itemAssignments', JSON.stringify(itemAssignments));
+    
+    // Clean up expanded rows for items that can't be split
+    setExpandedRows(prev => {
+      const newState = { ...prev };
+      let hasChanges = false;
+      
+      // Check each expanded row
+      Object.keys(newState).forEach(itemId => {
+        if (!canItemBeSplit(itemId)) {
+          delete newState[itemId];
+          hasChanges = true;
+        }
+      });
+      
+      // Only update if something changed
+      return hasChanges ? newState : prev;
+    });
+  }, [itemAssignments]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_items', JSON.stringify(items));
+  }, [items]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_expandedRows', JSON.stringify(expandedRows));
+  }, [expandedRows]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_currency', currency);
+  }, [currency]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_homeCurrency', homeCurrency);
+  }, [homeCurrency]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_exchangeRate', exchangeRate.toString());
+  }, [exchangeRate]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_showCurrencySettings', JSON.stringify(showCurrencySettings));
+  }, [showCurrencySettings]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_showPeopleSettings', JSON.stringify(showPeopleSettings));
+  }, [showPeopleSettings]);
+
+  // Expand items by quantity
+  const expandedItems = items.flatMap(item => 
+    Array(item.quantity).fill().map((_, i) => ({
+      ...item,
+      uniqueId: `${item.id}-${i}`,
+      originalQuantity: item.quantity,
+      quantity: 1
+    }))
+  );
+
+
+  // Add or remove a person from an item's assignments
+  const togglePersonAssignment = (itemUniqueId, person) => {
+    const newAssignments = { ...itemAssignments };
+    const currentAssignees = newAssignments[itemUniqueId] || [];
+    
+    // Check if person is already assigned
+    if (currentAssignees.includes(person)) {
+      // Remove person from assignments
+      newAssignments[itemUniqueId] = currentAssignees.filter(p => p !== person);
+      // If no one is assigned anymore, delete the entry
+      if (newAssignments[itemUniqueId].length === 0) {
+        delete newAssignments[itemUniqueId];
+      }
+    } else {
+      // Add person to assignments
+      newAssignments[itemUniqueId] = [...currentAssignees, person];
+    }
+    
+    setItemAssignments(newAssignments);
+    
+    // Update shares evenly
+    updateSharesFromAssignments(newAssignments);
+  };
+
+  // Helper function to create an equal split distribution
+  const createEqualSplit = (people) => {
+    const sharePerPerson = Math.floor((100 / people.length) * 100) / 100; // Round to 2 decimal places
+    const shares = {};
+    
+    // Initialize shares to zero
+    people.forEach(person => {
+      shares[person] = 0;
+    });
+    
+    // Distribute shares and handle rounding error
+    let totalAllocated = 0;
+    people.forEach((person, index) => {
+      // For the last person, make sure we hit exactly 100%
+      if (index === people.length - 1) {
+        shares[person] = 100 - totalAllocated;
+      } else {
+        shares[person] = sharePerPerson;
+        totalAllocated += sharePerPerson;
+      }
+    });
+    
+    return shares;
+  };
+  
+  // Update shares based on assignments (evenly split)
+  const updateSharesFromAssignments = (assignments) => {
+    const newShares = {};
+    
+    Object.entries(assignments).forEach(([itemUniqueId, assignedPeople]) => {
+      if (assignedPeople.length > 0) {
+        newShares[itemUniqueId] = createEqualSplit(assignedPeople);
+      }
+    });
+    
+    setPersonShares(newShares);
+  };
+
+  // Manual adjustment of shares for multi-person items
+  const handleShareChange = (itemUniqueId, person, share) => {
+    const shareValue = parseInt(share, 10) || 0;
+    
+    setPersonShares(prev => {
+      const updated = { ...prev };
+      if (!updated[itemUniqueId]) {
+        updated[itemUniqueId] = {};
+      }
+      updated[itemUniqueId][person] = shareValue;
+      return updated;
+    });
+  };
+
+  // Calculate total percentage for an item
+  const getTotalPercentForItem = (itemUniqueId) => {
+    if (!personShares[itemUniqueId]) return 0;
+    const total = Object.values(personShares[itemUniqueId]).reduce((sum, share) => sum + share, 0);
+    
+    // Handle floating point rounding issues
+    if (Math.abs(total - 100) < 0.1) {
+      return 100;
+    }
+    return Math.round(total * 100) / 100; // Round to 2 decimal places
+  };
+
+  // Helper function to convert to home currency if needed
+  const convertToHomeCurrency = (amount) => {
+    // If currencies are the same or exchange rate is 1, no conversion needed
+    if (currency === homeCurrency || exchangeRate === 1) {
+      return amount;
+    }
+    return amount * exchangeRate;
+  };
+
+  // Calculate what each person owes
+  const calculatePersonTotal = (person) => {
+    let total = 0;
+    
+    expandedItems.forEach(item => {
+      if (personShares[item.uniqueId] && personShares[item.uniqueId][person]) {
+        const sharePercent = personShares[item.uniqueId][person];
+        total += (item.price * (sharePercent / 100));
+      }
+    });
+    
+    return total.toFixed(2);
+  };
+  
+  // Update item name
+  const updateItemName = (id, newName) => {
+    setItems(prevItems => 
+      prevItems.map(item => 
+        item.id === id ? { ...item, name: newName } : item
+      )
+    );
+  };
+  
+  // Update item price
+  const updateItemPrice = (id, newPrice) => {
+    const price = parseFloat(newPrice) || 0;
+    setItems(prevItems => 
+      prevItems.map(item => 
+        item.id === id ? { ...item, price } : item
+      )
+    );
+  };
+
+  // Calculate overall bill total
+  const billTotal = expandedItems.reduce((sum, item) => sum + item.price, 0).toFixed(2);
+
+  // Calculate allocated amount
+  const allocatedTotal = people.reduce((sum, person) => sum + parseFloat(calculatePersonTotal(person)), 0).toFixed(2);
+
+  // Check if an item is assigned to multiple people
+  const isMultiAssigned = (itemUniqueId) => {
+    return itemAssignments[itemUniqueId]?.length > 1;
+  };
+  
+  // Check if an item can be split (has 2+ people assigned)
+  const canItemBeSplit = (itemUniqueId) => {
+    return (itemAssignments[itemUniqueId]?.length ?? 0) >= 2;
+  };
+  
+  // Toggle expanded row
+  const toggleExpandedRow = (itemUniqueId) => {
+    // Only allow toggling if the item can be split
+    if (!canItemBeSplit(itemUniqueId)) return;
+    
+    setExpandedRows(prev => {
+      const newState = { ...prev };
+      
+      // Toggle state (either add or remove)
+      if (newState[itemUniqueId]) {
+        delete newState[itemUniqueId]; // Close row
+      } else {
+        newState[itemUniqueId] = true; // Open row
+      }
+      
+      return newState;
+    });
+  };
+  
+  // Reset all saved data
+  const resetData = () => {
+    // Clear localStorage
+    localStorage.removeItem('billSplitter_people');
+    localStorage.removeItem('billSplitter_personShares');
+    localStorage.removeItem('billSplitter_itemAssignments');
+    localStorage.removeItem('billSplitter_items');
+    localStorage.removeItem('billSplitter_expandedRows');
+    localStorage.removeItem('billSplitter_currency');
+    localStorage.removeItem('billSplitter_homeCurrency');
+    localStorage.removeItem('billSplitter_exchangeRate');
+    localStorage.removeItem('billSplitter_showCurrencySettings');
+    localStorage.removeItem('billSplitter_showPeopleSettings');
+    
+    // Reset state
+    setPeople(['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']);
+    setPersonShares({});
+    setItemAssignments({});
+    setItems(defaultItems);
+    setExpandedRows({});
+    setProcessingError(null);
+    setCurrency('£');
+    setHomeCurrency('£');
+    setExchangeRate(1);
+    setShowCurrencySettings(false);
+    setShowPeopleSettings(true);
+  };
+
+  return (
+    <div className="p-2 sm:p-4 max-w-4xl mx-auto text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800">
+      {/* Instructions and Reset Button */}
+      <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded text-sm">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <p><strong>Instructions:</strong></p>
+              <button 
+                onClick={resetData}
+                className="sm:hidden px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs"
+              >
+                Reset
+              </button>
+            </div>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>Scan a receipt or use the default items</li>
+              <li>Claude will detect the currency from your receipt</li>
+              <li>Edit item names and prices as needed</li>
+              <li>Adjust currency settings if needed (for foreign currency conversion)</li>
+              <li>Click on person buttons to assign people to items</li>
+              <li>When 2+ people are assigned, click the <strong>Split</strong> button</li>
+              <li>Adjust percentages in the expanded panel to customize the split</li>
+            </ol>
+            <p className="mt-2 text-xs italic">All your changes are automatically saved between page visits.</p>
+          </div>
+          <button 
+            onClick={resetData}
+            className="hidden sm:block px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm"
+          >
+            Reset Data
+          </button>
+        </div>
+      </div>
+      
+      {/* Claude Prompt */}
+      <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-3 sm:p-4 rounded">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
+          <h3 className="font-semibold">Scan Receipt with Claude</h3>
+          <button 
+            onClick={() => {
+              navigator.clipboard.writeText(claudePromptText);
+            }}
+            className="self-start bg-blue-500 hover:bg-blue-600 text-white px-3 sm:px-4 py-1 sm:py-2 rounded text-sm w-full sm:w-auto"
+          >
+            Copy Prompt
+          </button>
+        </div>
+        <p className="mb-2 text-sm">
+          To scan a receipt with Claude, take a photo of your receipt and visit <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">claude.ai</a>. 
+          Upload the image and copy-paste the prompt below:
+        </p>
+        <div 
+          className="bg-white dark:bg-gray-700 p-3 rounded border border-gray-300 dark:border-gray-600 mb-1 text-sm whitespace-pre-wrap font-mono text-xs max-h-24 overflow-y-auto"
+          style={{ scrollbarWidth: 'thin' }}
+        >
+          {claudePromptText}
+        </div>
+        <p className="text-xs text-gray-500 italic mt-1">Scroll to see the full prompt</p>
+      </div>
+      
+      {/* Manual JSON Entry */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-2">Enter Claude Response</h2>
+        <p className="text-sm mb-2">Paste Claude's JSON response here:</p>
+        <div className="flex flex-col">
+          <textarea
+            className="w-full border dark:border-gray-600 p-2 mb-2 rounded dark:bg-gray-700 font-mono text-sm"
+            rows="1"
+            placeholder='[{"name": "Coffee", "price": 3.50, "quantity": 1}, {"name": "Sandwich", "price": 7.99, "quantity": 1}]'
+            value={processingError ? '' : ''}
+            onChange={(e) => {
+              const inputText = e.target.value.trim();
+              
+              // Check for the "Not a receipt" response
+              if (inputText === "Not a receipt") {
+                setProcessingError("Claude couldn't find a receipt in the uploaded image.");
+                return;
+              }
+              
+              try {
+                const data = JSON.parse(inputText);
+                
+                if (data.items && Array.isArray(data.items)) {
+                  // Process new format with items and currency
+                  const newItems = data.items.map((item, index) => ({
+                    id: index + 1,
+                    name: item.name || 'Unnamed Item',
+                    price: parseFloat(item.price) || 0,
+                    quantity: parseInt(item.quantity) || 1
+                  }));
+                  
+                  setItems(newItems);
+                  
+                  // Update currency if detected
+                  if (data.currency) {
+                    setCurrency(data.currency);
+                  }
+                  
+                  setPersonShares({});
+                  setItemAssignments({});
+                  setExpandedRows({});
+                  setProcessingError(null);
+                } else {
+                  setProcessingError('Invalid JSON format. The response should contain an items array and currency.');
+                }
+              } catch (error) {
+                // Only show error if there's content (don't show for empty field)
+                if (inputText) {
+                  setProcessingError('Invalid JSON format. Make sure to copy the entire response from Claude.');
+                } else {
+                  setProcessingError(null);
+                }
+              }
+            }}
+          />
+          <div className="text-xs text-gray-500 dark:text-gray-400 italic mb-2">
+            Copy the entire JSON output from Claude and paste it above.
+          </div>
+        </div>
+        
+        {/* Error message */}
+        {processingError && (
+          <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded text-sm">
+            <strong>Error:</strong> {processingError}
+          </div>
+        )}
+      </div>
+
+      {/* People Management Section */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-lg font-semibold">Manage People</h2>
+          <button 
+            onClick={() => setShowPeopleSettings(!showPeopleSettings)}
+            className="text-blue-500 hover:text-blue-700 flex items-center text-sm"
+          >
+            <span className="hidden sm:inline">{showPeopleSettings ? 'Hide People' : 'Show People'}</span>
+            <span className="sm:hidden">{showPeopleSettings ? 'Hide' : 'Show'}</span>
+            <span className="ml-1">{showPeopleSettings ? '▲' : '▼'}</span>
+          </button>
+        </div>
+        
+        {/* Summary of people when collapsed */}
+        {!showPeopleSettings && (
+          <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded">
+            <div className="flex flex-wrap gap-1 items-center text-sm">
+              <span className="font-medium mr-2">People:</span>
+              {people.map((person, index) => (
+                <span key={index} className="bg-white dark:bg-gray-800 rounded-full px-2 py-1 text-xs">
+                  {person}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Full people management when expanded */}
+        {showPeopleSettings && (
+          <div className="bg-gray-100 dark:bg-gray-700 p-3 sm:p-4 rounded">
+            <div className="flex flex-col space-y-3">
+              {/* Current People List */}
+              <div className="flex flex-wrap gap-2 mb-2">
+                {people.map((person, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-center bg-white dark:bg-gray-800 rounded-full px-3 py-1"
+                  >
+                    <span className="mr-2">{person}</span>
+                    <button 
+                      onClick={() => {
+                        // Create a copy of current people array without this person
+                        const newPeople = people.filter((_, i) => i !== index);
+                        
+                        // First update the people list
+                        setPeople(newPeople);
+                        
+                        // Then remove this person from all assignments
+                        setItemAssignments(prev => {
+                          const newAssignments = { ...prev };
+                          
+                          // Check each item's assignments
+                          Object.keys(newAssignments).forEach(itemId => {
+                            // Remove the person from the assignments
+                            newAssignments[itemId] = newAssignments[itemId].filter(p => p !== person);
+                            
+                            // If no one is assigned anymore, delete the entry
+                            if (newAssignments[itemId].length === 0) {
+                              delete newAssignments[itemId];
+                            }
+                          });
+                          
+                          return newAssignments;
+                        });
+                        
+                        // Also update shares by removing the person
+                        setPersonShares(prev => {
+                          const newShares = { ...prev };
+                          
+                          // For each item that has shares
+                          Object.keys(newShares).forEach(itemId => {
+                            // Remove the person's share
+                            if (newShares[itemId] && newShares[itemId][person]) {
+                              delete newShares[itemId][person];
+                            }
+                            
+                            // If this item has other people assigned, redistribute shares evenly
+                            const assignedPeople = itemAssignments[itemId]?.filter(p => p !== person) || [];
+                            if (assignedPeople.length > 0) {
+                              newShares[itemId] = createEqualSplit(assignedPeople);
+                            } else {
+                              // If no one is assigned anymore, delete the entry
+                              delete newShares[itemId];
+                            }
+                          });
+                          
+                          return newShares;
+                        });
+                      }}
+                      className="text-red-500 hover:text-red-700"
+                      aria-label={`Remove ${person}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Add New Person */}
+              <div className="flex items-center">
+                <input
+                  type="text"
+                  placeholder="Add new person"
+                  className="border dark:border-gray-600 p-2 rounded mr-2 dark:bg-gray-700 flex-grow"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.target.value.trim()) {
+                      const newPerson = e.target.value.trim();
+                      if (!people.includes(newPerson)) {
+                        setPeople([...people, newPerson]);
+                        e.target.value = '';
+                      }
+                    }
+                  }}
+                />
+                <button 
+                  onClick={(e) => {
+                    const input = e.target.previousSibling;
+                    if (input.value.trim()) {
+                      const newPerson = input.value.trim();
+                      if (!people.includes(newPerson)) {
+                        setPeople([...people, newPerson]);
+                        input.value = '';
+                      }
+                    }
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Items table */}
+      <div className="mb-6 overflow-x-auto">
+        <h2 className="text-lg font-semibold mb-2">Assign Items</h2>
+        <table className="w-full border-collapse text-sm sm:text-base">
+          <thead>
+            <tr className="bg-gray-100 dark:bg-gray-700">
+              <th className="border dark:border-gray-600 p-1 sm:p-2 text-left">Item</th>
+              <th className="border dark:border-gray-600 p-1 sm:p-2 text-right">Price ({currency})</th>
+              <th className="border dark:border-gray-600 p-1 sm:p-2">Assigned To</th>
+              <th className="border dark:border-gray-600 p-1 sm:p-2 text-center w-16 sm:w-24">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {expandedItems.map((item) => {
+              const totalPercent = getTotalPercentForItem(item.uniqueId);
+              const isComplete = totalPercent === 100;
+              const isOverallocated = totalPercent > 100;
+              const assignees = itemAssignments[item.uniqueId] || [];
+              
+              // Only show edit fields on the first instance of each item (for items with quantity > 1)
+              const isFirstInstance = item.uniqueId.endsWith('-0');
+              // Find original item to edit
+              const originalItem = items.find(i => i.id === item.id);
+              
+              return (
+                <>
+                  <tr key={item.uniqueId} className={`
+                    ${isComplete ? 'bg-green-50 dark:bg-green-900/20' : ''}
+                    ${isOverallocated ? 'bg-red-50 dark:bg-red-900/20' : ''}
+                    hover:bg-gray-50 dark:hover:bg-gray-700
+                  `}>
+                    <td className="border dark:border-gray-600 p-1 sm:p-2">
+                      {isFirstInstance ? (
+                        <input
+                          type="text"
+                          value={originalItem.name}
+                          onChange={(e) => updateItemName(originalItem.id, e.target.value)}
+                          className="w-full border dark:border-gray-500 p-1 rounded dark:bg-gray-600"
+                        />
+                      ) : (
+                        <span>{item.name}</span>
+                      )}
+                      {item.originalQuantity > 1 && ` (${parseInt(item.uniqueId.split('-')[1]) + 1}/${item.originalQuantity})`}
+                    </td>
+                    <td className="border dark:border-gray-600 p-1 sm:p-2">
+                      {isFirstInstance ? (
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={originalItem.price}
+                          onChange={(e) => updateItemPrice(originalItem.id, e.target.value)}
+                          className="w-20 border dark:border-gray-500 p-1 rounded text-right dark:bg-gray-600"
+                        />
+                      ) : (
+                        <span className="text-right block">{item.price.toFixed(2)}</span>
+                      )}
+                    </td>
+                    
+                    {/* Assigned To Column with Toggle-Assign Buttons */}
+                    <td className="border dark:border-gray-600 p-1 sm:p-2">
+                      <div className="flex flex-wrap gap-1">
+                        {people.map(person => (
+                          <button
+                            key={person}
+                            onClick={() => togglePersonAssignment(item.uniqueId, person)}
+                            className={`px-1 sm:px-2 py-1 text-xs rounded-full 
+                              ${assignees.includes(person) 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                              }`}
+                          >
+                            {person}
+                          </button>
+                        ))}
+                      </div>
+                    </td>
+                    
+                    {/* Actions Column - Split button */}
+                    <td className="border dark:border-gray-600 p-1 sm:p-2 text-center">
+                      <button
+                        onClick={() => toggleExpandedRow(item.uniqueId)}
+                        disabled={!canItemBeSplit(item.uniqueId)}
+                        className={`px-2 sm:px-3 py-1 rounded text-xs
+                          ${canItemBeSplit(item.uniqueId)
+                            ? 'bg-blue-500 hover:bg-blue-600 text-white' 
+                            : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
+                          }
+                          ${expandedRows[item.uniqueId] ? 'bg-blue-700 dark:bg-blue-700' : ''}
+                        `}
+                      >
+                        {expandedRows[item.uniqueId] ? 'Hide Split' : 'Split'}
+                      </button>
+                    </td>
+                  </tr>
+                  
+                  {expandedRows[item.uniqueId] && canItemBeSplit(item.uniqueId) && (
+                    <tr key={`${item.uniqueId}-expanded`} className="bg-gray-50 dark:bg-gray-800 border-t-0">
+                      <td colSpan="4" className="p-2 sm:p-4 border dark:border-gray-600 border-t-0">
+                        <div className="bg-white dark:bg-gray-700 p-2 sm:p-4 rounded shadow">
+                          <h4 className="font-semibold text-sm mb-3">Adjust Split Percentages</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Percentage adjustment controls */}
+                            <div>
+                              {assignees.map(person => (
+                                <div key={person} className="flex items-center mb-2">
+                                  <span className="mr-2 w-24">{person}</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={personShares[item.uniqueId]?.[person] || 0}
+                                    onChange={(e) => handleShareChange(item.uniqueId, person, e.target.value)}
+                                    className="w-20 p-2 text-right border dark:border-gray-500 dark:bg-gray-600 rounded"
+                                  />
+                                  <span className="ml-1">%</span>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Summary and status */}
+                            <div className="flex flex-col justify-center">
+                              <div className={`text-lg mb-2 ${
+                                isComplete ? 'text-green-600 dark:text-green-400' : 
+                                isOverallocated ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'
+                              }`}>
+                                Total: {totalPercent}%
+                              </div>
+                              
+                              <div className="text-sm">
+                                {isComplete ? (
+                                  <div className="text-green-600 dark:text-green-400">✓ Perfect! The item is fully allocated.</div>
+                                ) : isOverallocated ? (
+                                  <div className="text-red-600 dark:text-red-400">⚠️ Over-allocated. Please adjust to total 100%.</div>
+                                ) : (
+                                  <div className="text-yellow-600 dark:text-yellow-400">⚠️ Under-allocated. Please adjust to total 100%.</div>
+                                )}
+                              </div>
+                              
+                              {/* Quick buttons */}
+                              <div className="mt-3">
+                                <button 
+                                  onClick={() => {
+                                    // Use the helper function for equal splitting
+                                    const newShares = { ...personShares };
+                                    newShares[item.uniqueId] = createEqualSplit(assignees);
+                                    setPersonShares(newShares);
+                                  }}
+                                  className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded mr-2"
+                                >
+                                  Equal Split
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Currency Settings */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-lg font-semibold">Currency Settings</h2>
+          <button 
+            onClick={() => setShowCurrencySettings(!showCurrencySettings)}
+            className="text-blue-500 hover:text-blue-700 flex items-center text-sm"
+          >
+            <span className="hidden sm:inline">{showCurrencySettings ? 'Hide Settings' : 'Show Settings'}</span>
+            <span className="sm:hidden">{showCurrencySettings ? 'Hide' : 'Show'}</span>
+            <span className="ml-1">{showCurrencySettings ? '▲' : '▼'}</span>
+          </button>
+        </div>
+        
+        {/* Summary of currency when collapsed */}
+        {!showCurrencySettings && (
+          <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded">
+            <div className="flex flex-col sm:flex-row sm:items-center text-sm">
+              <span className="font-medium sm:mr-2">Bill Currency: {currency}</span>
+              {currency !== homeCurrency && exchangeRate !== 1 && (
+                <>
+                  <span className="hidden sm:inline mx-2">→</span>
+                  <span className="font-medium mt-1 sm:mt-0">
+                    <span className="sm:hidden">→ </span>
+                    Home Currency: {homeCurrency} (Rate: {exchangeRate})
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Full settings when expanded */}
+        {showCurrencySettings && (
+          <div className="bg-gray-100 dark:bg-gray-700 p-3 sm:p-4 rounded">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Bill Currency</label>
+              <div className="flex items-center">
+                <select 
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="p-2 border dark:border-gray-600 rounded mr-2 dark:bg-gray-700"
+                >
+                  <option value="£">£ (GBP)</option>
+                  <option value="€">€ (EUR)</option>
+                  <option value="$">$ (USD)</option>
+                  <option value="¥">¥ (JPY/CNY)</option>
+                  <option value="₹">₹ (INR)</option>
+                  <option value="₽">₽ (RUB)</option>
+                  <option value="₩">₩ (KRW)</option>
+                  <option value="A$">A$ (AUD)</option>
+                  <option value="C$">C$ (CAD)</option>
+                </select>
+                <p className="text-sm text-gray-500">Currency detected from receipt or manually selected</p>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Home Currency</label>
+              <div className="flex items-center">
+                <select 
+                  value={homeCurrency}
+                  onChange={(e) => setHomeCurrency(e.target.value)}
+                  className="p-2 border dark:border-gray-600 rounded mr-2 dark:bg-gray-700"
+                >
+                  <option value="£">£ (GBP)</option>
+                  <option value="€">€ (EUR)</option>
+                  <option value="$">$ (USD)</option>
+                  <option value="¥">¥ (JPY/CNY)</option>
+                  <option value="₹">₹ (INR)</option>
+                  <option value="₽">₽ (RUB)</option>
+                  <option value="₩">₩ (KRW)</option>
+                  <option value="A$">A$ (AUD)</option>
+                  <option value="C$">C$ (CAD)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Exchange Rate (1 {currency} = x {homeCurrency})</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={exchangeRate}
+                onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 1)}
+                className="w-32 p-2 border dark:border-gray-600 rounded dark:bg-gray-700"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                If bill is in home currency, leave as 1
+              </p>
+            </div>
+            <div className="flex items-end">
+              <button 
+                onClick={() => setExchangeRate(1)}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+              >
+                Reset to 1:1
+              </button>
+            </div>
+          </div>
+        </div>
+        )}
+      </div>
+
+      {/* Summary section */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-2">Summary</h2>
+        <div className="bg-gray-100 dark:bg-gray-700 p-3 sm:p-4 rounded">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-2">
+            {/* What each person owes */}
+            <div className="p-2 rounded bg-white dark:bg-gray-800">
+              <h3 className="font-semibold text-sm sm:text-base mb-2">Items Breakdown</h3>
+              {people.map((person, i) => {
+                const amount = calculatePersonTotal(person);
+                const homeAmount = convertToHomeCurrency(parseFloat(amount)).toFixed(2);
+                const showConversion = currency !== homeCurrency && exchangeRate !== 1;
+                
+                return (
+                  <div key={i} className="flex justify-between py-1 border-b dark:border-gray-700">
+                    <span>{person}:</span>
+                    <span className="font-semibold">
+                      {currency}{amount}
+                      {showConversion && 
+                        <span className="text-gray-500 ml-1 text-sm">
+                          ({homeCurrency}{homeAmount})
+                        </span>
+                      }
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Total bill information */}
+            <div className="p-2 rounded bg-white dark:bg-gray-800">
+              <h3 className="font-semibold text-sm sm:text-base mb-2">Bill Information</h3>
+              {/* Bill total with conversion if applicable */}
+              <div className="flex justify-between py-1 border-b dark:border-gray-700">
+                <span className="font-bold">Total Bill:</span>
+                <span className="font-bold">
+                  {currency}{billTotal}
+                  {currency !== homeCurrency && exchangeRate !== 1 && 
+                    <span className="text-gray-500 ml-1 text-sm">
+                      ({homeCurrency}{convertToHomeCurrency(parseFloat(billTotal)).toFixed(2)})
+                    </span>
+                  }
+                </span>
+              </div>
+              
+              {/* Allocated amount with conversion if applicable */}
+              <div className="flex justify-between py-1">
+                <span className={`font-semibold ${parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                  Allocated:
+                </span>
+                <span className={`font-semibold ${parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                  {currency}{allocatedTotal} 
+                  {parseFloat(allocatedTotal) !== parseFloat(billTotal) && 
+                    <span className="ml-1">
+                      ({(parseFloat(allocatedTotal) - parseFloat(billTotal)).toFixed(2)})
+                    </span>
+                  }
+                  {currency !== homeCurrency && exchangeRate !== 1 && 
+                    <span className="text-gray-500 ml-1 text-sm">
+                      ({homeCurrency}{convertToHomeCurrency(parseFloat(allocatedTotal)).toFixed(2)})
+                    </span>
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

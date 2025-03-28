@@ -1,0 +1,8 @@
+{{ $type := .Get "type" | default "info" }}
+{{ $title := .Get "title" }}
+<div class="admonition admonition-{{ $type }}">
+  {{ if $title }}<div class="admonition-title">{{ $title }}</div>{{ end }}
+  <div class="admonition-content">
+    {{ .Inner | markdownify }}
+  </div>
+</div>
