@@ -53,6 +53,23 @@ const Component = () => {
   
   useEffect(() => {
     localStorage.setItem('billSplitter_itemAssignments', JSON.stringify(itemAssignments));
+    
+    // Clean up expanded rows for items that can't be split
+    setExpandedRows(prev => {
+      const newState = { ...prev };
+      let hasChanges = false;
+      
+      // Check each expanded row
+      Object.keys(newState).forEach(itemId => {
+        if (!canItemBeSplit(itemId)) {
+          delete newState[itemId];
+          hasChanges = true;
+        }
+      });
+      
+      // Only update if something changed
+      return hasChanges ? newState : prev;
+    });
   }, [itemAssignments]);
   
   useEffect(() => {
@@ -206,15 +223,24 @@ const Component = () => {
     return itemAssignments[itemUniqueId]?.length > 1;
   };
   
+  // Check if an item can be split (has 2+ people assigned)
+  const canItemBeSplit = (itemUniqueId) => {
+    return (itemAssignments[itemUniqueId]?.length ?? 0) >= 2;
+  };
+  
   // Toggle expanded row
   const toggleExpandedRow = (itemUniqueId) => {
+    // Only allow toggling if the item can be split
+    if (!canItemBeSplit(itemUniqueId)) return;
+    
     setExpandedRows(prev => {
       const newState = { ...prev };
-      newState[itemUniqueId] = !newState[itemUniqueId];
       
-      // If we're closing the row, cleanup by removing the key
-      if (!newState[itemUniqueId]) {
-        delete newState[itemUniqueId];
+      // Toggle state (either add or remove)
+      if (newState[itemUniqueId]) {
+        delete newState[itemUniqueId]; // Close row
+      } else {
+        newState[itemUniqueId] = true; // Open row
       }
       
       return newState;
@@ -344,9 +370,9 @@ const Component = () => {
                     <td className="border dark:border-gray-600 p-2 text-center">
                       <button
                         onClick={() => toggleExpandedRow(item.uniqueId)}
-                        disabled={assignees.length < 2}
+                        disabled={!canItemBeSplit(item.uniqueId)}
                         className={`px-3 py-1 rounded text-xs
-                          ${assignees.length >= 2 
+                          ${canItemBeSplit(item.uniqueId)
                             ? 'bg-blue-500 hover:bg-blue-600 text-white' 
                             : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
                           }
@@ -358,7 +384,7 @@ const Component = () => {
                     </td>
                   </tr>
                   
-                  {expandedRows[item.uniqueId] && assignees.length >= 2 && (
+                  {expandedRows[item.uniqueId] && canItemBeSplit(item.uniqueId) && (
                     <tr key={`${item.uniqueId}-expanded`} className="bg-gray-50 dark:bg-gray-800 border-t-0">
                       <td colSpan="4" className="p-4 border dark:border-gray-600 border-t-0">
                         <div className="bg-white dark:bg-gray-700 p-4 rounded shadow">
