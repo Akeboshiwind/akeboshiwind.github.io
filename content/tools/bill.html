@@ -57,6 +57,7 @@ const Component = () => {
   const [homeCurrency, setHomeCurrency] = useState(loadFromLocalStorage('homeCurrency', '£'));
   const [exchangeRate, setExchangeRate] = useState(loadFromLocalStorage('exchangeRate', 1));
   const [showCurrencySettings, setShowCurrencySettings] = useState(loadFromLocalStorage('showCurrencySettings', false));
+  const [showPeopleSettings, setShowPeopleSettings] = useState(loadFromLocalStorage('showPeopleSettings', true));
   
   const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price, and quantity. Also identify the currency used in the receipt (£, $, €, etc.).
 
@@ -125,6 +126,10 @@ Here's an example of the expected format with sample data:
   useEffect(() => {
     localStorage.setItem('billSplitter_showCurrencySettings', JSON.stringify(showCurrencySettings));
   }, [showCurrencySettings]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_showPeopleSettings', JSON.stringify(showPeopleSettings));
+  }, [showPeopleSettings]);
 
   // Expand items by quantity
   const expandedItems = items.flatMap(item => 
@@ -314,6 +319,7 @@ Here's an example of the expected format with sample data:
     localStorage.removeItem('billSplitter_homeCurrency');
     localStorage.removeItem('billSplitter_exchangeRate');
     localStorage.removeItem('billSplitter_showCurrencySettings');
+    localStorage.removeItem('billSplitter_showPeopleSettings');
     
     // Reset state
     setPeople(['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']);
@@ -326,6 +332,7 @@ Here's an example of the expected format with sample data:
     setHomeCurrency('£');
     setExchangeRate(1);
     setShowCurrencySettings(false);
+    setShowPeopleSettings(true);
   };
 
   return (
@@ -453,6 +460,142 @@ Here's an example of the expected format with sample data:
         {processingError && (
           <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded text-sm">
             <strong>Error:</strong> {processingError}
+          </div>
+        )}
+      </div>
+
+      {/* People Management Section */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-lg font-semibold">Manage People</h2>
+          <button 
+            onClick={() => setShowPeopleSettings(!showPeopleSettings)}
+            className="text-blue-500 hover:text-blue-700 flex items-center text-sm"
+          >
+            <span className="hidden sm:inline">{showPeopleSettings ? 'Hide People' : 'Show People'}</span>
+            <span className="sm:hidden">{showPeopleSettings ? 'Hide' : 'Show'}</span>
+            <span className="ml-1">{showPeopleSettings ? '▲' : '▼'}</span>
+          </button>
+        </div>
+        
+        {/* Summary of people when collapsed */}
+        {!showPeopleSettings && (
+          <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded">
+            <div className="flex flex-wrap gap-1 items-center text-sm">
+              <span className="font-medium mr-2">People:</span>
+              {people.map((person, index) => (
+                <span key={index} className="bg-white dark:bg-gray-800 rounded-full px-2 py-1 text-xs">
+                  {person}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Full people management when expanded */}
+        {showPeopleSettings && (
+          <div className="bg-gray-100 dark:bg-gray-700 p-3 sm:p-4 rounded">
+            <div className="flex flex-col space-y-3">
+              {/* Current People List */}
+              <div className="flex flex-wrap gap-2 mb-2">
+                {people.map((person, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-center bg-white dark:bg-gray-800 rounded-full px-3 py-1"
+                  >
+                    <span className="mr-2">{person}</span>
+                    <button 
+                      onClick={() => {
+                        // Create a copy of current people array without this person
+                        const newPeople = people.filter((_, i) => i !== index);
+                        
+                        // First update the people list
+                        setPeople(newPeople);
+                        
+                        // Then remove this person from all assignments
+                        setItemAssignments(prev => {
+                          const newAssignments = { ...prev };
+                          
+                          // Check each item's assignments
+                          Object.keys(newAssignments).forEach(itemId => {
+                            // Remove the person from the assignments
+                            newAssignments[itemId] = newAssignments[itemId].filter(p => p !== person);
+                            
+                            // If no one is assigned anymore, delete the entry
+                            if (newAssignments[itemId].length === 0) {
+                              delete newAssignments[itemId];
+                            }
+                          });
+                          
+                          return newAssignments;
+                        });
+                        
+                        // Also update shares by removing the person
+                        setPersonShares(prev => {
+                          const newShares = { ...prev };
+                          
+                          // For each item that has shares
+                          Object.keys(newShares).forEach(itemId => {
+                            // Remove the person's share
+                            if (newShares[itemId] && newShares[itemId][person]) {
+                              delete newShares[itemId][person];
+                            }
+                            
+                            // If this item has other people assigned, redistribute shares evenly
+                            const assignedPeople = itemAssignments[itemId]?.filter(p => p !== person) || [];
+                            if (assignedPeople.length > 0) {
+                              newShares[itemId] = createEqualSplit(assignedPeople);
+                            } else {
+                              // If no one is assigned anymore, delete the entry
+                              delete newShares[itemId];
+                            }
+                          });
+                          
+                          return newShares;
+                        });
+                      }}
+                      className="text-red-500 hover:text-red-700"
+                      aria-label={`Remove ${person}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Add New Person */}
+              <div className="flex items-center">
+                <input
+                  type="text"
+                  placeholder="Add new person"
+                  className="border dark:border-gray-600 p-2 rounded mr-2 dark:bg-gray-700 flex-grow"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.target.value.trim()) {
+                      const newPerson = e.target.value.trim();
+                      if (!people.includes(newPerson)) {
+                        setPeople([...people, newPerson]);
+                        e.target.value = '';
+                      }
+                    }
+                  }}
+                />
+                <button 
+                  onClick={(e) => {
+                    const input = e.target.previousSibling;
+                    if (input.value.trim()) {
+                      const newPerson = input.value.trim();
+                      if (!people.includes(newPerson)) {
+                        setPeople([...people, newPerson]);
+                        input.value = '';
+                      }
+                    }
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
