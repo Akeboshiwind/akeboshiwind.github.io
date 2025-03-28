@@ -39,9 +39,11 @@ const Component = () => {
  { name: 'Jarra', price: 4.10, quantity: 2 },
  { name: 'Cuba Libre', price: 5.80, quantity: 1 }
  ].map((item, index) => ({ ...item, id: index + 1 }));
+
+ const defaultPeople = ['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']
  
  // Initialize state with localStorage or defaults
- const [people, setPeople] = useState(loadFromLocalStorage('people', ['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']));
+ const [people, setPeople] = useState(loadFromLocalStorage('people', defaultPeople));
  const [personShares, setPersonShares] = useState(loadFromLocalStorage('personShares', {}));
  const [itemAssignments, setItemAssignments] = useState(loadFromLocalStorage('itemAssignments', {}));
  const [items, setItems] = useState(loadFromLocalStorage('items', defaultItems));
@@ -51,7 +53,7 @@ const Component = () => {
  const [homeCurrency, setHomeCurrency] = useState(loadFromLocalStorage('homeCurrency', '£'));
  const [exchangeRate, setExchangeRate] = useState(loadFromLocalStorage('exchangeRate', 1));
  const [showCurrencySettings, setShowCurrencySettings] = useState(loadFromLocalStorage('showCurrencySettings', false));
- const [showPeopleSettings, setShowPeopleSettings] = useState(loadFromLocalStorage('showPeopleSettings', true));
+ const [showPeopleSettings, setShowPeopleSettings] = useState(loadFromLocalStorage('showPeopleSettings', false));
  
  const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price, and quantity. Also identify the currency used in the receipt (£, $, €, etc.).
 
@@ -316,7 +318,7 @@ Here's an example of the expected format with sample data:
  localStorage.removeItem('billSplitter_showPeopleSettings');
  
  // Reset state
- setPeople(['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']);
+ setPeople(defaultPeople);
  setPersonShares({});
  setItemAssignments({});
  setItems(defaultItems);
@@ -326,7 +328,7 @@ Here's an example of the expected format with sample data:
  setHomeCurrency('£');
  setExchangeRate(1);
  setShowCurrencySettings(false);
- setShowPeopleSettings(true);
+ setShowPeopleSettings(false);
  };
 
  return (
