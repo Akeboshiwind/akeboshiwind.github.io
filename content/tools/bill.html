@@ -98,25 +98,39 @@ const Component = () => {
     updateSharesFromAssignments(newAssignments);
   };
 
+  // Helper function to create an equal split distribution
+  const createEqualSplit = (people) => {
+    const sharePerPerson = Math.floor((100 / people.length) * 100) / 100; // Round to 2 decimal places
+    const shares = {};
+    
+    // Initialize shares to zero
+    people.forEach(person => {
+      shares[person] = 0;
+    });
+    
+    // Distribute shares and handle rounding error
+    let totalAllocated = 0;
+    people.forEach((person, index) => {
+      // For the last person, make sure we hit exactly 100%
+      if (index === people.length - 1) {
+        shares[person] = 100 - totalAllocated;
+      } else {
+        shares[person] = sharePerPerson;
+        totalAllocated += sharePerPerson;
+      }
+    });
+    
+    return shares;
+  };
+  
   // Update shares based on assignments (evenly split)
   const updateSharesFromAssignments = (assignments) => {
     const newShares = {};
     
     Object.entries(assignments).forEach(([itemUniqueId, assignedPeople]) => {
-      if (!newShares[itemUniqueId]) {
-        newShares[itemUniqueId] = {};
+      if (assignedPeople.length > 0) {
+        newShares[itemUniqueId] = createEqualSplit(assignedPeople);
       }
-      
-      // Reset shares for this item
-      people.forEach(person => {
-        newShares[itemUniqueId][person] = 0;
-      });
-      
-      // Evenly divide among assigned people
-      const sharePerPerson = 100 / assignedPeople.length;
-      assignedPeople.forEach(person => {
-        newShares[itemUniqueId][person] = sharePerPerson;
-      });
     });
     
     setPersonShares(newShares);
@@ -139,7 +153,13 @@ const Component = () => {
   // Calculate total percentage for an item
   const getTotalPercentForItem = (itemUniqueId) => {
     if (!personShares[itemUniqueId]) return 0;
-    return Object.values(personShares[itemUniqueId]).reduce((sum, share) => sum + share, 0);
+    const total = Object.values(personShares[itemUniqueId]).reduce((sum, share) => sum + share, 0);
+    
+    // Handle floating point rounding issues
+    if (Math.abs(total - 100) < 0.1) {
+      return 100;
+    }
+    return Math.round(total * 100) / 100; // Round to 2 decimal places
   };
 
   // Calculate what each person owes
@@ -385,15 +405,9 @@ const Component = () => {
                               <div className="mt-3">
                                 <button 
                                   onClick={() => {
-                                    // Set equal distribution
-                                    const sharePerPerson = 100 / assignees.length;
+                                    // Use the helper function for equal splitting
                                     const newShares = { ...personShares };
-                                    if (!newShares[item.uniqueId]) {
-                                      newShares[item.uniqueId] = {};
-                                    }
-                                    assignees.forEach(person => {
-                                      newShares[item.uniqueId][person] = sharePerPerson;
-                                    });
+                                    newShares[item.uniqueId] = createEqualSplit(assignees);
                                     setPersonShares(newShares);
                                   }}
                                   className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded mr-2"
