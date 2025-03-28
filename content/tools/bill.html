@@ -11,6 +11,17 @@ const Component = () => {
   const loadFromLocalStorage = (key, defaultValue) => {
     try {
       const savedData = localStorage.getItem(`billSplitter_${key}`);
+      
+      // Special handling for currency and exchangeRate which are not JSON objects
+      if (key === 'currency' || key === 'homeCurrency') {
+        return savedData || defaultValue;
+      }
+      
+      if (key === 'exchangeRate') {
+        return savedData ? parseFloat(savedData) : defaultValue;
+      }
+      
+      // For other data, use JSON parsing
       return savedData ? JSON.parse(savedData) : defaultValue;
     } catch (error) {
       console.error(`Error loading ${key} from localStorage:`, error);
@@ -42,17 +53,24 @@ const Component = () => {
   const [items, setItems] = useState(loadFromLocalStorage('items', defaultItems));
   const [expandedRows, setExpandedRows] = useState(loadFromLocalStorage('expandedRows', {}));
   const [processingError, setProcessingError] = useState(null);
+  const [currency, setCurrency] = useState(loadFromLocalStorage('currency', '£'));
+  const [homeCurrency, setHomeCurrency] = useState(loadFromLocalStorage('homeCurrency', '£'));
+  const [exchangeRate, setExchangeRate] = useState(loadFromLocalStorage('exchangeRate', 1));
+  const [showCurrencySettings, setShowCurrencySettings] = useState(loadFromLocalStorage('showCurrencySettings', false));
   
-  const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price, and quantity. Format the output as a JSON array of items.
+  const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price, and quantity. Also identify the currency used in the receipt (£, $, €, etc.).
 
-Each item should have a name, price (as a number), and quantity (as a number) property.
+Format the output as a JSON object with two fields:
+1. "items": An array of items, each with name, price (as a number), and quantity (as a number)
+2. "currency": The currency symbol used in the receipt (£, $, €, etc.)
 
 If this is not a receipt, simply respond with: "Not a receipt"
 
 Here's an example of the expected format with sample data:
-${JSON.stringify(
-  defaultItems.map(({id, ...item}) => item),
-)}`;
+{
+  "items": ${JSON.stringify(defaultItems.map(({id, ...item}) => item))},
+  "currency": "£"
+}`;
   
   // Save to localStorage when state changes
   useEffect(() => {
@@ -91,6 +109,22 @@ ${JSON.stringify(
   useEffect(() => {
     localStorage.setItem('billSplitter_expandedRows', JSON.stringify(expandedRows));
   }, [expandedRows]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_currency', currency);
+  }, [currency]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_homeCurrency', homeCurrency);
+  }, [homeCurrency]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_exchangeRate', exchangeRate.toString());
+  }, [exchangeRate]);
+  
+  useEffect(() => {
+    localStorage.setItem('billSplitter_showCurrencySettings', JSON.stringify(showCurrencySettings));
+  }, [showCurrencySettings]);
 
   // Expand items by quantity
   const expandedItems = items.flatMap(item => 
@@ -191,6 +225,15 @@ ${JSON.stringify(
     return Math.round(total * 100) / 100; // Round to 2 decimal places
   };
 
+  // Helper function to convert to home currency if needed
+  const convertToHomeCurrency = (amount) => {
+    // If currencies are the same or exchange rate is 1, no conversion needed
+    if (currency === homeCurrency || exchangeRate === 1) {
+      return amount;
+    }
+    return amount * exchangeRate;
+  };
+
   // Calculate what each person owes
   const calculatePersonTotal = (person) => {
     let total = 0;
@@ -267,6 +310,10 @@ ${JSON.stringify(
     localStorage.removeItem('billSplitter_itemAssignments');
     localStorage.removeItem('billSplitter_items');
     localStorage.removeItem('billSplitter_expandedRows');
+    localStorage.removeItem('billSplitter_currency');
+    localStorage.removeItem('billSplitter_homeCurrency');
+    localStorage.removeItem('billSplitter_exchangeRate');
+    localStorage.removeItem('billSplitter_showCurrencySettings');
     
     // Reset state
     setPeople(['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver']);
@@ -275,6 +322,10 @@ ${JSON.stringify(
     setItems(defaultItems);
     setExpandedRows({});
     setProcessingError(null);
+    setCurrency('£');
+    setHomeCurrency('£');
+    setExchangeRate(1);
+    setShowCurrencySettings(false);
   };
 
   return (
@@ -286,7 +337,9 @@ ${JSON.stringify(
             <p><strong>Instructions:</strong></p>
             <ol className="list-decimal pl-5 space-y-1">
               <li>Scan a receipt or use the default items</li>
+              <li>Claude will detect the currency from your receipt</li>
               <li>Edit item names and prices as needed</li>
+              <li>Adjust currency settings if needed (for foreign currency conversion)</li>
               <li>Click on person buttons to assign people to items</li>
               <li>When 2+ people are assigned, click the <strong>Split</strong> button</li>
               <li>Adjust percentages in the expanded panel to customize the split</li>
@@ -344,9 +397,9 @@ ${JSON.stringify(
               try {
                 const data = JSON.parse(inputText);
                 
-                if (Array.isArray(data)) {
-                  // Direct array format - map the items to our format
-                  const newItems = data.map((item, index) => ({
+                if (data.items && Array.isArray(data.items)) {
+                  // Process new format with items and currency
+                  const newItems = data.items.map((item, index) => ({
                     id: index + 1,
                     name: item.name || 'Unnamed Item',
                     price: parseFloat(item.price) || 0,
@@ -354,28 +407,18 @@ ${JSON.stringify(
                   }));
                   
                   setItems(newItems);
-                  setPersonShares({});
-                  setItemAssignments({});
-                  setExpandedRows({});
-                  setProcessingError(null);
-                } else if (data.ok && Array.isArray(data.result)) {
-                  // Support the old format too (for backward compatibility)
-                  const newItems = data.result.map((item, index) => ({
-                    id: index + 1,
-                    name: item.name || 'Unnamed Item',
-                    price: parseFloat(item.price) || 0,
-                    quantity: parseInt(item.quantity) || 1
-                  }));
                   
-                  setItems(newItems);
+                  // Update currency if detected
+                  if (data.currency) {
+                    setCurrency(data.currency);
+                  }
+                  
                   setPersonShares({});
                   setItemAssignments({});
                   setExpandedRows({});
                   setProcessingError(null);
-                } else if (data.ok === false) {
-                  setProcessingError(data.reason || 'Invalid receipt data');
                 } else {
-                  setProcessingError('Invalid JSON format. The response should be an array of items with name, price, and quantity properties.');
+                  setProcessingError('Invalid JSON format. The response should contain an items array and currency.');
                 }
               } catch (error) {
                 // Only show error if there's content (don't show for empty field)
@@ -407,7 +450,7 @@ ${JSON.stringify(
           <thead>
             <tr className="bg-gray-100 dark:bg-gray-700">
               <th className="border dark:border-gray-600 p-2 text-left">Item</th>
-              <th className="border dark:border-gray-600 p-2 text-right">Price (€)</th>
+              <th className="border dark:border-gray-600 p-2 text-right">Price ({currency})</th>
               <th className="border dark:border-gray-600 p-2">Assigned To</th>
               <th className="border dark:border-gray-600 p-2 text-center w-24">Actions</th>
             </tr>
@@ -566,6 +609,106 @@ ${JSON.stringify(
         </table>
       </div>
 
+      {/* Currency Settings */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-lg font-semibold">Currency Settings</h2>
+          <button 
+            onClick={() => setShowCurrencySettings(!showCurrencySettings)}
+            className="text-blue-500 hover:text-blue-700 flex items-center"
+          >
+            {showCurrencySettings ? 'Hide Settings' : 'Show Settings'}
+            <span className="ml-1">{showCurrencySettings ? '▲' : '▼'}</span>
+          </button>
+        </div>
+        
+        {/* Summary of currency when collapsed */}
+        {!showCurrencySettings && (
+          <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="font-medium mr-2">Bill Currency: {currency}</span>
+              {currency !== homeCurrency && exchangeRate !== 1 && (
+                <>
+                  <span className="mx-2">→</span>
+                  <span className="font-medium">Home Currency: {homeCurrency} (Rate: {exchangeRate})</span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Full settings when expanded */}
+        {showCurrencySettings && (
+          <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Bill Currency</label>
+              <div className="flex items-center">
+                <select 
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="p-2 border dark:border-gray-600 rounded mr-2 dark:bg-gray-700"
+                >
+                  <option value="£">£ (GBP)</option>
+                  <option value="€">€ (EUR)</option>
+                  <option value="$">$ (USD)</option>
+                  <option value="¥">¥ (JPY/CNY)</option>
+                  <option value="₹">₹ (INR)</option>
+                  <option value="₽">₽ (RUB)</option>
+                  <option value="₩">₩ (KRW)</option>
+                  <option value="A$">A$ (AUD)</option>
+                  <option value="C$">C$ (CAD)</option>
+                </select>
+                <p className="text-sm text-gray-500">Currency detected from receipt or manually selected</p>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Home Currency</label>
+              <div className="flex items-center">
+                <select 
+                  value={homeCurrency}
+                  onChange={(e) => setHomeCurrency(e.target.value)}
+                  className="p-2 border dark:border-gray-600 rounded mr-2 dark:bg-gray-700"
+                >
+                  <option value="£">£ (GBP)</option>
+                  <option value="€">€ (EUR)</option>
+                  <option value="$">$ (USD)</option>
+                  <option value="¥">¥ (JPY/CNY)</option>
+                  <option value="₹">₹ (INR)</option>
+                  <option value="₽">₽ (RUB)</option>
+                  <option value="₩">₩ (KRW)</option>
+                  <option value="A$">A$ (AUD)</option>
+                  <option value="C$">C$ (CAD)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Exchange Rate (1 {currency} = x {homeCurrency})</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={exchangeRate}
+                onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 1)}
+                className="w-32 p-2 border dark:border-gray-600 rounded dark:bg-gray-700"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                If bill is in home currency, leave as 1
+              </p>
+            </div>
+            <div className="flex items-end">
+              <button 
+                onClick={() => setExchangeRate(1)}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+              >
+                Reset to 1:1
+              </button>
+            </div>
+          </div>
+        </div>
+        )}
+      </div>
+
       {/* Summary section */}
       <div className="mb-6">
         <h2 className="text-lg font-semibold mb-2">Summary</h2>
@@ -574,29 +717,59 @@ ${JSON.stringify(
             {/* What each person owes */}
             <div className="p-2 rounded bg-white dark:bg-gray-800">
               <h3 className="font-semibold mb-2">Items Breakdown</h3>
-              {people.map((person, i) => (
-                <div key={i} className="flex justify-between py-1 border-b dark:border-gray-700">
-                  <span>{person}:</span>
-                  <span className="font-semibold">€{calculatePersonTotal(person)}</span>
-                </div>
-              ))}
+              {people.map((person, i) => {
+                const amount = calculatePersonTotal(person);
+                const homeAmount = convertToHomeCurrency(parseFloat(amount)).toFixed(2);
+                const showConversion = currency !== homeCurrency && exchangeRate !== 1;
+                
+                return (
+                  <div key={i} className="flex justify-between py-1 border-b dark:border-gray-700">
+                    <span>{person}:</span>
+                    <span className="font-semibold">
+                      {currency}{amount}
+                      {showConversion && 
+                        <span className="text-gray-500 ml-1 text-sm">
+                          ({homeCurrency}{homeAmount})
+                        </span>
+                      }
+                    </span>
+                  </div>
+                );
+              })}
             </div>
             
             {/* Total bill information */}
             <div className="p-2 rounded bg-white dark:bg-gray-800">
               <h3 className="font-semibold mb-2">Bill Information</h3>
+              {/* Bill total with conversion if applicable */}
               <div className="flex justify-between py-1 border-b dark:border-gray-700">
                 <span className="font-bold">Total Bill:</span>
-                <span className="font-bold">€{billTotal}</span>
+                <span className="font-bold">
+                  {currency}{billTotal}
+                  {currency !== homeCurrency && exchangeRate !== 1 && 
+                    <span className="text-gray-500 ml-1 text-sm">
+                      ({homeCurrency}{convertToHomeCurrency(parseFloat(billTotal)).toFixed(2)})
+                    </span>
+                  }
+                </span>
               </div>
+              
+              {/* Allocated amount with conversion if applicable */}
               <div className="flex justify-between py-1">
                 <span className={`font-semibold ${parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                   Allocated:
                 </span>
                 <span className={`font-semibold ${parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                  €{allocatedTotal} 
+                  {currency}{allocatedTotal} 
                   {parseFloat(allocatedTotal) !== parseFloat(billTotal) && 
-                    ` (${(parseFloat(allocatedTotal) - parseFloat(billTotal)).toFixed(2)})`
+                    <span className="ml-1">
+                      ({(parseFloat(allocatedTotal) - parseFloat(billTotal)).toFixed(2)})
+                    </span>
+                  }
+                  {currency !== homeCurrency && exchangeRate !== 1 && 
+                    <span className="text-gray-500 ml-1 text-sm">
+                      ({homeCurrency}{convertToHomeCurrency(parseFloat(allocatedTotal)).toFixed(2)})
+                    </span>
                   }
                 </span>
               </div>
