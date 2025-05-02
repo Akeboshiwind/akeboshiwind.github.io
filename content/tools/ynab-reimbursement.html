@@ -1,0 +1,1295 @@
+---
+title: YNAB Reimbursement Report
+date: 2025-05-02
+layout: react
+---
+
+// Import YNAB library
+const script = document.createElement('script');
+script.src = "https://unpkg.com/ynab@2.9.0/dist/browser/ynab.js";
+script.async = true;
+shadowRoot.appendChild(script);
+
+const { useState, useEffect } = React;
+
+const Component = () => {
+  // Constants and configuration keys
+  const CONFIG_PREFIX = 'ynabReimbursement_';
+  const ACCOUNT_TYPES = ['Unset', 'His', 'Hers', 'Shared'];
+  const CATEGORY_TYPES = ['Unset', 'His', 'Hers', 'Shared'];
+  
+  // State initialization with localStorage
+  const loadFromStorage = (key, defaultValue) => {
+    try {
+      const value = localStorage.getItem(`${CONFIG_PREFIX}${key}`);
+      return value !== null ? JSON.parse(value) : defaultValue;
+    } catch (error) {
+      console.error(`Error loading ${key} from localStorage:`, error);
+      return defaultValue;
+    }
+  };
+  
+  // Config states
+  const [accessToken, setAccessToken] = useState(loadFromStorage('accessToken', ''));
+  const [selectedBudgetId, setSelectedBudgetId] = useState(loadFromStorage('selectedBudgetId', ''));
+  const [budgets, setBudgets] = useState(loadFromStorage('budgets', []));
+  
+  // Data states
+  const [accounts, setAccounts] = useState(loadFromStorage('accounts', []));
+  const [categories, setCategories] = useState(loadFromStorage('categories', []));
+  const [categoryGroups, setCategoryGroups] = useState(loadFromStorage('categoryGroups', []));
+  const [transactions, setTransactions] = useState(loadFromStorage('transactions', []));
+  const [availableMonths, setAvailableMonths] = useState(loadFromStorage('availableMonths', []));
+  
+  // Account and category type configurations
+  const [accountTypes, setAccountTypes] = useState(loadFromStorage('accountTypes', {}));
+  const [categoryTypes, setCategoryTypes] = useState(loadFromStorage('categoryTypes', {}));
+  const [categoryGroupTypes, setCategoryGroupTypes] = useState(loadFromStorage('categoryGroupTypes', {}));
+  
+  // UI states
+  const [currentView, setCurrentView] = useState('main');
+  const [configTab, setConfigTab] = useState('general');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [warnings, setWarnings] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  });
+  const [showConfigMenu, setShowConfigMenu] = useState(false);
+  
+  // Save to localStorage when state changes
+  useEffect(() => {
+    localStorage.setItem(`${CONFIG_PREFIX}accessToken`, JSON.stringify(accessToken));
+  }, [accessToken]);
+  
+  useEffect(() => {
+    localStorage.setItem(`${CONFIG_PREFIX}selectedBudgetId`, JSON.stringify(selectedBudgetId));
+  }, [selectedBudgetId]);
+  
+  useEffect(() => {
+    localStorage.setItem(`${CONFIG_PREFIX}budgets`, JSON.stringify(budgets));
+  }, [budgets]);
+  
+  useEffect(() => {
+    localStorage.setItem(`${CONFIG_PREFIX}accounts`, JSON.stringify(accounts));
+  }, [accounts]);
+  
+  useEffect(() => {
+    localStorage.setItem(`${CONFIG_PREFIX}categories`, JSON.stringify(categories));
+  }, [categories]);
+  
+  useEffect(() => {
+    localStorage.setItem(`${CONFIG_PREFIX}categoryGroups`, JSON.stringify(categoryGroups));
+  }, [categoryGroups]);
+  
+  useEffect(() => {
+    localStorage.setItem(`${CONFIG_PREFIX}transactions`, JSON.stringify(transactions));
+  }, [transactions]);
+  
+  useEffect(() => {
+    localStorage.setItem(`${CONFIG_PREFIX}availableMonths`, JSON.stringify(availableMonths));
+  }, [availableMonths]);
+  
+  useEffect(() => {
+    localStorage.setItem(`${CONFIG_PREFIX}accountTypes`, JSON.stringify(accountTypes));
+  }, [accountTypes]);
+  
+  useEffect(() => {
+    localStorage.setItem(`${CONFIG_PREFIX}categoryTypes`, JSON.stringify(categoryTypes));
+  }, [categoryTypes]);
+  
+  useEffect(() => {
+    localStorage.setItem(`${CONFIG_PREFIX}categoryGroupTypes`, JSON.stringify(categoryGroupTypes));
+  }, [categoryGroupTypes]);
+  
+  // Determine current view based on configuration state
+  useEffect(() => {
+    if (!accessToken) {
+      setCurrentView('tokenInput');
+    } else if (!selectedBudgetId) {
+      setCurrentView('budgetSelection');
+    } else {
+      setCurrentView('main');
+    }
+  }, [accessToken, selectedBudgetId]);
+  
+  // Fetch budgets when access token is set
+  useEffect(() => {
+    if (accessToken) {
+      fetchBudgets();
+    }
+  }, [accessToken]);
+  
+  // Fetch accounts, categories, and available months when budget is selected
+  useEffect(() => {
+    if (selectedBudgetId) {
+      fetchAccounts();
+      fetchCategories();
+      fetchBudgetMonths();
+    }
+  }, [selectedBudgetId]);
+  
+  // Fetch transactions when month changes and budget is selected
+  useEffect(() => {
+    if (selectedBudgetId && selectedMonth) {
+      fetchTransactions();
+    }
+  }, [selectedBudgetId, selectedMonth]);
+  
+  // Check for configuration warnings
+  useEffect(() => {
+    if (currentView === 'main') {
+      validateConfiguration();
+    }
+  }, [accounts, categories, categoryGroups, accountTypes, categoryTypes, categoryGroupTypes, currentView]);
+  
+  // Helper function to fetch API data with error handling
+  const fetchYnabData = async (apiCall) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      if (!window.ynab) {
+        throw new Error("YNAB library not loaded yet. Please refresh the page.");
+      }
+      
+      const ynabAPI = new window.ynab.API(accessToken);
+      return await apiCall(ynabAPI);
+    } catch (err) {
+      console.error('YNAB API Error:', err);
+      setError(err.message || 'An error occurred while fetching data from YNAB');
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Fetch budgets from YNAB
+  const fetchBudgets = async () => {
+    const result = await fetchYnabData(async (api) => {
+      const response = await api.budgets.getBudgets();
+      return response.data.budgets;
+    });
+    
+    if (result) {
+      setBudgets(result);
+    }
+  };
+  
+  // Fetch accounts from YNAB
+  const fetchAccounts = async () => {
+    const result = await fetchYnabData(async (api) => {
+      const response = await api.accounts.getAccounts(selectedBudgetId);
+      return response.data.accounts;
+    });
+    
+    if (result) {
+      setAccounts(result);
+      
+      // Initialize account types for any new accounts
+      const newAccountTypes = {...accountTypes};
+      result.forEach(account => {
+        if (!newAccountTypes[account.id]) {
+          newAccountTypes[account.id] = 'Unset';
+        }
+      });
+      setAccountTypes(newAccountTypes);
+    }
+  };
+  
+  // Fetch categories from YNAB
+  const fetchCategories = async () => {
+    const result = await fetchYnabData(async (api) => {
+      const response = await api.categories.getCategories(selectedBudgetId);
+      return response.data.category_groups;
+    });
+    
+    if (result) {
+      // Extract category groups and categories
+      const groups = result.filter(group => !group.deleted);
+      setCategoryGroups(groups);
+      
+      const allCategories = groups.flatMap(group => 
+        group.categories.filter(category => !category.deleted)
+      );
+      setCategories(allCategories);
+      
+      // Initialize types for any new categories and groups
+      const newCategoryTypes = {...categoryTypes};
+      const newGroupTypes = {...categoryGroupTypes};
+      
+      groups.forEach(group => {
+        if (!newGroupTypes[group.id]) {
+          newGroupTypes[group.id] = 'Unset';
+        }
+        
+        group.categories.forEach(category => {
+          if (!category.deleted && !newCategoryTypes[category.id]) {
+            newCategoryTypes[category.id] = 'Unset';
+          }
+        });
+      });
+      
+      setCategoryTypes(newCategoryTypes);
+      setCategoryGroupTypes(newGroupTypes);
+    }
+  };
+  
+  // Fetch available months for the budget
+  const fetchBudgetMonths = async () => {
+    const result = await fetchYnabData(async (api) => {
+      const response = await api.months.getBudgetMonths(selectedBudgetId);
+      return response.data.months;
+    });
+    
+    if (result) {
+      // Sort months in descending order (newest first)
+      const sortedMonths = [...result].sort((a, b) => 
+        new Date(b.month) - new Date(a.month)
+      );
+      
+      setAvailableMonths(sortedMonths);
+      
+      // Set selected month to current month or closest available month if not already set
+      if (sortedMonths.length > 0) {
+        // If the user hasn't selected a month or the selected month isn't in the list
+        if (!selectedMonth || !sortedMonths.some(m => m.month === selectedMonth)) {
+          const now = new Date();
+          const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+          
+          // Find the current month if available
+          const currentMonthIndex = sortedMonths.findIndex(m => m.month === currentYearMonth);
+          
+          if (currentMonthIndex >= 0) {
+            // Current month is available, select it
+            setSelectedMonth(currentYearMonth);
+          } else {
+            // Current month not available, find the closest past month
+            const pastMonths = sortedMonths.filter(m => new Date(m.month) <= now);
+            if (pastMonths.length > 0) {
+              // Select the most recent past month
+              setSelectedMonth(pastMonths[0].month);
+            } else {
+              // No past months available, select the oldest future month
+              setSelectedMonth(sortedMonths[sortedMonths.length - 1].month);
+            }
+          }
+        }
+      }
+    }
+  };
+  
+  // Fetch transactions for the selected month
+  const fetchTransactions = async () => {
+    if (!selectedMonth) return;
+    
+    const result = await fetchYnabData(async (api) => {
+      const response = await api.transactions.getTransactionsByMonth(
+        selectedBudgetId,
+        selectedMonth
+      );
+      return response.data.transactions;
+    });
+    
+    if (result) {
+      setTransactions(result);
+    }
+  };
+  
+  // Validate configuration and generate warnings
+  const validateConfiguration = () => {
+    const newWarnings = [];
+    
+    // Check for unset account types
+    accounts.forEach(account => {
+      if (accountTypes[account.id] === 'Unset') {
+        newWarnings.push({
+          id: `account-${account.id}`,
+          message: `Account "${account.name}" has no type set.`,
+          tabToFix: 'accounts'
+        });
+      }
+    });
+    
+    // Check for unset category group types
+    categoryGroups.forEach(group => {
+      if (categoryGroupTypes[group.id] === 'Unset') {
+        newWarnings.push({
+          id: `group-${group.id}`,
+          message: `Category group "${group.name}" has no type set.`,
+          tabToFix: 'categories'
+        });
+      }
+    });
+    
+    // Check for unset category types (only if group type is unset)
+    categories.forEach(category => {
+      const groupType = categoryGroupTypes[category.category_group_id];
+      if (categoryTypes[category.id] === 'Unset' && groupType === 'Unset') {
+        newWarnings.push({
+          id: `category-${category.id}`,
+          message: `Category "${category.name}" has no type set and its group has no type.`,
+          tabToFix: 'categories'
+        });
+      }
+    });
+    
+    setWarnings(newWarnings);
+  };
+  
+  // Handle token submission
+  const handleTokenSubmit = (e) => {
+    e.preventDefault();
+    setAccessToken(e.target.token.value.trim());
+  };
+  
+  // Handle budget selection
+  const handleBudgetSelect = (budgetId) => {
+    setSelectedBudgetId(budgetId);
+  };
+  
+  // Update account type
+  const updateAccountType = (accountId, type) => {
+    setAccountTypes(prev => ({
+      ...prev,
+      [accountId]: type
+    }));
+  };
+  
+  // Update category type
+  const updateCategoryType = (categoryId, type) => {
+    setCategoryTypes(prev => ({
+      ...prev,
+      [categoryId]: type
+    }));
+  };
+  
+  // Update category group type
+  const updateCategoryGroupType = (groupId, type) => {
+    setCategoryGroupTypes(prev => ({
+      ...prev,
+      [groupId]: type
+    }));
+  };
+  
+  // Navigate to previous month
+  const goToPreviousMonth = () => {
+    if (availableMonths.length === 0) return;
+    
+    const currentIndex = availableMonths.findIndex(m => m.month === selectedMonth);
+    if (currentIndex < availableMonths.length - 1) {
+      setSelectedMonth(availableMonths[currentIndex + 1].month);
+    }
+  };
+  
+  // Navigate to next month
+  const goToNextMonth = () => {
+    if (availableMonths.length === 0) return;
+    
+    const currentIndex = availableMonths.findIndex(m => m.month === selectedMonth);
+    if (currentIndex > 0) {
+      setSelectedMonth(availableMonths[currentIndex - 1].month);
+    }
+  };
+  
+  // Navigate to current month
+  const goToCurrentMonth = () => {
+    if (availableMonths.length > 0) {
+      setSelectedMonth(availableMonths[0].month);
+    }
+  };
+  
+  // Format month for display
+  const formatMonth = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+  
+  // Determine category type (from itself or group)
+  const getCategoryType = (categoryId) => {
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) return 'Unset';
+    
+    // If category has its own type set, use that
+    if (categoryTypes[categoryId] !== 'Unset') {
+      return categoryTypes[categoryId];
+    }
+    
+    // Otherwise fall back to group type
+    return categoryGroupTypes[category.category_group_id] || 'Unset';
+  };
+  
+  // Get account type
+  const getAccountType = (accountId) => {
+    return accountTypes[accountId] || 'Unset';
+  };
+  
+  // Calculate reimbursement data
+  const calculateReimbursement = () => {
+    if (warnings.length > 0) {
+      return {
+        hisTotalShared: 0,
+        herTotalShared: 0,
+        hisTotalForHer: 0,
+        herTotalForHim: 0,
+        reimbursementAmount: 0,
+        reimbursementDirection: null,
+        categorySummary: []
+      };
+    }
+    
+    // Initialize values
+    let hisTotalShared = 0;
+    let herTotalShared = 0;
+    let hisTotalForHer = 0;
+    let herTotalForHim = 0;
+    
+    // Initialize category summary
+    const categorySpendingMap = {};
+    
+    // Process each transaction
+    transactions.forEach(transaction => {
+      if (!transaction.category_id) return; // Skip transactions with no category
+      
+      const accountType = getAccountType(transaction.account_id);
+      const categoryType = getCategoryType(transaction.category_id);
+      const amount = Math.abs(transaction.amount) / 1000; // YNAB amounts are in milliunits
+      
+      // Find category and group for the summary
+      const category = categories.find(c => c.id === transaction.category_id);
+      if (!category) return;
+      
+      const group = categoryGroups.find(g => g.id === category.category_group_id);
+      if (!group) return;
+      
+      // Initialize category in the summary if needed
+      if (!categorySpendingMap[category.id]) {
+        categorySpendingMap[category.id] = {
+          categoryId: category.id,
+          categoryName: category.name,
+          groupId: group.id,
+          groupName: group.name,
+          type: categoryType,
+          hisSpending: 0,
+          herSpending: 0
+        };
+      }
+      
+      // Process based on account type and category type
+      if (accountType === 'His') {
+        if (categoryType === 'Shared') {
+          hisTotalShared += amount;
+          categorySpendingMap[category.id].hisSpending += amount;
+        } else if (categoryType === 'Hers') {
+          hisTotalForHer += amount;
+          categorySpendingMap[category.id].hisSpending += amount;
+        }
+      } else if (accountType === 'Hers') {
+        if (categoryType === 'Shared') {
+          herTotalShared += amount;
+          categorySpendingMap[category.id].herSpending += amount;
+        } else if (categoryType === 'His') {
+          herTotalForHim += amount;
+          categorySpendingMap[category.id].herSpending += amount;
+        }
+      }
+    });
+    
+    // Calculate shared spending difference
+    const hisShouldPay = (hisTotalShared + herTotalShared) / 2;
+    const hisExtraShared = hisTotalShared - hisShouldPay;
+    
+    // Calculate final reimbursement
+    let reimbursementAmount = 0;
+    let reimbursementDirection = null;
+    
+    if (hisExtraShared > 0) {
+      // He paid more for shared items
+      const herOwesForShared = hisExtraShared;
+      const himOwesForHers = hisTotalForHer;
+      
+      if (herOwesForShared > himOwesForHers) {
+        reimbursementAmount = herOwesForShared - himOwesForHers;
+        reimbursementDirection = 'herToHim';
+      } else {
+        reimbursementAmount = himOwesForHers - herOwesForShared;
+        reimbursementDirection = 'himToHer';
+      }
+    } else {
+      // She paid more for shared items
+      const himOwesForShared = -hisExtraShared;
+      const herOwesForHim = herTotalForHim;
+      
+      if (himOwesForShared > herOwesForHim) {
+        reimbursementAmount = himOwesForShared - herOwesForHim;
+        reimbursementDirection = 'himToHer';
+      } else {
+        reimbursementAmount = herOwesForHim - himOwesForShared;
+        reimbursementDirection = 'herToHim';
+      }
+    }
+    
+    // Convert category map to sorted array for the summary
+    const categorySummary = Object.values(categorySpendingMap)
+      .sort((a, b) => {
+        // First sort by group name
+        if (a.groupName < b.groupName) return -1;
+        if (a.groupName > b.groupName) return 1;
+        
+        // Then by category name
+        return a.categoryName.localeCompare(b.categoryName);
+      });
+    
+    return {
+      hisTotalShared: hisTotalShared.toFixed(2),
+      herTotalShared: herTotalShared.toFixed(2),
+      hisTotalForHer: hisTotalForHer.toFixed(2),
+      herTotalForHim: herTotalForHim.toFixed(2),
+      reimbursementAmount: reimbursementAmount.toFixed(2),
+      reimbursementDirection,
+      categorySummary
+    };
+  };
+  
+  // Calculate if the month is completed (has settlement transfers)
+  const isMonthCompleted = () => {
+    // Look for transfers with "Monthly Settlement" in the memo
+    return transactions.some(transaction => 
+      transaction.memo && 
+      transaction.memo.includes('Monthly Settlement') &&
+      transaction.transfer_account_id // Must be a transfer
+    );
+  };
+  
+  // Export settings to JSON
+  const exportSettings = () => {
+    const settings = {
+      accessToken,
+      selectedBudgetId,
+      accountTypes,
+      categoryTypes,
+      categoryGroupTypes
+    };
+    
+    return JSON.stringify(settings);
+  };
+  
+  // Import settings from JSON
+  const importSettings = (jsonString) => {
+    try {
+      const settings = JSON.parse(jsonString);
+      
+      // Update states with imported settings
+      if (settings.accessToken) setAccessToken(settings.accessToken);
+      if (settings.selectedBudgetId) setSelectedBudgetId(settings.selectedBudgetId);
+      if (settings.accountTypes) setAccountTypes(settings.accountTypes);
+      if (settings.categoryTypes) setCategoryTypes(settings.categoryTypes);
+      if (settings.categoryGroupTypes) setCategoryGroupTypes(settings.categoryGroupTypes);
+      
+      return true;
+    } catch (error) {
+      setError('Invalid settings JSON: ' + error.message);
+      return false;
+    }
+  };
+  
+  // Logout - clear token and budget
+  const handleLogout = () => {
+    setAccessToken('');
+    setSelectedBudgetId('');
+    setCurrentView('tokenInput');
+  };
+  
+  // Token Input View
+  const TokenInputView = () => (
+    <div className="max-w-md mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+      <h2 className="text-xl font-bold mb-4">YNAB Access Token</h2>
+      <p className="mb-4 text-sm">
+        To use this tool, you need to provide your YNAB personal access token.
+        You can generate one at <a href="https://app.youneedabudget.com/settings/developer" 
+        target="_blank" rel="noopener noreferrer" 
+        className="text-blue-500 hover:underline">YNAB Developer Settings</a>.
+      </p>
+      
+      <form onSubmit={handleTokenSubmit}>
+        <input 
+          type="password"
+          name="token"
+          placeholder="Paste your YNAB access token here"
+          className="w-full p-2 border border-gray-300 rounded mb-4 dark:bg-gray-700 dark:border-gray-600"
+          required
+        />
+        <button 
+          type="submit" 
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+        >
+          Connect to YNAB
+        </button>
+      </form>
+    </div>
+  );
+  
+  // Budget Selection View
+  const BudgetSelectionView = () => (
+    <div className="max-w-md mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+      <h2 className="text-xl font-bold mb-4">Select Your Budget</h2>
+      
+      {isLoading ? (
+        <p>Loading budgets...</p>
+      ) : error ? (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <p>{error}</p>
+          <button 
+            onClick={handleLogout}
+            className="mt-2 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-sm"
+          >
+            Logout
+          </button>
+        </div>
+      ) : budgets.length === 0 ? (
+        <p>No budgets found for this account.</p>
+      ) : (
+        <div className="space-y-2">
+          {budgets.map(budget => (
+            <div 
+              key={budget.id}
+              onClick={() => handleBudgetSelect(budget.id)}
+              className="cursor-pointer p-3 border border-gray-200 rounded hover:bg-blue-50 
+                         dark:border-gray-700 dark:hover:bg-blue-900/20"
+            >
+              {budget.name}
+            </div>
+          ))}
+        </div>
+      )}
+      
+      <button 
+        onClick={handleLogout}
+        className="mt-4 text-sm text-gray-500 hover:text-gray-700"
+      >
+        Use a different token
+      </button>
+    </div>
+  );
+  
+  // Config Menu Component
+  const ConfigMenu = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 w-full max-w-4xl max-h-screen overflow-auto rounded-lg shadow-lg">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h2 className="text-xl font-bold">Configuration</h2>
+          <button 
+            onClick={() => setShowConfigMenu(false)}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+        
+        {/* Tab Navigation */}
+        <div className="flex border-b border-gray-200 dark:border-gray-700">
+          <button 
+            onClick={() => setConfigTab('general')}
+            className={`px-4 py-2 ${configTab === 'general' 
+              ? 'border-b-2 border-blue-500 text-blue-500' 
+              : 'text-gray-500'}`}
+          >
+            General
+          </button>
+          <button 
+            onClick={() => setConfigTab('accounts')}
+            className={`px-4 py-2 ${configTab === 'accounts' 
+              ? 'border-b-2 border-blue-500 text-blue-500' 
+              : 'text-gray-500'}`}
+          >
+            Accounts
+          </button>
+          <button 
+            onClick={() => setConfigTab('categories')}
+            className={`px-4 py-2 ${configTab === 'categories' 
+              ? 'border-b-2 border-blue-500 text-blue-500' 
+              : 'text-gray-500'}`}
+          >
+            Categories
+          </button>
+        </div>
+        
+        {/* Tab Content */}
+        <div className="p-4">
+          {configTab === 'general' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Access Token</label>
+                <input 
+                  type="password"
+                  value={accessToken}
+                  onChange={(e) => setAccessToken(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Selected Budget</label>
+                <select 
+                  value={selectedBudgetId}
+                  onChange={(e) => setSelectedBudgetId(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                >
+                  {budgets.map(budget => (
+                    <option key={budget.id} value={budget.id}>{budget.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="pt-4 space-y-4">
+                <h3 className="font-medium">Import/Export Settings</h3>
+                
+                <div>
+                  <label className="block text-sm mb-1">Export Settings (copy this)</label>
+                  <textarea 
+                    value={exportSettings()}
+                    readOnly
+                    className="w-full p-2 border border-gray-300 rounded font-mono text-xs h-24 dark:bg-gray-700 dark:border-gray-600"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm mb-1">Import Settings (paste here)</label>
+                  <textarea 
+                    placeholder="Paste settings JSON here"
+                    className="w-full p-2 border border-gray-300 rounded font-mono text-xs h-24 mb-2 dark:bg-gray-700 dark:border-gray-600"
+                    id="import-settings-input"
+                  />
+                  <button 
+                    onClick={() => {
+                      const input = document.getElementById('import-settings-input');
+                      if (input && input.value) {
+                        const success = importSettings(input.value);
+                        if (success) {
+                          input.value = '';
+                          setShowConfigMenu(false);
+                        }
+                      }
+                    }}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                  >
+                    Import
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {configTab === 'accounts' && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-medium">Accounts</h3>
+                <button 
+                  onClick={fetchAccounts}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                >
+                  Sync Accounts
+                </button>
+              </div>
+              
+              {isLoading ? (
+                <p>Loading accounts...</p>
+              ) : (
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 dark:bg-gray-700">
+                      <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Account Name</th>
+                      <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {accounts.filter(a => !a.deleted).map(account => {
+                      const hasWarning = warnings.some(w => w.id === `account-${account.id}`);
+                      
+                      return (
+                        <tr key={account.id} className={hasWarning ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}>
+                          <td className="p-2 border border-gray-300 dark:border-gray-600">
+                            {account.name}
+                            {hasWarning && (
+                              <span className="ml-2 text-yellow-600 dark:text-yellow-400">⚠️</span>
+                            )}
+                          </td>
+                          <td className="p-2 border border-gray-300 dark:border-gray-600">
+                            <select
+                              value={accountTypes[account.id] || 'Unset'}
+                              onChange={(e) => updateAccountType(account.id, e.target.value)}
+                              className="p-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                            >
+                              {ACCOUNT_TYPES.map(type => (
+                                <option key={type} value={type}>{type}</option>
+                              ))}
+                            </select>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    
+                    {/* Deleted accounts at the bottom */}
+                    {accounts.filter(a => a.deleted).map(account => (
+                      <tr key={account.id} className="text-gray-400 dark:text-gray-500">
+                        <td className="p-2 border border-gray-300 dark:border-gray-600 line-through">
+                          {account.name} (deleted)
+                        </td>
+                        <td className="p-2 border border-gray-300 dark:border-gray-600">
+                          <select
+                            value={accountTypes[account.id] || 'Unset'}
+                            onChange={(e) => updateAccountType(account.id, e.target.value)}
+                            className="p-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                          >
+                            {ACCOUNT_TYPES.map(type => (
+                              <option key={type} value={type}>{type}</option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+          
+          {configTab === 'categories' && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-medium">Categories</h3>
+                <button 
+                  onClick={fetchCategories}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                >
+                  Sync Categories
+                </button>
+              </div>
+              
+              {isLoading ? (
+                <p>Loading categories...</p>
+              ) : (
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 dark:bg-gray-700">
+                      <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Category Name</th>
+                      <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {categoryGroups.filter(g => !g.deleted).map(group => {
+                      const hasWarning = warnings.some(w => w.id === `group-${group.id}`);
+                      const groupCategories = categories.filter(c => 
+                        c.category_group_id === group.id && !c.deleted
+                      );
+                      
+                      return (
+                        <React.Fragment key={group.id}>
+                          {/* Category Group Row */}
+                          <tr className={`bg-gray-100 dark:bg-gray-700 font-bold ${hasWarning ? 'bg-yellow-100 dark:bg-yellow-900/40' : ''}`}>
+                            <td className="p-2 border border-gray-300 dark:border-gray-600">
+                              {group.name}
+                              {hasWarning && (
+                                <span className="ml-2 text-yellow-600 dark:text-yellow-400">⚠️</span>
+                              )}
+                            </td>
+                            <td className="p-2 border border-gray-300 dark:border-gray-600">
+                              <select
+                                value={categoryGroupTypes[group.id] || 'Unset'}
+                                onChange={(e) => updateCategoryGroupType(group.id, e.target.value)}
+                                className="p-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                              >
+                                {CATEGORY_TYPES.map(type => (
+                                  <option key={type} value={type}>{type}</option>
+                                ))}
+                              </select>
+                            </td>
+                          </tr>
+                          
+                          {/* Category Rows */}
+                          {groupCategories.map(category => {
+                            const catHasWarning = warnings.some(w => w.id === `category-${category.id}`);
+                            
+                            return (
+                              <tr key={category.id} className={catHasWarning ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}>
+                                <td className="p-2 border border-gray-300 dark:border-gray-600 pl-6">
+                                  {category.name}
+                                  {catHasWarning && (
+                                    <span className="ml-2 text-yellow-600 dark:text-yellow-400">⚠️</span>
+                                  )}
+                                </td>
+                                <td className="p-2 border border-gray-300 dark:border-gray-600">
+                                  <select
+                                    value={categoryTypes[category.id] || 'Unset'}
+                                    onChange={(e) => updateCategoryType(category.id, e.target.value)}
+                                    className="p-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                                  >
+                                    {CATEGORY_TYPES.map(type => (
+                                      <option key={type} value={type}>{type}</option>
+                                    ))}
+                                  </select>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </React.Fragment>
+                      );
+                    })}
+                    
+                    {/* Deleted categories at the bottom */}
+                    {categoryGroups.filter(g => g.deleted).length > 0 && (
+                      <tr className="bg-gray-100 dark:bg-gray-700 font-bold">
+                        <td colSpan="2" className="p-2 border border-gray-300 dark:border-gray-600">
+                          Deleted Items
+                        </td>
+                      </tr>
+                    )}
+                    
+                    {categoryGroups.filter(g => g.deleted).map(group => (
+                      <tr key={group.id} className="text-gray-400 dark:text-gray-500">
+                        <td className="p-2 border border-gray-300 dark:border-gray-600 line-through">
+                          {group.name} (deleted group)
+                        </td>
+                        <td className="p-2 border border-gray-300 dark:border-gray-600">
+                          <select
+                            value={categoryGroupTypes[group.id] || 'Unset'}
+                            onChange={(e) => updateCategoryGroupType(group.id, e.target.value)}
+                            className="p-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                          >
+                            {CATEGORY_TYPES.map(type => (
+                              <option key={type} value={type}>{type}</option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                    
+                    {categories.filter(c => c.deleted).map(category => (
+                      <tr key={category.id} className="text-gray-400 dark:text-gray-500">
+                        <td className="p-2 border border-gray-300 dark:border-gray-600 line-through pl-6">
+                          {category.name} (deleted)
+                        </td>
+                        <td className="p-2 border border-gray-300 dark:border-gray-600">
+                          <select
+                            value={categoryTypes[category.id] || 'Unset'}
+                            onChange={(e) => updateCategoryType(category.id, e.target.value)}
+                            className="p-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                          >
+                            {CATEGORY_TYPES.map(type => (
+                              <option key={type} value={type}>{type}</option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+  
+  // Main View
+  const MainView = () => {
+    const {
+      hisTotalShared,
+      herTotalShared,
+      hisTotalForHer,
+      herTotalForHim,
+      reimbursementAmount,
+      reimbursementDirection,
+      categorySummary
+    } = calculateReimbursement();
+    
+    const completed = isMonthCompleted();
+    
+    return (
+      <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-md">
+        {/* Header with Config Button */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">YNAB Reimbursement Report</h1>
+          <button 
+            onClick={() => setShowConfigMenu(true)}
+            className="p-2 text-gray-500 hover:text-gray-700"
+            aria-label="Open Configuration"
+          >
+            ⚙️
+          </button>
+        </div>
+        
+        {/* Warnings Section */}
+        {warnings.length > 0 && (
+          <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-900/50">
+            <h2 className="text-lg font-semibold text-yellow-700 dark:text-yellow-400 mb-2">
+              ⚠️ Configuration Warnings
+            </h2>
+            <p className="mb-2 text-sm">
+              Please fix the following issues before calculations can be performed:
+            </p>
+            <ul className="list-disc pl-5 space-y-1 text-sm">
+              {warnings.map((warning, index) => (
+                <li key={index}>
+                  {warning.message}{' '}
+                  <button 
+                    onClick={() => {
+                      setShowConfigMenu(true);
+                      setConfigTab(warning.tabToFix);
+                    }}
+                    className="text-blue-500 hover:underline"
+                  >
+                    Fix
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {/* Month Selector */}
+        <div className="mb-6 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+          <div className="flex justify-between items-center">
+            <button 
+              onClick={goToPreviousMonth}
+              disabled={availableMonths.findIndex(m => m.month === selectedMonth) === availableMonths.length - 1}
+              className={`px-3 py-1 ${
+                availableMonths.findIndex(m => m.month === selectedMonth) === availableMonths.length - 1
+                  ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
+                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+              } rounded`}
+            >
+              ← Prev
+            </button>
+            
+            <div className="text-center">
+              <h2 className="text-xl font-semibold">{formatMonth(selectedMonth)}</h2>
+              {completed && (
+                <span className="text-sm text-green-600 dark:text-green-400">
+                  ✓ Month Completed
+                </span>
+              )}
+            </div>
+            
+            <div className="flex">
+              <button 
+                onClick={goToCurrentMonth}
+                disabled={availableMonths.length === 0 || availableMonths[0].month === selectedMonth}
+                className={`px-3 py-1 ${
+                  availableMonths.length === 0 || availableMonths[0].month === selectedMonth
+                    ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
+                    : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500'
+                } rounded mr-2`}
+              >
+                Latest
+              </button>
+              <button 
+                onClick={goToNextMonth}
+                disabled={availableMonths.findIndex(m => m.month === selectedMonth) === 0}
+                className={`px-3 py-1 ${
+                  availableMonths.findIndex(m => m.month === selectedMonth) === 0
+                    ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
+                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                } rounded`}
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        {warnings.length === 0 ? (
+          <>
+            {/* Summary Boxes */}
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* His spending summary */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400 mb-2">His Spending</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Spent on shared categories:</span>
+                    <span className="font-semibold">£{hisTotalShared}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Spent on her categories:</span>
+                    <span className="font-semibold">£{hisTotalForHer}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Her spending summary */}
+              <div className="bg-pink-50 dark:bg-pink-900/20 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-pink-700 dark:text-pink-400 mb-2">Her Spending</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Spent on shared categories:</span>
+                    <span className="font-semibold">£{herTotalShared}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Spent on his categories:</span>
+                    <span className="font-semibold">£{herTotalForHim}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Reimbursement Summary */}
+            <div className="mb-6 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-green-700 dark:text-green-400 mb-2">
+                Reimbursement Due
+              </h3>
+              
+              <div className="text-center py-3">
+                <div className="text-2xl font-bold mb-2">
+                  {reimbursementDirection === 'herToHim'
+                    ? `£${reimbursementAmount} - She should pay Him`
+                    : `£${reimbursementAmount} - He should pay Her`
+                  }
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+                  To mark a month as complete, add transfers between accounts with the memo
+                  "Monthly Settlement" that sum to the Reimbursement Due amount
+                </p>
+              </div>
+            </div>
+            
+            {/* Category Spending Table */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3">Shared Spending by Category</h3>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 dark:bg-gray-700">
+                      <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Category</th>
+                      <th className="text-right p-2 border border-gray-300 dark:border-gray-600">His Spending</th>
+                      <th className="text-right p-2 border border-gray-300 dark:border-gray-600">Her Spending</th>
+                      <th className="text-right p-2 border border-gray-300 dark:border-gray-600">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Group the categories by group name */}
+                    {Object.entries(
+                      categorySummary.reduce((acc, cat) => {
+                        if (!acc[cat.groupId]) {
+                          acc[cat.groupId] = {
+                            groupName: cat.groupName,
+                            categories: []
+                          };
+                        }
+                        acc[cat.groupId].categories.push(cat);
+                        return acc;
+                      }, {})
+                    ).map(([groupId, group]) => {
+                      // Calculate group totals
+                      const groupHisTotal = group.categories.reduce((sum, cat) => sum + parseFloat(cat.hisSpending), 0);
+                      const groupHerTotal = group.categories.reduce((sum, cat) => sum + parseFloat(cat.herSpending), 0);
+                      const groupTotal = groupHisTotal + groupHerTotal;
+                      
+                      return (
+                        <React.Fragment key={groupId}>
+                          {/* Group header */}
+                          <tr className="bg-gray-100 dark:bg-gray-700 font-bold">
+                            <td className="p-2 border border-gray-300 dark:border-gray-600">
+                              {group.groupName}
+                            </td>
+                            <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
+                              £{groupHisTotal.toFixed(2)}
+                            </td>
+                            <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
+                              £{groupHerTotal.toFixed(2)}
+                            </td>
+                            <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
+                              £{groupTotal.toFixed(2)}
+                            </td>
+                          </tr>
+                          
+                          {/* Categories in this group */}
+                          {group.categories.map(category => {
+                            const total = parseFloat(category.hisSpending) + parseFloat(category.herSpending);
+                            
+                            // Only show if there's any spending
+                            if (total > 0) {
+                              return (
+                                <tr key={category.categoryId}>
+                                  <td className="p-2 border border-gray-300 dark:border-gray-600 pl-6">
+                                    {category.categoryName}
+                                  </td>
+                                  <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
+                                    £{category.hisSpending.toFixed(2)}
+                                  </td>
+                                  <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
+                                    £{category.herSpending.toFixed(2)}
+                                  </td>
+                                  <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
+                                    £{total.toFixed(2)}
+                                  </td>
+                                </tr>
+                              );
+                            }
+                            return null;
+                          })}
+                        </React.Fragment>
+                      );
+                    })}
+                    
+                    {/* Grand Total Row */}
+                    <tr className="font-bold">
+                      <td className="p-2 border border-gray-300 dark:border-gray-600">
+                        Grand Total
+                      </td>
+                      <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
+                        £{hisTotalShared}
+                      </td>
+                      <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
+                        £{herTotalShared}
+                      </td>
+                      <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
+                        £{(parseFloat(hisTotalShared) + parseFloat(herTotalShared)).toFixed(2)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="text-center p-8">
+            <p className="text-lg">
+              Please fix the configuration warnings to view the reimbursement report.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  // Main render logic
+  return (
+    <div className="p-2 sm:p-4 text-gray-900 dark:text-gray-100">
+      {/* Loading Indicator */}
+      {isLoading && (
+        <div className="fixed top-0 inset-x-0 bg-blue-500 text-white text-center py-1 text-sm">
+          Loading data from YNAB...
+        </div>
+      )}
+      
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p>{error}</p>
+        </div>
+      )}
+      
+      {/* Current View */}
+      {currentView === 'tokenInput' && <TokenInputView />}
+      {currentView === 'budgetSelection' && <BudgetSelectionView />}
+      {currentView === 'main' && <MainView />}
+      
+      {/* Config Menu */}
+      {showConfigMenu && <ConfigMenu />}
+    </div>
+  );
+};
