@@ -12,39 +12,56 @@ shadowRoot.appendChild(script);
 
 const { useState, useEffect } = React;
 
+// Custom hook to manage state with localStorage
+const useLocalStorage = (key, initialValue, prefix = 'ynabReimbursement_') => {
+  // Create prefixed key
+  const prefixedKey = `${prefix}${key}`;
+  
+  // Initialize state with value from localStorage if available
+  const [storedValue, setStoredValue] = useState(() => {
+    try {
+      const item = localStorage.getItem(prefixedKey);
+      return item !== null ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(`Error loading ${key} from localStorage:`, error);
+      return initialValue;
+    }
+  });
+  
+  // Update localStorage when state changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(prefixedKey, JSON.stringify(storedValue));
+    } catch (error) {
+      console.error(`Error saving ${key} to localStorage:`, error);
+    }
+  }, [storedValue, key]);
+  
+  return [storedValue, setStoredValue];
+};
+
 const Component = () => {
   // Constants and configuration keys
   const CONFIG_PREFIX = 'ynabReimbursement_';
   const ACCOUNT_TYPES = ['Unset', 'His', 'Hers', 'Shared'];
   const CATEGORY_TYPES = ['Unset', 'His', 'Hers', 'Shared'];
   
-  // State initialization with localStorage
-  const loadFromStorage = (key, defaultValue) => {
-    try {
-      const value = localStorage.getItem(`${CONFIG_PREFIX}${key}`);
-      return value !== null ? JSON.parse(value) : defaultValue;
-    } catch (error) {
-      console.error(`Error loading ${key} from localStorage:`, error);
-      return defaultValue;
-    }
-  };
-  
   // Config states
-  const [accessToken, setAccessToken] = useState(loadFromStorage('accessToken', ''));
-  const [selectedBudgetId, setSelectedBudgetId] = useState(loadFromStorage('selectedBudgetId', ''));
-  const [budgets, setBudgets] = useState(loadFromStorage('budgets', []));
+  const [accessToken, setAccessToken] = useLocalStorage('accessToken', '');
+  const [selectedBudgetId, setSelectedBudgetId] = useLocalStorage('selectedBudgetId', '');
+  const [budgets, setBudgets] = useLocalStorage('budgets', []);
   
   // Data states
-  const [accounts, setAccounts] = useState(loadFromStorage('accounts', []));
-  const [categories, setCategories] = useState(loadFromStorage('categories', []));
-  const [categoryGroups, setCategoryGroups] = useState(loadFromStorage('categoryGroups', []));
-  const [transactions, setTransactions] = useState(loadFromStorage('transactions', []));
-  const [availableMonths, setAvailableMonths] = useState(loadFromStorage('availableMonths', []));
+  const [accounts, setAccounts] = useLocalStorage('accounts', []);
+  const [categories, setCategories] = useLocalStorage('categories', []);
+  const [categoryGroups, setCategoryGroups] = useLocalStorage('categoryGroups', []);
+  const [transactions, setTransactions] = useLocalStorage('transactions', []);
+  const [availableMonths, setAvailableMonths] = useLocalStorage('availableMonths', []);
   
   // Account and category type configurations
-  const [accountTypes, setAccountTypes] = useState(loadFromStorage('accountTypes', {}));
-  const [categoryTypes, setCategoryTypes] = useState(loadFromStorage('categoryTypes', {}));
-  const [categoryGroupTypes, setCategoryGroupTypes] = useState(loadFromStorage('categoryGroupTypes', {}));
+  const [accountTypes, setAccountTypes] = useLocalStorage('accountTypes', {});
+  const [categoryTypes, setCategoryTypes] = useLocalStorage('categoryTypes', {});
+  const [categoryGroupTypes, setCategoryGroupTypes] = useLocalStorage('categoryGroupTypes', {});
   
   // UI states
   const [currentView, setCurrentView] = useState('main');
@@ -57,51 +74,6 @@ const Component = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
   });
   const [showConfigMenu, setShowConfigMenu] = useState(false);
-  
-  // Save to localStorage when state changes
-  useEffect(() => {
-    localStorage.setItem(`${CONFIG_PREFIX}accessToken`, JSON.stringify(accessToken));
-  }, [accessToken]);
-  
-  useEffect(() => {
-    localStorage.setItem(`${CONFIG_PREFIX}selectedBudgetId`, JSON.stringify(selectedBudgetId));
-  }, [selectedBudgetId]);
-  
-  useEffect(() => {
-    localStorage.setItem(`${CONFIG_PREFIX}budgets`, JSON.stringify(budgets));
-  }, [budgets]);
-  
-  useEffect(() => {
-    localStorage.setItem(`${CONFIG_PREFIX}accounts`, JSON.stringify(accounts));
-  }, [accounts]);
-  
-  useEffect(() => {
-    localStorage.setItem(`${CONFIG_PREFIX}categories`, JSON.stringify(categories));
-  }, [categories]);
-  
-  useEffect(() => {
-    localStorage.setItem(`${CONFIG_PREFIX}categoryGroups`, JSON.stringify(categoryGroups));
-  }, [categoryGroups]);
-  
-  useEffect(() => {
-    localStorage.setItem(`${CONFIG_PREFIX}transactions`, JSON.stringify(transactions));
-  }, [transactions]);
-  
-  useEffect(() => {
-    localStorage.setItem(`${CONFIG_PREFIX}availableMonths`, JSON.stringify(availableMonths));
-  }, [availableMonths]);
-  
-  useEffect(() => {
-    localStorage.setItem(`${CONFIG_PREFIX}accountTypes`, JSON.stringify(accountTypes));
-  }, [accountTypes]);
-  
-  useEffect(() => {
-    localStorage.setItem(`${CONFIG_PREFIX}categoryTypes`, JSON.stringify(categoryTypes));
-  }, [categoryTypes]);
-  
-  useEffect(() => {
-    localStorage.setItem(`${CONFIG_PREFIX}categoryGroupTypes`, JSON.stringify(categoryGroupTypes));
-  }, [categoryGroupTypes]);
   
   // Determine current view based on configuration state
   useEffect(() => {
