@@ -397,7 +397,8 @@ const Component = () => {
         herTotalForHim: 0,
         reimbursementAmount: 0,
         reimbursementDirection: null,
-        categorySummary: []
+        categorySummary: [],
+        transactionWarnings: []
       };
     }
     
@@ -407,13 +408,54 @@ const Component = () => {
     let hisTotalForHer = 0;
     let herTotalForHim = 0;
     
-    // Initialize category summary
+    // Initialize category summary and transaction warnings
     const categorySpendingMap = {};
+    const transactionWarnings = [];
     
-    // Process each transaction
-    transactions.forEach(transaction => {
-      if (!transaction.category_id) return; // Skip transactions with no category
+    // Filter and process each transaction
+    const validTransactions = transactions.filter(transaction => {
+      // Skip transfer transactions
+      if (transaction.transfer_transaction_id || transaction.transfer_account_id) {
+        return false;
+      }
       
+      // Check if transaction has a category
+      if (!transaction.category_id) {
+        transactionWarnings.push({
+          id: `transaction-${transaction.id}`,
+          message: `Transaction "${transaction.payee_name}" (${transaction.date}) has no category assigned.`,
+          details: "Transaction must have a category assigned in YNAB."
+        });
+        return false;
+      }
+      
+      // Check for valid account type
+      const accountType = getAccountType(transaction.account_id);
+      if (accountType === 'Unset') {
+        transactionWarnings.push({
+          id: `transaction-account-${transaction.id}`,
+          message: `Transaction "${transaction.payee_name}" (${transaction.date}) is in an account with no type assigned.`,
+          details: "Account type must be set in the Accounts configuration."
+        });
+        return false;
+      }
+      
+      // Check for valid category type
+      const categoryType = getCategoryType(transaction.category_id);
+      if (categoryType === 'Unset') {
+        transactionWarnings.push({
+          id: `transaction-category-${transaction.id}`,
+          message: `Transaction "${transaction.payee_name}" (${transaction.date}) has a category with no type assigned.`,
+          details: "Category type must be set in the Categories configuration."
+        });
+        return false;
+      }
+      
+      return true;
+    });
+    
+    // Process all valid transactions
+    validTransactions.forEach(transaction => {
       const accountType = getAccountType(transaction.account_id);
       const categoryType = getCategoryType(transaction.category_id);
       const amount = Math.abs(transaction.amount) / 1000; // YNAB amounts are in milliunits
@@ -510,7 +552,8 @@ const Component = () => {
       herTotalForHim: herTotalForHim.toFixed(2),
       reimbursementAmount: reimbursementAmount.toFixed(2),
       reimbursementDirection,
-      categorySummary
+      categorySummary,
+      transactionWarnings
     };
   };
   
@@ -964,7 +1007,8 @@ const Component = () => {
       herTotalForHim,
       reimbursementAmount,
       reimbursementDirection,
-      categorySummary
+      categorySummary,
+      transactionWarnings
     } = calculateReimbursement();
     
     const completed = isMonthCompleted();
@@ -983,7 +1027,7 @@ const Component = () => {
           </button>
         </div>
         
-        {/* Warnings Section */}
+        {/* Configuration Warnings Section */}
         {warnings.length > 0 && (
           <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-900/50">
             <h2 className="text-lg font-semibold text-yellow-700 dark:text-yellow-400 mb-2">
@@ -1005,6 +1049,28 @@ const Component = () => {
                   >
                     Fix
                   </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {/* Transaction Warnings Section */}
+        {warnings.length === 0 && transactionWarnings.length > 0 && (
+          <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-900/50">
+            <h2 className="text-lg font-semibold text-yellow-700 dark:text-yellow-400 mb-2">
+              ⚠️ Transaction Warnings
+            </h2>
+            <p className="mb-2 text-sm">
+              Some transactions have issues that need to be fixed directly in YNAB:
+            </p>
+            <ul className="list-disc pl-5 space-y-1 text-sm">
+              {transactionWarnings.map((warning, index) => (
+                <li key={index} className="mb-2">
+                  <div>{warning.message}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                    {warning.details}
+                  </div>
                 </li>
               ))}
             </ul>
