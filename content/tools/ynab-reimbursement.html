@@ -482,20 +482,18 @@ const Component = () => {
       
       // Process based on account type and category type
       if (accountType === 'His') {
+        categorySpendingMap[category.id].hisSpending += amount;
         if (categoryType === 'Shared') {
           hisTotalShared += amount;
-          categorySpendingMap[category.id].hisSpending += amount;
         } else if (categoryType === 'Hers') {
           hisTotalForHer += amount;
-          categorySpendingMap[category.id].hisSpending += amount;
         }
       } else if (accountType === 'Hers') {
+        categorySpendingMap[category.id].herSpending += amount;
         if (categoryType === 'Shared') {
           herTotalShared += amount;
-          categorySpendingMap[category.id].herSpending += amount;
         } else if (categoryType === 'His') {
           herTotalForHim += amount;
-          categorySpendingMap[category.id].herSpending += amount;
         }
       }
     });
