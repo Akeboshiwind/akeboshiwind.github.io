@@ -312,24 +312,14 @@ const Component = () => {
       }
     });
     
-    // Check for unset category group types
-    categoryGroups.forEach(group => {
-      if (categoryGroupTypes[group.id] === 'Unset') {
-        newWarnings.push({
-          id: `group-${group.id}`,
-          message: `Category group "${group.name}" has no type set.`,
-          tabToFix: 'categories'
-        });
-      }
-    });
-    
-    // Check for unset category types (only if group type is unset)
+    // Check for unset category types when the group is also unset
+    // We only need to warn if both the category and its group are unset
     categories.forEach(category => {
       const groupType = categoryGroupTypes[category.category_group_id];
       if (categoryTypes[category.id] === 'Unset' && groupType === 'Unset') {
         newWarnings.push({
           id: `category-${category.id}`,
-          message: `Category "${category.name}" has no type set and its group has no type.`,
+          message: `Category "${category.name}" has no type set.`,
           tabToFix: 'categories'
         });
       }
