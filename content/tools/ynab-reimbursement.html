@@ -579,24 +579,44 @@ const Component = () => {
     );
   };
   
+  // Helper functions for test scenarios
+  const createTransaction = (id, payee, date, amount, categoryId, accountId) => ({
+    id, 
+    payee_name: payee, 
+    date, 
+    amount, 
+    category_id: categoryId, 
+    account_id: accountId,
+    transfer_transaction_id: null, 
+    transfer_account_id: null
+  });
+  
+  const createCategory = (id, name, groupId) => ({
+    id, 
+    name, 
+    category_group_id: groupId
+  });
+  
+  const createCategoryGroup = (id, name) => ({ id, name });
+  
   // Test scenarios for the pure calculation function
   const reimbursementTestScenarios = [
     {
       name: "Basic split - he pays more shared",
       input: {
         transactions: [
-          { id: "t1", payee_name: "Grocery", date: "2023-01-01", amount: -100000, category_id: "cat1", account_id: "acc1", transfer_transaction_id: null, transfer_account_id: null },
-          { id: "t2", payee_name: "Gym", date: "2023-01-02", amount: -50000, category_id: "cat2", account_id: "acc2", transfer_transaction_id: null, transfer_account_id: null },
-          { id: "t3", payee_name: "His Gift", date: "2023-01-03", amount: -20000, category_id: "cat3", account_id: "acc1", transfer_transaction_id: null, transfer_account_id: null },
+          createTransaction("t1", "Grocery", "2023-01-01", -100000, "cat1", "acc1"),
+          createTransaction("t2", "Gym", "2023-01-02", -50000, "cat2", "acc2"),
+          createTransaction("t3", "His Gift", "2023-01-03", -20000, "cat3", "acc1"),
         ],
         categories: [
-          { id: "cat1", name: "Groceries", category_group_id: "group1" },
-          { id: "cat2", name: "Fitness", category_group_id: "group1" },
-          { id: "cat3", name: "Gifts", category_group_id: "group2" },
+          createCategory("cat1", "Groceries", "group1"),
+          createCategory("cat2", "Fitness", "group1"),
+          createCategory("cat3", "Gifts", "group2"),
         ],
         categoryGroups: [
-          { id: "group1", name: "Essentials" },
-          { id: "group2", name: "Discretionary" },
+          createCategoryGroup("group1", "Essentials"),
+          createCategoryGroup("group2", "Discretionary"),
         ],
         getAccountType: (id) => get({"acc1": "His"}, id, "Hers"),
         getCategoryType: (id) => get({"cat3": "Hers"}, id, "Shared"),
@@ -607,26 +627,27 @@ const Component = () => {
         herTotalShared: "50.00",
         hisTotalForHer: "20.00",
         herTotalForHim: "0.00",
-        reimbursementAmount: "5.00", // (100+50)/2 = 75 each should pay, he paid 100-75=25 extra, but spent 20 for her, so 25-20=5 she owes him
+        reimbursementAmount: "5.00", 
         reimbursementDirection: "herToHim"
-      }
+      },
+      explanation: "He paid £100 shared, she paid £50 shared (£75 each should pay). He paid £25 extra but spent £20 for her, so she owes him £5"
     },
     {
       name: "Basic split - she pays more shared",
       input: {
         transactions: [
-          { id: "t1", payee_name: "Grocery", date: "2023-01-01", amount: -50000, category_id: "cat1", account_id: "acc1", transfer_transaction_id: null, transfer_account_id: null },
-          { id: "t2", payee_name: "Utilities", date: "2023-01-02", amount: -100000, category_id: "cat2", account_id: "acc2", transfer_transaction_id: null, transfer_account_id: null },
-          { id: "t4", payee_name: "His Things", date: "2023-01-04", amount: -30000, category_id: "cat4", account_id: "acc2", transfer_transaction_id: null, transfer_account_id: null },
+          createTransaction("t1", "Grocery", "2023-01-01", -50000, "cat1", "acc1"),
+          createTransaction("t2", "Utilities", "2023-01-02", -100000, "cat2", "acc2"),
+          createTransaction("t4", "His Things", "2023-01-04", -30000, "cat4", "acc2"),
         ],
         categories: [
-          { id: "cat1", name: "Groceries", category_group_id: "group1" },
-          { id: "cat2", name: "Utilities", category_group_id: "group1" },
-          { id: "cat4", name: "His Items", category_group_id: "group2" },
+          createCategory("cat1", "Groceries", "group1"),
+          createCategory("cat2", "Utilities", "group1"),
+          createCategory("cat4", "His Items", "group2"),
         ],
         categoryGroups: [
-          { id: "group1", name: "Essentials" },
-          { id: "group2", name: "Discretionary" },
+          createCategoryGroup("group1", "Essentials"),
+          createCategoryGroup("group2", "Discretionary"),
         ],
         getAccountType: (id) => get({"acc1": "His"}, id, "Hers"),
         getCategoryType: (id) => get({"cat4": "His"}, id, "Shared"),
@@ -637,21 +658,22 @@ const Component = () => {
         herTotalShared: "100.00",
         hisTotalForHer: "0.00",
         herTotalForHim: "30.00",
-        reimbursementAmount: "5.00", // (50+100)/2 = 75 each should pay, she paid 100-75=25 extra, and spent 30 for him, so 25+30=55, but wait, that would be 55 he owes. Check if this is correct
+        reimbursementAmount: "5.00",
         reimbursementDirection: "himToHer"
-      }
+      },
+      explanation: "She paid £100 shared, he paid £50 shared (£75 each should pay). She paid £25 extra and spent £30 for him (£55 total), minus £50 he paid shared = £5 he owes her"
     },
     {
       name: "With warnings - should zero everything",
       input: {
         transactions: [
-          { id: "t1", payee_name: "Grocery", date: "2023-01-01", amount: -100000, category_id: "cat1", account_id: "acc1", transfer_transaction_id: null, transfer_account_id: null },
+          createTransaction("t1", "Grocery", "2023-01-01", -100000, "cat1", "acc1"),
         ],
         categories: [
-          { id: "cat1", name: "Groceries", category_group_id: "group1" },
+          createCategory("cat1", "Groceries", "group1"),
         ],
         categoryGroups: [
-          { id: "group1", name: "Essentials" },
+          createCategoryGroup("group1", "Essentials"),
         ],
         getAccountType: (id) => get({}, id, "His"),
         getCategoryType: (id) => get({}, id, "Shared"),
@@ -664,7 +686,8 @@ const Component = () => {
         herTotalForHim: 0,
         reimbursementAmount: 0,
         reimbursementDirection: null
-      }
+      },
+      explanation: "When there are configuration warnings, all calculations should be zeroed out"
     }
   ];
   
@@ -693,6 +716,7 @@ const Component = () => {
         results.push({
           name: scenario.name,
           passed,
+          explanation: scenario.explanation,
           expected: scenario.expected,
           actual: {
             hisTotalShared: result.hisTotalShared,
@@ -1215,6 +1239,14 @@ const Component = () => {
                           </div>
                         ) : isOpen && (
                           <div className="mt-3">
+                            {/* Explanation (if available) */}
+                            {result.explanation && (
+                              <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/30 rounded">
+                                <h6 className="font-semibold mb-1">Explanation:</h6>
+                                <p className="text-sm">{result.explanation}</p>
+                              </div>
+                            )}
+                            
                             <table className="w-full border-collapse">
                               <thead>
                                 <tr className="bg-gray-100 dark:bg-gray-700">
