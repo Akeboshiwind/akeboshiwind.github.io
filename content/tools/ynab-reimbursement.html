@@ -511,38 +511,15 @@ const Component = () => {
     });
     
     // Calculate shared spending difference
-    const hisShouldPay = (hisTotalShared + herTotalShared) / 2;
-    const hisExtraShared = hisTotalShared - hisShouldPay;
+    const totalShared = hisTotalShared + herTotalShared;
+    const heShouldPay =
+      (totalShared / 2)
+      - hisTotalShared
+      - (herTotalForHim - hisTotalForHer);
     
     // Calculate final reimbursement
-    let reimbursementAmount = 0;
-    let reimbursementDirection = null;
-    
-    if (hisExtraShared > 0) {
-      // He paid more for shared items
-      const herOwesForShared = hisExtraShared;
-      const himOwesForHers = hisTotalForHer;
-      
-      if (herOwesForShared > himOwesForHers) {
-        reimbursementAmount = herOwesForShared - himOwesForHers;
-        reimbursementDirection = 'herToHim';
-      } else {
-        reimbursementAmount = himOwesForHers - herOwesForShared;
-        reimbursementDirection = 'himToHer';
-      }
-    } else {
-      // She paid more for shared items
-      const himOwesForShared = -hisExtraShared;
-      const herOwesForHim = herTotalForHim;
-      
-      if (himOwesForShared > herOwesForHim) {
-        reimbursementAmount = himOwesForShared - herOwesForHim;
-        reimbursementDirection = 'himToHer';
-      } else {
-        reimbursementAmount = herOwesForHim - himOwesForShared;
-        reimbursementDirection = 'herToHim';
-      }
-    }
+    let reimbursementAmount = Math.abs(heShouldPay);
+    let reimbursementDirection = (heShouldPay > 0) ? 'himToHer' : 'herToHim';
     
     // Convert category map to sorted array for the summary
     const categorySummary = Object.values(categorySpendingMap)
