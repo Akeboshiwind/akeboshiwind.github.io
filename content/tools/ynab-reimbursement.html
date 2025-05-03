@@ -40,6 +40,10 @@ const useLocalStorage = (key, initialValue, prefix = 'ynabReimbursement_') => {
   return [storedValue, setStoredValue];
 };
 
+function get(obj, key, defaultValue = null) {
+  return obj.hasOwnProperty(key) ? obj[key] : defaultValue;
+}
+
 const Component = () => {
   // Constants and configuration keys
   const CONFIG_PREFIX = 'ynabReimbursement_';
@@ -594,8 +598,8 @@ const Component = () => {
           { id: "group1", name: "Essentials" },
           { id: "group2", name: "Discretionary" },
         ],
-        getAccountType: (id) => id === "acc1" ? "His" : "Hers",
-        getCategoryType: (id) => id === "cat3" ? "Hers" : "Shared",
+        getAccountType: (id) => get({"acc1": "His"}, id, "Hers"),
+        getCategoryType: (id) => get({"cat3": "Hers"}, id, "Shared"),
         hasWarnings: false
       },
       expected: {
@@ -624,8 +628,8 @@ const Component = () => {
           { id: "group1", name: "Essentials" },
           { id: "group2", name: "Discretionary" },
         ],
-        getAccountType: (id) => id === "acc1" ? "His" : "Hers",
-        getCategoryType: (id) => id === "cat4" ? "His" : "Shared",
+        getAccountType: (id) => get({"acc1": "His"}, id, "Hers"),
+        getCategoryType: (id) => get({"cat4": "His"}, id, "Shared"),
         hasWarnings: false
       },
       expected: {
@@ -649,8 +653,8 @@ const Component = () => {
         categoryGroups: [
           { id: "group1", name: "Essentials" },
         ],
-        getAccountType: (id) => "His",
-        getCategoryType: (id) => "Shared",
+        getAccountType: (id) => get({}, id, "His"),
+        getCategoryType: (id) => get({}, id, "Shared"),
         hasWarnings: true
       },
       expected: {
