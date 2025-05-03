@@ -599,6 +599,8 @@ const Component = () => {
         getCategoryType: (id) => get({"cat3": "Hers"}, id, "Shared"),
         hasWarnings: false
       },
+      // He paid £100 shared, she paid £50 shared (£75 each should pay). 
+      // He paid £25 extra but spent £20 for her, so she owes him £5
       expected: {
         hisTotalShared: "100.00",
         herTotalShared: "50.00",
@@ -606,8 +608,7 @@ const Component = () => {
         herTotalForHim: "0.00",
         reimbursementAmount: "5.00", 
         reimbursementDirection: "herToHim"
-      },
-      explanation: "He paid £100 shared, she paid £50 shared (£75 each should pay). He paid £25 extra but spent £20 for her, so she owes him £5"
+      }
     },
     {
       name: "Basic split - she pays more shared",
@@ -630,6 +631,9 @@ const Component = () => {
         getCategoryType: (id) => get({"cat4": "His"}, id, "Shared"),
         hasWarnings: false
       },
+      // She paid £100 shared, he paid £50 shared (£75 each should pay).
+      // The formula calculates: heShouldPay = (150/2) - 50 - (30-0) = 75 - 50 - 30 = -5
+      // Since it's negative, she owes him £5
       expected: {
         hisTotalShared: "50.00",
         herTotalShared: "100.00",
@@ -637,8 +641,7 @@ const Component = () => {
         herTotalForHim: "30.00",
         reimbursementAmount: "5.00",
         reimbursementDirection: "herToHim"
-      },
-      explanation: "She paid £100 shared, he paid £50 shared (£75 each should pay). She underpaid shared by £25, plus she also paid £30 for his categories. The formula calculates: heShouldPay = (150/2) - 50 - (30-0) = 75 - 50 - 30 = -5, which means she owes him £5."
+      }
     },
     {
       name: "With warnings - should zero everything",
@@ -656,6 +659,7 @@ const Component = () => {
         getCategoryType: (id) => get({}, id, "Shared"),
         hasWarnings: true
       },
+      // When there are configuration warnings, all calculations should be zeroed out
       expected: {
         hisTotalShared: 0,
         herTotalShared: 0,
@@ -663,8 +667,7 @@ const Component = () => {
         herTotalForHim: 0,
         reimbursementAmount: 0,
         reimbursementDirection: null
-      },
-      explanation: "When there are configuration warnings, all calculations should be zeroed out"
+      }
     }
   ];
   
@@ -693,7 +696,6 @@ const Component = () => {
         results.push({
           name: scenario.name,
           passed,
-          explanation: scenario.explanation,
           expected: scenario.expected,
           actual: {
             hisTotalShared: result.hisTotalShared,
@@ -1216,13 +1218,6 @@ const Component = () => {
                           </div>
                         ) : isOpen && (
                           <div className="mt-3">
-                            {/* Explanation (if available) */}
-                            {result.explanation && (
-                              <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/30 rounded">
-                                <h6 className="font-semibold mb-1">Explanation:</h6>
-                                <p className="text-sm">{result.explanation}</p>
-                              </div>
-                            )}
                             
                             <table className="w-full border-collapse">
                               <thead>
