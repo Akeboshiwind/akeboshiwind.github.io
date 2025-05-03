@@ -636,9 +636,9 @@ const Component = () => {
         hisTotalForHer: "0.00",
         herTotalForHim: "30.00",
         reimbursementAmount: "5.00",
-        reimbursementDirection: "himToHer"
+        reimbursementDirection: "herToHim"
       },
-      explanation: "She paid £100 shared, he paid £50 shared (£75 each should pay). She paid £25 extra and spent £30 for him (£55 total), minus £50 he paid shared = £5 he owes her"
+      explanation: "She paid £100 shared, he paid £50 shared (£75 each should pay). She underpaid shared by £25, plus she also paid £30 for his categories. The formula calculates: heShouldPay = (150/2) - 50 - (30-0) = 75 - 50 - 30 = -5, which means she owes him £5."
     },
     {
       name: "With warnings - should zero everything",
