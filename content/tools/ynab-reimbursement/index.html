@@ -87,6 +87,8 @@ const Component = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
   });
   const [showConfigMenu, setShowConfigMenu] = useState(false);
+  const [showHiddenAccounts, setShowHiddenAccounts] = useState(false);
+  const [showHiddenCategories, setShowHiddenCategories] = useState(false);
   
   // Determine current view based on configuration state
   useEffect(() => {
@@ -658,8 +660,16 @@ const Component = () => {
           
           {configTab === 'accounts' && (
             <div>
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-4 gap-4">
                 <h3 className="font-medium">Accounts</h3>
+                <div className="flex-grow"></div>
+                <div>
+                  <input type="checkbox" 
+                    checked={showHiddenAccounts} 
+                    onChange={() => setShowHiddenAccounts(!showHiddenAccounts)} 
+                    className="mr-2" />
+                  <label className="text-sm">Show Closed Accounts</label>
+                </div>
                 <button 
                   onClick={fetchAccounts}
                   className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
@@ -679,8 +689,12 @@ const Component = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {accounts.filter(a => !a.deleted).map(account => {
+                    {accounts.map(account => {
                       const hasWarning = warnings.some(w => w.id === `account-${account.id}`);
+
+                      if (!(showHiddenAccounts || (!account.closed && !account.deleted))) {
+                        return null;
+                      }
                       
                       return (
                         <tr key={account.id} className={hasWarning ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}>
@@ -688,6 +702,12 @@ const Component = () => {
                             {account.name}
                             {hasWarning && (
                               <span className="ml-2 text-yellow-600 dark:text-yellow-400">⚠️</span>
+                            )}
+                            {account.closed && (
+                              <span className="ml-2">🚫 Closed</span>
+                            )}
+                            {account.deleted && (
+                              <span className="ml-2">🗑️ Deleted</span>
                             )}
                           </td>
                           <td className="p-2 border border-gray-300 dark:border-gray-600">
@@ -704,26 +724,6 @@ const Component = () => {
                         </tr>
                       );
                     })}
-                    
-                    {/* Deleted accounts at the bottom */}
-                    {accounts.filter(a => a.deleted).map(account => (
-                      <tr key={account.id} className="text-gray-400 dark:text-gray-500">
-                        <td className="p-2 border border-gray-300 dark:border-gray-600 line-through">
-                          {account.name} (deleted)
-                        </td>
-                        <td className="p-2 border border-gray-300 dark:border-gray-600">
-                          <select
-                            value={accountTypes[account.id] || 'Unset'}
-                            onChange={(e) => updateAccountType(account.id, e.target.value)}
-                            className="p-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                          >
-                            {ACCOUNT_TYPES.map(type => (
-                              <option key={type} value={type}>{type}</option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
                   </tbody>
                 </table>
               )}
@@ -732,8 +732,16 @@ const Component = () => {
           
           {configTab === 'categories' && (
             <div>
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-4 gap-4">
                 <h3 className="font-medium">Categories</h3>
+                <div className="flex-grow"></div>
+                <div>
+                  <input type="checkbox" 
+                    checked={showHiddenCategories} 
+                    onChange={() => setShowHiddenCategories(!showHiddenCategories)} 
+                    className="mr-2" />
+                  <label className="text-sm">Show Hidden Categories</label>
+                </div>
                 <button 
                   onClick={fetchCategories}
                   className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
@@ -753,11 +761,18 @@ const Component = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {categoryGroups.filter(g => !g.deleted).map(group => {
+                    {categoryGroups.map(group => {
+                      // Filter deleted or hidden groups
+                      if (!(showHiddenCategories || (!group.deleted && !group.hidden))) {
+                        return null;
+                      }
+                      
                       const hasWarning = warnings.some(w => w.id === `group-${group.id}`);
-                      const groupCategories = categories.filter(c => 
-                        c.category_group_id === group.id && !c.deleted
-                      );
+                      const groupCategories = categories
+                        // Group categories by their group
+                        .filter(c => c.category_group_id === group.id)
+                        // Filter out deleted or hidden categories
+                        .filter(c => showHiddenCategories || (!c.deleted && !c.hidden));
                       
                       return (
                         <React.Fragment key={group.id}>
@@ -767,6 +782,12 @@ const Component = () => {
                               {group.name}
                               {hasWarning && (
                                 <span className="ml-2 text-yellow-600 dark:text-yellow-400">⚠️</span>
+                              )}
+                              {group.closed && (
+                                <span className="ml-2">🚫 Closed</span>
+                              )}
+                              {group.deleted && (
+                                <span className="ml-2">🗑️ Deleted</span>
                               )}
                             </td>
                             <td className="p-2 border border-gray-300 dark:border-gray-600">
@@ -788,10 +809,16 @@ const Component = () => {
                             
                             return (
                               <tr key={category.id} className={catHasWarning ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}>
-                                <td className="p-2 border border-gray-300 dark:border-gray-600 pl-6">
+                                <td className="p-2 border border-gray-300 dark:border-gray-600 pl-5">
                                   {category.name}
                                   {catHasWarning && (
                                     <span className="ml-2 text-yellow-600 dark:text-yellow-400">⚠️</span>
+                                  )}
+                                  {category.closed && (
+                                    <span className="ml-2">🚫 Closed</span>
+                                  )}
+                                  {category.deleted && (
+                                    <span className="ml-2">🗑️ Deleted</span>
                                   )}
                                 </td>
                                 <td className="p-2 border border-gray-300 dark:border-gray-600">
@@ -811,53 +838,6 @@ const Component = () => {
                         </React.Fragment>
                       );
                     })}
-                    
-                    {/* Deleted categories at the bottom */}
-                    {categoryGroups.filter(g => g.deleted).length > 0 && (
-                      <tr className="bg-gray-100 dark:bg-gray-700 font-bold">
-                        <td colSpan="2" className="p-2 border border-gray-300 dark:border-gray-600">
-                          Deleted Items
-                        </td>
-                      </tr>
-                    )}
-                    
-                    {categoryGroups.filter(g => g.deleted).map(group => (
-                      <tr key={group.id} className="text-gray-400 dark:text-gray-500">
-                        <td className="p-2 border border-gray-300 dark:border-gray-600 line-through">
-                          {group.name} (deleted group)
-                        </td>
-                        <td className="p-2 border border-gray-300 dark:border-gray-600">
-                          <select
-                            value={categoryGroupTypes[group.id] || 'Unset'}
-                            onChange={(e) => updateCategoryGroupType(group.id, e.target.value)}
-                            className="p-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                          >
-                            {CATEGORY_TYPES.map(type => (
-                              <option key={type} value={type}>{type}</option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                    
-                    {categories.filter(c => c.deleted).map(category => (
-                      <tr key={category.id} className="text-gray-400 dark:text-gray-500">
-                        <td className="p-2 border border-gray-300 dark:border-gray-600 line-through pl-6">
-                          {category.name} (deleted)
-                        </td>
-                        <td className="p-2 border border-gray-300 dark:border-gray-600">
-                          <select
-                            value={categoryTypes[category.id] || 'Unset'}
-                            onChange={(e) => updateCategoryType(category.id, e.target.value)}
-                            className="p-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                          >
-                            {CATEGORY_TYPES.map(type => (
-                              <option key={type} value={type}>{type}</option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
                   </tbody>
                 </table>
               )}
