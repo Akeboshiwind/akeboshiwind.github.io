@@ -2,6 +2,9 @@
 title: YNAB Reimbursement Report
 date: 2025-05-02
 layout: react
+scripts:
+  - calculations.js
+  - tests.js
 ---
 
 // Import YNAB library
@@ -759,7 +762,7 @@ const Component = () => {
 
   // Wrapper function that handles side effects
   const calculateReimbursement = () => {
-    return calculateReimbursementPure(
+    return window.ynabReimbursementCalculations.calculateReimbursementPure(
       transactions,
       categories,
       categoryGroups,
@@ -769,345 +772,16 @@ const Component = () => {
     );
   };
   
-  // Helper functions for test scenarios
-  const createTransaction = (id, payee, date, amount, categoryId, accountId) => ({
-    id, 
-    payee_name: payee, 
-    date, 
-    amount, 
-    category_id: categoryId, 
-    account_id: accountId,
-    transfer_transaction_id: null, 
-    transfer_account_id: null
-  });
-  
-  const createCategory = (id, name, groupId) => ({
-    id, 
-    name, 
-    category_group_id: groupId
-  });
-  
-  const createCategoryGroup = (id, name) => ({ id, name });
-  
-  // Test scenarios for the pure calculation function
-  const reimbursementTestScenarios = [
-    {
-      name: "Basic split - he pays more shared",
-      input: {
-        transactions: [
-          createTransaction("t1", "Grocery", "2023-01-01", -100000, "cat1", "acc1"),
-          createTransaction("t2", "Gym", "2023-01-02", -50000, "cat2", "acc2"),
-          createTransaction("t3", "His Gift", "2023-01-03", -20000, "cat3", "acc1"),
-        ],
-        categories: [
-          createCategory("cat1", "Groceries", "group1"),
-          createCategory("cat2", "Fitness", "group1"),
-          createCategory("cat3", "Gifts", "group2"),
-        ],
-        categoryGroups: [
-          createCategoryGroup("group1", "Essentials"),
-          createCategoryGroup("group2", "Discretionary"),
-        ],
-        getAccountType: (id) => get({"acc1": "His"}, id, "Hers"),
-        getCategoryType: (id) => get({"cat3": "Hers"}, id, "Shared"),
-        hasWarnings: false
-      },
-      // He paid £100 shared, she paid £50 shared (£75 each should pay). 
-      // He paid £25 extra but spent £20 for her, so she owes him £5
-      expected: {
-        hisTotalShared: "100.00",
-        herTotalShared: "50.00",
-        hisTotalForHer: "20.00",
-        herTotalForHim: "0.00",
-        reimbursementAmount: "5.00", 
-        reimbursementDirection: "herToHim"
-      }
-    },
-    {
-      name: "Basic split - she pays more shared",
-      input: {
-        transactions: [
-          createTransaction("t1", "Grocery", "2023-01-01", -50000, "cat1", "acc1"),
-          createTransaction("t2", "Utilities", "2023-01-02", -100000, "cat2", "acc2"),
-          createTransaction("t4", "His Things", "2023-01-04", -30000, "cat4", "acc2"),
-        ],
-        categories: [
-          createCategory("cat1", "Groceries", "group1"),
-          createCategory("cat2", "Utilities", "group1"),
-          createCategory("cat4", "His Items", "group2"),
-        ],
-        categoryGroups: [
-          createCategoryGroup("group1", "Essentials"),
-          createCategoryGroup("group2", "Discretionary"),
-        ],
-        getAccountType: (id) => get({"acc1": "His"}, id, "Hers"),
-        getCategoryType: (id) => get({"cat4": "His"}, id, "Shared"),
-        hasWarnings: false
-      },
-      // She paid £100 shared, he paid £50 shared (£75 each should pay).
-      // The formula calculates: heShouldPay = (150/2) - 50 - (30-0) = 75 - 50 - 30 = -5
-      // Since it's negative, she owes him £5
-      expected: {
-        hisTotalShared: "50.00",
-        herTotalShared: "100.00",
-        hisTotalForHer: "0.00",
-        herTotalForHim: "30.00",
-        reimbursementAmount: "5.00",
-        reimbursementDirection: "herToHim"
-      }
-    },
-    {
-      name: "Balanced spending - no one owes anything",
-      input: {
-        transactions: [
-          createTransaction("t1", "Groceries", "2023-01-01", -75000, "cat1", "acc1"),
-          createTransaction("t2", "Utilities", "2023-01-02", -75000, "cat1", "acc2"),
-          createTransaction("t3", "His Gifts", "2023-01-03", -25000, "cat2", "acc2"),
-          createTransaction("t4", "Her Gifts", "2023-01-04", -25000, "cat3", "acc1"),
-        ],
-        categories: [
-          createCategory("cat1", "Essentials", "group1"),
-          createCategory("cat2", "His Items", "group2"),
-          createCategory("cat3", "Her Items", "group2"),
-        ],
-        categoryGroups: [
-          createCategoryGroup("group1", "Household"),
-          createCategoryGroup("group2", "Personal"),
-        ],
-        getAccountType: (id) => get({"acc1": "His", "acc2": "Hers"}, id),
-        getCategoryType: (id) => get({"cat2": "His", "cat3": "Hers"}, id, "Shared"),
-        hasWarnings: false
-      },
-      // He paid £75 shared, she paid £75 shared (£75 each fair share).
-      // He paid £25 for her, she paid £25 for him.
-      // Everything is perfectly balanced.
-      expected: {
-        hisTotalShared: "75.00",
-        herTotalShared: "75.00",
-        hisTotalForHer: "25.00",
-        herTotalForHim: "25.00",
-        reimbursementAmount: "0.00",
-        reimbursementDirection: "herToHim" // Direction doesn't matter when amount is 0
-      }
-    },
-    {
-      name: "Only direct payments - no shared expenses",
-      input: {
-        transactions: [
-          createTransaction("t1", "His Stuff", "2023-01-01", -50000, "cat1", "acc2"),
-          createTransaction("t2", "More His Stuff", "2023-01-02", -30000, "cat1", "acc2"),
-          createTransaction("t3", "Her Stuff", "2023-01-03", -20000, "cat2", "acc1"),
-        ],
-        categories: [
-          createCategory("cat1", "His Items", "group1"),
-          createCategory("cat2", "Her Items", "group1"),
-        ],
-        categoryGroups: [
-          createCategoryGroup("group1", "Personal"),
-        ],
-        getAccountType: (id) => get({"acc1": "His", "acc2": "Hers"}, id),
-        getCategoryType: (id) => get({"cat1": "His", "cat2": "Hers"}, id),
-        hasWarnings: false
-      },
-      // No shared expenses at all.
-      // She paid £80 for his categories, he paid £20 for her categories.
-      // The formula calculates: heShouldPay = (0/2) - 0 - (-80+20) = 0 - 0 - (-60) = 60
-      // Since it's positive, he owes her £60
-      expected: {
-        hisTotalShared: "0.00",
-        herTotalShared: "0.00",
-        hisTotalForHer: "20.00",
-        herTotalForHim: "80.00",
-        reimbursementAmount: "60.00",
-        reimbursementDirection: "himToHer"
-      }
-    },
-    {
-      name: "Only shared expenses - no direct payments",
-      input: {
-        transactions: [
-          createTransaction("t1", "Groceries", "2023-01-01", -100000, "cat1", "acc1"),
-          createTransaction("t2", "Utilities", "2023-01-02", -40000, "cat1", "acc2"),
-        ],
-        categories: [
-          createCategory("cat1", "Essentials", "group1"),
-        ],
-        categoryGroups: [
-          createCategoryGroup("group1", "Household"),
-        ],
-        getAccountType: (id) => get({"acc1": "His", "acc2": "Hers"}, id),
-        getCategoryType: (id) => get({}, id, "Shared"),
-        hasWarnings: false
-      },
-      // Only shared expenses, no direct payments.
-      // He paid £100 shared, she paid £40 shared (£70 each fair share).
-      // The formula calculates: heShouldPay = (140/2) - 100 - (0-0) = 70 - 100 = -30
-      // Since it's negative, she owes him £30
-      expected: {
-        hisTotalShared: "100.00",
-        herTotalShared: "40.00",
-        hisTotalForHer: "0.00",
-        herTotalForHim: "0.00",
-        reimbursementAmount: "30.00",
-        reimbursementDirection: "herToHim"
-      }
-    },
-    {
-      name: "He pays more shared, she pays more direct",
-      input: {
-        transactions: [
-          createTransaction("t1", "Groceries", "2023-01-01", -150000, "cat1", "acc1"), 
-          createTransaction("t2", "Utilities", "2023-01-02", -50000, "cat1", "acc2"),
-          createTransaction("t3", "His Stuff", "2023-01-03", -60000, "cat2", "acc2"),
-          createTransaction("t4", "Her Stuff", "2023-01-04", -10000, "cat3", "acc1"),
-        ],
-        categories: [
-          createCategory("cat1", "Essentials", "group1"),
-          createCategory("cat2", "His Items", "group2"),
-          createCategory("cat3", "Her Items", "group2"),
-        ],
-        categoryGroups: [
-          createCategoryGroup("group1", "Household"),
-          createCategoryGroup("group2", "Personal"),
-        ],
-        getAccountType: (id) => get({"acc1": "His", "acc2": "Hers"}, id),
-        getCategoryType: (id) => get({"cat2": "His", "cat3": "Hers"}, id, "Shared"),
-        hasWarnings: false
-      },
-      // He paid £150 shared, she paid £50 shared (£100 each fair share)
-      // He paid £10 for her categories, she paid £60 for his categories
-      // Shared difference: He paid £50 extra
-      // Direct difference: She paid £50 extra
-      // These balance out exactly
-      expected: {
-        hisTotalShared: "150.00",
-        herTotalShared: "50.00",
-        hisTotalForHer: "10.00",
-        herTotalForHim: "60.00",
-        reimbursementAmount: "0.00",
-        reimbursementDirection: "herToHim" // Direction doesn't matter when amount is 0
-      }
-    },
-    {
-      name: "Transfer transactions should be excluded",
-      input: {
-        transactions: [
-          createTransaction("t1", "Groceries", "2023-01-01", -100000, "cat1", "acc1"),
-          // These transfer transactions should be ignored:
-          {
-            id: "t2",
-            payee_name: "Transfer",
-            date: "2023-01-02",
-            amount: -50000, 
-            category_id: "cat1",
-            account_id: "acc1",
-            transfer_transaction_id: "t2b", 
-            transfer_account_id: "acc2"
-          },
-          {
-            id: "t3",
-            payee_name: "Another Transfer",
-            date: "2023-01-03",
-            amount: -20000, 
-            category_id: null,
-            account_id: "acc2",
-            transfer_transaction_id: null, 
-            transfer_account_id: "acc1"
-          },
-        ],
-        categories: [
-          createCategory("cat1", "Essentials", "group1"),
-        ],
-        categoryGroups: [
-          createCategoryGroup("group1", "Household"),
-        ],
-        getAccountType: (id) => get({"acc1": "His", "acc2": "Hers"}, id),
-        getCategoryType: (id) => get({}, id, "Shared"),
-        hasWarnings: false
-      },
-      // Only the £100 transaction should count; transfers should be ignored
-      expected: {
-        hisTotalShared: "100.00",
-        herTotalShared: "0.00",
-        hisTotalForHer: "0.00",
-        herTotalForHim: "0.00",
-        reimbursementAmount: "50.00",
-        reimbursementDirection: "herToHim"
-      }
-    },
-    {
-      name: "With warnings - should zero everything",
-      input: {
-        transactions: [
-          createTransaction("t1", "Grocery", "2023-01-01", -100000, "cat1", "acc1"),
-        ],
-        categories: [
-          createCategory("cat1", "Groceries", "group1"),
-        ],
-        categoryGroups: [
-          createCategoryGroup("group1", "Essentials"),
-        ],
-        getAccountType: (id) => get({}, id, "His"),
-        getCategoryType: (id) => get({}, id, "Shared"),
-        hasWarnings: true
-      },
-      // When there are configuration warnings, all calculations should be zeroed out
-      expected: {
-        hisTotalShared: 0,
-        herTotalShared: 0,
-        hisTotalForHer: 0,
-        herTotalForHim: 0,
-        reimbursementAmount: 0,
-        reimbursementDirection: null
-      }
-    }
-  ];
-  
-  // Function to run the tests
+  // Use the test functions from the external module
   const runReimbursementTests = () => {
-    const results = [];
-    
-    reimbursementTestScenarios.forEach(scenario => {
-      try {
-        const result = calculateReimbursementPure(
-          scenario.input.transactions,
-          scenario.input.categories,
-          scenario.input.categoryGroups,
-          scenario.input.getAccountType,
-          scenario.input.getCategoryType,
-          scenario.input.hasWarnings
-        );
-        
-        // Check if key values match
-        const expectedKeys = ['hisTotalShared', 'herTotalShared', 'hisTotalForHer', 'herTotalForHim', 'reimbursementAmount', 'reimbursementDirection'];
-        const passed = expectedKeys.every(key => 
-          result[key] === scenario.expected[key] || 
-          result[key]?.toString() === scenario.expected[key]?.toString()
-        );
-        
-        results.push({
-          name: scenario.name,
-          passed,
-          expected: scenario.expected,
-          actual: {
-            hisTotalShared: result.hisTotalShared,
-            herTotalShared: result.herTotalShared,
-            hisTotalForHer: result.hisTotalForHer,
-            herTotalForHim: result.herTotalForHim,
-            reimbursementAmount: result.reimbursementAmount,
-            reimbursementDirection: result.reimbursementDirection
-          }
-        });
-      } catch (error) {
-        results.push({
-          name: scenario.name,
-          passed: false,
-          error: error.message
-        });
-      }
-    });
-    
-    return results;
+    return window.ynabReimbursementTests.runReimbursementTests();
+  };
+  
+  // Function to run all pure function tests
+  const handleRunPureFunctionTests = () => {
+    const testResults = window.ynabReimbursementTests.runPureFunctionTests();
+    // Display results in UI
+    setTestResults(testResults);
   };
   
   // Calculate if the month is completed (has settlement transfers)
@@ -1560,24 +1234,32 @@ const Component = () => {
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-medium">Reimbursement Calculation Tests</h3>
-                <button 
-                  onClick={() => {
-                    const testResults = runReimbursementTests();
-                    // Force state update to display results
-                    setTestResults([...testResults]);
-                  }}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                >
-                  Run Tests
-                </button>
+                <div className="space-x-2">
+                  <button 
+                    onClick={() => {
+                      const testResults = runReimbursementTests();
+                      // Force state update to display results
+                      setTestResults([...testResults]);
+                    }}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                  >
+                    Run Integration Tests
+                  </button>
+                  <button 
+                    onClick={handleRunPureFunctionTests}
+                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
+                  >
+                    Run Unit Tests
+                  </button>
+                </div>
               </div>
               
-              {/* Test Results UI */}
-              {testResults && (
+              {/* Test Results UI for Integration Tests */}
+              {testResults && !Array.isArray(testResults[0]?.results) && (
                 <div className="space-y-4">
                   <div className="mb-2">
                     <h4 className="text-lg font-medium">
-                      Results: {testResults.filter(r => r.passed).length}/{testResults.length} passed
+                      Integration Test Results: {testResults.filter(r => r.passed).length}/{testResults.length} passed
                     </h4>
                   </div>
                   
@@ -1640,6 +1322,112 @@ const Component = () => {
                             </table>
                           </div>
                         )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              
+              {/* Test Results UI for Unit Tests */}
+              {testResults && Array.isArray(testResults) && testResults[0]?.results && (
+                <div className="space-y-6 mt-6">
+                  <div className="mb-2">
+                    <h4 className="text-xl font-medium border-b pb-2">
+                      Unit Test Results
+                    </h4>
+                  </div>
+                  
+                  {testResults.map((testSuite, suiteIndex) => {
+                    const passedTests = testSuite.results.filter(r => r.passed).length;
+                    const totalTests = testSuite.results.length;
+                    
+                    return (
+                      <div key={suiteIndex} className="border rounded-lg shadow-sm">
+                        <div className="bg-gray-50 dark:bg-gray-800 p-3 border-b rounded-t-lg">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h5 className="font-bold">{testSuite.functionName}</h5>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">{testSuite.description}</p>
+                            </div>
+                            <div className={`text-sm font-medium ${
+                              passedTests === totalTests ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
+                            }`}>
+                              {passedTests}/{totalTests} passed
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="divide-y">
+                          {testSuite.results.map((result, testIndex) => {
+                            const [isOpen, setIsOpen] = React.useState(!result.passed);
+                            
+                            return (
+                              <div key={testIndex} className={`p-3 ${
+                                result.passed ? '' : 'bg-red-50 dark:bg-red-900/10'
+                              }`}>
+                                <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
+                                  <div className="flex items-center">
+                                    <span className={`mr-2 ${
+                                      result.passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                                    }`}>
+                                      {result.passed ? '✓' : '✗'}
+                                    </span>
+                                    <span className="font-medium">{result.name}</span>
+                                  </div>
+                                  <span className="text-gray-500 text-sm">
+                                    {isOpen ? '▼' : '▶'}
+                                  </span>
+                                </div>
+                                
+                                {result.error ? (
+                                  <div className="text-red-600 dark:text-red-400 text-sm mt-2 pl-6">
+                                    Error: {result.error}
+                                  </div>
+                                ) : isOpen && (
+                                  <div className="mt-3 pl-6">
+                                    <table className="w-full border-collapse text-sm">
+                                      <thead>
+                                        <tr className="bg-gray-100 dark:bg-gray-700">
+                                          <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Property</th>
+                                          <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Expected</th>
+                                          <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Actual</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {Object.keys(result.expected).map(key => {
+                                          // Handle nested objects
+                                          const expectedValue = typeof result.expected[key] === 'object'
+                                            ? JSON.stringify(result.expected[key], null, 1)
+                                            : result.expected[key]?.toString() || 'null';
+                                            
+                                          const actualValue = typeof result.actual[key] === 'object'
+                                            ? JSON.stringify(result.actual[key], null, 1)
+                                            : result.actual[key]?.toString() || 'null';
+                                            
+                                          const isDifferent = expectedValue !== actualValue;
+                                          
+                                          return (
+                                            <tr key={key} className={isDifferent ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}>
+                                              <td className="p-2 border border-gray-300 dark:border-gray-600 font-medium">
+                                                {key}
+                                              </td>
+                                              <td className="p-2 border border-gray-300 dark:border-gray-600 font-mono text-xs whitespace-pre-wrap">
+                                                {expectedValue}
+                                              </td>
+                                              <td className="p-2 border border-gray-300 dark:border-gray-600 font-mono text-xs whitespace-pre-wrap">
+                                                {actualValue}
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   })}
