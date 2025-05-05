@@ -100,7 +100,7 @@ const calculateCategorySpending = (
   validTransactions.forEach(transaction => {
     const accountType = getAccountTypeFunc(transaction.account_id);
     const categoryId = transaction.category_id;
-    const amount = Math.abs(transaction.amount) / 1000; // YNAB amounts are in milliunits
+    const amount = -transaction.amount; // Keep YNAB amounts in milliunits
     
     // Validate account type is one of the expected values
     if (!isValidType(accountType, true)) {
@@ -344,6 +344,11 @@ const calculateReimbursementPure = (
   
   // Convert to sorted array for display
   const categorySummary = Object.values(categorySummaryMap)
+    .map(category => ({
+      ...category,
+      hisSpending: category.hisSpending,
+      herSpending: category.herSpending
+    }))
     .sort((a, b) => {
       // First sort by group name
       if (a.groupName < b.groupName) return -1;
@@ -354,11 +359,11 @@ const calculateReimbursementPure = (
     });
   
   return {
-    hisTotalShared: hisTotalShared.toFixed(2),
-    herTotalShared: herTotalShared.toFixed(2),
-    hisTotalForHer: hisTotalForHer.toFixed(2),
-    herTotalForHim: herTotalForHim.toFixed(2),
-    reimbursementAmount: reimbursementAmount.toFixed(2),
+    hisTotalShared: hisTotalShared,
+    herTotalShared: herTotalShared,
+    hisTotalForHer: hisTotalForHer,
+    herTotalForHim: herTotalForHim,
+    reimbursementAmount: reimbursementAmount,
     reimbursementDirection,
     categorySummary,
     warnings: allWarnings

@@ -247,8 +247,8 @@ const testCalculateCategorySpending = () => {
         categoryCount: 2,
         warningsCount: 0,
         categories: {
-          cat1: { hisSpending: 100, herSpending: 75 },
-          cat2: { hisSpending: 50, herSpending: 25 },
+          cat1: { hisSpending: 100000, herSpending: 75000 },
+          cat2: { hisSpending: 50000, herSpending: 25000 },
         }
       }
     },
@@ -266,9 +266,9 @@ const testCalculateCategorySpending = () => {
         categoryCount: 3,
         warningsCount: 0,
         categories: {
-          cat1: { hisSpending: 100, herSpending: 0 },
-          cat2: { hisSpending: 50, herSpending: 0 },
-          cat3: { hisSpending: 30, herSpending: 0 },
+          cat1: { hisSpending: 100000, herSpending: 0 },
+          cat2: { hisSpending: 50000, herSpending: 0 },
+          cat3: { hisSpending: 30000, herSpending: 0 },
         }
       }
     },
@@ -285,8 +285,8 @@ const testCalculateCategorySpending = () => {
         categoryCount: 2,
         warningsCount: 0,
         categories: {
-          cat1: { hisSpending: 0, herSpending: 80 },
-          cat2: { hisSpending: 0, herSpending: 40 },
+          cat1: { hisSpending: 0, herSpending: 80000 },
+          cat2: { hisSpending: 0, herSpending: 40000 },
         }
       }
     },
@@ -303,7 +303,7 @@ const testCalculateCategorySpending = () => {
         categoryCount: 1,
         warningsCount: 0,
         categories: {
-          cat1: { hisSpending: 100, herSpending: 0 },
+          cat1: { hisSpending: 100000, herSpending: 0 },
         }
       }
     },
@@ -320,7 +320,7 @@ const testCalculateCategorySpending = () => {
         categoryCount: 1,
         warningsCount: 1,
         categories: {
-          cat1: { hisSpending: 100, herSpending: 0 },
+          cat1: { hisSpending: 100000, herSpending: 0 },
         }
       }
     },
@@ -365,10 +365,10 @@ const testCalculateSpendingTotals = () => {
       name: "Normal case: Mixed spending across different category types",
       input: {
         categorySpending: {
-          "cat1": { hisSpending: 100, herSpending: 75 },   // Shared
-          "cat2": { hisSpending: 50, herSpending: 0 },     // His
-          "cat3": { hisSpending: 0, herSpending: 40 },     // Hers
-          "cat4": { hisSpending: 20, herSpending: 30 }     // Shared
+          "cat1": { hisSpending: 100000, herSpending: 75000 },   // Shared
+          "cat2": { hisSpending: 50000, herSpending: 0 },     // His
+          "cat3": { hisSpending: 0, herSpending: 40000 },     // Hers
+          "cat4": { hisSpending: 20000, herSpending: 30000 }     // Shared
         },
         categories: [
           createTestCategory("cat1", "Groceries", "g1"),
@@ -381,8 +381,8 @@ const testCalculateSpendingTotals = () => {
         })
       },
       expected: {
-        hisTotalShared: 120,
-        herTotalShared: 105,
+        hisTotalShared: 120000,
+        herTotalShared: 105000,
         hisTotalForHer: 0,
         herTotalForHim: 0,
         warningsCount: 0
@@ -392,8 +392,8 @@ const testCalculateSpendingTotals = () => {
       name: "Only shared categories",
       input: {
         categorySpending: {
-          "cat1": { hisSpending: 100, herSpending: 40 },
-          "cat2": { hisSpending: 60, herSpending: 20 }
+          "cat1": { hisSpending: 100000, herSpending: 40000 },
+          "cat2": { hisSpending: 60000, herSpending: 20000 }
         },
         categories: [
           createTestCategory("cat1", "Groceries", "g1"),
@@ -404,8 +404,8 @@ const testCalculateSpendingTotals = () => {
         })
       },
       expected: {
-        hisTotalShared: 160,
-        herTotalShared: 60,
+        hisTotalShared: 160000,
+        herTotalShared: 60000,
         hisTotalForHer: 0,
         herTotalForHim: 0,
         warningsCount: 0
@@ -415,8 +415,8 @@ const testCalculateSpendingTotals = () => {
       name: "Only his categories",
       input: {
         categorySpending: {
-          "cat1": { hisSpending: 80, herSpending: 20 },
-          "cat2": { hisSpending: 40, herSpending: 10 }
+          "cat1": { hisSpending: 80000, herSpending: 20000 },
+          "cat2": { hisSpending: 40000, herSpending: 10000 }
         },
         categories: [
           createTestCategory("cat1", "His Stuff 1", "g1"),
@@ -430,7 +430,7 @@ const testCalculateSpendingTotals = () => {
         hisTotalShared: 0,
         herTotalShared: 0,
         hisTotalForHer: 0,
-        herTotalForHim: 30,
+        herTotalForHim: 30000,
         warningsCount: 0
       }
     },
@@ -438,8 +438,8 @@ const testCalculateSpendingTotals = () => {
       name: "Only her categories",
       input: {
         categorySpending: {
-          "cat1": { hisSpending: 30, herSpending: 70 },
-          "cat2": { hisSpending: 15, herSpending: 35 }
+          "cat1": { hisSpending: 30000, herSpending: 70000 },
+          "cat2": { hisSpending: 15000, herSpending: 35000 }
         },
         categories: [
           createTestCategory("cat1", "Her Stuff 1", "g1"),
@@ -452,7 +452,7 @@ const testCalculateSpendingTotals = () => {
       expected: {
         hisTotalShared: 0,
         herTotalShared: 0,
-        hisTotalForHer: 45,
+        hisTotalForHer: 45000,
         herTotalForHim: 0,
         warningsCount: 0
       }
@@ -461,9 +461,9 @@ const testCalculateSpendingTotals = () => {
       name: "Mixed spending with direct payments in both directions",
       input: {
         categorySpending: {
-          "cat1": { hisSpending: 100, herSpending: 50 },   // Shared
-          "cat2": { hisSpending: 40, herSpending: 20 },    // His
-          "cat3": { hisSpending: 30, herSpending: 60 }     // Hers
+          "cat1": { hisSpending: 100000, herSpending: 50000 },   // Shared
+          "cat2": { hisSpending: 40000, herSpending: 20000 },    // His
+          "cat3": { hisSpending: 30000, herSpending: 60000 }     // Hers
         },
         categories: [
           createTestCategory("cat1", "Shared Expenses", "g1"),
@@ -475,10 +475,10 @@ const testCalculateSpendingTotals = () => {
         })
       },
       expected: {
-        hisTotalShared: 100,
-        herTotalShared: 50,
-        hisTotalForHer: 30,
-        herTotalForHim: 20,
+        hisTotalShared: 100000,
+        herTotalShared: 50000,
+        hisTotalForHer: 30000,
+        herTotalForHim: 20000,
         warningsCount: 0
       }
     },
@@ -486,8 +486,8 @@ const testCalculateSpendingTotals = () => {
       name: "Invalid category types generate warnings",
       input: {
         categorySpending: {
-          "cat1": { hisSpending: 100, herSpending: 50 },
-          "cat2": { hisSpending: 20, herSpending: 10 }
+          "cat1": { hisSpending: 100000, herSpending: 50000 },
+          "cat2": { hisSpending: 20000, herSpending: 10000 }
         },
         categories: [
           createTestCategory("cat1", "Valid", "g1"),
@@ -498,8 +498,8 @@ const testCalculateSpendingTotals = () => {
         })
       },
       expected: {
-        hisTotalShared: 100,
-        herTotalShared: 50,
+        hisTotalShared: 100000,
+        herTotalShared: 50000,
         hisTotalForHer: 0,
         herTotalForHim: 0,
         warningsCount: 1
@@ -557,36 +557,36 @@ const testCalculateReimbursementValues = () => {
     {
       name: "He owes her (positive heShouldPay)",
       input: {
-        hisTotalShared: 75,
-        herTotalShared: 125,
-        hisTotalForHer: 10,
-        herTotalForHim: 30
+        hisTotalShared: 75000,
+        herTotalShared: 125000,
+        hisTotalForHer: 10000,
+        herTotalForHim: 30000
       },
       expected: {
-        reimbursementAmount: 45,
+        reimbursementAmount: 45000,
         reimbursementDirection: "himToHer"
       }
     },
     {
       name: "She owes him (negative heShouldPay)",
       input: {
-        hisTotalShared: 125,
-        herTotalShared: 75,
-        hisTotalForHer: 20,
-        herTotalForHim: 10
+        hisTotalShared: 125000,
+        herTotalShared: 75000,
+        hisTotalForHer: 20000,
+        herTotalForHim: 10000
       },
       expected: {
-        reimbursementAmount: 35,
+        reimbursementAmount: 35000,
         reimbursementDirection: "herToHim"
       }
     },
     {
       name: "No one owes anything (zero heShouldPay)",
       input: {
-        hisTotalShared: 100,
-        herTotalShared: 100,
-        hisTotalForHer: 25,
-        herTotalForHim: 25
+        hisTotalShared: 100000,
+        herTotalShared: 100000,
+        hisTotalForHer: 25000,
+        herTotalForHim: 25000
       },
       expected: {
         reimbursementAmount: 0,
@@ -599,10 +599,10 @@ const testCalculateReimbursementValues = () => {
         hisTotalShared: 0,
         herTotalShared: 0,
         hisTotalForHer: 0,
-        herTotalForHim: 80
+        herTotalForHim: 80000
       },
       expected: {
-        reimbursementAmount: 80,
+        reimbursementAmount: 80000,
         reimbursementDirection: "himToHer"
       }
     },
@@ -611,50 +611,50 @@ const testCalculateReimbursementValues = () => {
       input: {
         hisTotalShared: 0,
         herTotalShared: 0,
-        hisTotalForHer: 50,
+        hisTotalForHer: 50000,
         herTotalForHim: 0
       },
       expected: {
-        reimbursementAmount: 50,
+        reimbursementAmount: 50000,
         reimbursementDirection: "herToHim"
       }
     },
     {
       name: "Only shared expenses - he paid more",
       input: {
-        hisTotalShared: 140,
-        herTotalShared: 60,
+        hisTotalShared: 140000,
+        herTotalShared: 60000,
         hisTotalForHer: 0,
         herTotalForHim: 0
       },
       expected: {
-        reimbursementAmount: 40,
+        reimbursementAmount: 40000,
         reimbursementDirection: "herToHim"
       }
     },
     {
       name: "Only shared expenses - she paid more",
       input: {
-        hisTotalShared: 60,
-        herTotalShared: 140,
+        hisTotalShared: 60000,
+        herTotalShared: 140000,
         hisTotalForHer: 0,
         herTotalForHim: 0
       },
       expected: {
-        reimbursementAmount: 40,
+        reimbursementAmount: 40000,
         reimbursementDirection: "himToHer"
       }
     },
     {
       name: "Fractional amounts are handled correctly",
       input: {
-        hisTotalShared: 100.33,
-        herTotalShared: 99.67,
-        hisTotalForHer: 25.25,
-        herTotalForHim: 24.75
+        hisTotalShared: 10033,
+        herTotalShared: 9966,
+        hisTotalForHer: 2525,
+        herTotalForHim: 2475
       },
       expected: {
-        reimbursementAmount: 0.5,
+        reimbursementAmount: 83.5,
         reimbursementDirection: "herToHim"
       }
     },
@@ -690,8 +690,8 @@ const testCreateCategorySummary = () => {
       name: "Normal case: Valid categories with metadata",
       input: {
         categorySpending: {
-          "cat1": { hisSpending: 100, herSpending: 50 },
-          "cat2": { hisSpending: 75, herSpending: 25 }
+          "cat1": { hisSpending: 100000, herSpending: 50000 },
+          "cat2": { hisSpending: 75000, herSpending: 25000 }
         },
         categories: [
           createTestCategory("cat1", "Groceries", "g1"),
@@ -725,8 +725,8 @@ const testCreateCategorySummary = () => {
       name: "Categories that don't exist in the list generate warnings",
       input: {
         categorySpending: {
-          "cat1": { hisSpending: 100, herSpending: 50 },
-          "missing": { hisSpending: 75, herSpending: 25 }
+          "cat1": { hisSpending: 100000, herSpending: 50000 },
+          "missing": { hisSpending: 75000, herSpending: 25000 }
         },
         categories: [
           createTestCategory("cat1", "Groceries", "g1")
@@ -754,8 +754,8 @@ const testCreateCategorySummary = () => {
       name: "Categories with missing group information generate warnings",
       input: {
         categorySpending: {
-          "cat1": { hisSpending: 100, herSpending: 50 },
-          "cat2": { hisSpending: 75, herSpending: 25 }
+          "cat1": { hisSpending: 100000, herSpending: 50000 },
+          "cat2": { hisSpending: 75000, herSpending: 25000 }
         },
         categories: [
           createTestCategory("cat1", "Groceries", "g1"),
@@ -784,8 +784,8 @@ const testCreateCategorySummary = () => {
       name: "Invalid category types are reported as warnings but included in summary",
       input: {
         categorySpending: {
-          "cat1": { hisSpending: 100, herSpending: 50 },
-          "cat2": { hisSpending: 75, herSpending: 25 }
+          "cat1": { hisSpending: 100000, herSpending: 50000 },
+          "cat2": { hisSpending: 75000, herSpending: 25000 }
         },
         categories: [
           createTestCategory("cat1", "Groceries", "g1"),

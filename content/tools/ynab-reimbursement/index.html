@@ -47,6 +47,11 @@ function get(obj, key, defaultValue = null) {
   return obj.hasOwnProperty(key) ? obj[key] : defaultValue;
 }
 
+// Helper function to convert milliunits to dollars for display
+const milliunitsToDisplayAmount = (milliunits) => {
+  return (milliunits / 1000).toFixed(2);
+};
+
 const Component = () => {
   // Constants and configuration keys
   const CONFIG_PREFIX = 'ynabReimbursement_';
@@ -1126,11 +1131,11 @@ const Component = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Spent on shared categories:</span>
-                    <span className="font-semibold">£{hisTotalShared}</span>
+                    <span className="font-semibold">£{milliunitsToDisplayAmount(hisTotalShared)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Spent on her categories:</span>
-                    <span className="font-semibold">£{hisTotalForHer}</span>
+                    <span className="font-semibold">£{milliunitsToDisplayAmount(hisTotalForHer)}</span>
                   </div>
                 </div>
               </div>
@@ -1141,11 +1146,11 @@ const Component = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Spent on shared categories:</span>
-                    <span className="font-semibold">£{herTotalShared}</span>
+                    <span className="font-semibold">£{milliunitsToDisplayAmount(herTotalShared)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Spent on his categories:</span>
-                    <span className="font-semibold">£{herTotalForHim}</span>
+                    <span className="font-semibold">£{milliunitsToDisplayAmount(herTotalForHim)}</span>
                   </div>
                 </div>
               </div>
@@ -1160,8 +1165,8 @@ const Component = () => {
               <div className="text-center py-3">
                 <div className="text-2xl font-bold mb-2">
                   {reimbursementDirection === 'herToHim'
-                    ? `£${reimbursementAmount} - She should pay Him`
-                    : `£${reimbursementAmount} - He should pay Her`
+                    ? `£${milliunitsToDisplayAmount(reimbursementAmount)} - She should pay Him`
+                    : `£${milliunitsToDisplayAmount(reimbursementAmount)} - He should pay Her`
                   }
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 italic">
@@ -1200,8 +1205,8 @@ const Component = () => {
                       }, {})
                     ).map(([groupId, group]) => {
                       // Calculate group totals
-                      const groupHisTotal = group.categories.reduce((sum, cat) => sum + parseFloat(cat.hisSpending), 0);
-                      const groupHerTotal = group.categories.reduce((sum, cat) => sum + parseFloat(cat.herSpending), 0);
+                      const groupHisTotal = group.categories.reduce((sum, cat) => sum + cat.hisSpending, 0);
+                      const groupHerTotal = group.categories.reduce((sum, cat) => sum + cat.herSpending, 0);
                       const groupTotal = groupHisTotal + groupHerTotal;
                       
                       return (
@@ -1212,19 +1217,19 @@ const Component = () => {
                               {group.groupName}
                             </td>
                             <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
-                              £{groupHisTotal.toFixed(2)}
+                              £{milliunitsToDisplayAmount(groupHisTotal)}
                             </td>
                             <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
-                              £{groupHerTotal.toFixed(2)}
+                              £{milliunitsToDisplayAmount(groupHerTotal)}
                             </td>
                             <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
-                              £{groupTotal.toFixed(2)}
+                              £{milliunitsToDisplayAmount(groupTotal)}
                             </td>
                           </tr>
                           
                           {/* Categories in this group */}
                           {group.categories.map(category => {
-                            const total = parseFloat(category.hisSpending) + parseFloat(category.herSpending);
+                            const total = category.hisSpending + category.herSpending;
                             
                             // Only show if there's any spending
                             if (total > 0) {
@@ -1234,13 +1239,13 @@ const Component = () => {
                                     {category.categoryName}
                                   </td>
                                   <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
-                                    £{category.hisSpending.toFixed(2)}
+                                    £{milliunitsToDisplayAmount(category.hisSpending)}
                                   </td>
                                   <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
-                                    £{category.herSpending.toFixed(2)}
+                                    £{milliunitsToDisplayAmount(category.herSpending)}
                                   </td>
                                   <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
-                                    £{total.toFixed(2)}
+                                    £{milliunitsToDisplayAmount(total)}
                                   </td>
                                 </tr>
                               );
@@ -1257,13 +1262,13 @@ const Component = () => {
                         Grand Total
                       </td>
                       <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
-                        £{hisTotalShared}
+                        £{milliunitsToDisplayAmount(hisTotalShared)}
                       </td>
                       <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
-                        £{herTotalShared}
+                        £{milliunitsToDisplayAmount(herTotalShared)}
                       </td>
                       <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
-                        £{(parseFloat(hisTotalShared) + parseFloat(herTotalShared)).toFixed(2)}
+                        £{milliunitsToDisplayAmount(hisTotalShared + herTotalShared)}
                       </td>
                     </tr>
                   </tbody>
