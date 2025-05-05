@@ -644,6 +644,185 @@ const Component = () => {
       }
     },
     {
+      name: "Balanced spending - no one owes anything",
+      input: {
+        transactions: [
+          createTransaction("t1", "Groceries", "2023-01-01", -75000, "cat1", "acc1"),
+          createTransaction("t2", "Utilities", "2023-01-02", -75000, "cat1", "acc2"),
+          createTransaction("t3", "His Gifts", "2023-01-03", -25000, "cat2", "acc2"),
+          createTransaction("t4", "Her Gifts", "2023-01-04", -25000, "cat3", "acc1"),
+        ],
+        categories: [
+          createCategory("cat1", "Essentials", "group1"),
+          createCategory("cat2", "His Items", "group2"),
+          createCategory("cat3", "Her Items", "group2"),
+        ],
+        categoryGroups: [
+          createCategoryGroup("group1", "Household"),
+          createCategoryGroup("group2", "Personal"),
+        ],
+        getAccountType: (id) => get({"acc1": "His", "acc2": "Hers"}, id),
+        getCategoryType: (id) => get({"cat2": "His", "cat3": "Hers"}, id, "Shared"),
+        hasWarnings: false
+      },
+      // He paid £75 shared, she paid £75 shared (£75 each fair share).
+      // He paid £25 for her, she paid £25 for him.
+      // Everything is perfectly balanced.
+      expected: {
+        hisTotalShared: "75.00",
+        herTotalShared: "75.00",
+        hisTotalForHer: "25.00",
+        herTotalForHim: "25.00",
+        reimbursementAmount: "0.00",
+        reimbursementDirection: "herToHim" // Direction doesn't matter when amount is 0
+      }
+    },
+    {
+      name: "Only direct payments - no shared expenses",
+      input: {
+        transactions: [
+          createTransaction("t1", "His Stuff", "2023-01-01", -50000, "cat1", "acc2"),
+          createTransaction("t2", "More His Stuff", "2023-01-02", -30000, "cat1", "acc2"),
+          createTransaction("t3", "Her Stuff", "2023-01-03", -20000, "cat2", "acc1"),
+        ],
+        categories: [
+          createCategory("cat1", "His Items", "group1"),
+          createCategory("cat2", "Her Items", "group1"),
+        ],
+        categoryGroups: [
+          createCategoryGroup("group1", "Personal"),
+        ],
+        getAccountType: (id) => get({"acc1": "His", "acc2": "Hers"}, id),
+        getCategoryType: (id) => get({"cat1": "His", "cat2": "Hers"}, id),
+        hasWarnings: false
+      },
+      // No shared expenses at all.
+      // She paid £80 for his categories, he paid £20 for her categories.
+      // The formula calculates: heShouldPay = (0/2) - 0 - (-80+20) = 0 - 0 - (-60) = 60
+      // Since it's positive, he owes her £60
+      expected: {
+        hisTotalShared: "0.00",
+        herTotalShared: "0.00",
+        hisTotalForHer: "20.00",
+        herTotalForHim: "80.00",
+        reimbursementAmount: "60.00",
+        reimbursementDirection: "himToHer"
+      }
+    },
+    {
+      name: "Only shared expenses - no direct payments",
+      input: {
+        transactions: [
+          createTransaction("t1", "Groceries", "2023-01-01", -100000, "cat1", "acc1"),
+          createTransaction("t2", "Utilities", "2023-01-02", -40000, "cat1", "acc2"),
+        ],
+        categories: [
+          createCategory("cat1", "Essentials", "group1"),
+        ],
+        categoryGroups: [
+          createCategoryGroup("group1", "Household"),
+        ],
+        getAccountType: (id) => get({"acc1": "His", "acc2": "Hers"}, id),
+        getCategoryType: (id) => get({}, id, "Shared"),
+        hasWarnings: false
+      },
+      // Only shared expenses, no direct payments.
+      // He paid £100 shared, she paid £40 shared (£70 each fair share).
+      // The formula calculates: heShouldPay = (140/2) - 100 - (0-0) = 70 - 100 = -30
+      // Since it's negative, she owes him £30
+      expected: {
+        hisTotalShared: "100.00",
+        herTotalShared: "40.00",
+        hisTotalForHer: "0.00",
+        herTotalForHim: "0.00",
+        reimbursementAmount: "30.00",
+        reimbursementDirection: "herToHim"
+      }
+    },
+    {
+      name: "He pays more shared, she pays more direct",
+      input: {
+        transactions: [
+          createTransaction("t1", "Groceries", "2023-01-01", -150000, "cat1", "acc1"), 
+          createTransaction("t2", "Utilities", "2023-01-02", -50000, "cat1", "acc2"),
+          createTransaction("t3", "His Stuff", "2023-01-03", -60000, "cat2", "acc2"),
+          createTransaction("t4", "Her Stuff", "2023-01-04", -10000, "cat3", "acc1"),
+        ],
+        categories: [
+          createCategory("cat1", "Essentials", "group1"),
+          createCategory("cat2", "His Items", "group2"),
+          createCategory("cat3", "Her Items", "group2"),
+        ],
+        categoryGroups: [
+          createCategoryGroup("group1", "Household"),
+          createCategoryGroup("group2", "Personal"),
+        ],
+        getAccountType: (id) => get({"acc1": "His", "acc2": "Hers"}, id),
+        getCategoryType: (id) => get({"cat2": "His", "cat3": "Hers"}, id, "Shared"),
+        hasWarnings: false
+      },
+      // He paid £150 shared, she paid £50 shared (£100 each fair share)
+      // He paid £10 for her categories, she paid £60 for his categories
+      // Shared difference: He paid £50 extra
+      // Direct difference: She paid £50 extra
+      // These balance out exactly
+      expected: {
+        hisTotalShared: "150.00",
+        herTotalShared: "50.00",
+        hisTotalForHer: "10.00",
+        herTotalForHim: "60.00",
+        reimbursementAmount: "0.00",
+        reimbursementDirection: "herToHim" // Direction doesn't matter when amount is 0
+      }
+    },
+    {
+      name: "Transfer transactions should be excluded",
+      input: {
+        transactions: [
+          createTransaction("t1", "Groceries", "2023-01-01", -100000, "cat1", "acc1"),
+          // These transfer transactions should be ignored:
+          {
+            id: "t2",
+            payee_name: "Transfer",
+            date: "2023-01-02",
+            amount: -50000, 
+            category_id: "cat1",
+            account_id: "acc1",
+            transfer_transaction_id: "t2b", 
+            transfer_account_id: "acc2"
+          },
+          {
+            id: "t3",
+            payee_name: "Another Transfer",
+            date: "2023-01-03",
+            amount: -20000, 
+            category_id: null,
+            account_id: "acc2",
+            transfer_transaction_id: null, 
+            transfer_account_id: "acc1"
+          },
+        ],
+        categories: [
+          createCategory("cat1", "Essentials", "group1"),
+        ],
+        categoryGroups: [
+          createCategoryGroup("group1", "Household"),
+        ],
+        getAccountType: (id) => get({"acc1": "His", "acc2": "Hers"}, id),
+        getCategoryType: (id) => get({}, id, "Shared"),
+        hasWarnings: false
+      },
+      // Only the £100 transaction should count; transfers should be ignored
+      expected: {
+        hisTotalShared: "100.00",
+        herTotalShared: "0.00",
+        hisTotalForHer: "0.00",
+        herTotalForHim: "0.00",
+        reimbursementAmount: "50.00",
+        reimbursementDirection: "herToHim"
+      }
+    },
+    {
       name: "With warnings - should zero everything",
       input: {
         transactions: [
