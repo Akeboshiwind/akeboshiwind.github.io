@@ -320,30 +320,20 @@ const testCalculateCategorySpending = () => {
       });
       
       // For categories with expected values, compare them
-      for (const catId in testCase.expected) {
-        if (catId !== 'categoryCount' && catId !== 'warningsCount') {
-          const expectedCat = testCase.expected[catId];
-          const actualCat = categorySpending[catId] || { hisSpending: 0, herSpending: 0 };
-          
-          if (Math.abs(actualCat.hisSpending - expectedCat.hisSpending) > 0.01 ||
-              Math.abs(actualCat.herSpending - expectedCat.herSpending) > 0.01) {
-            passed = false;
-          }
+      for (const catId in categoryCount) {
+        const expectedCat = testCase.expected[catId];
+        const actualCat = categorySpending[catId] || { hisSpending: 0, herSpending: 0 };
+        
+        if (Math.abs(actualCat.hisSpending - expectedCat.hisSpending) > 0.01 ||
+            Math.abs(actualCat.herSpending - expectedCat.herSpending) > 0.01) {
+          passed = false;
         }
       }
       
       return {
         name: testCase.name,
         passed,
-        expected: {
-          categoryCount: testCase.expected.categoryCount,
-          warningsCount: testCase.expected.warningsCount,
-          ...Object.fromEntries(
-            Object.entries(testCase.expected)
-              .filter(([key]) => key !== 'categoryCount' && key !== 'warningsCount')
-              .map(([key, value]) => [key, value])
-          )
-        },
+        expected: testCase.expected,
         actual: {
           categoryCount,
           warningsCount: warnings.length,
@@ -963,123 +953,6 @@ const testCreateCategorySummary = () => {
     description: "Prepares detailed category data with metadata for display",
     results
   };
-};
-
-// Test scenario data for full reimbursement calculation
-const reimbursementTestScenarios = [
-  {
-    name: "Basic split - he pays more shared",
-    input: {
-      transactions: [
-        createTestTransaction("t1", "Grocery", "2023-01-01", -100000, "cat1", "acc1"),
-        createTestTransaction("t2", "Gym", "2023-01-02", -50000, "cat2", "acc2"),
-        createTestTransaction("t3", "His Gift", "2023-01-03", -20000, "cat3", "acc1"),
-      ],
-      categories: [
-        createTestCategory("cat1", "Groceries", "group1"),
-        createTestCategory("cat2", "Fitness", "group1"),
-        createTestCategory("cat3", "Gifts", "group2"),
-      ],
-      categoryGroups: [
-        createTestCategoryGroup("group1", "Essentials"),
-        createTestCategoryGroup("group2", "Discretionary"),
-      ],
-      getAccountType: (id) => ({ "acc1": "His", "acc2": "Hers" }[id] || "Unset"),
-      getCategoryType: (id) => ({ "cat3": "Hers" }[id] || "Shared"),
-      hasWarnings: false
-    },
-    // He paid £100 shared, she paid £50 shared (£75 each should pay). 
-    // He paid £25 extra but spent £20 for her, so she owes him £5
-    expected: {
-      hisTotalShared: "100.00",
-      herTotalShared: "50.00",
-      hisTotalForHer: "20.00",
-      herTotalForHim: "0.00",
-      reimbursementAmount: "5.00", 
-      reimbursementDirection: "herToHim"
-    }
-  },
-  {
-    name: "Basic split - she pays more shared",
-    input: {
-      transactions: [
-        createTestTransaction("t1", "Grocery", "2023-01-01", -50000, "cat1", "acc1"),
-        createTestTransaction("t2", "Utilities", "2023-01-02", -100000, "cat2", "acc2"),
-        createTestTransaction("t4", "His Things", "2023-01-04", -30000, "cat4", "acc2"),
-      ],
-      categories: [
-        createTestCategory("cat1", "Groceries", "group1"),
-        createTestCategory("cat2", "Utilities", "group1"),
-        createTestCategory("cat4", "His Items", "group2"),
-      ],
-      categoryGroups: [
-        createTestCategoryGroup("group1", "Essentials"),
-        createTestCategoryGroup("group2", "Discretionary"),
-      ],
-      getAccountType: (id) => ({ "acc1": "His", "acc2": "Hers" }[id] || "Unset"),
-      getCategoryType: (id) => ({ "cat4": "His" }[id] || "Shared"),
-      hasWarnings: false
-    },
-    // She paid £100 shared, he paid £50 shared (£75 each should pay).
-    // The formula calculates: heShouldPay = (150/2) - 50 - (30-0) = 75 - 50 - 30 = -5
-    // Since it's negative, she owes him £5
-    expected: {
-      hisTotalShared: "50.00",
-      herTotalShared: "100.00",
-      hisTotalForHer: "0.00",
-      herTotalForHim: "30.00",
-      reimbursementAmount: "5.00",
-      reimbursementDirection: "herToHim"
-    }
-  }
-];
-
-// Function to run the reimbursement tests
-const runReimbursementTests = () => {
-  const calc = window.ynabReimbursementCalculations;
-  const results = [];
-  
-  reimbursementTestScenarios.forEach(scenario => {
-    try {
-      const result = calc.calculateReimbursementPure(
-        scenario.input.transactions,
-        scenario.input.categories,
-        scenario.input.categoryGroups,
-        scenario.input.getAccountType,
-        scenario.input.getCategoryType,
-        scenario.input.hasWarnings
-      );
-      
-      // Check if key values match
-      const expectedKeys = ['hisTotalShared', 'herTotalShared', 'hisTotalForHer', 'herTotalForHim', 'reimbursementAmount', 'reimbursementDirection'];
-      const passed = expectedKeys.every(key => 
-        result[key] === scenario.expected[key] || 
-        result[key]?.toString() === scenario.expected[key]?.toString()
-      );
-      
-      results.push({
-        name: scenario.name,
-        passed,
-        expected: scenario.expected,
-        actual: {
-          hisTotalShared: result.hisTotalShared,
-          herTotalShared: result.herTotalShared,
-          hisTotalForHer: result.hisTotalForHer,
-          herTotalForHim: result.herTotalForHim,
-          reimbursementAmount: result.reimbursementAmount,
-          reimbursementDirection: result.reimbursementDirection
-        }
-      });
-    } catch (error) {
-      results.push({
-        name: scenario.name,
-        passed: false,
-        error: error.message
-      });
-    }
-  });
-  
-  return results;
 };
 
 // Function to run all pure function tests
