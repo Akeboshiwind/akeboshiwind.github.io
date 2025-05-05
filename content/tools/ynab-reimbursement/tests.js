@@ -597,7 +597,7 @@ const testCalculateReimbursementValues = () => {
         herTotalForHim: 30
       },
       expected: {
-        reimbursementAmount: 40,
+        reimbursementAmount: 45,
         reimbursementDirection: "himToHer"
       }
     },

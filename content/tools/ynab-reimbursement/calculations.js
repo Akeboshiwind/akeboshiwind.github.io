@@ -196,9 +196,8 @@ const calculateReimbursementValues = (spendingTotals) => {
   // Calculate shared spending difference
   const totalShared = hisTotalShared + herTotalShared;
   const heShouldPay =
-    (totalShared / 2)
-    - hisTotalShared
-    - (herTotalForHim - hisTotalForHer);
+    ((totalShared / 2) - hisTotalShared)
+    + (herTotalForHim - hisTotalForHer);
   
   // Calculate final reimbursement
   const reimbursementAmount = Math.abs(heShouldPay);
