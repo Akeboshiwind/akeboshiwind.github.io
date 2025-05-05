@@ -41,6 +41,58 @@ const runPureFunctionTests = () => {
   return testSuites;
 };
 
+var deepEqual = function (x, y) {
+  if (x === y) {
+    return true;
+  } else if ((typeof x == "object" && x != null) && (typeof y == "object" && y != null)) {
+    if (Object.keys(x).length != Object.keys(y).length) {
+      return false;
+    }
+
+    for (var prop in x) {
+      if (y.hasOwnProperty(prop)) {  
+        if (! deepEqual(x[prop], y[prop])) { return false; }
+      } else {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
+var runTest = function (functionName, description, testFunction, testCases) {
+  const results = testCases.map(testCase => {
+    try {
+      const actual = testFunction(testCase.input);
+      const expected = testCase.expected;
+      const passed = deepEqual(expected, actual);
+      
+      return {
+        name: testCase.name,
+        passed,
+        expected,
+        actual
+      };
+    } catch (error) {
+      return {
+        name: testCase.name,
+        passed: false,
+        error: error.message
+      };
+    }
+  });
+
+  return {
+    functionName,
+    description,
+    results,
+  }
+}
+
 // =====================================================
 // INDIVIDUAL FUNCTION TESTS
 // =====================================================
@@ -157,43 +209,22 @@ const testFilterTransactions = () => {
     }
   ];
   
-  // Run test cases and collect results
-  const results = testCases.map(testCase => {
-    try {
+  return runTest(
+    "filterTransactions",
+    "Filters and validates transactions for processing",
+    ({transactions, getAccountType, getCategoryType}) => {
       const { validTransactions, transactionWarnings } = calc.filterTransactions(
-        testCase.input.transactions,
-        testCase.input.getAccountType,
-        testCase.input.getCategoryType
+        transactions,
+        getAccountType,
+        getCategoryType
       );
-      
-      const passed = (
-        validTransactions.length === testCase.expected.validTransactions &&
-        transactionWarnings.length === testCase.expected.warningsCount
-      );
-      
       return {
-        name: testCase.name,
-        passed,
-        expected: testCase.expected,
-        actual: {
-          validTransactions: validTransactions.length,
-          warningsCount: transactionWarnings.length
-        }
-      };
-    } catch (error) {
-      return {
-        name: testCase.name,
-        passed: false,
-        error: error.message
-      };
-    }
-  });
-  
-  return {
-    functionName: "filterTransactions",
-    description: "Filters and validates transactions for processing",
-    results
-  };
+        validTransactions: validTransactions.length,
+        warningsCount: transactionWarnings.length
+      }
+    },
+    testCases
+  );
 };
 
 // 2. Tests for calculateCategorySpending
@@ -214,9 +245,11 @@ const testCalculateCategorySpending = () => {
       },
       expected: {
         categoryCount: 2,
-        cat1: { hisSpending: 100, herSpending: 75 },
-        cat2: { hisSpending: 50, herSpending: 25 },
-        warningsCount: 0
+        warningsCount: 0,
+        categories: {
+          cat1: { hisSpending: 100, herSpending: 75 },
+          cat2: { hisSpending: 50, herSpending: 25 },
+        }
       }
     },
     {
@@ -231,10 +264,12 @@ const testCalculateCategorySpending = () => {
       },
       expected: {
         categoryCount: 3,
-        cat1: { hisSpending: 100, herSpending: 0 },
-        cat2: { hisSpending: 50, herSpending: 0 },
-        cat3: { hisSpending: 30, herSpending: 0 },
-        warningsCount: 0
+        warningsCount: 0,
+        categories: {
+          cat1: { hisSpending: 100, herSpending: 0 },
+          cat2: { hisSpending: 50, herSpending: 0 },
+          cat3: { hisSpending: 30, herSpending: 0 },
+        }
       }
     },
     {
@@ -248,9 +283,11 @@ const testCalculateCategorySpending = () => {
       },
       expected: {
         categoryCount: 2,
-        cat1: { hisSpending: 0, herSpending: 80 },
-        cat2: { hisSpending: 0, herSpending: 40 },
-        warningsCount: 0
+        warningsCount: 0,
+        categories: {
+          cat1: { hisSpending: 0, herSpending: 80 },
+          cat2: { hisSpending: 0, herSpending: 40 },
+        }
       }
     },
     {
@@ -264,8 +301,10 @@ const testCalculateCategorySpending = () => {
       },
       expected: {
         categoryCount: 1,
-        cat1: { hisSpending: 100, herSpending: 0 },
-        warningsCount: 0
+        warningsCount: 0,
+        categories: {
+          cat1: { hisSpending: 100, herSpending: 0 },
+        }
       }
     },
     {
@@ -279,8 +318,10 @@ const testCalculateCategorySpending = () => {
       },
       expected: {
         categoryCount: 1,
-        cat1: { hisSpending: 100, herSpending: 0 },
-        warningsCount: 1
+        warningsCount: 1,
+        categories: {
+          cat1: { hisSpending: 100, herSpending: 0 },
+        }
       }
     },
     {
@@ -291,69 +332,28 @@ const testCalculateCategorySpending = () => {
       },
       expected: {
         categoryCount: 0,
-        warningsCount: 0
+        warningsCount: 0,
+        categories: {}
       }
     }
   ];
   
-  // Run test cases and collect results
-  const results = testCases.map(testCase => {
-    try {
+  return runTest(
+    "calculateCategorySpending",
+    "Calculates spending per category by account type",
+    ({transactions, getAccountType}) => {
       const { categorySpending, warnings } = calc.calculateCategorySpending(
-        testCase.input.transactions,
-        testCase.input.getAccountType
+        transactions,
+        getAccountType,
       );
-      
-      const categoryCount = Object.keys(categorySpending).length;
-      
-      // Basic validation
-      let passed = categoryCount === testCase.expected.categoryCount && 
-                   warnings.length === testCase.expected.warningsCount;
-      
-      // Check detailed category spending if specified
-      const actualDetails = {};
-      Object.entries(categorySpending).forEach(([catId, spending]) => {
-        actualDetails[catId] = {
-          hisSpending: spending.hisSpending,
-          herSpending: spending.herSpending
-        };
-      });
-      
-      // For categories with expected values, compare them
-      for (const catId in categoryCount) {
-        const expectedCat = testCase.expected[catId];
-        const actualCat = categorySpending[catId] || { hisSpending: 0, herSpending: 0 };
-        
-        if (Math.abs(actualCat.hisSpending - expectedCat.hisSpending) > 0.01 ||
-            Math.abs(actualCat.herSpending - expectedCat.herSpending) > 0.01) {
-          passed = false;
-        }
+      return {
+        categoryCount: Object.keys(categorySpending).length,
+        warningsCount: warnings.length,
+        categories: categorySpending
       }
-      
-      return {
-        name: testCase.name,
-        passed,
-        expected: testCase.expected,
-        actual: {
-          categoryCount,
-          warningsCount: warnings.length,
-          ...actualDetails
-        }
-      };
-    } catch (error) {
-      return {
-        name: testCase.name,
-        passed: false,
-        error: error.message
-      };
-    }
-  });
-  
-  return {
-    functionName: "calculateCategorySpending",
-    description: "Calculates spending per category by account type",
-    results
-  };
+    },
+    testCases
+  );
 };
 
 // 3. Tests for calculateSpendingTotals
@@ -522,9 +522,10 @@ const testCalculateSpendingTotals = () => {
     }
   ];
   
-  // Run test cases and collect results
-  const results = testCases.map(testCase => {
-    try {
+  return runTest(
+    "calculateSpendingTotals",
+    "Aggregates totals for shared and direct spending",
+    ({categorySpending, categories, getCategoryType}) => {
       const { 
         hisTotalShared, 
         herTotalShared, 
@@ -532,45 +533,20 @@ const testCalculateSpendingTotals = () => {
         herTotalForHim, 
         warnings 
       } = calc.calculateSpendingTotals(
-        testCase.input.categorySpending,
-        testCase.input.categories,
-        testCase.input.getCategoryType
+        categorySpending,
+        categories,
+        getCategoryType
       );
-      
-      const passed = (
-        Math.abs(hisTotalShared - testCase.expected.hisTotalShared) < 0.01 &&
-        Math.abs(herTotalShared - testCase.expected.herTotalShared) < 0.01 &&
-        Math.abs(hisTotalForHer - testCase.expected.hisTotalForHer) < 0.01 &&
-        Math.abs(herTotalForHim - testCase.expected.herTotalForHim) < 0.01 &&
-        warnings.length === testCase.expected.warningsCount
-      );
-      
       return {
-        name: testCase.name,
-        passed,
-        expected: testCase.expected,
-        actual: {
-          hisTotalShared,
-          herTotalShared,
-          hisTotalForHer,
-          herTotalForHim,
-          warningsCount: warnings.length
-        }
-      };
-    } catch (error) {
-      return {
-        name: testCase.name,
-        passed: false,
-        error: error.message
-      };
-    }
-  });
-  
-  return {
-    functionName: "calculateSpendingTotals",
-    description: "Aggregates totals for shared and direct spending",
-    results
-  };
+        hisTotalShared,
+        herTotalShared,
+        hisTotalForHer,
+        herTotalForHim,
+        warningsCount: warnings.length
+      }
+    },
+    testCases
+  );
 };
 
 // 4. Tests for calculateReimbursementValues
@@ -697,39 +673,12 @@ const testCalculateReimbursementValues = () => {
     }
   ];
   
-  // Run test cases and collect results
-  const results = testCases.map(testCase => {
-    try {
-      const { reimbursementAmount, reimbursementDirection } = calc.calculateReimbursementValues(testCase.input);
-      
-      const passed = (
-        Math.abs(reimbursementAmount - testCase.expected.reimbursementAmount) < 0.01 &&
-        reimbursementDirection === testCase.expected.reimbursementDirection
-      );
-      
-      return {
-        name: testCase.name,
-        passed,
-        expected: testCase.expected,
-        actual: {
-          reimbursementAmount,
-          reimbursementDirection
-        }
-      };
-    } catch (error) {
-      return {
-        name: testCase.name,
-        passed: false,
-        error: error.message
-      };
-    }
-  });
-  
-  return {
-    functionName: "calculateReimbursementValues",
-    description: "Determines the final reimbursement amount and direction",
-    results
-  };
+  return runTest(
+    "calculateReimbursementValues",
+    "Determines the final reimbursement amount and direction",
+    calc.calculateReimbursementValues,
+    testCases
+  );
 };
 
 // 5. Tests for createCategorySummary
@@ -881,78 +830,31 @@ const testCreateCategorySummary = () => {
       }
     }
   ];
-  
-  // Run test cases and collect results
-  const results = testCases.map(testCase => {
-    try {
+
+  return runTest(
+    "createCategorySummary",
+    "Prepares detailed category data with metadata for display",
+    ({categorySpending, categories, categoryGroups, getCategoryType}) => {
       const { categorySummaryMap, warnings } = calc.createCategorySummary(
-        testCase.input.categorySpending,
-        testCase.input.categories,
-        testCase.input.categoryGroups,
-        testCase.input.getCategoryType
+        categorySpending,
+        categories,
+        categoryGroups,
+        getCategoryType
       );
-      
-      const categoryCount = Object.keys(categorySummaryMap).length;
-      
-      // Basic validation
-      let passed = categoryCount === testCase.expected.categoryCount && 
-                   warnings.length === testCase.expected.warningsCount;
-      
-      // Check detailed category information if specified
-      if (testCase.expected.categories) {
-        for (const [catId, expectedCat] of Object.entries(testCase.expected.categories)) {
-          const actualCat = categorySummaryMap[catId];
-          if (!actualCat) {
-            passed = false;
-            continue;
-          }
-          
-          if (actualCat.categoryName !== expectedCat.categoryName ||
-              actualCat.groupName !== expectedCat.groupName ||
-              actualCat.type !== expectedCat.type) {
-            passed = false;
-          }
-        }
+      return {
+        categoryCount: Object.keys(categorySummaryMap).length,
+        warningsCount: warnings.length,
+        categories: Object.fromEntries(
+          Object.entries(categorySummaryMap).map(([key, value]) => [key , {
+            categoryName: value.categoryName,
+            groupName: value.groupName,
+            type: value.type
+          }])
+        )
       }
-      
-      // Simplify the output for more readable test results
-      const simplifiedActual = {};
-      Object.entries(categorySummaryMap).forEach(([catId, summary]) => {
-        simplifiedActual[catId] = {
-          categoryName: summary.categoryName,
-          groupName: summary.groupName,
-          type: summary.type
-        };
-      });
-      
-      return {
-        name: testCase.name,
-        passed,
-        expected: {
-          categoryCount: testCase.expected.categoryCount,
-          warningsCount: testCase.expected.warningsCount,
-          categories: testCase.expected.categories || {}
-        },
-        actual: {
-          categoryCount,
-          warningsCount: warnings.length,
-          categories: simplifiedActual
-        }
-      };
-    } catch (error) {
-      return {
-        name: testCase.name,
-        passed: false,
-        error: error.message
-      };
-    }
-  });
-  
-  return {
-    functionName: "createCategorySummary",
-    description: "Prepares detailed category data with metadata for display",
-    results
-  };
+    },
+    testCases
+  );
 };
 
 // Function to run all pure function tests
