@@ -879,10 +879,6 @@ window.ynabReimbursementTests = {
   testCalculateReimbursementValues,
   testCreateCategorySummary,
   
-  // Full calculation test
-  reimbursementTestScenarios,
-  runReimbursementTests,
-  
   // Test runner
   runPureFunctionTests,
   handleRunPureFunctionTests
