@@ -143,7 +143,7 @@ const YnabApp = () => {
   const [accounts, setAccounts] = useLocalStorage('accounts', []);
   const [categories, setCategories] = useLocalStorage('categories', []);
   const [categoryGroups, setCategoryGroups] = useLocalStorage('categoryGroups', []);
-  const [transactions, setTransactions] = useLocalStorage('transactions', []);
+  const [transactions, setTransactions] = useState([]);
   const [availableMonths, setAvailableMonths] = useLocalStorage('availableMonths', []);
   
   // Account and category type configurations
@@ -156,6 +156,7 @@ const YnabApp = () => {
   const [configTab, setConfigTab] = useState('general');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [warnings, setWarnings] = useState([]);
   const [testResults, setTestResults] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -193,12 +194,6 @@ const YnabApp = () => {
     }
   }, [selectedBudgetId]);
   
-  // Fetch transactions when month changes and budget is selected
-  useEffect(() => {
-    if (selectedBudgetId && selectedMonth) {
-      fetchTransactions();
-    }
-  }, [selectedBudgetId, selectedMonth]);
   
   // Check for configuration warnings
   useEffect(() => {
@@ -359,6 +354,12 @@ const YnabApp = () => {
     
     if (result) {
       setTransactions(result);
+      setSuccessMessage(`Successfully imported ${result.length} transactions for ${formatMonth(selectedMonth)}`);
+      
+      // Clear the success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
     }
   };
   
@@ -1177,12 +1178,34 @@ const YnabApp = () => {
               </button>
             </div>
           </div>
+          
+          <div className="mt-4 flex justify-center">
+            <button 
+              onClick={fetchTransactions}
+              className="bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded flex items-center"
+              disabled={!selectedBudgetId || !selectedMonth}
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Import Transactions
+            </button>
+          </div>
         </div>
         
         {warnings.length === 0 ? (
           <>
-            {/* Summary Boxes */}
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {transactions.length === 0 ? (
+              <div className="text-center p-8 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-6">
+                <p className="text-lg mb-4">No transactions imported yet</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Click the "Import Transactions" button above to load transactions for the selected month.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Summary Boxes */}
+                <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* His spending summary */}
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                 <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400 mb-2">His Spending</h3>
@@ -1333,6 +1356,8 @@ const YnabApp = () => {
                 </table>
               </div>
             </div>
+              </>
+            )}
           </>
         ) : (
           <div className="text-center p-8">
@@ -1352,6 +1377,13 @@ const YnabApp = () => {
       {isLoading && (
         <div className="fixed top-0 inset-x-0 bg-blue-500 text-white text-center py-1 text-sm">
           Loading data from YNAB...
+        </div>
+      )}
+      
+      {/* Success Message */}
+      {successMessage && (
+        <div className="fixed top-0 inset-x-0 bg-green-500 text-white text-center py-2 text-sm">
+          {successMessage}
         </div>
       )}
       
