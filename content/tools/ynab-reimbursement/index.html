@@ -517,15 +517,6 @@ const YnabApp = () => {
     setTestResults(testResults);
   };
   
-  // Calculate if the month is completed (has settlement transfers)
-  const isMonthCompleted = () => {
-    // Look for transfers with "Monthly Settlement" in the memo
-    return transactions.some(transaction => 
-      transaction.memo && 
-      transaction.memo.includes('Monthly Settlement') &&
-      transaction.transfer_account_id // Must be a transfer
-    );
-  };
   
   // Export settings to JSON
   const exportSettings = () => {
@@ -1088,8 +1079,6 @@ const YnabApp = () => {
     const herTotal = herTotalShared + herTotalForHim;
     const total = hisTotal + herTotal;
     
-    const completed = isMonthCompleted();
-    
     return (
       <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-md">
         {/* Header with Config Button */}
@@ -1171,11 +1160,6 @@ const YnabApp = () => {
             
             <div className="text-center">
               <h2 className="text-xl font-semibold">{formatMonth(selectedMonth)}</h2>
-              {completed && (
-                <span className="text-sm text-green-600 dark:text-green-400">
-                  ✓ Month Completed
-                </span>
-              )}
             </div>
             
             <div className="flex">
@@ -1275,10 +1259,6 @@ const YnabApp = () => {
                     : `£${milliunitsToDisplayAmount(reimbursementAmount)} - He should pay Her`
                   }
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 italic">
-                  To mark a month as complete, add transfers between accounts with the memo
-                  "Monthly Settlement" that sum to the Reimbursement Due amount
-                </p>
               </div>
             </div>
             
