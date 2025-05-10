@@ -869,6 +869,10 @@ const YnabApp = () => {
                         .filter(c => c.category_group_id === group.id)
                         // Filter out deleted or hidden categories
                         .filter(c => showHiddenCategories || (!c.deleted && !c.hidden));
+
+                      if (groupCategories.length === 0) {
+                        return null;
+                      }
                       
                       return (
                         <React.Fragment key={group.id}>
