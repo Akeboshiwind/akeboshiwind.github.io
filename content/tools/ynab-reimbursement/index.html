@@ -1083,6 +1083,10 @@ const YnabApp = () => {
       categorySummary,
       warnings: transactionWarnings
     } = calculateReimbursement();
+
+    const hisTotal = hisTotalShared + hisTotalForHer;
+    const herTotal = herTotalShared + herTotalForHim;
+    const total = hisTotal + herTotal;
     
     const completed = isMonthCompleted();
     
@@ -1364,13 +1368,13 @@ const YnabApp = () => {
                         Grand Total
                       </td>
                       <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
-                        £{milliunitsToDisplayAmount(hisTotalShared)}
+                        £{milliunitsToDisplayAmount(hisTotal)}
                       </td>
                       <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
-                        £{milliunitsToDisplayAmount(herTotalShared)}
+                        £{milliunitsToDisplayAmount(herTotal)}
                       </td>
                       <td className="text-right p-2 border border-gray-300 dark:border-gray-600">
-                        £{milliunitsToDisplayAmount(hisTotalShared + herTotalShared)}
+                        £{milliunitsToDisplayAmount(total)}
                       </td>
                     </tr>
                   </tbody>
