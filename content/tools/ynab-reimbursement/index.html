@@ -266,20 +266,37 @@ const YnabApp = () => {
     });
     
     if (result) {
-      // Extract category groups and categories
-      const groups = result.filter(group => !group.deleted);
-      setCategoryGroups(groups);
+      // Filter out the "Internal Master Category" group which contains inflow and uncategorized categories
+      const filteredGroups = result.filter(group => 
+        !group.deleted && 
+        group.name !== "Internal Master Category"
+      );
       
-      const allCategories = groups.flatMap(group => 
+      // Keep the filtered groups for display
+      setCategoryGroups(filteredGroups);
+      
+      // Get all categories from the filtered groups
+      const filteredCategories = filteredGroups.flatMap(group => 
+        group.categories.filter(category => 
+          !category.deleted && 
+          category.name !== "Inflow: Ready to Assign" && 
+          category.name !== "Uncategorized"
+        )
+      );
+      
+      // For transaction processing, we need to keep ALL categories including the special ones
+      const allCategories = result.flatMap(group => 
         group.categories.filter(category => !category.deleted)
       );
-      setCategories(allCategories);
+      
+      // Set the filtered categories for display
+      setCategories(filteredCategories);
       
       // Initialize types for any new categories and groups
       const newCategoryTypes = {...categoryTypes};
       const newGroupTypes = {...categoryGroupTypes};
       
-      groups.forEach(group => {
+      filteredGroups.forEach(group => {
         if (!newGroupTypes[group.id]) {
           newGroupTypes[group.id] = 'Unset';
         }

@@ -27,6 +27,16 @@ function createTypeWarning(id, name, type, forCalculation = false) {
   };
 }
 
+// Function to check if a transaction is in the inflow category
+function isInflowTransaction(transaction) {
+  return transaction.category_name === "Inflow: Ready to Assign";
+}
+
+// Function to check if a transaction is uncategorized
+function isUncategorizedTransaction(transaction) {
+  return transaction.category_name === "Uncategorized";
+}
+
 // >> Core
 
 // Function to filter transactions and return valid ones with warnings
@@ -53,6 +63,21 @@ function filterTransactions(
         id: `transaction-${transaction.id}`,
         message: `Transaction "${transaction.payee_name}" (${transaction.date}) has no category assigned.`,
         details: "Transaction must have a category assigned in YNAB.",
+      });
+      return false;
+    }
+    
+    // Skip inflow transactions
+    if (isInflowTransaction(transaction)) {
+      return false;
+    }
+    
+    // Flag uncategorized transactions as warnings
+    if (isUncategorizedTransaction(transaction)) {
+      transactionWarnings.push({
+        id: `unassigned-transaction-${transaction.id}`,
+        message: `Transaction "${transaction.payee_name}" (${transaction.date}) is uncategorized.`,
+        details: "This transaction is in the 'Uncategorized' category. Please assign it to a proper category in YNAB.",
       });
       return false;
     }
@@ -379,6 +404,8 @@ window.ynabReimbursementCalculations = {
   // >> Util functions
   isValidType,
   createTypeWarning,
+  isInflowTransaction,
+  isUncategorizedTransaction,
 
   // >> Core functions
   filterTransactions,

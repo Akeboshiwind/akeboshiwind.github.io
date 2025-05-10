@@ -9,6 +9,7 @@ const createTestTransaction = (
   categoryId,
   accountId,
   transfer = false,
+  category_name = null,
 ) => ({
   id,
   payee_name: payee,
@@ -18,6 +19,7 @@ const createTestTransaction = (
   account_id: accountId,
   transfer_transaction_id: transfer ? "transfer-id" : null,
   transfer_account_id: transfer ? "transfer-acc" : null,
+  category_name: category_name,
 });
 
 const createTestCategory = (id, name, groupId) => ({
@@ -163,6 +165,74 @@ function testFilterTransactions() {
       expected: {
         validTransactions: 1,
         warningsCount: 0,
+      },
+    },
+    {
+      name: "Inflow transactions are filtered out",
+      input: {
+        transactions: [
+          createTestTransaction(
+            "t1",
+            "Grocery",
+            "2023-01-01",
+            -100000,
+            "cat1",
+            "acc1",
+          ),
+          createTestTransaction(
+            "t2",
+            "Salary",
+            "2023-01-02",
+            500000,
+            "inflow-cat",
+            "acc2",
+            false,
+            "Inflow: Ready to Assign",
+          ),
+        ],
+        getAccountType: mockGetAccountType({ acc1: "His", acc2: "Hers" }),
+        getCategoryType: mockGetCategoryType({
+          cat1: "Shared",
+          "inflow-cat": "Shared",
+        }),
+      },
+      expected: {
+        validTransactions: 1,
+        warningsCount: 0,
+      },
+    },
+    {
+      name: "Uncategorized transactions are filtered with warnings",
+      input: {
+        transactions: [
+          createTestTransaction(
+            "t1",
+            "Grocery",
+            "2023-01-01",
+            -100000,
+            "cat1",
+            "acc1",
+          ),
+          createTestTransaction(
+            "t2",
+            "Unknown Expense",
+            "2023-01-02",
+            -50000,
+            "uncat-id",
+            "acc2",
+            false,
+            "Uncategorized",
+          ),
+        ],
+        getAccountType: mockGetAccountType({ acc1: "His", acc2: "Hers" }),
+        getCategoryType: mockGetCategoryType({
+          cat1: "Shared",
+          "uncat-id": "Shared",
+        }),
+      },
+      expected: {
+        validTransactions: 1,
+        warningsCount: 1,
       },
     },
     {
@@ -1076,7 +1146,7 @@ function testCreateCategorySummary() {
 // >> Test Runner
 
 // Function to run all pure function tests
-function handleRunPureFunctionTests() {
+function runPureFunctionTests() {
   return [
     testFilterTransactions(),
     testCalculateCategorySpending(),
@@ -1103,6 +1173,5 @@ window.ynabReimbursementTests = {
   testCreateCategorySummary,
 
   // Test runner
-  handleRunPureFunctionTests,
+  runPureFunctionTests,
 };
-
