@@ -24,11 +24,41 @@
     tailwindLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css';
     shadowRoot.appendChild(tailwindLink);
     
-    // Add component content
-    {{ .Content }}
-    
-    // Create React root in Shadow DOM
-    const root = ReactDOM.createRoot(reactRoot);
-    root.render(<Component />);
+    // Load external scripts if specified in front matter
+    {{ if .Params.scripts }}
+      // Wait for all scripts to load before rendering
+      const scriptPromises = [];
+      
+      {{ range $index, $script := .Params.scripts }}
+        const scriptPromise{{ $index }} = new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = "{{ $script }}";
+          script.async = true;
+          script.onload = resolve;
+          script.onerror = reject;
+          shadowRoot.appendChild(script);
+        });
+        scriptPromises.push(scriptPromise{{ $index }});
+      {{ end }}
+      
+      // Wait for all scripts to load
+      Promise.all(scriptPromises).then(() => {
+        // Add component content
+        {{ .Content }}
+        
+        // Create React root in Shadow DOM
+        const root = ReactDOM.createRoot(reactRoot);
+        root.render(<Component />);
+      }).catch(error => {
+        console.error("Error loading scripts:", error);
+      });
+    {{ else }}
+      // Add component content
+      {{ .Content }}
+      
+      // Create React root in Shadow DOM
+      const root = ReactDOM.createRoot(reactRoot);
+      root.render(<Component />);
+    {{ end }}
   </script>
 {{ end }}
