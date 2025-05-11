@@ -5,90 +5,11 @@ layout: react
 scripts:
   - calculations.js
   - tests.js
+  - ynab.js
 ---
 
 // We'll load the component conditionally after YNAB is ready
 const { useState, useEffect } = React;
-
-// A function that takes a component and returns a wrapper that ensures YNAB is loaded
-const withYnabLoaded = (WrappedComponent) => {
-  return function YnabLoadingWrapper(props) {
-    const [ynabLoaded, setYnabLoaded] = useState(false);
-    const [scriptError, setScriptError] = useState(null);
-    
-    useEffect(() => {
-      // Check if YNAB is already loaded
-      if (window.ynab) {
-        setYnabLoaded(true);
-        return;
-      }
-      
-      // If not loaded, add the script to load it
-      const script = document.createElement('script');
-      script.src = "https://unpkg.com/ynab@2.9.0/dist/browser/ynab.js";
-      script.async = true;
-      
-      script.onload = () => {
-        // Make sure the window.ynab object is actually available
-        if (window.ynab) {
-          console.log("YNAB library loaded successfully");
-          setYnabLoaded(true);
-        } else {
-          console.error("YNAB library script loaded but window.ynab is not defined");
-          setScriptError("YNAB library loaded but not available. Please refresh the page.");
-        }
-      };
-      
-      script.onerror = (err) => {
-        console.error("Failed to load YNAB library", err);
-        setScriptError("Failed to load YNAB library. Please check your internet connection and refresh the page.");
-      };
-      
-      // Add the script to the document
-      document.body.appendChild(script);
-      
-      // Cleanup on unmount
-      return () => {
-        if (script.parentNode) {
-          script.parentNode.removeChild(script);
-        }
-      };
-    }, []); // Empty dependency array means this runs once on mount
-    
-    if (scriptError) {
-      return (
-        <div className="flex h-screen w-full items-center justify-center text-center">
-          <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg border border-red-200 max-w-lg">
-            <div className="text-xl font-bold mb-4 text-red-700 dark:text-red-400">Error Loading YNAB Library</div>
-            <div className="text-gray-700 dark:text-gray-300 mb-4">{scriptError}</div>
-            <button 
-              onClick={() => window.location.reload()}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-            >
-              Refresh Page
-            </button>
-          </div>
-        </div>
-      );
-    }
-    
-    if (!ynabLoaded) {
-      return (
-        <div className="flex h-screen w-full items-center justify-center text-center">
-          <div>
-            <div className="text-xl font-bold mb-4">Loading YNAB Library...</div>
-            <div className="text-gray-600 dark:text-gray-400">Please wait while we initialize the application</div>
-            <div className="mt-4">
-              <div className="animate-pulse w-8 h-8 bg-blue-500 rounded-full mx-auto"></div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    return <WrappedComponent {...props} />;
-  };
-};
 
 // Custom hook to manage state with localStorage
 const useLocalStorage = (key, initialValue, prefix = 'ynabReimbursement_') => {
@@ -128,7 +49,7 @@ const milliunitsToDisplayAmount = (milliunits) => {
 };
 
 // Create the main application component
-const YnabApp = () => {
+const Component = () => {
   // Constants and configuration keys
   const CONFIG_PREFIX = 'ynabReimbursement_';
   const ACCOUNT_TYPES = ['Unset', 'His', 'Hers', 'Shared'];
@@ -203,19 +124,13 @@ const YnabApp = () => {
   }, [accounts, categories, categoryGroups, accountTypes, categoryTypes, categoryGroupTypes, currentView]);
   
   // Helper function to fetch API data with error handling
-  const fetchYnabData = async (apiCall) => {
+  const fetchYnabData = async (fn, ...args) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // The YnabWrapper should have ensured this is available, 
-      // but we do a final safety check here
-      if (!window.ynab) {
-        throw new Error("YNAB library not available. Please refresh the page and try again.");
-      }
-      
-      const ynabAPI = new window.ynab.API(accessToken);
-      return await apiCall(ynabAPI);
+      const client = window.ynab.API(accessToken);
+      return await fn.apply(null, [client, ...args]);
     } catch (err) {
       console.error('YNAB API Error:', err);
       setError(err.message || 'An error occurred while fetching data from YNAB');
@@ -227,10 +142,7 @@ const YnabApp = () => {
   
   // Fetch budgets from YNAB
   const fetchBudgets = async () => {
-    const result = await fetchYnabData(async (api) => {
-      const response = await api.budgets.getBudgets();
-      return response.data.budgets;
-    });
+    const result = await fetchYnabData(window.ynab.budgets.getBudgets);
     
     if (result) {
       setBudgets(result);
@@ -239,10 +151,7 @@ const YnabApp = () => {
   
   // Fetch accounts from YNAB
   const fetchAccounts = async () => {
-    const result = await fetchYnabData(async (api) => {
-      const response = await api.accounts.getAccounts(selectedBudgetId);
-      return response.data.accounts;
-    });
+    const result = await fetchYnabData(window.ynab.accounts.getAccounts, selectedBudgetId);
     
     if (result) {
       setAccounts(result);
@@ -260,10 +169,7 @@ const YnabApp = () => {
   
   // Fetch categories from YNAB
   const fetchCategories = async () => {
-    const result = await fetchYnabData(async (api) => {
-      const response = await api.categories.getCategories(selectedBudgetId);
-      return response.data.category_groups;
-    });
+    const result = await fetchYnabData(window.ynab.categories.getCategories, selectedBudgetId);
     
     if (result) {
       // Filter out the "Internal Master Category" group which contains inflow and uncategorized categories
@@ -315,10 +221,7 @@ const YnabApp = () => {
   
   // Fetch available months for the budget
   const fetchBudgetMonths = async () => {
-    const result = await fetchYnabData(async (api) => {
-      const response = await api.months.getBudgetMonths(selectedBudgetId);
-      return response.data.months;
-    });
+    const result = await fetchYnabData(window.ynab.months.getBudgetMonths, selectedBudgetId);
     
     if (result) {
       // Sort months in descending order (newest first)
@@ -361,13 +264,11 @@ const YnabApp = () => {
   const fetchTransactions = async () => {
     if (!selectedMonth) return;
     
-    const result = await fetchYnabData(async (api) => {
-      const response = await api.transactions.getTransactionsByMonth(
-        selectedBudgetId,
-        selectedMonth
-      );
-      return response.data.transactions;
-    });
+    const result = await fetchYnabData(
+      window.ynab.transactions.getTransactionsByMonth,
+      selectedBudgetId,
+      selectedMonth
+    );
     
     if (result) {
       setTransactions(result);
@@ -1409,7 +1310,3 @@ const YnabApp = () => {
     </div>
   );
 };
-
-// Create the Component that will be rendered by the layout
-// This component wraps YnabApp with the YNAB loading functionality
-const Component = withYnabLoaded(YnabApp);
