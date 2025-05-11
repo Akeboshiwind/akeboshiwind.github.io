@@ -22,6 +22,25 @@ const createTestTransaction = (
   category_name: category_name,
 });
 
+// Helper to create a test split transaction
+const createTestSplitTransaction = (
+  id,
+  payee,
+  date,
+  amount,
+  account_id,
+  subtransactions
+) => ({
+  id,
+  payee_name: payee,
+  date,
+  amount,
+  account_id,
+  subtransactions,
+  transfer_transaction_id: null,
+  transfer_account_id: null,
+});
+
 const createTestCategory = (id, name, groupId) => ({
   id,
   name,
@@ -132,6 +151,81 @@ function testFilterTransactions() {
       expected: {
         validTransactions: 2,
         warningsCount: 0,
+      },
+    },
+    {
+      name: "Split transactions are expanded into individual transactions",
+      input: {
+        transactions: [
+          // Regular transaction
+          createTestTransaction(
+            "t1",
+            "Grocery",
+            "2023-01-01",
+            -100000,
+            "cat1",
+            "acc1",
+          ),
+          // Split transaction with 2 valid subtransactions
+          createTestSplitTransaction(
+            "t2",
+            "Split Purchase",
+            "2023-01-02",
+            -150000,
+            "acc1",
+            [
+              { id: "sub1", amount: -80000, category_id: "cat2" },
+              { id: "sub2", amount: -70000, category_id: "cat3" }
+            ]
+          ),
+        ],
+        getAccountType: mockGetAccountType({ acc1: "His" }),
+        getCategoryType: mockGetCategoryType({
+          cat1: "Shared",
+          cat2: "Shared",
+          cat3: "Shared"
+        }),
+      },
+      expected: {
+        validTransactions: 3, // 1 regular + 2 expanded from split
+        warningsCount: 0,
+      },
+    },
+    {
+      name: "Split transactions with invalid subtransactions",
+      input: {
+        transactions: [
+          // Regular transaction
+          createTestTransaction(
+            "t1",
+            "Grocery",
+            "2023-01-01",
+            -100000,
+            "cat1",
+            "acc1",
+          ),
+          // Split transaction with one valid and one invalid subtransaction
+          createTestSplitTransaction(
+            "t2",
+            "Split Purchase",
+            "2023-01-02",
+            -150000,
+            "acc1",
+            [
+              { id: "sub1", amount: -80000, category_id: "cat2" },
+              { id: "sub2", amount: -70000, category_id: null } // Missing category
+            ]
+          ),
+        ],
+        getAccountType: mockGetAccountType({ acc1: "His" }),
+        getCategoryType: mockGetCategoryType({
+          cat1: "Shared",
+          cat2: "Shared"
+        }),
+      },
+      expected: {
+        validTransactions: 2, // 1 regular + 1 valid subtransaction
+        warningsCount: 1,    // 1 warning for missing category
       },
     },
     {
@@ -1160,6 +1254,7 @@ function runPureFunctionTests() {
 window.ynabReimbursementTests = {
   // Test utilities
   createTestTransaction,
+  createTestSplitTransaction,
   createTestCategory,
   createTestCategoryGroup,
   mockGetAccountType,

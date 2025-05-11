@@ -46,17 +46,54 @@ function filterTransactions(
   getCategoryTypeFunc,
 ) {
   const transactionWarnings = [];
+  const processedTransactions = [];
 
-  // Filter and process each transaction
-  const validTransactions = transactionsList.filter((transaction) => {
+  // Process each transaction
+  transactionsList.forEach((transaction) => {
     // Skip transfer transactions
     if (
       transaction.transfer_transaction_id ||
       transaction.transfer_account_id
     ) {
-      return false;
+      return;
     }
 
+    // Handle split transactions
+    if (transaction.subtransactions && transaction.subtransactions.length > 0) {
+      // For each subtransaction, create a copy of the parent with the subtransaction details
+      transaction.subtransactions.forEach((subtransaction, index) => {
+        // Skip subtransactions without categories
+        if (!subtransaction.category_id) {
+          transactionWarnings.push({
+            id: `subtransaction-${transaction.id}-${index}`,
+            message: `Subtransaction of "${transaction.payee_name}" (${transaction.date}) has no category assigned.`,
+            details: "Subtransactions must have a category assigned in YNAB.",
+          });
+          return;
+        }
+
+        // Create a new transaction based on the parent but with subtransaction details
+        const newTransaction = {
+          ...transaction,
+          id: `${transaction.id}:sub:${index}`,
+          amount: subtransaction.amount,
+          category_id: subtransaction.category_id,
+          category_name: subtransaction.category_name,
+          // We're not copying the subtransactions array to avoid recursion
+          subtransactions: [],
+          original_transaction_id: transaction.id,
+        };
+
+        processedTransactions.push(newTransaction);
+      });
+    } else {
+      // Regular non-split transaction
+      processedTransactions.push(transaction);
+    }
+  });
+
+  // Now filter the expanded list of transactions
+  const validTransactions = processedTransactions.filter((transaction) => {
     // Check if transaction has a category
     if (!transaction.category_id) {
       transactionWarnings.push({
@@ -156,7 +193,6 @@ function calculateCategorySpending(validTransactions, getAccountTypeFunc) {
       categorySpending[categoryId].herSpending += amount;
     }
     // Note: 'Shared' account transactions would not be counted in either His or Hers
-    // If needed, this could be expanded to handle Shared account types differently
   });
 
   return { categorySpending, warnings };
