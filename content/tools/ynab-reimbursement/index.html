@@ -419,37 +419,6 @@ const Component = () => {
   };
   
   
-  // Export settings to JSON
-  const exportSettings = () => {
-    const settings = {
-      accessToken,
-      selectedBudgetId,
-      accountTypes,
-      categoryTypes,
-      categoryGroupTypes
-    };
-    
-    return JSON.stringify(settings);
-  };
-  
-  // Import settings from JSON
-  const importSettings = (jsonString) => {
-    try {
-      const settings = JSON.parse(jsonString);
-      
-      // Update states with imported settings
-      if (settings.accessToken) setAccessToken(settings.accessToken);
-      if (settings.selectedBudgetId) setSelectedBudgetId(settings.selectedBudgetId);
-      if (settings.accountTypes) setAccountTypes(settings.accountTypes);
-      if (settings.categoryTypes) setCategoryTypes(settings.categoryTypes);
-      if (settings.categoryGroupTypes) setCategoryGroupTypes(settings.categoryGroupTypes);
-      
-      return true;
-    } catch (error) {
-      setError('Invalid settings JSON: ' + error.message);
-      return false;
-    }
-  };
   
   // Logout - clear token and budget
   const handleLogout = () => {
@@ -607,42 +576,6 @@ const Component = () => {
                 </select>
               </div>
               
-              <div className="pt-4 space-y-4">
-                <h3 className="font-medium">Import/Export Settings</h3>
-                
-                <div>
-                  <label className="block text-sm mb-1">Export Settings (copy this)</label>
-                  <textarea 
-                    value={exportSettings()}
-                    readOnly
-                    className="w-full p-2 border border-gray-300 rounded font-mono text-xs h-24 dark:bg-gray-700 dark:border-gray-600"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm mb-1">Import Settings (paste here)</label>
-                  <textarea 
-                    placeholder="Paste settings JSON here"
-                    className="w-full p-2 border border-gray-300 rounded font-mono text-xs h-24 mb-2 dark:bg-gray-700 dark:border-gray-600"
-                    id="import-settings-input"
-                  />
-                  <button 
-                    onClick={() => {
-                      const input = document.getElementById('import-settings-input');
-                      if (input && input.value) {
-                        const success = importSettings(input.value);
-                        if (success) {
-                          input.value = '';
-                          setShowConfigMenu(false);
-                        }
-                      }
-                    }}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
-                  >
-                    Import
-                  </button>
-                </div>
-              </div>
             </div>
           )}
           
