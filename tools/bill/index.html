@@ -358,8 +358,10 @@ Here's an example of the expected format with sample data:
     tailwindLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css';
     shadowRoot.appendChild(tailwindLink);
     
-    // Add component content
+    // Load external scripts if specified in front matter
     
+      // Add component content
+      
 const { useState, useEffect } = React;
 
 const Component = () => {
@@ -1289,8 +1291,9 @@ Here's an example of the expected format with sample data:
   );
 };
 
+      
+      // Create React root in Shadow DOM
+      const root = ReactDOM.createRoot(reactRoot);
+      root.render(<Component />);
     
-    // Create React root in Shadow DOM
-    const root = ReactDOM.createRoot(reactRoot);
-    root.render(<Component />);
   </script></main><footer></footer></body></html>
