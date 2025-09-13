@@ -208,6 +208,8 @@ function calculateSpendingTotals(
   let herTotalShared = 0;
   let hisTotalForHer = 0;
   let herTotalForHim = 0;
+  let hisTotalForHim = 0;
+  let herTotalForHer = 0;
   const warnings = [];
 
   // Process each category
@@ -236,9 +238,13 @@ function calculateSpendingTotals(
       hisTotalShared += spending.hisSpending;
       herTotalShared += spending.herSpending;
     } else if (categoryType === "His") {
+      // His spending in his own categories
+      hisTotalForHim += spending.hisSpending;
       // Her spending in his categories
       herTotalForHim += spending.herSpending;
     } else if (categoryType === "Hers") {
+      // Her spending in her own categories
+      herTotalForHer += spending.herSpending;
       // His spending in her categories
       hisTotalForHer += spending.hisSpending;
     }
@@ -249,6 +255,8 @@ function calculateSpendingTotals(
     herTotalShared,
     hisTotalForHer,
     herTotalForHim,
+    hisTotalForHim,
+    herTotalForHer,
     warnings,
   };
 }
@@ -380,6 +388,8 @@ function calculateReimbursementPure(
     herTotalShared,
     hisTotalForHer,
     herTotalForHim,
+    hisTotalForHim,
+    herTotalForHer,
     warnings: spendingWarnings,
   } = calculateSpendingTotals(
     categorySpending,
@@ -428,6 +438,8 @@ function calculateReimbursementPure(
     herTotalShared: herTotalShared,
     hisTotalForHer: hisTotalForHer,
     herTotalForHim: herTotalForHim,
+    hisTotalForHim: hisTotalForHim,
+    herTotalForHer: herTotalForHer,
     reimbursementAmount: reimbursementAmount,
     reimbursementDirection,
     categorySummary,

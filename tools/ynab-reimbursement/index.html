@@ -1,5 +1,4 @@
-<!doctype html><html lang=en-us><head><meta http-equiv=X-Clacks-Overhead content="GNU Terry Pratchett"><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel="shortcut icon" href=/favicon.ico><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><meta name=msapplication-TileColor content="#da532c"><meta name=msapplication-config content="/browserconfig.xml"><meta name=theme-color content="#ffffff"><title>YNAB Reimbursement Report | Blog by the Rocks</title>
-<meta name=title content="YNAB Reimbursement Report"><meta name=description content="// We'll load the component conditionally after YNAB is ready
+<!doctype html><html lang=en-us><head><meta http-equiv=X-Clacks-Overhead content="GNU Terry Pratchett"><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel="shortcut icon" href=/favicon.ico><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><meta name=msapplication-TileColor content="#da532c"><meta name=msapplication-config content="/browserconfig.xml"><meta name=theme-color content="#ffffff"><title>YNAB Reimbursement Report | Blog by the Rocks</title><meta name=title content="YNAB Reimbursement Report"><meta name=description content="// We'll load the component conditionally after YNAB is ready
 const { useState, useEffect } = React;
 
 // Custom hook to manage state with localStorage
@@ -291,7 +290,7 @@ const Component = () => {
     // We only need to warn if both the category and its group are unset
     categories.forEach(category => {
       const groupType = categoryGroupTypes[category.category_group_id];
-      if (categoryTypes[category.id] === 'Unset' && groupType === &#39;Unset') {
+      if (categoryTypes[category.id] === 'Unset' && groupType === 'Unset') {
         newWarnings.push({
           id: `category-${category.id}`,
           message: `Category &#34;${category.name}&#34; has no type set.`,
@@ -1380,6 +1379,8 @@ const Component = () => {
       herTotalShared,
       hisTotalForHer,
       herTotalForHim,
+      hisTotalForHim,
+      herTotalForHer,
       reimbursementAmount,
       reimbursementDirection,
       categorySummary,
@@ -1559,16 +1560,56 @@ const Component = () => {
             
             {/* Reimbursement Summary */}
             <div className="mb-6 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-green-700 dark:text-green-400 mb-2">
-                Reimbursement Due
-              </h3>
+              <div className="flex items-center mb-2">
+                <h3 className="text-lg font-semibold text-green-700 dark:text-green-400">
+                  Reimbursement Due
+                </h3>
+                <span 
+                  className="ml-2 cursor-help text-green-600 dark:text-green-400" 
+                  title="Makes sure shared costs are split 50/50 and accounts for when one person paid for the other's personal expenses."
+                >
+                  ℹ️
+                </span>
+              </div>
               
               <div className="text-center py-3">
                 <div className="text-2xl font-bold mb-2">
-                  {reimbursementDirection === 'herToHim'
-                    ? `£${milliunitsToDisplayAmount(reimbursementAmount)} - She should pay Him`
-                    : `£${milliunitsToDisplayAmount(reimbursementAmount)} - He should pay Her`
-                  }
+                  <span
+                    className="cursor-help"
+                    title={`(£${milliunitsToDisplayAmount(hisTotalShared)} + £${milliunitsToDisplayAmount(herTotalShared)}) ÷ 2 - £${milliunitsToDisplayAmount(hisTotalShared)} + (£${milliunitsToDisplayAmount(herTotalForHim)} - £${milliunitsToDisplayAmount(hisTotalForHer)})`}
+                  >
+                    {reimbursementDirection === 'herToHim'
+                      ? `£${milliunitsToDisplayAmount(reimbursementAmount)} - She should pay Him`
+                      : `£${milliunitsToDisplayAmount(reimbursementAmount)} - He should pay Her`
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Budget Refill Summary */}
+            <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+              <div className="flex items-center mb-2">
+                <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-400">
+                  Budget Refill Required
+                </h3>
+                <span 
+                  className="ml-2 cursor-help text-yellow-600 dark:text-yellow-400" 
+                  title="Personal spending from shared accounts needs to be reimbursed back to the shared budget. This ensures only agreed-upon shared expenses remain in the shared budget."
+                >
+                  ℹ️
+                </span>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span>She should refill:</span>
+                  <span className="font-semibold">£{milliunitsToDisplayAmount(hisTotalForHer + herTotalForHer)}</span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span>He should refill:</span>
+                  <span className="font-semibold">£{milliunitsToDisplayAmount(herTotalForHim + hisTotalForHim)}</span>
                 </div>
               </div>
             </div>
