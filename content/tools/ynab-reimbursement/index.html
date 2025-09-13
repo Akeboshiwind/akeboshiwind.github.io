@@ -1090,10 +1090,15 @@ const Component = () => {
               
               <div className="text-center py-3">
                 <div className="text-2xl font-bold mb-2">
-                  {reimbursementDirection === 'herToHim'
-                    ? `£${milliunitsToDisplayAmount(reimbursementAmount)} - She should pay Him`
-                    : `£${milliunitsToDisplayAmount(reimbursementAmount)} - He should pay Her`
-                  }
+                  <span
+                    className="cursor-help"
+                    title={`(£${milliunitsToDisplayAmount(hisTotalShared)} + £${milliunitsToDisplayAmount(herTotalShared)}) ÷ 2 - £${milliunitsToDisplayAmount(hisTotalShared)} + (£${milliunitsToDisplayAmount(herTotalForHim)} - £${milliunitsToDisplayAmount(hisTotalForHer)})`}
+                  >
+                    {reimbursementDirection === 'herToHim'
+                      ? `£${milliunitsToDisplayAmount(reimbursementAmount)} - She should pay Him`
+                      : `£${milliunitsToDisplayAmount(reimbursementAmount)} - He should pay Her`
+                    }
+                  </span>
                 </div>
               </div>
             </div>
