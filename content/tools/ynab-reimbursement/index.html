@@ -903,6 +903,8 @@ const Component = () => {
       herTotalShared,
       hisTotalForHer,
       herTotalForHim,
+      hisTotalForHim,
+      herTotalForHer,
       reimbursementAmount,
       reimbursementDirection,
       categorySummary,
@@ -1092,6 +1094,33 @@ const Component = () => {
                     ? `£${milliunitsToDisplayAmount(reimbursementAmount)} - She should pay Him`
                     : `£${milliunitsToDisplayAmount(reimbursementAmount)} - He should pay Her`
                   }
+                </div>
+              </div>
+            </div>
+            
+            {/* Budget Refill Summary */}
+            <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+              <div className="flex items-center mb-2">
+                <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-400">
+                  Budget Refill Required
+                </h3>
+                <span 
+                  className="ml-2 cursor-help text-yellow-600 dark:text-yellow-400" 
+                  title="This money has left the shared budget but wasn't spent on shared categories. It needs to be put back into the budget so that the budget amount reflects only the agreed shared spending"
+                >
+                  ℹ️
+                </span>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span>She should refill:</span>
+                  <span className="font-semibold">£{milliunitsToDisplayAmount(hisTotalForHer + herTotalForHer)}</span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span>He should refill:</span>
+                  <span className="font-semibold">£{milliunitsToDisplayAmount(herTotalForHim + hisTotalForHim)}</span>
                 </div>
               </div>
             </div>
