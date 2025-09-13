@@ -1084,9 +1084,17 @@ const Component = () => {
             
             {/* Reimbursement Summary */}
             <div className="mb-6 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-green-700 dark:text-green-400 mb-2">
-                Reimbursement Due
-              </h3>
+              <div className="flex items-center mb-2">
+                <h3 className="text-lg font-semibold text-green-700 dark:text-green-400">
+                  Reimbursement Due
+                </h3>
+                <span 
+                  className="ml-2 cursor-help text-green-600 dark:text-green-400" 
+                  title="Makes sure shared costs are split 50/50 and accounts for when one person paid for the other's personal expenses."
+                >
+                  ℹ️
+                </span>
+              </div>
               
               <div className="text-center py-3">
                 <div className="text-2xl font-bold mb-2">
