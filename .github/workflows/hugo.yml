@@ -28,6 +28,11 @@ jobs:
           hugo-version: 'latest'
           extended: true
 
+      - name: Copy talk assets
+        run: |
+          mkdir -p static/talk/christmas
+          cp -r talks/christmas-talk/* static/talk/christmas/
+
       - name: Build
         run: hugo --minify
         

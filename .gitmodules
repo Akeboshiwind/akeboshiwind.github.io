@@ -1,0 +1,4 @@
+[submodule "talks/christmas-talk"]
+	path = talks/christmas-talk
+	url = git@github.com:Akeboshiwind/christmas-talk-2025.git
+	branch = dist
