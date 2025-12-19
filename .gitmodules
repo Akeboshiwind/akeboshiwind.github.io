@@ -2,3 +2,8 @@
 	path = talks/christmas-talk
 	url = git@github.com:Akeboshiwind/christmas-talk-2025.git
 	branch = dist
+
+[submodule "tools/bitemporal-playground"]
+	path = tools/bitemporal-playground
+	url = git@github.com:Akeboshiwind/bitemporal-playground.git
+	branch = dist

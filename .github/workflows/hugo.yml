@@ -33,6 +33,11 @@ jobs:
           mkdir -p static/talk/christmas
           cp -r talks/christmas-talk/* static/talk/christmas/
 
+      - name: Copy tool assets
+        run: |
+          mkdir -p static/tools/bitemporal
+          cp -r tools/bitemporal-playground/* static/tools/bitemporal/
+
       - name: Build
         run: hugo --minify
         
