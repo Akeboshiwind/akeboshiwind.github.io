@@ -19,7 +19,7 @@
           </time>
         </i>
       </span>
-      <a href="{{ .Permalink }}">{{ .Title }}</a>
+      <a href="{{ with .Params.externalUrl }}{{ . }}{{ else }}{{ .Permalink }}{{ end }}">{{ .Title }}</a>
       {{ if .Draft }}
       <span style="color: #c05b4d; font-style: italic;">[DRAFT]</span>
       {{ end }}
