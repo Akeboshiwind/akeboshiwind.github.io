@@ -7,3 +7,7 @@
 	path = tools/bitemporal-playground
 	url = git@github.com:Akeboshiwind/bitemporal-playground.git
 	branch = dist
+[submodule "talks/chat-wrapped"]
+	path = talks/chat-wrapped
+	url = git@github.com:ake-temp/chat-wrapped.git
+	branch = dist

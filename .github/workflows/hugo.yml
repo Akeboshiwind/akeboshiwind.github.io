@@ -32,6 +32,8 @@ jobs:
         run: |
           mkdir -p static/talk/christmas
           cp -r talks/christmas-talk/* static/talk/christmas/
+          mkdir -p static/talk/chat-wrapped
+          cp -r talks/chat-wrapped/* static/talk/chat-wrapped/
 
       - name: Copy tool assets
         run: |
