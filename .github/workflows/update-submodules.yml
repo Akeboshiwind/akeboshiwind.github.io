@@ -5,6 +5,9 @@ on:
     types: [submodule-update]
   workflow_dispatch: # Manual trigger for testing
 
+permissions:
+  contents: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
