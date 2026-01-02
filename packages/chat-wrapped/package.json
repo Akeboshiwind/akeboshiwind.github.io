@@ -1,0 +1,14 @@
+{
+  "name": "chat-wrapped",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "bun-plugin-tailwind": "^0.1.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "squint-cljs": "^0.8.134"
+  },
+  "devDependencies": {
+    "tailwindcss": "^4.1.17"
+  }
+}

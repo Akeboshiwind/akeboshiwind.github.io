@@ -12,8 +12,12 @@ hugo.linux
 # Temporary lock file while building
 /.hugo_build.lock
 
-# Node modules if using npm/yarn for theme development
-/node_modules/
+# Node modules
+node_modules/
+
+# Package build artifacts
+packages/*/target/
+packages/*/build/
 
 # OS generated files
 .DS_Store
@@ -28,3 +32,6 @@ Thumbs.db
 .lsp
 .cpcache
 .clj-kondo
+static/talk/chat-wrapped
+static/talk/christmas
+static/tools/bitemporal

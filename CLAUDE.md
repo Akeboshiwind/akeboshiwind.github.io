@@ -1,24 +1,45 @@
-# CLAUDE.md: Project Guide
+# Blog
 
-## Build Commands
-- `hugo server` - Start the development server
-- `hugo server -D` - Start the development server and include draft posts
-- `hugo` - Build the site
-- `hugo new posts/my-post-name.md` - Create a new post
+Personal blog built with Hugo, with interactive tools and presentations.
 
-## Project Structure
-- `/content/posts/` - Markdown blog posts
-- `/layouts/` - Custom HTML templates for site rendering
-- `/static/` - Static assets (images, CSS, JS)
-- `/archetypes/` - Templates for new content
-- `/themes/` - Hugo themes
+## Commands
 
-## Code Style Guidelines
-- **Format**: Use Hugo's built-in templates and shortcodes
-- **Frontmatter**: Include title, date, tags, and discussLink in YAML format
-- **Shortcodes**: Use codeblock-name for code blocks with filenames
-- **Markdown**: Use standard Markdown formatting for content
+```bash
+hugo server -D        # Dev server with drafts
+hugo                  # Build site only
+hugo new posts/my-post-name.md  # Create new post
+```
 
-## Tools
-- Built with [Hugo](https://gohugo.io/)
-- Uses the [Mainroad](https://github.com/Vimux/Mainroad) theme
+## Structure
+
+```
+content/posts/     # Blog posts (Markdown)
+layouts/           # Hugo templates
+static/            # Static assets
+packages/          # Frontend tools (each has own CLAUDE.md)
+  bitemporal-playground/
+  christmas-talk/
+  chat-wrapped/
+```
+
+## Working on Packages
+
+Each package in `/packages/` is self-contained with its own CLAUDE.md.
+For focused context, run Claude from the package directory:
+
+```bash
+cd packages/chat-wrapped && claude
+```
+
+## Code Style
+
+- **Frontmatter**: YAML with title, date, tags, discussLink
+- **Shortcodes**: Use `codeblock-name` for code blocks with filenames
+- **Markdown**: Standard formatting
+
+## Tech Stack
+
+- [Hugo](https://gohugo.io/) - Static site generator
+- [Mainroad](https://github.com/Vimux/Mainroad) - Hugo theme
+
+Packages use [Bun](https://bun.sh/) + [Squint](https://github.com/squint-cljs/squint) - see each package's CLAUDE.md for details.

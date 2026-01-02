@@ -1,12 +1,10 @@
-name: Hugo site build and deploy
+name: Build and Deploy
 
 on:
-  # Runs on pushes targeting the default branch
   push:
     branches:
       - master
   pull_request:
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 permissions:
@@ -14,13 +12,20 @@ permissions:
 
 jobs:
   build-deploy:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: true  # Fetch Hugo themes
-          fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Babashka
+        uses: DeLaGuardo/setup-clojure@12.5
+        with:
+          bb: latest
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
@@ -28,21 +33,33 @@ jobs:
           hugo-version: 'latest'
           extended: true
 
-      - name: Copy talk assets
+      - name: Build bitemporal-playground
         run: |
-          mkdir -p static/talk/christmas
-          cp -r talks/christmas-talk/* static/talk/christmas/
-          mkdir -p static/talk/chat-wrapped
-          cp -r talks/chat-wrapped/* static/talk/chat-wrapped/
+          cd packages/bitemporal-playground
+          bun install
+          bb build:ci
+          mkdir -p ../../static/tools/bitemporal
+          cp -r target/public/* ../../static/tools/bitemporal/
 
-      - name: Copy tool assets
+      - name: Build christmas-talk
         run: |
-          mkdir -p static/tools/bitemporal
-          cp -r tools/bitemporal-playground/* static/tools/bitemporal/
+          cd packages/christmas-talk
+          bun install
+          bb build:ci
+          mkdir -p ../../static/talk/christmas
+          cp -r target/public/* ../../static/talk/christmas/
 
-      - name: Build
+      - name: Build chat-wrapped
+        run: |
+          cd packages/chat-wrapped
+          bun install
+          bb build:ci
+          mkdir -p ../../static/talk/chat-wrapped
+          cp -r target/public/* ../../static/talk/chat-wrapped/
+
+      - name: Build Hugo
         run: hugo --minify
-        
+
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         if: github.ref == 'refs/heads/master'
