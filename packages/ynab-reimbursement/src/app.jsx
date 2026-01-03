@@ -2,37 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ynab } from './ynab.js';
 import { calculateReimbursementPure } from './calculations.js';
+import { useLocalStorage } from './hooks.js';
 
 // Import Tailwind CSS
 import './app.css';
-
-// Custom hook to manage state with localStorage
-const useLocalStorage = (key, initialValue, prefix = 'ynabReimbursement_') => {
-  // Create prefixed key
-  const prefixedKey = `${prefix}${key}`;
-
-  // Initialize state with value from localStorage if available
-  const [storedValue, setStoredValue] = useState(() => {
-    try {
-      const item = localStorage.getItem(prefixedKey);
-      return item !== null ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(`Error loading ${key} from localStorage:`, error);
-      return initialValue;
-    }
-  });
-
-  // Update localStorage when state changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(prefixedKey, JSON.stringify(storedValue));
-    } catch (error) {
-      console.error(`Error saving ${key} to localStorage:`, error);
-    }
-  }, [storedValue, key]);
-
-  return [storedValue, setStoredValue];
-};
 
 // Helper function to convert milliunits to dollars for display
 const milliunitsToDisplayAmount = (milliunits) => {
