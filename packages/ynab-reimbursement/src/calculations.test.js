@@ -751,4 +751,62 @@ describe("calculateReimbursementPure", () => {
     expect(result.categorySummary[1].groupName).toBe("Food");
     expect(result.categorySummary[2].groupName).toBe("Tech");
   });
+
+  test("refund reduces spending in category", () => {
+    const categories = [createTestCategory("groceries", "Groceries", "essentials")];
+    const categoryGroups = [createTestCategoryGroup("essentials", "Essentials")];
+    const transactions = [
+      createTestTransaction("t1", "Supermarket", "2024-01-15", -100000, "groceries", "his-account"),
+      createTestTransaction("t2", "Supermarket Refund", "2024-01-20", 30000, "groceries", "his-account"),
+    ];
+    const getAccountType = mockGetAccountType({ "his-account": "His" });
+    const getCategoryType = mockGetCategoryType({ groceries: "Shared" });
+
+    const result = calculateReimbursementPure(
+      transactions, categories, categoryGroups, getAccountType, getCategoryType
+    );
+
+    expect(result.hisTotalShared).toBe(70000);
+  });
+
+  test("refund can result in negative spending for category", () => {
+    const categories = [createTestCategory("groceries", "Groceries", "essentials")];
+    const categoryGroups = [createTestCategoryGroup("essentials", "Essentials")];
+    const transactions = [
+      createTestTransaction("t1", "Supermarket", "2024-01-15", -50000, "groceries", "his-account"),
+      createTestTransaction("t2", "Big Refund", "2024-01-20", 80000, "groceries", "his-account"),
+    ];
+    const getAccountType = mockGetAccountType({ "his-account": "His" });
+    const getCategoryType = mockGetCategoryType({ groceries: "Shared" });
+
+    const result = calculateReimbursementPure(
+      transactions, categories, categoryGroups, getAccountType, getCategoryType
+    );
+
+    expect(result.hisTotalShared).toBe(-30000);
+  });
+
+  test("refund affects reimbursement calculation correctly", () => {
+    const categories = [createTestCategory("groceries", "Groceries", "essentials")];
+    const categoryGroups = [createTestCategoryGroup("essentials", "Essentials")];
+    const transactions = [
+      createTestTransaction("t1", "Supermarket", "2024-01-15", -100000, "groceries", "his-account"),
+      createTestTransaction("t2", "Supermarket", "2024-01-16", -100000, "groceries", "her-account"),
+      createTestTransaction("t3", "His Refund", "2024-01-20", 40000, "groceries", "his-account"),
+    ];
+    const getAccountType = mockGetAccountType({ "his-account": "His", "her-account": "Hers" });
+    const getCategoryType = mockGetCategoryType({ groceries: "Shared" });
+
+    const result = calculateReimbursementPure(
+      transactions, categories, categoryGroups, getAccountType, getCategoryType
+    );
+
+    // He spent 60k (100k - 40k refund), she spent 100k
+    // Total shared = 160k, each should pay 80k
+    // He paid 60k, so she owes him nothing - he owes her 20k
+    expect(result.hisTotalShared).toBe(60000);
+    expect(result.herTotalShared).toBe(100000);
+    expect(result.reimbursementAmount).toBe(20000);
+    expect(result.reimbursementDirection).toBe("himToHer");
+  });
 });
