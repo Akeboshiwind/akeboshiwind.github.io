@@ -32,6 +32,7 @@ Thumbs.db
 .lsp
 .cpcache
 .clj-kondo
-static/talk/chat-wrapped
-static/talk/christmas
-static/tools/bitemporal
+
+# Package outputs
+static/talk
+static/tools
