@@ -6,6 +6,11 @@ import {
   calculateReimbursementValues,
   createCategorySummary,
   calculateReimbursementPure,
+  isValidType,
+  createTypeWarning,
+  isInflowTransaction,
+  isUncategorizedTransaction,
+  isTransferTransaction,
 } from "./calculations.js";
 
 // >> Utils
@@ -67,6 +72,90 @@ const mockGetAccountType = (typeMap) => (id) => typeMap[id] || "Unset";
 const mockGetCategoryType = (typeMap) => (id) => typeMap[id] || "Unset";
 
 // >> Tests
+
+describe("isValidType", () => {
+  test("accepts His, Hers, Shared when allowUnset is false", () => {
+    expect(isValidType("His", false)).toBe(true);
+    expect(isValidType("Hers", false)).toBe(true);
+    expect(isValidType("Shared", false)).toBe(true);
+  });
+
+  test("rejects Unset when allowUnset is false", () => {
+    expect(isValidType("Unset", false)).toBe(false);
+  });
+
+  test("accepts Unset when allowUnset is true (default)", () => {
+    expect(isValidType("Unset")).toBe(true);
+    expect(isValidType("Unset", true)).toBe(true);
+  });
+
+  test("rejects invalid type strings", () => {
+    expect(isValidType("invalid")).toBe(false);
+    expect(isValidType("his")).toBe(false); // case sensitive
+    expect(isValidType("")).toBe(false);
+    expect(isValidType(null)).toBe(false);
+    expect(isValidType(undefined)).toBe(false);
+  });
+});
+
+describe("createTypeWarning", () => {
+  test("creates warning with correct structure", () => {
+    const warning = createTypeWarning("test-id", "Test Name", "InvalidType");
+
+    expect(warning.id).toBe("invalid-type-test-id");
+    expect(warning.message).toContain("Test Name");
+    expect(warning.message).toContain("InvalidType");
+    expect(warning.details).toContain("His, Hers, Shared, or Unset");
+  });
+
+  test("shows restricted types when allowUnset is false", () => {
+    const warning = createTypeWarning("test-id", "Test Name", "InvalidType", false);
+
+    expect(warning.details).toContain("His, Hers, or Shared");
+    expect(warning.details).not.toContain("Unset");
+  });
+});
+
+describe("isInflowTransaction", () => {
+  test("returns true for inflow transactions", () => {
+    expect(isInflowTransaction({ category_name: "Inflow: Ready to Assign" })).toBe(true);
+  });
+
+  test("returns false for regular transactions", () => {
+    expect(isInflowTransaction({ category_name: "Groceries" })).toBe(false);
+    expect(isInflowTransaction({ category_name: null })).toBe(false);
+    expect(isInflowTransaction({ category_name: "Inflow" })).toBe(false); // partial match
+  });
+});
+
+describe("isUncategorizedTransaction", () => {
+  test("returns true for uncategorized transactions", () => {
+    expect(isUncategorizedTransaction({ category_name: "Uncategorized" })).toBe(true);
+  });
+
+  test("returns false for categorized transactions", () => {
+    expect(isUncategorizedTransaction({ category_name: "Groceries" })).toBe(false);
+    expect(isUncategorizedTransaction({ category_name: null })).toBe(false);
+  });
+});
+
+describe("isTransferTransaction", () => {
+  test("returns truthy when transfer_transaction_id is set", () => {
+    expect(isTransferTransaction({ transfer_transaction_id: "abc123", transfer_account_id: null })).toBeTruthy();
+  });
+
+  test("returns truthy when transfer_account_id is set", () => {
+    expect(isTransferTransaction({ transfer_transaction_id: null, transfer_account_id: "acc123" })).toBeTruthy();
+  });
+
+  test("returns truthy when both are set", () => {
+    expect(isTransferTransaction({ transfer_transaction_id: "abc123", transfer_account_id: "acc123" })).toBeTruthy();
+  });
+
+  test("returns falsy when neither is set", () => {
+    expect(isTransferTransaction({ transfer_transaction_id: null, transfer_account_id: null })).toBeFalsy();
+  });
+});
 
 describe("filterTransactions", () => {
   test("Normal case: Valid transactions pass through", () => {
@@ -559,6 +648,27 @@ describe("createCategorySummary", () => {
 
     expect(Object.keys(categorySummaryMap).length).toBe(1);
     expect(warnings.length).toBe(1);
+  });
+
+  test("Category groups that don't exist generate warnings", () => {
+    const categorySpending = {
+      cat1: { hisSpending: 100000, herSpending: 50000 },
+    };
+    const categories = [createTestCategory("cat1", "Groceries", "missing-group")];
+    const categoryGroups = []; // No groups - cat1's group won't be found
+    const getCategoryType = mockGetCategoryType({ cat1: "Shared" });
+
+    const { categorySummaryMap, warnings } = createCategorySummary(
+      categorySpending,
+      categories,
+      categoryGroups,
+      getCategoryType
+    );
+
+    expect(Object.keys(categorySummaryMap).length).toBe(0);
+    expect(warnings.length).toBe(1);
+    expect(warnings[0].message).toContain("missing-group");
+    expect(warnings[0].message).toContain("not found");
   });
 
   test("Empty object case", () => {
