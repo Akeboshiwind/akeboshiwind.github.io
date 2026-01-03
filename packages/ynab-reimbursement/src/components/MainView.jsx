@@ -11,7 +11,8 @@ export const MainView = ({
   onMonthChange,
   onFetchTransactions,
   selectedBudgetId,
-  transactions
+  transactions,
+  currencySymbol = '£'
 }) => {
   const {
     hisTotalShared,
@@ -188,11 +189,11 @@ export const MainView = ({
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Spent on shared categories:</span>
-                      <span className="font-semibold">£{milliunitsToDisplayAmount(hisTotalShared)}</span>
+                      <span className="font-semibold">{currencySymbol}{milliunitsToDisplayAmount(hisTotalShared)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Spent on her categories:</span>
-                      <span className="font-semibold">£{milliunitsToDisplayAmount(hisTotalForHer)}</span>
+                      <span className="font-semibold">{currencySymbol}{milliunitsToDisplayAmount(hisTotalForHer)}</span>
                     </div>
                   </div>
                 </div>
@@ -202,11 +203,11 @@ export const MainView = ({
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Spent on shared categories:</span>
-                      <span className="font-semibold">£{milliunitsToDisplayAmount(herTotalShared)}</span>
+                      <span className="font-semibold">{currencySymbol}{milliunitsToDisplayAmount(herTotalShared)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Spent on his categories:</span>
-                      <span className="font-semibold">£{milliunitsToDisplayAmount(herTotalForHim)}</span>
+                      <span className="font-semibold">{currencySymbol}{milliunitsToDisplayAmount(herTotalForHim)}</span>
                     </div>
                   </div>
                 </div>
@@ -229,11 +230,11 @@ export const MainView = ({
                   <div className="text-2xl font-bold mb-2">
                     <span
                       className="cursor-help"
-                      title={`(£${milliunitsToDisplayAmount(hisTotalShared)} + £${milliunitsToDisplayAmount(herTotalShared)}) ÷ 2 - £${milliunitsToDisplayAmount(hisTotalShared)} + (£${milliunitsToDisplayAmount(herTotalForHim)} - £${milliunitsToDisplayAmount(hisTotalForHer)})`}
+                      title={`(${currencySymbol}${milliunitsToDisplayAmount(hisTotalShared)} + ${currencySymbol}${milliunitsToDisplayAmount(herTotalShared)}) ÷ 2 - ${currencySymbol}${milliunitsToDisplayAmount(hisTotalShared)} + (${currencySymbol}${milliunitsToDisplayAmount(herTotalForHim)} - ${currencySymbol}${milliunitsToDisplayAmount(hisTotalForHer)})`}
                     >
                       {reimbursementDirection === 'herToHim'
-                        ? `£${milliunitsToDisplayAmount(reimbursementAmount)} - She should pay Him`
-                        : `£${milliunitsToDisplayAmount(reimbursementAmount)} - He should pay Her`
+                        ? `${currencySymbol}${milliunitsToDisplayAmount(reimbursementAmount)} - She should pay Him`
+                        : `${currencySymbol}${milliunitsToDisplayAmount(reimbursementAmount)} - He should pay Her`
                       }
                     </span>
                   </div>
@@ -256,12 +257,12 @@ export const MainView = ({
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span>She should refill:</span>
-                    <span className="font-semibold">£{milliunitsToDisplayAmount(hisTotalForHer + herTotalForHer)}</span>
+                    <span className="font-semibold">{currencySymbol}{milliunitsToDisplayAmount(hisTotalForHer + herTotalForHer)}</span>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <span>He should refill:</span>
-                    <span className="font-semibold">£{milliunitsToDisplayAmount(herTotalForHim + hisTotalForHim)}</span>
+                    <span className="font-semibold">{currencySymbol}{milliunitsToDisplayAmount(herTotalForHim + hisTotalForHim)}</span>
                   </div>
                 </div>
               </div>
@@ -297,9 +298,9 @@ export const MainView = ({
                           <React.Fragment key={groupId}>
                             <tr className="bg-gray-100 dark:bg-gray-700 font-bold">
                               <td className="p-2 border border-gray-300 dark:border-gray-600">{group.groupName}</td>
-                              <td className="text-right p-2 border border-gray-300 dark:border-gray-600">£{milliunitsToDisplayAmount(groupHisTotal)}</td>
-                              <td className="text-right p-2 border border-gray-300 dark:border-gray-600">£{milliunitsToDisplayAmount(groupHerTotal)}</td>
-                              <td className="text-right p-2 border border-gray-300 dark:border-gray-600">£{milliunitsToDisplayAmount(groupTotal)}</td>
+                              <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(groupHisTotal)}</td>
+                              <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(groupHerTotal)}</td>
+                              <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(groupTotal)}</td>
                             </tr>
 
                             {group.categories.map(category => {
@@ -308,9 +309,9 @@ export const MainView = ({
                                 return (
                                   <tr key={category.categoryId}>
                                     <td className="p-2 border border-gray-300 dark:border-gray-600 pl-6">{category.categoryName}</td>
-                                    <td className="text-right p-2 border border-gray-300 dark:border-gray-600">£{milliunitsToDisplayAmount(category.hisSpending)}</td>
-                                    <td className="text-right p-2 border border-gray-300 dark:border-gray-600">£{milliunitsToDisplayAmount(category.herSpending)}</td>
-                                    <td className="text-right p-2 border border-gray-300 dark:border-gray-600">£{milliunitsToDisplayAmount(catTotal)}</td>
+                                    <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(category.hisSpending)}</td>
+                                    <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(category.herSpending)}</td>
+                                    <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(catTotal)}</td>
                                   </tr>
                                 );
                               }
@@ -322,9 +323,9 @@ export const MainView = ({
 
                       <tr className="font-bold">
                         <td className="p-2 border border-gray-300 dark:border-gray-600">Grand Total</td>
-                        <td className="text-right p-2 border border-gray-300 dark:border-gray-600">£{milliunitsToDisplayAmount(hisTotal)}</td>
-                        <td className="text-right p-2 border border-gray-300 dark:border-gray-600">£{milliunitsToDisplayAmount(herTotal)}</td>
-                        <td className="text-right p-2 border border-gray-300 dark:border-gray-600">£{milliunitsToDisplayAmount(total)}</td>
+                        <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(hisTotal)}</td>
+                        <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(herTotal)}</td>
+                        <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(total)}</td>
                       </tr>
                     </tbody>
                   </table>

@@ -227,6 +227,12 @@ describe("MainView", () => {
 
       expect(screen.getByText("Grand Total")).toBeTruthy();
     });
+
+    test("uses custom currency symbol when provided", () => {
+      render(<MainView {...propsWithTransactions} currencySymbol="$" />);
+
+      expect(screen.getByText("$15.00 - She should pay Him")).toBeTruthy();
+    });
   });
 
   describe("transaction warnings", () => {

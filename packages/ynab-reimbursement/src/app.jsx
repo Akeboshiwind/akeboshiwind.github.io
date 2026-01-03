@@ -223,6 +223,9 @@ const App = () => {
     return accountTypes[accountId] || 'Unset';
   };
 
+  const selectedBudget = budgets.find(b => b.id === selectedBudgetId);
+  const currencySymbol = selectedBudget?.currency_format?.currency_symbol || '£';
+
   const calculateReimbursement = () => {
     return calculateReimbursementPure(
       transactions,
@@ -286,6 +289,7 @@ const App = () => {
           onFetchTransactions={fetchTransactions}
           selectedBudgetId={selectedBudgetId}
           transactions={transactions}
+          currencySymbol={currencySymbol}
         />
       )}
 
