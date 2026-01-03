@@ -50,15 +50,19 @@ const App = () => {
 
   useEffect(() => {
     if (accessToken) {
-      fetchBudgets();
+      const controller = new AbortController();
+      fetchBudgets(controller.signal);
+      return () => controller.abort();
     }
   }, [accessToken]);
 
   useEffect(() => {
     if (selectedBudgetId) {
-      fetchAccounts();
-      fetchCategories();
-      fetchBudgetMonths();
+      const controller = new AbortController();
+      fetchAccounts(controller.signal);
+      fetchCategories(controller.signal);
+      fetchBudgetMonths(controller.signal);
+      return () => controller.abort();
     }
   }, [selectedBudgetId]);
 
@@ -68,14 +72,17 @@ const App = () => {
     }
   }, [accounts, categories, categoryGroups, accountTypes, categoryTypes, categoryGroupTypes, currentView]);
 
-  const fetchYnabData = async (fn, ...args) => {
+  const fetchYnabData = async (fn, opts = {}) => {
     setIsLoading(true);
     setError(null);
 
     try {
       const client = ynab.API(accessToken);
-      return await fn.apply(null, [client, ...args]);
+      return await fn(client, opts);
     } catch (err) {
+      if (err.name === 'AbortError') {
+        return null;
+      }
       console.error('YNAB API Error:', err);
       setError(err.message || 'An error occurred while fetching data from YNAB');
       return null;
@@ -84,15 +91,15 @@ const App = () => {
     }
   };
 
-  const fetchBudgets = async () => {
-    const result = await fetchYnabData(ynab.budgets.getBudgets);
+  const fetchBudgets = async (signal) => {
+    const result = await fetchYnabData(ynab.budgets.getBudgets, { signal });
     if (result) {
       setBudgets(result);
     }
   };
 
-  const fetchAccounts = async () => {
-    const result = await fetchYnabData(ynab.accounts.getAccounts, { budgetId: selectedBudgetId });
+  const fetchAccounts = async (signal) => {
+    const result = await fetchYnabData(ynab.accounts.getAccounts, { budgetId: selectedBudgetId, signal });
     if (result) {
       setAccounts(result);
       const newAccountTypes = {...accountTypes};
@@ -105,8 +112,8 @@ const App = () => {
     }
   };
 
-  const fetchCategories = async () => {
-    const result = await fetchYnabData(ynab.categories.getCategories, { budgetId: selectedBudgetId });
+  const fetchCategories = async (signal) => {
+    const result = await fetchYnabData(ynab.categories.getCategories, { budgetId: selectedBudgetId, signal });
     if (result) {
       const filteredGroups = result.filter(group =>
         !group.deleted && group.name !== "Internal Master Category"
@@ -141,8 +148,8 @@ const App = () => {
     }
   };
 
-  const fetchBudgetMonths = async () => {
-    const result = await fetchYnabData(ynab.months.getBudgetMonths, { budgetId: selectedBudgetId });
+  const fetchBudgetMonths = async (signal) => {
+    const result = await fetchYnabData(ynab.months.getBudgetMonths, { budgetId: selectedBudgetId, signal });
     if (result) {
       const sortedMonths = [...result].sort((a, b) => new Date(b.month) - new Date(a.month));
       setAvailableMonths(sortedMonths);

@@ -36,42 +36,47 @@ async function request(client, { method, url, data, signal }) {
   return response.json();
 }
 
-async function getBudgets(client) {
+async function getBudgets(client, { signal } = {}) {
   const response = await request(client, {
     method: "GET",
     url: `${client.apiUrl}/budgets`,
+    signal,
   });
   return response.data.budgets;
 }
 
-async function getAccounts(client, { budgetId }) {
+async function getAccounts(client, { budgetId, signal }) {
   const response = await request(client, {
     method: "GET",
     url: `${client.apiUrl}/budgets/${budgetId}/accounts`,
+    signal,
   });
   return response.data.accounts;
 }
 
-async function getCategories(client, { budgetId }) {
+async function getCategories(client, { budgetId, signal }) {
   const response = await request(client, {
     method: "GET",
     url: `${client.apiUrl}/budgets/${budgetId}/categories`,
+    signal,
   });
   return response.data.category_groups;
 }
 
-async function getBudgetMonths(client, { budgetId }) {
+async function getBudgetMonths(client, { budgetId, signal }) {
   const response = await request(client, {
     method: "GET",
     url: `${client.apiUrl}/budgets/${budgetId}/months`,
+    signal,
   });
   return response.data.months;
 }
 
-async function getTransactionsByMonth(client, { budgetId, month }) {
+async function getTransactionsByMonth(client, { budgetId, month, signal }) {
   const response = await request(client, {
     method: "GET",
     url: `${client.apiUrl}/budgets/${budgetId}/months/${month}/transactions`,
+    signal,
   });
   return response.data.transactions;
 }
