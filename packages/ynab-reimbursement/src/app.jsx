@@ -34,10 +34,6 @@ const useLocalStorage = (key, initialValue, prefix = 'ynabReimbursement_') => {
   return [storedValue, setStoredValue];
 };
 
-function get(obj, key, defaultValue = null) {
-  return obj.hasOwnProperty(key) ? obj[key] : defaultValue;
-}
-
 // Helper function to convert milliunits to dollars for display
 const milliunitsToDisplayAmount = (milliunits) => {
   return (milliunits / 1000).toFixed(2);
