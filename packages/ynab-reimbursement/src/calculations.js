@@ -1,7 +1,7 @@
 // >> Util
 
 // Validation function for account and category types
-function isValidType(type, forCalculation = false) {
+export function isValidType(type, forCalculation = false) {
   // Valid types for configuration ('Unset' is allowed during configuration)
   const validConfigTypes = ["His", "Hers", "Shared", "Unset"];
 
@@ -15,7 +15,7 @@ function isValidType(type, forCalculation = false) {
 }
 
 // Helper to create validation warnings
-function createTypeWarning(id, name, type, forCalculation = false) {
+export function createTypeWarning(id, name, type, forCalculation = false) {
   const expectedTypes = forCalculation
     ? "His, Hers, or Shared"
     : "His, Hers, Shared, or Unset";
@@ -28,19 +28,19 @@ function createTypeWarning(id, name, type, forCalculation = false) {
 }
 
 // Function to check if a transaction is in the inflow category
-function isInflowTransaction(transaction) {
+export function isInflowTransaction(transaction) {
   return transaction.category_name === "Inflow: Ready to Assign";
 }
 
 // Function to check if a transaction is uncategorized
-function isUncategorizedTransaction(transaction) {
+export function isUncategorizedTransaction(transaction) {
   return transaction.category_name === "Uncategorized";
 }
 
 // >> Core
 
 // Function to filter transactions and return valid ones with warnings
-function filterTransactions(
+export function filterTransactions(
   transactionsList,
   getAccountTypeFunc,
   getCategoryTypeFunc,
@@ -103,12 +103,12 @@ function filterTransactions(
       });
       return false;
     }
-    
+
     // Skip inflow transactions
     if (isInflowTransaction(transaction)) {
       return false;
     }
-    
+
     // Flag uncategorized transactions as warnings
     if (isUncategorizedTransaction(transaction)) {
       transactionWarnings.push({
@@ -154,7 +154,7 @@ function filterTransactions(
 }
 
 // Function to calculate spending by category
-function calculateCategorySpending(validTransactions, getAccountTypeFunc) {
+export function calculateCategorySpending(validTransactions, getAccountTypeFunc) {
   // Initialize map to store spending per category by account type
   const categorySpending = {};
   const warnings = [];
@@ -199,7 +199,7 @@ function calculateCategorySpending(validTransactions, getAccountTypeFunc) {
 }
 
 // Function to calculate spending totals
-function calculateSpendingTotals(
+export function calculateSpendingTotals(
   categorySpending,
   categoriesList,
   getCategoryTypeFunc,
@@ -262,7 +262,7 @@ function calculateSpendingTotals(
 }
 
 // Function to calculate reimbursement amount and direction
-function calculateReimbursementValues(spendingTotals) {
+export function calculateReimbursementValues(spendingTotals) {
   const { hisTotalShared, herTotalShared, hisTotalForHer, herTotalForHim } =
     spendingTotals;
 
@@ -282,7 +282,7 @@ function calculateReimbursementValues(spendingTotals) {
 }
 
 // Function to create detailed category summary with metadata
-function createCategorySummary(
+export function createCategorySummary(
   categorySpending,
   categoriesList,
   categoryGroupsList,
@@ -345,7 +345,7 @@ function createCategorySummary(
 }
 
 // Pure function for calculating reimbursement data
-function calculateReimbursementPure(
+export function calculateReimbursementPure(
   transactionsList,
   categoriesList,
   categoryGroupsList,
@@ -446,21 +446,3 @@ function calculateReimbursementPure(
     warnings: allWarnings,
   };
 }
-
-// Export all the functions for use in other files
-window.ynabReimbursementCalculations = {
-  // >> Util functions
-  isValidType,
-  createTypeWarning,
-  isInflowTransaction,
-  isUncategorizedTransaction,
-
-  // >> Core functions
-  filterTransactions,
-  calculateCategorySpending,
-  calculateSpendingTotals,
-  calculateReimbursementValues,
-  createCategorySummary,
-  calculateReimbursementPure,
-};
-

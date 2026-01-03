@@ -90,7 +90,7 @@ async function getTransactionsByMonth(client, budgetId, month) {
 
 // >> API
 
-window.ynab = {
+export const ynab = {
   API,
   budgets: { getBudgets },
   accounts: { getAccounts },

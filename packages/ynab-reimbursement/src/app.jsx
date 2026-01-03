@@ -1,21 +1,16 @@
----
-title: YNAB Reimbursement Report
-date: 2025-05-11
-layout: react
-scripts:
-  - calculations.js
-  - tests.js
-  - ynab.js
----
+import React, { useState, useEffect } from 'react';
+import { createRoot } from 'react-dom/client';
+import { ynab } from './ynab.js';
+import { calculateReimbursementPure } from './calculations.js';
 
-// We'll load the component conditionally after YNAB is ready
-const { useState, useEffect } = React;
+// Import Tailwind CSS
+import './app.css';
 
 // Custom hook to manage state with localStorage
 const useLocalStorage = (key, initialValue, prefix = 'ynabReimbursement_') => {
   // Create prefixed key
   const prefixedKey = `${prefix}${key}`;
-  
+
   // Initialize state with value from localStorage if available
   const [storedValue, setStoredValue] = useState(() => {
     try {
@@ -26,7 +21,7 @@ const useLocalStorage = (key, initialValue, prefix = 'ynabReimbursement_') => {
       return initialValue;
     }
   });
-  
+
   // Update localStorage when state changes
   useEffect(() => {
     try {
@@ -35,7 +30,7 @@ const useLocalStorage = (key, initialValue, prefix = 'ynabReimbursement_') => {
       console.error(`Error saving ${key} to localStorage:`, error);
     }
   }, [storedValue, key]);
-  
+
   return [storedValue, setStoredValue];
 };
 
@@ -49,29 +44,29 @@ const milliunitsToDisplayAmount = (milliunits) => {
 };
 
 // Create the main application component
-const Component = () => {
+const App = () => {
   // Constants and configuration keys
   const CONFIG_PREFIX = 'ynabReimbursement_';
   const ACCOUNT_TYPES = ['Unset', 'His', 'Hers', 'Shared'];
   const CATEGORY_TYPES = ['Unset', 'His', 'Hers', 'Shared'];
-  
+
   // Config states
   const [accessToken, setAccessToken] = useLocalStorage('accessToken', '');
   const [selectedBudgetId, setSelectedBudgetId] = useLocalStorage('selectedBudgetId', '');
   const [budgets, setBudgets] = useLocalStorage('budgets', []);
-  
+
   // Data states
   const [accounts, setAccounts] = useLocalStorage('accounts', []);
   const [categories, setCategories] = useLocalStorage('categories', []);
   const [categoryGroups, setCategoryGroups] = useLocalStorage('categoryGroups', []);
   const [transactions, setTransactions] = useState([]);
   const [availableMonths, setAvailableMonths] = useLocalStorage('availableMonths', []);
-  
+
   // Account and category type configurations
   const [accountTypes, setAccountTypes] = useLocalStorage('accountTypes', {});
   const [categoryTypes, setCategoryTypes] = useLocalStorage('categoryTypes', {});
   const [categoryGroupTypes, setCategoryGroupTypes] = useLocalStorage('categoryGroupTypes', {});
-  
+
   // UI states
   const [currentView, setCurrentView] = useState('main');
   const [configTab, setConfigTab] = useState('general');
@@ -87,7 +82,7 @@ const Component = () => {
   const [showConfigMenu, setShowConfigMenu] = useState(false);
   const [showHiddenAccounts, setShowHiddenAccounts] = useState(false);
   const [showHiddenCategories, setShowHiddenCategories] = useState(false);
-  
+
   // Determine current view based on configuration state
   useEffect(() => {
     if (!accessToken) {
@@ -98,14 +93,14 @@ const Component = () => {
       setCurrentView('main');
     }
   }, [accessToken, selectedBudgetId]);
-  
+
   // Fetch budgets when access token is set
   useEffect(() => {
     if (accessToken) {
       fetchBudgets();
     }
   }, [accessToken]);
-  
+
   // Fetch accounts, categories, and available months when budget is selected
   useEffect(() => {
     if (selectedBudgetId) {
@@ -114,22 +109,22 @@ const Component = () => {
       fetchBudgetMonths();
     }
   }, [selectedBudgetId]);
-  
-  
+
+
   // Check for configuration warnings
   useEffect(() => {
     if (currentView === 'main') {
       validateConfiguration();
     }
   }, [accounts, categories, categoryGroups, accountTypes, categoryTypes, categoryGroupTypes, currentView]);
-  
+
   // Helper function to fetch API data with error handling
   const fetchYnabData = async (fn, ...args) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const client = window.ynab.API(accessToken);
+      const client = ynab.API(accessToken);
       return await fn.apply(null, [client, ...args]);
     } catch (err) {
       console.error('YNAB API Error:', err);
@@ -139,23 +134,23 @@ const Component = () => {
       setIsLoading(false);
     }
   };
-  
+
   // Fetch budgets from YNAB
   const fetchBudgets = async () => {
-    const result = await fetchYnabData(window.ynab.budgets.getBudgets);
-    
+    const result = await fetchYnabData(ynab.budgets.getBudgets);
+
     if (result) {
       setBudgets(result);
     }
   };
-  
+
   // Fetch accounts from YNAB
   const fetchAccounts = async () => {
-    const result = await fetchYnabData(window.ynab.accounts.getAccounts, selectedBudgetId);
-    
+    const result = await fetchYnabData(ynab.accounts.getAccounts, selectedBudgetId);
+
     if (result) {
       setAccounts(result);
-      
+
       // Initialize account types for any new accounts
       const newAccountTypes = {...accountTypes};
       result.forEach(account => {
@@ -166,81 +161,81 @@ const Component = () => {
       setAccountTypes(newAccountTypes);
     }
   };
-  
+
   // Fetch categories from YNAB
   const fetchCategories = async () => {
-    const result = await fetchYnabData(window.ynab.categories.getCategories, selectedBudgetId);
-    
+    const result = await fetchYnabData(ynab.categories.getCategories, selectedBudgetId);
+
     if (result) {
       // Filter out the "Internal Master Category" group which contains inflow and uncategorized categories
-      const filteredGroups = result.filter(group => 
-        !group.deleted && 
+      const filteredGroups = result.filter(group =>
+        !group.deleted &&
         group.name !== "Internal Master Category"
       );
-      
+
       // Keep the filtered groups for display
       setCategoryGroups(filteredGroups);
-      
+
       // Get all categories from the filtered groups
-      const filteredCategories = filteredGroups.flatMap(group => 
-        group.categories.filter(category => 
-          !category.deleted && 
-          category.name !== "Inflow: Ready to Assign" && 
+      const filteredCategories = filteredGroups.flatMap(group =>
+        group.categories.filter(category =>
+          !category.deleted &&
+          category.name !== "Inflow: Ready to Assign" &&
           category.name !== "Uncategorized"
         )
       );
-      
+
       // For transaction processing, we need to keep ALL categories including the special ones
-      const allCategories = result.flatMap(group => 
+      const allCategories = result.flatMap(group =>
         group.categories.filter(category => !category.deleted)
       );
-      
+
       // Set the filtered categories for display
       setCategories(filteredCategories);
-      
+
       // Initialize types for any new categories and groups
       const newCategoryTypes = {...categoryTypes};
       const newGroupTypes = {...categoryGroupTypes};
-      
+
       filteredGroups.forEach(group => {
         if (!newGroupTypes[group.id]) {
           newGroupTypes[group.id] = 'Unset';
         }
-        
+
         group.categories.forEach(category => {
           if (!category.deleted && !newCategoryTypes[category.id]) {
             newCategoryTypes[category.id] = 'Unset';
           }
         });
       });
-      
+
       setCategoryTypes(newCategoryTypes);
       setCategoryGroupTypes(newGroupTypes);
     }
   };
-  
+
   // Fetch available months for the budget
   const fetchBudgetMonths = async () => {
-    const result = await fetchYnabData(window.ynab.months.getBudgetMonths, selectedBudgetId);
-    
+    const result = await fetchYnabData(ynab.months.getBudgetMonths, selectedBudgetId);
+
     if (result) {
       // Sort months in descending order (newest first)
-      const sortedMonths = [...result].sort((a, b) => 
+      const sortedMonths = [...result].sort((a, b) =>
         new Date(b.month) - new Date(a.month)
       );
-      
+
       setAvailableMonths(sortedMonths);
-      
+
       // Set selected month to current month or closest available month if not already set
       if (sortedMonths.length > 0) {
         // If the user hasn't selected a month or the selected month isn't in the list
         if (!selectedMonth || !sortedMonths.some(m => m.month === selectedMonth)) {
           const now = new Date();
           const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-          
+
           // Find the current month if available
           const currentMonthIndex = sortedMonths.findIndex(m => m.month === currentYearMonth);
-          
+
           if (currentMonthIndex >= 0) {
             // Current month is available, select it
             setSelectedMonth(currentYearMonth);
@@ -259,32 +254,32 @@ const Component = () => {
       }
     }
   };
-  
+
   // Fetch transactions for the selected month
   const fetchTransactions = async () => {
     if (!selectedMonth) return;
-    
+
     const result = await fetchYnabData(
-      window.ynab.transactions.getTransactionsByMonth,
+      ynab.transactions.getTransactionsByMonth,
       selectedBudgetId,
       selectedMonth
     );
-    
+
     if (result) {
       setTransactions(result);
       setSuccessMessage(`Successfully imported ${result.length} transactions for ${formatMonth(selectedMonth)}`);
-      
+
       // Clear the success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage(null);
       }, 3000);
     }
   };
-  
+
   // Validate configuration and generate warnings
   const validateConfiguration = () => {
     const newWarnings = [];
-    
+
     // Check for unset account types
     accounts.forEach(account => {
       if (accountTypes[account.id] === 'Unset') {
@@ -295,7 +290,7 @@ const Component = () => {
         });
       }
     });
-    
+
     // Check for unset category types when the group is also unset
     // We only need to warn if both the category and its group are unset
     categories.forEach(category => {
@@ -308,21 +303,21 @@ const Component = () => {
         });
       }
     });
-    
+
     setWarnings(newWarnings);
   };
-  
+
   // Handle token submission
   const handleTokenSubmit = (e) => {
     e.preventDefault();
     setAccessToken(e.target.token.value.trim());
   };
-  
+
   // Handle budget selection
   const handleBudgetSelect = (budgetId) => {
     setSelectedBudgetId(budgetId);
   };
-  
+
   // Update account type
   const updateAccountType = (accountId, type) => {
     setAccountTypes(prev => ({
@@ -330,7 +325,7 @@ const Component = () => {
       [accountId]: type
     }));
   };
-  
+
   // Update category type
   const updateCategoryType = (categoryId, type) => {
     setCategoryTypes(prev => ({
@@ -338,7 +333,7 @@ const Component = () => {
       [categoryId]: type
     }));
   };
-  
+
   // Update category group type
   const updateCategoryGroupType = (groupId, type) => {
     setCategoryGroupTypes(prev => ({
@@ -346,62 +341,62 @@ const Component = () => {
       [groupId]: type
     }));
   };
-  
+
   // Navigate to previous month
   const goToPreviousMonth = () => {
     if (availableMonths.length === 0) return;
-    
+
     const currentIndex = availableMonths.findIndex(m => m.month === selectedMonth);
     if (currentIndex < availableMonths.length - 1) {
       setSelectedMonth(availableMonths[currentIndex + 1].month);
     }
   };
-  
+
   // Navigate to next month
   const goToNextMonth = () => {
     if (availableMonths.length === 0) return;
-    
+
     const currentIndex = availableMonths.findIndex(m => m.month === selectedMonth);
     if (currentIndex > 0) {
       setSelectedMonth(availableMonths[currentIndex - 1].month);
     }
   };
-  
+
   // Navigate to current month
   const goToCurrentMonth = () => {
     if (availableMonths.length > 0) {
       setSelectedMonth(availableMonths[0].month);
     }
   };
-  
+
   // Format month for display
   const formatMonth = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
-  
+
   // Determine category type (from itself or group)
   const getCategoryType = (categoryId) => {
     const category = categories.find(c => c.id === categoryId);
     if (!category) return 'Unset';
-    
+
     // If category has its own type set, use that
     if (categoryTypes[categoryId] !== 'Unset') {
       return categoryTypes[categoryId];
     }
-    
+
     // Otherwise fall back to group type
     return categoryGroupTypes[category.category_group_id] || 'Unset';
   };
-  
+
   // Get account type
   const getAccountType = (accountId) => {
     return accountTypes[accountId] || 'Unset';
   };
-  
+
   // Wrapper function that handles side effects
   const calculateReimbursement = () => {
-    return window.ynabReimbursementCalculations.calculateReimbursementPure(
+    return calculateReimbursementPure(
       transactions,
       categories,
       categoryGroups,
@@ -410,44 +405,35 @@ const Component = () => {
       warnings.length > 0
     );
   };
-  
-  // Function to run all pure function tests
-  const handleRunPureFunctionTests = () => {
-    const testResults = window.ynabReimbursementTests.runPureFunctionTests();
-    // Display results in UI
-    setTestResults(testResults);
-  };
-  
-  
-  
+
   // Logout - clear token and budget
   const handleLogout = () => {
     setAccessToken('');
     setSelectedBudgetId('');
     setCurrentView('tokenInput');
   };
-  
+
   // Token Input View
   const TokenInputView = () => (
     <div className="max-w-md mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
       <h2 className="text-xl font-bold mb-4">YNAB Access Token</h2>
       <p className="mb-4 text-sm">
         To use this tool, you need to provide your YNAB personal access token.
-        You can generate one at <a href="https://app.youneedabudget.com/settings/developer" 
-        target="_blank" rel="noopener noreferrer" 
+        You can generate one at <a href="https://app.youneedabudget.com/settings/developer"
+        target="_blank" rel="noopener noreferrer"
         className="text-blue-500 hover:underline">YNAB Developer Settings</a>.
       </p>
-      
+
       <form onSubmit={handleTokenSubmit}>
-        <input 
+        <input
           type="password"
           name="token"
           placeholder="Paste your YNAB access token here"
           className="w-full p-2 border border-gray-300 rounded mb-4 dark:bg-gray-700 dark:border-gray-600"
           required
         />
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
         >
           Connect to YNAB
@@ -455,18 +441,18 @@ const Component = () => {
       </form>
     </div>
   );
-  
+
   // Budget Selection View
   const BudgetSelectionView = () => (
     <div className="max-w-md mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
       <h2 className="text-xl font-bold mb-4">Select Your Budget</h2>
-      
+
       {isLoading ? (
         <p>Loading budgets...</p>
       ) : error ? (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           <p>{error}</p>
-          <button 
+          <button
             onClick={handleLogout}
             className="mt-2 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-sm"
           >
@@ -478,10 +464,10 @@ const Component = () => {
       ) : (
         <div className="space-y-2">
           {budgets.map(budget => (
-            <div 
+            <div
               key={budget.id}
               onClick={() => handleBudgetSelect(budget.id)}
-              className="cursor-pointer p-3 border border-gray-200 rounded hover:bg-blue-50 
+              className="cursor-pointer p-3 border border-gray-200 rounded hover:bg-blue-50
                          dark:border-gray-700 dark:hover:bg-blue-900/20"
             >
               {budget.name}
@@ -489,8 +475,8 @@ const Component = () => {
           ))}
         </div>
       )}
-      
-      <button 
+
+      <button
         onClick={handleLogout}
         className="mt-4 text-sm text-gray-500 hover:text-gray-700"
       >
@@ -498,74 +484,66 @@ const Component = () => {
       </button>
     </div>
   );
-  
+
   // Config Menu Component
   const ConfigMenu = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 w-full max-w-4xl max-h-screen overflow-auto rounded-lg shadow-lg">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-bold">Configuration</h2>
-          <button 
+          <button
             onClick={() => setShowConfigMenu(false)}
             className="text-gray-500 hover:text-gray-700"
           >
             ✕
           </button>
         </div>
-        
+
         {/* Tab Navigation */}
         <div className="flex border-b border-gray-200 dark:border-gray-700">
-          <button 
+          <button
             onClick={() => setConfigTab('general')}
-            className={`px-4 py-2 ${configTab === 'general' 
-              ? 'border-b-2 border-blue-500 text-blue-500' 
+            className={`px-4 py-2 ${configTab === 'general'
+              ? 'border-b-2 border-blue-500 text-blue-500'
               : 'text-gray-500'}`}
           >
             General
           </button>
-          <button 
+          <button
             onClick={() => setConfigTab('accounts')}
-            className={`px-4 py-2 ${configTab === 'accounts' 
-              ? 'border-b-2 border-blue-500 text-blue-500' 
+            className={`px-4 py-2 ${configTab === 'accounts'
+              ? 'border-b-2 border-blue-500 text-blue-500'
               : 'text-gray-500'}`}
           >
             Accounts
           </button>
-          <button 
+          <button
             onClick={() => setConfigTab('categories')}
-            className={`px-4 py-2 ${configTab === 'categories' 
-              ? 'border-b-2 border-blue-500 text-blue-500' 
+            className={`px-4 py-2 ${configTab === 'categories'
+              ? 'border-b-2 border-blue-500 text-blue-500'
               : 'text-gray-500'}`}
           >
             Categories
           </button>
-          <button 
-            onClick={() => setConfigTab('tests')}
-            className={`px-4 py-2 ${configTab === 'tests' 
-              ? 'border-b-2 border-blue-500 text-blue-500' 
-              : 'text-gray-500'}`}
-          >
-            Tests
-          </button>
         </div>
-        
+
         {/* Tab Content */}
         <div className="p-4">
           {configTab === 'general' && (
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Access Token</label>
-                <input 
+                <input
                   type="password"
                   value={accessToken}
                   onChange={(e) => setAccessToken(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-1">Selected Budget</label>
-                <select 
+                <select
                   value={selectedBudgetId}
                   onChange={(e) => setSelectedBudgetId(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
@@ -575,30 +553,30 @@ const Component = () => {
                   ))}
                 </select>
               </div>
-              
+
             </div>
           )}
-          
+
           {configTab === 'accounts' && (
             <div>
               <div className="flex justify-between items-center mb-4 gap-4">
                 <h3 className="font-medium">Accounts</h3>
                 <div className="flex-grow"></div>
                 <div>
-                  <input type="checkbox" 
-                    checked={showHiddenAccounts} 
-                    onChange={() => setShowHiddenAccounts(!showHiddenAccounts)} 
+                  <input type="checkbox"
+                    checked={showHiddenAccounts}
+                    onChange={() => setShowHiddenAccounts(!showHiddenAccounts)}
                     className="mr-2" />
                   <label className="text-sm">Show Closed Accounts</label>
                 </div>
-                <button 
+                <button
                   onClick={fetchAccounts}
                   className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
                 >
                   Sync Accounts
                 </button>
               </div>
-              
+
               {isLoading ? (
                 <p>Loading accounts...</p>
               ) : (
@@ -616,7 +594,7 @@ const Component = () => {
                       if (!(showHiddenAccounts || (!account.closed && !account.deleted))) {
                         return null;
                       }
-                      
+
                       return (
                         <tr key={account.id} className={hasWarning ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}>
                           <td className="p-2 border border-gray-300 dark:border-gray-600">
@@ -650,27 +628,27 @@ const Component = () => {
               )}
             </div>
           )}
-          
+
           {configTab === 'categories' && (
             <div>
               <div className="flex justify-between items-center mb-4 gap-4">
                 <h3 className="font-medium">Categories</h3>
                 <div className="flex-grow"></div>
                 <div>
-                  <input type="checkbox" 
-                    checked={showHiddenCategories} 
-                    onChange={() => setShowHiddenCategories(!showHiddenCategories)} 
+                  <input type="checkbox"
+                    checked={showHiddenCategories}
+                    onChange={() => setShowHiddenCategories(!showHiddenCategories)}
                     className="mr-2" />
                   <label className="text-sm">Show Hidden Categories</label>
                 </div>
-                <button 
+                <button
                   onClick={fetchCategories}
                   className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
                 >
                   Sync Categories
                 </button>
               </div>
-              
+
               {isLoading ? (
                 <p>Loading categories...</p>
               ) : (
@@ -687,7 +665,7 @@ const Component = () => {
                       if (!(showHiddenCategories || (!group.deleted && !group.hidden))) {
                         return null;
                       }
-                      
+
                       const hasWarning = warnings.some(w => w.id === `group-${group.id}`);
                       const groupCategories = categories
                         // Group categories by their group
@@ -698,7 +676,7 @@ const Component = () => {
                       if (groupCategories.length === 0) {
                         return null;
                       }
-                      
+
                       return (
                         <React.Fragment key={group.id}>
                           {/* Category Group Row */}
@@ -727,11 +705,11 @@ const Component = () => {
                               </select>
                             </td>
                           </tr>
-                          
+
                           {/* Category Rows */}
                           {groupCategories.map(category => {
                             const catHasWarning = warnings.some(w => w.id === `category-${category.id}`);
-                            
+
                             return (
                               <tr key={category.id} className={catHasWarning ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}>
                                 <td className="p-2 border border-gray-300 dark:border-gray-600 pl-5">
@@ -768,134 +746,11 @@ const Component = () => {
               )}
             </div>
           )}
-          
-          {/* Test UI */}
-          {configTab === 'tests' && (
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium">Reimbursement Calculation Tests</h3>
-                <div className="space-x-2">
-                  <button 
-                    onClick={handleRunPureFunctionTests}
-                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
-                  >
-                    Run Unit Tests
-                  </button>
-                </div>
-              </div>
-              
-              {/* Test Results UI for Unit Tests */}
-              {testResults && Array.isArray(testResults) && testResults[0]?.results && (
-                <div className="space-y-6 mt-6">
-                  <div className="mb-2">
-                    <h4 className="text-xl font-medium border-b pb-2">
-                      Unit Test Results
-                    </h4>
-                  </div>
-                  
-                  {testResults.map((testSuite, suiteIndex) => {
-                    const passedTests = testSuite.results.filter(r => r.passed).length;
-                    const totalTests = testSuite.results.length;
-                    
-                    return (
-                      <div key={suiteIndex} className="border rounded-lg shadow-sm">
-                        <div className="bg-gray-50 dark:bg-gray-800 p-3 border-b rounded-t-lg">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <h5 className="font-bold">{testSuite.functionName}</h5>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">{testSuite.description}</p>
-                            </div>
-                            <div className={`text-sm font-medium ${
-                              passedTests === totalTests ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
-                            }`}>
-                              {passedTests}/{totalTests} passed
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="divide-y">
-                          {testSuite.results.map((result, testIndex) => {
-                            const [isOpen, setIsOpen] = React.useState(!result.passed);
-                            
-                            return (
-                              <div key={testIndex} className={`p-3 ${
-                                result.passed ? '' : 'bg-red-50 dark:bg-red-900/10'
-                              }`}>
-                                <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
-                                  <div className="flex items-center">
-                                    <span className={`mr-2 ${
-                                      result.passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                                    }`}>
-                                      {result.passed ? '✓' : '✗'}
-                                    </span>
-                                    <span className="font-medium">{result.name}</span>
-                                  </div>
-                                  <span className="text-gray-500 text-sm">
-                                    {isOpen ? '▼' : '▶'}
-                                  </span>
-                                </div>
-                                
-                                {result.error ? (
-                                  <div className="text-red-600 dark:text-red-400 text-sm mt-2 pl-6">
-                                    Error: {result.error}
-                                  </div>
-                                ) : isOpen && (
-                                  <div className="mt-3 pl-6">
-                                    <table className="w-full border-collapse text-sm">
-                                      <thead>
-                                        <tr className="bg-gray-100 dark:bg-gray-700">
-                                          <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Property</th>
-                                          <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Expected</th>
-                                          <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Actual</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {Object.keys(result.expected).map(key => {
-                                          // Handle nested objects
-                                          const expectedValue = typeof result.expected[key] === 'object'
-                                            ? JSON.stringify(result.expected[key], null, 1)
-                                            : result.expected[key]?.toString() || 'null';
-                                            
-                                          const actualValue = typeof result.actual[key] === 'object'
-                                            ? JSON.stringify(result.actual[key], null, 1)
-                                            : result.actual[key]?.toString() || 'null';
-                                            
-                                          const isDifferent = expectedValue !== actualValue;
-                                          
-                                          return (
-                                            <tr key={key} className={isDifferent ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}>
-                                              <td className="p-2 border border-gray-300 dark:border-gray-600 font-medium">
-                                                {key}
-                                              </td>
-                                              <td className="p-2 border border-gray-300 dark:border-gray-600 font-mono text-xs whitespace-pre-wrap">
-                                                {expectedValue}
-                                              </td>
-                                              <td className="p-2 border border-gray-300 dark:border-gray-600 font-mono text-xs whitespace-pre-wrap">
-                                                {actualValue}
-                                              </td>
-                                            </tr>
-                                          );
-                                        })}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>
   );
-  
+
   // Main View
   const MainView = () => {
     const {
@@ -914,13 +769,13 @@ const Component = () => {
     const hisTotal = hisTotalShared + hisTotalForHer;
     const herTotal = herTotalShared + herTotalForHim;
     const total = hisTotal + herTotal;
-    
+
     return (
       <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-md">
         {/* Header with Config Button */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">YNAB Reimbursement Report</h1>
-          <button 
+          <button
             onClick={() => setShowConfigMenu(true)}
             className="p-2 text-gray-500 hover:text-gray-700"
             aria-label="Open Configuration"
@@ -928,7 +783,7 @@ const Component = () => {
             ⚙️
           </button>
         </div>
-        
+
         {/* Configuration Warnings Section */}
         {warnings.length > 0 && (
           <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-900/50">
@@ -942,7 +797,7 @@ const Component = () => {
               {warnings.map((warning, index) => (
                 <li key={index}>
                   {warning.message}{' '}
-                  <button 
+                  <button
                     onClick={() => {
                       setShowConfigMenu(true);
                       setConfigTab(warning.tabToFix);
@@ -956,7 +811,7 @@ const Component = () => {
             </ul>
           </div>
         )}
-        
+
         {/* Transaction Warnings Section */}
         {warnings.length === 0 && transactionWarnings.length > 0 && (
           <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-900/50">
@@ -978,11 +833,11 @@ const Component = () => {
             </ul>
           </div>
         )}
-        
+
         {/* Month Selector */}
         <div className="mb-6 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
           <div className="flex justify-between items-center">
-            <button 
+            <button
               onClick={goToPreviousMonth}
               disabled={availableMonths.findIndex(m => m.month === selectedMonth) === availableMonths.length - 1}
               className={`px-3 py-1 ${
@@ -993,13 +848,13 @@ const Component = () => {
             >
               ← Prev
             </button>
-            
+
             <div className="text-center">
               <h2 className="text-xl font-semibold">{formatMonth(selectedMonth)}</h2>
             </div>
-            
+
             <div className="flex">
-              <button 
+              <button
                 onClick={goToCurrentMonth}
                 disabled={availableMonths.length === 0 || availableMonths[0].month === selectedMonth}
                 className={`px-3 py-1 ${
@@ -1010,7 +865,7 @@ const Component = () => {
               >
                 Latest
               </button>
-              <button 
+              <button
                 onClick={goToNextMonth}
                 disabled={availableMonths.findIndex(m => m.month === selectedMonth) === 0}
                 className={`px-3 py-1 ${
@@ -1023,9 +878,9 @@ const Component = () => {
               </button>
             </div>
           </div>
-          
+
           <div className="mt-4 flex justify-center">
-            <button 
+            <button
               onClick={fetchTransactions}
               className="bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded flex items-center"
               disabled={!selectedBudgetId || !selectedMonth}
@@ -1037,7 +892,7 @@ const Component = () => {
             </button>
           </div>
         </div>
-        
+
         {warnings.length === 0 ? (
           <>
             {transactions.length === 0 ? (
@@ -1065,7 +920,7 @@ const Component = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Her spending summary */}
               <div className="bg-pink-50 dark:bg-pink-900/20 p-4 rounded-lg">
                 <h3 className="text-lg font-semibold text-pink-700 dark:text-pink-400 mb-2">Her Spending</h3>
@@ -1081,21 +936,21 @@ const Component = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Reimbursement Summary */}
             <div className="mb-6 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
               <div className="flex items-center mb-2">
                 <h3 className="text-lg font-semibold text-green-700 dark:text-green-400">
                   Reimbursement Due
                 </h3>
-                <span 
-                  className="ml-2 cursor-help text-green-600 dark:text-green-400" 
+                <span
+                  className="ml-2 cursor-help text-green-600 dark:text-green-400"
                   title="Makes sure shared costs are split 50/50 and accounts for when one person paid for the other's personal expenses."
                 >
                   ℹ️
                 </span>
               </div>
-              
+
               <div className="text-center py-3">
                 <div className="text-2xl font-bold mb-2">
                   <span
@@ -1110,38 +965,38 @@ const Component = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Budget Refill Summary */}
             <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
               <div className="flex items-center mb-2">
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-400">
                   Budget Refill Required
                 </h3>
-                <span 
-                  className="ml-2 cursor-help text-yellow-600 dark:text-yellow-400" 
+                <span
+                  className="ml-2 cursor-help text-yellow-600 dark:text-yellow-400"
                   title="Personal spending from shared accounts needs to be reimbursed back to the shared budget. This ensures only agreed-upon shared expenses remain in the shared budget."
                 >
                   ℹ️
                 </span>
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span>She should refill:</span>
                   <span className="font-semibold">£{milliunitsToDisplayAmount(hisTotalForHer + herTotalForHer)}</span>
                 </div>
-                
+
                 <div className="flex justify-between items-center">
                   <span>He should refill:</span>
                   <span className="font-semibold">£{milliunitsToDisplayAmount(herTotalForHim + hisTotalForHim)}</span>
                 </div>
               </div>
             </div>
-            
+
             {/* Category Spending Table */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-3">Shared Spending by Category</h3>
-              
+
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
@@ -1170,7 +1025,7 @@ const Component = () => {
                       const groupHisTotal = group.categories.reduce((sum, cat) => sum + cat.hisSpending, 0);
                       const groupHerTotal = group.categories.reduce((sum, cat) => sum + cat.herSpending, 0);
                       const groupTotal = groupHisTotal + groupHerTotal;
-                      
+
                       return (
                         <React.Fragment key={groupId}>
                           {/* Group header */}
@@ -1188,11 +1043,11 @@ const Component = () => {
                               £{milliunitsToDisplayAmount(groupTotal)}
                             </td>
                           </tr>
-                          
+
                           {/* Categories in this group */}
                           {group.categories.map(category => {
                             const total = category.hisSpending + category.herSpending;
-                            
+
                             // Only show if there's any spending
                             if (total > 0) {
                               return (
@@ -1217,7 +1072,7 @@ const Component = () => {
                         </React.Fragment>
                       );
                     })}
-                    
+
                     {/* Grand Total Row */}
                     <tr className="font-bold">
                       <td className="p-2 border border-gray-300 dark:border-gray-600">
@@ -1250,7 +1105,7 @@ const Component = () => {
       </div>
     );
   };
-  
+
   // Main render logic
   return (
     <div className="p-2 sm:p-4 text-gray-900 dark:text-gray-100">
@@ -1260,28 +1115,33 @@ const Component = () => {
           Loading data from YNAB...
         </div>
       )}
-      
+
       {/* Success Message */}
       {successMessage && (
         <div className="fixed top-0 inset-x-0 bg-green-500 text-white text-center py-2 text-sm">
           {successMessage}
         </div>
       )}
-      
+
       {/* Error Message */}
       {error && (
         <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           <p>{error}</p>
         </div>
       )}
-      
+
       {/* Current View */}
       {currentView === 'tokenInput' && <TokenInputView />}
       {currentView === 'budgetSelection' && <BudgetSelectionView />}
       {currentView === 'main' && <MainView />}
-      
+
       {/* Config Menu */}
       {showConfigMenu && <ConfigMenu />}
     </div>
   );
 };
+
+// Mount the app
+const container = document.getElementById('app');
+const root = createRoot(container);
+root.render(<App />);

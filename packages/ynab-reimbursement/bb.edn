@@ -1,0 +1,15 @@
+{:tasks
+ {dev:bun (shell "bun run build.js --watch")
+  dev:serve (shell "bunx serve target/public -l 3001")
+  -dev {:depends [dev:bun dev:serve]}
+  dev {:depends [build]
+       :task (run '-dev {:parallel true})}
+
+  build (shell "bun run build.js")
+
+  build:ci {:task (shell "bun run build.js --base-path /tools/ynab-reimbursement")}
+
+  test (shell "bun test")
+
+  serve (shell "bunx serve target/public -l 3001")
+  clean (shell "rm -rf target")}}

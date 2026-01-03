@@ -57,6 +57,14 @@ jobs:
           mkdir -p ../../static/talk/chat-wrapped
           cp -r target/public/* ../../static/talk/chat-wrapped/
 
+      - name: Build ynab-reimbursement
+        run: |
+          cd packages/ynab-reimbursement
+          bun install
+          bb build:ci
+          mkdir -p ../../static/tools/ynab-reimbursement
+          cp -r target/public/* ../../static/tools/ynab-reimbursement/
+
       - name: Build Hugo
         run: hugo --minify
 
