@@ -92,7 +92,7 @@ const App = () => {
   };
 
   const fetchAccounts = async () => {
-    const result = await fetchYnabData(ynab.accounts.getAccounts, selectedBudgetId);
+    const result = await fetchYnabData(ynab.accounts.getAccounts, { budgetId: selectedBudgetId });
     if (result) {
       setAccounts(result);
       const newAccountTypes = {...accountTypes};
@@ -106,7 +106,7 @@ const App = () => {
   };
 
   const fetchCategories = async () => {
-    const result = await fetchYnabData(ynab.categories.getCategories, selectedBudgetId);
+    const result = await fetchYnabData(ynab.categories.getCategories, { budgetId: selectedBudgetId });
     if (result) {
       const filteredGroups = result.filter(group =>
         !group.deleted && group.name !== "Internal Master Category"
@@ -142,7 +142,7 @@ const App = () => {
   };
 
   const fetchBudgetMonths = async () => {
-    const result = await fetchYnabData(ynab.months.getBudgetMonths, selectedBudgetId);
+    const result = await fetchYnabData(ynab.months.getBudgetMonths, { budgetId: selectedBudgetId });
     if (result) {
       const sortedMonths = [...result].sort((a, b) => new Date(b.month) - new Date(a.month));
       setAvailableMonths(sortedMonths);
@@ -173,8 +173,7 @@ const App = () => {
 
     const result = await fetchYnabData(
       ynab.transactions.getTransactionsByMonth,
-      selectedBudgetId,
-      selectedMonth
+      { budgetId: selectedBudgetId, month: selectedMonth }
     );
 
     if (result) {

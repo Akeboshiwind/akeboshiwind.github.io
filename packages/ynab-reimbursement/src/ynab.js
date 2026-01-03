@@ -1,5 +1,3 @@
-// >> Utils
-
 function API(token) {
   return {
     token,
@@ -7,7 +5,7 @@ function API(token) {
   };
 }
 
-async function request(client, method, url, data) {
+async function request(client, { method, url, data, signal }) {
   if (!client.token) {
     throw new Error("Client token is required");
   }
@@ -18,7 +16,8 @@ async function request(client, method, url, data) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${client.token}`,
     },
-    body: JSON.stringify(data),
+    body: data ? JSON.stringify(data) : undefined,
+    signal,
   });
 
   if (!response.ok) {
@@ -37,58 +36,45 @@ async function request(client, method, url, data) {
   return response.json();
 }
 
-// >> Budgets
-
 async function getBudgets(client) {
-  const response = await request(client, "GET", `${client.apiUrl}/budgets`);
+  const response = await request(client, {
+    method: "GET",
+    url: `${client.apiUrl}/budgets`,
+  });
   return response.data.budgets;
 }
 
-// >> Accounts
-
-async function getAccounts(client, selectedBudgetId) {
-  const response = await request(
-    client,
-    "GET",
-    `${client.apiUrl}/budgets/${selectedBudgetId}/accounts`,
-  );
+async function getAccounts(client, { budgetId }) {
+  const response = await request(client, {
+    method: "GET",
+    url: `${client.apiUrl}/budgets/${budgetId}/accounts`,
+  });
   return response.data.accounts;
 }
 
-// >> Categories
-
-async function getCategories(client, budgetId) {
-  const response = await request(
-    client,
-    "GET",
-    `${client.apiUrl}/budgets/${budgetId}/categories`,
-  );
+async function getCategories(client, { budgetId }) {
+  const response = await request(client, {
+    method: "GET",
+    url: `${client.apiUrl}/budgets/${budgetId}/categories`,
+  });
   return response.data.category_groups;
 }
 
-// >> Months
-
-async function getBudgetMonths(client, budgetId) {
-  const response = await request(
-    client,
-    "GET",
-    `${client.apiUrl}/budgets/${budgetId}/months`,
-  );
+async function getBudgetMonths(client, { budgetId }) {
+  const response = await request(client, {
+    method: "GET",
+    url: `${client.apiUrl}/budgets/${budgetId}/months`,
+  });
   return response.data.months;
 }
 
-// >> Transactions
-
-async function getTransactionsByMonth(client, budgetId, month) {
-  const response = await request(
-    client,
-    "GET",
-    `${client.apiUrl}/budgets/${budgetId}/months/${month}/transactions`,
-  );
+async function getTransactionsByMonth(client, { budgetId, month }) {
+  const response = await request(client, {
+    method: "GET",
+    url: `${client.apiUrl}/budgets/${budgetId}/months/${month}/transactions`,
+  });
   return response.data.transactions;
 }
-
-// >> API
 
 export const ynab = {
   API,
