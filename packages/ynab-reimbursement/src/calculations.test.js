@@ -5,6 +5,7 @@ import {
   calculateSpendingTotals,
   calculateReimbursementValues,
   createCategorySummary,
+  calculateReimbursementPure,
 } from "./calculations.js";
 
 // >> Utils
@@ -570,5 +571,184 @@ describe("createCategorySummary", () => {
 
     expect(Object.keys(categorySummaryMap).length).toBe(0);
     expect(warnings.length).toBe(0);
+  });
+});
+
+describe("calculateReimbursementPure", () => {
+  test("returns zeros when hasWarnings is true", () => {
+    const result = calculateReimbursementPure([], [], [], () => "His", () => "Shared", true);
+
+    expect(result.hisTotalShared).toBe(0);
+    expect(result.herTotalShared).toBe(0);
+    expect(result.reimbursementAmount).toBe(0);
+    expect(result.reimbursementDirection).toBeNull();
+    expect(result.categorySummary).toEqual([]);
+    expect(result.warnings).toEqual([]);
+  });
+
+  test("simple case: he paid more for shared expenses, she owes him", () => {
+    const categories = [
+      createTestCategory("groceries", "Groceries", "essentials"),
+      createTestCategory("utilities", "Utilities", "essentials"),
+    ];
+    const categoryGroups = [createTestCategoryGroup("essentials", "Essentials")];
+    const transactions = [
+      createTestTransaction("t1", "Supermarket", "2024-01-15", -100000, "groceries", "his-account"),
+      createTestTransaction("t2", "Electric Co", "2024-01-20", -50000, "utilities", "her-account"),
+    ];
+    const getAccountType = mockGetAccountType({ "his-account": "His", "her-account": "Hers" });
+    const getCategoryType = mockGetCategoryType({ groceries: "Shared", utilities: "Shared" });
+
+    const result = calculateReimbursementPure(
+      transactions, categories, categoryGroups, getAccountType, getCategoryType
+    );
+
+    expect(result.hisTotalShared).toBe(100000);
+    expect(result.herTotalShared).toBe(50000);
+    expect(result.reimbursementAmount).toBe(25000);
+    expect(result.reimbursementDirection).toBe("herToHim");
+    expect(result.warnings).toEqual([]);
+  });
+
+  test("simple case: she paid more for shared expenses, he owes her", () => {
+    const categories = [createTestCategory("groceries", "Groceries", "essentials")];
+    const categoryGroups = [createTestCategoryGroup("essentials", "Essentials")];
+    const transactions = [
+      createTestTransaction("t1", "Supermarket", "2024-01-15", -50000, "groceries", "his-account"),
+      createTestTransaction("t2", "Supermarket", "2024-01-20", -150000, "groceries", "her-account"),
+    ];
+    const getAccountType = mockGetAccountType({ "his-account": "His", "her-account": "Hers" });
+    const getCategoryType = mockGetCategoryType({ groceries: "Shared" });
+
+    const result = calculateReimbursementPure(
+      transactions, categories, categoryGroups, getAccountType, getCategoryType
+    );
+
+    expect(result.hisTotalShared).toBe(50000);
+    expect(result.herTotalShared).toBe(150000);
+    expect(result.reimbursementAmount).toBe(50000);
+    expect(result.reimbursementDirection).toBe("himToHer");
+  });
+
+  test("cross-spending: he paid for her category", () => {
+    const categories = [
+      createTestCategory("shared-cat", "Groceries", "essentials"),
+      createTestCategory("her-cat", "Her Hobby", "personal"),
+    ];
+    const categoryGroups = [
+      createTestCategoryGroup("essentials", "Essentials"),
+      createTestCategoryGroup("personal", "Personal"),
+    ];
+    const transactions = [
+      createTestTransaction("t1", "Supermarket", "2024-01-15", -100000, "shared-cat", "his-account"),
+      createTestTransaction("t2", "Hobby Shop", "2024-01-20", -40000, "her-cat", "his-account"),
+    ];
+    const getAccountType = mockGetAccountType({ "his-account": "His" });
+    const getCategoryType = mockGetCategoryType({ "shared-cat": "Shared", "her-cat": "Hers" });
+
+    const result = calculateReimbursementPure(
+      transactions, categories, categoryGroups, getAccountType, getCategoryType
+    );
+
+    expect(result.hisTotalShared).toBe(100000);
+    expect(result.hisTotalForHer).toBe(40000);
+    expect(result.reimbursementAmount).toBe(90000);
+    expect(result.reimbursementDirection).toBe("herToHim");
+  });
+
+  test("complex scenario with split transactions", () => {
+    const categories = [
+      createTestCategory("groceries", "Groceries", "essentials"),
+      createTestCategory("his-cat", "His Stuff", "personal"),
+    ];
+    const categoryGroups = [
+      createTestCategoryGroup("essentials", "Essentials"),
+      createTestCategoryGroup("personal", "Personal"),
+    ];
+    const transactions = [
+      createTestSplitTransaction("t1", "Big Store", "2024-01-15", -100000, "her-account", [
+        { id: "sub1", amount: -60000, category_id: "groceries", category_name: "Groceries" },
+        { id: "sub2", amount: -40000, category_id: "his-cat", category_name: "His Stuff" },
+      ]),
+    ];
+    const getAccountType = mockGetAccountType({ "her-account": "Hers" });
+    const getCategoryType = mockGetCategoryType({ groceries: "Shared", "his-cat": "His" });
+
+    const result = calculateReimbursementPure(
+      transactions, categories, categoryGroups, getAccountType, getCategoryType
+    );
+
+    expect(result.herTotalShared).toBe(60000);
+    expect(result.herTotalForHim).toBe(40000);
+    expect(result.reimbursementAmount).toBe(70000);
+    expect(result.reimbursementDirection).toBe("himToHer");
+  });
+
+  test("filters out transfers and inflows", () => {
+    const categories = [createTestCategory("groceries", "Groceries", "essentials")];
+    const categoryGroups = [createTestCategoryGroup("essentials", "Essentials")];
+    const transactions = [
+      createTestTransaction("t1", "Supermarket", "2024-01-15", -100000, "groceries", "his-account"),
+      createTestTransaction("t2", "Transfer", "2024-01-16", -50000, "groceries", "his-account", true),
+      createTestTransaction("t3", "Salary", "2024-01-01", 500000, "inflow", "his-account", false, "Inflow: Ready to Assign"),
+    ];
+    const getAccountType = mockGetAccountType({ "his-account": "His" });
+    const getCategoryType = mockGetCategoryType({ groceries: "Shared", inflow: "Shared" });
+
+    const result = calculateReimbursementPure(
+      transactions, categories, categoryGroups, getAccountType, getCategoryType
+    );
+
+    expect(result.hisTotalShared).toBe(100000);
+    expect(result.herTotalShared).toBe(0);
+  });
+
+  test("generates warnings for uncategorized transactions", () => {
+    const categories = [createTestCategory("groceries", "Groceries", "essentials")];
+    const categoryGroups = [createTestCategoryGroup("essentials", "Essentials")];
+    const transactions = [
+      createTestTransaction("t1", "Supermarket", "2024-01-15", -100000, "groceries", "his-account"),
+      createTestTransaction("t2", "Unknown", "2024-01-16", -50000, "uncat", "his-account", false, "Uncategorized"),
+    ];
+    const getAccountType = mockGetAccountType({ "his-account": "His" });
+    const getCategoryType = mockGetCategoryType({ groceries: "Shared", uncat: "Shared" });
+
+    const result = calculateReimbursementPure(
+      transactions, categories, categoryGroups, getAccountType, getCategoryType
+    );
+
+    expect(result.hisTotalShared).toBe(100000);
+    expect(result.warnings.length).toBe(1);
+    expect(result.warnings[0].message).toContain("Unknown");
+    expect(result.warnings[0].message).toContain("uncategorized");
+  });
+
+  test("category summary is sorted by group then category name", () => {
+    const categories = [
+      createTestCategory("zebra", "Zebra Care", "animals"),
+      createTestCategory("apple", "Apple Store", "tech"),
+      createTestCategory("banana", "Banana Stand", "food"),
+    ];
+    const categoryGroups = [
+      createTestCategoryGroup("animals", "Animals"),
+      createTestCategoryGroup("tech", "Tech"),
+      createTestCategoryGroup("food", "Food"),
+    ];
+    const transactions = [
+      createTestTransaction("t1", "Store", "2024-01-15", -10000, "zebra", "his-account"),
+      createTestTransaction("t2", "Store", "2024-01-16", -20000, "apple", "his-account"),
+      createTestTransaction("t3", "Store", "2024-01-17", -30000, "banana", "his-account"),
+    ];
+    const getAccountType = mockGetAccountType({ "his-account": "His" });
+    const getCategoryType = mockGetCategoryType({ zebra: "Shared", apple: "Shared", banana: "Shared" });
+
+    const result = calculateReimbursementPure(
+      transactions, categories, categoryGroups, getAccountType, getCategoryType
+    );
+
+    expect(result.categorySummary.length).toBe(3);
+    expect(result.categorySummary[0].groupName).toBe("Animals");
+    expect(result.categorySummary[1].groupName).toBe("Food");
+    expect(result.categorySummary[2].groupName).toBe("Tech");
   });
 });
