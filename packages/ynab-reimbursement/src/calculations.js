@@ -419,11 +419,6 @@ export function calculateReimbursementPure(
 
   // Convert to sorted array for display
   const categorySummary = Object.values(categorySummaryMap)
-    .map((category) => ({
-      ...category,
-      hisSpending: category.hisSpending,
-      herSpending: category.herSpending,
-    }))
     .sort((a, b) => {
       // First sort by group name
       if (a.groupName < b.groupName) return -1;
