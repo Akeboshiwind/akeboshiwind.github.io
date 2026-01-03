@@ -1,20 +1,12 @@
-// >> Util
-
-// Validation function for account and category types
 export function isValidType(type, forCalculation = false) {
-  // Valid types for configuration ('Unset' is allowed during configuration)
   const validConfigTypes = ["His", "Hers", "Shared", "Unset"];
-
-  // Valid types for calculation (must be fully specified)
   const validCalculationTypes = ["His", "Hers", "Shared"];
 
-  // Check against the appropriate list
   return forCalculation
     ? validCalculationTypes.includes(type)
     : validConfigTypes.includes(type);
 }
 
-// Helper to create validation warnings
 export function createTypeWarning(id, name, type, forCalculation = false) {
   const expectedTypes = forCalculation
     ? "His, Hers, or Shared"
@@ -27,19 +19,14 @@ export function createTypeWarning(id, name, type, forCalculation = false) {
   };
 }
 
-// Function to check if a transaction is in the inflow category
 export function isInflowTransaction(transaction) {
   return transaction.category_name === "Inflow: Ready to Assign";
 }
 
-// Function to check if a transaction is uncategorized
 export function isUncategorizedTransaction(transaction) {
   return transaction.category_name === "Uncategorized";
 }
 
-// >> Core
-
-// Function to filter transactions and return valid ones with warnings
 export function filterTransactions(
   transactionsList,
   getAccountTypeFunc,
@@ -48,21 +35,13 @@ export function filterTransactions(
   const transactionWarnings = [];
   const processedTransactions = [];
 
-  // Process each transaction
   transactionsList.forEach((transaction) => {
-    // Skip transfer transactions
-    if (
-      transaction.transfer_transaction_id ||
-      transaction.transfer_account_id
-    ) {
+    if (transaction.transfer_transaction_id || transaction.transfer_account_id) {
       return;
     }
 
-    // Handle split transactions
     if (transaction.subtransactions && transaction.subtransactions.length > 0) {
-      // For each subtransaction, create a copy of the parent with the subtransaction details
       transaction.subtransactions.forEach((subtransaction, index) => {
-        // Skip subtransactions without categories
         if (!subtransaction.category_id) {
           transactionWarnings.push({
             id: `subtransaction-${transaction.id}-${index}`,
@@ -72,29 +51,22 @@ export function filterTransactions(
           return;
         }
 
-        // Create a new transaction based on the parent but with subtransaction details
-        const newTransaction = {
+        processedTransactions.push({
           ...transaction,
           id: `${transaction.id}:sub:${index}`,
           amount: subtransaction.amount,
           category_id: subtransaction.category_id,
           category_name: subtransaction.category_name,
-          // We're not copying the subtransactions array to avoid recursion
           subtransactions: [],
           original_transaction_id: transaction.id,
-        };
-
-        processedTransactions.push(newTransaction);
+        });
       });
     } else {
-      // Regular non-split transaction
       processedTransactions.push(transaction);
     }
   });
 
-  // Now filter the expanded list of transactions
   const validTransactions = processedTransactions.filter((transaction) => {
-    // Check if transaction has a category
     if (!transaction.category_id) {
       transactionWarnings.push({
         id: `transaction-${transaction.id}`,
@@ -104,12 +76,10 @@ export function filterTransactions(
       return false;
     }
 
-    // Skip inflow transactions
     if (isInflowTransaction(transaction)) {
       return false;
     }
 
-    // Flag uncategorized transactions as warnings
     if (isUncategorizedTransaction(transaction)) {
       transactionWarnings.push({
         id: `unassigned-transaction-${transaction.id}`,
@@ -119,7 +89,6 @@ export function filterTransactions(
       return false;
     }
 
-    // Check for valid account type
     const accountType = getAccountTypeFunc(transaction.account_id);
     if (!isValidType(accountType, true)) {
       transactionWarnings.push(
@@ -133,7 +102,6 @@ export function filterTransactions(
       return false;
     }
 
-    // Check for valid category type
     const categoryType = getCategoryTypeFunc(transaction.category_id);
     if (!isValidType(categoryType, true)) {
       transactionWarnings.push(
@@ -153,19 +121,15 @@ export function filterTransactions(
   return { validTransactions, transactionWarnings };
 }
 
-// Function to calculate spending by category
 export function calculateCategorySpending(validTransactions, getAccountTypeFunc) {
-  // Initialize map to store spending per category by account type
   const categorySpending = {};
   const warnings = [];
 
-  // Process all valid transactions
   validTransactions.forEach((transaction) => {
     const accountType = getAccountTypeFunc(transaction.account_id);
     const categoryId = transaction.category_id;
-    const amount = -transaction.amount; // Keep YNAB amounts in milliunits
+    const amount = -transaction.amount;
 
-    // Validate account type is one of the expected values
     if (!isValidType(accountType, true)) {
       warnings.push(
         createTypeWarning(
@@ -175,30 +139,24 @@ export function calculateCategorySpending(validTransactions, getAccountTypeFunc)
           true,
         ),
       );
-      return; // Skip this transaction
+      return;
     }
 
-    // Initialize category if needed
     if (!categorySpending[categoryId]) {
-      categorySpending[categoryId] = {
-        hisSpending: 0,
-        herSpending: 0,
-      };
+      categorySpending[categoryId] = { hisSpending: 0, herSpending: 0 };
     }
 
-    // Update spending based on account type
     if (accountType === "His") {
       categorySpending[categoryId].hisSpending += amount;
     } else if (accountType === "Hers") {
       categorySpending[categoryId].herSpending += amount;
     }
-    // Note: 'Shared' account transactions would not be counted in either His or Hers
+    // 'Shared' account transactions are not counted in either
   });
 
   return { categorySpending, warnings };
 }
 
-// Function to calculate spending totals
 export function calculateSpendingTotals(
   categorySpending,
   categoriesList,
@@ -212,40 +170,24 @@ export function calculateSpendingTotals(
   let herTotalForHer = 0;
   const warnings = [];
 
-  // Process each category
   Object.entries(categorySpending).forEach(([categoryId, spending]) => {
     const categoryType = getCategoryTypeFunc(categoryId);
 
-    // Check for invalid category type
     if (!isValidType(categoryType, true)) {
       const category = categoriesList.find((c) => c.id === categoryId);
-      const categoryName = category
-        ? category.name
-        : `Category ID: ${categoryId}`;
-
-      warnings.push(
-        createTypeWarning(
-          `category-${categoryId}`,
-          categoryName,
-          categoryType,
-          true,
-        ),
-      );
-      return; // Skip this category
+      const categoryName = category ? category.name : `Category ID: ${categoryId}`;
+      warnings.push(createTypeWarning(`category-${categoryId}`, categoryName, categoryType, true));
+      return;
     }
 
     if (categoryType === "Shared") {
       hisTotalShared += spending.hisSpending;
       herTotalShared += spending.herSpending;
     } else if (categoryType === "His") {
-      // His spending in his own categories
       hisTotalForHim += spending.hisSpending;
-      // Her spending in his categories
       herTotalForHim += spending.herSpending;
     } else if (categoryType === "Hers") {
-      // Her spending in her own categories
       herTotalForHer += spending.herSpending;
-      // His spending in her categories
       hisTotalForHer += spending.hisSpending;
     }
   });
@@ -261,27 +203,18 @@ export function calculateSpendingTotals(
   };
 }
 
-// Function to calculate reimbursement amount and direction
 export function calculateReimbursementValues(spendingTotals) {
-  const { hisTotalShared, herTotalShared, hisTotalForHer, herTotalForHim } =
-    spendingTotals;
+  const { hisTotalShared, herTotalShared, hisTotalForHer, herTotalForHim } = spendingTotals;
 
-  // Calculate shared spending difference
   const totalShared = hisTotalShared + herTotalShared;
-  const heShouldPay =
-    totalShared / 2 - hisTotalShared + (herTotalForHim - hisTotalForHer);
-
-  // Calculate final reimbursement
-  const reimbursementAmount = Math.abs(heShouldPay);
-  const reimbursementDirection = heShouldPay > 0 ? "himToHer" : "herToHim";
+  const heShouldPay = totalShared / 2 - hisTotalShared + (herTotalForHim - hisTotalForHer);
 
   return {
-    reimbursementAmount,
-    reimbursementDirection,
+    reimbursementAmount: Math.abs(heShouldPay),
+    reimbursementDirection: heShouldPay > 0 ? "himToHer" : "herToHim",
   };
 }
 
-// Function to create detailed category summary with metadata
 export function createCategorySummary(
   categorySpending,
   categoriesList,
@@ -291,47 +224,35 @@ export function createCategorySummary(
   const categorySummaryMap = {};
   const warnings = [];
 
-  // Add metadata to each category's spending data
   Object.entries(categorySpending).forEach(([categoryId, spending]) => {
     const category = categoriesList.find((c) => c.id === categoryId);
     if (!category) {
       warnings.push({
         id: `missing-category-${categoryId}`,
         message: `Category with ID "${categoryId}" was not found in the categories list.`,
-        details:
-          "This may indicate a deleted category or data synchronization issue.",
+        details: "This may indicate a deleted category or data synchronization issue.",
       });
       return;
     }
 
-    const group = categoryGroupsList.find(
-      (g) => g.id === category.category_group_id,
-    );
+    const group = categoryGroupsList.find((g) => g.id === category.category_group_id);
     if (!group) {
       warnings.push({
         id: `missing-group-${category.category_group_id}`,
         message: `Category group with ID "${category.category_group_id}" was not found for category "${category.name}".`,
-        details:
-          "This may indicate a deleted category group or data synchronization issue.",
+        details: "This may indicate a deleted category group or data synchronization issue.",
       });
       return;
     }
 
     const categoryType = getCategoryTypeFunc(categoryId);
 
-    // Validate category type (only log warning, still include in summary)
     if (!isValidType(categoryType)) {
-      warnings.push(
-        createTypeWarning(
-          `summary-category-${categoryId}`,
-          `Category "${category.name}"`,
-          categoryType,
-        ),
-      );
+      warnings.push(createTypeWarning(`summary-category-${categoryId}`, `Category "${category.name}"`, categoryType));
     }
 
     categorySummaryMap[categoryId] = {
-      categoryId: categoryId,
+      categoryId,
       categoryName: category.name,
       groupId: group.id,
       groupName: group.name,
@@ -344,7 +265,6 @@ export function createCategorySummary(
   return { categorySummaryMap, warnings };
 }
 
-// Pure function for calculating reimbursement data
 export function calculateReimbursementPure(
   transactionsList,
   categoriesList,
@@ -366,10 +286,8 @@ export function calculateReimbursementPure(
     };
   }
 
-  // Collect all warnings from the entire calculation process
   const allWarnings = [];
 
-  // Step 1: Filter transactions
   const { validTransactions, transactionWarnings } = filterTransactions(
     transactionsList,
     getAccountTypeFunc,
@@ -377,12 +295,10 @@ export function calculateReimbursementPure(
   );
   allWarnings.push(...transactionWarnings);
 
-  // Step 2: Calculate raw spending by category (without metadata)
   const { categorySpending, warnings: categorySpendingWarnings } =
     calculateCategorySpending(validTransactions, getAccountTypeFunc);
   allWarnings.push(...categorySpendingWarnings);
 
-  // Step 3: Calculate spending totals
   const {
     hisTotalShared,
     herTotalShared,
@@ -391,51 +307,38 @@ export function calculateReimbursementPure(
     hisTotalForHim,
     herTotalForHer,
     warnings: spendingWarnings,
-  } = calculateSpendingTotals(
-    categorySpending,
-    categoriesList,
-    getCategoryTypeFunc,
-  );
+  } = calculateSpendingTotals(categorySpending, categoriesList, getCategoryTypeFunc);
   allWarnings.push(...spendingWarnings);
 
-  // Step 4: Calculate reimbursement amount and direction
-  const { reimbursementAmount, reimbursementDirection } =
-    calculateReimbursementValues({
-      hisTotalShared,
-      herTotalShared,
-      hisTotalForHer,
-      herTotalForHim,
-    });
+  const { reimbursementAmount, reimbursementDirection } = calculateReimbursementValues({
+    hisTotalShared,
+    herTotalShared,
+    hisTotalForHer,
+    herTotalForHim,
+  });
 
-  // Step 5: Create detailed category summary for display
-  const { categorySummaryMap, warnings: summaryWarnings } =
-    createCategorySummary(
-      categorySpending,
-      categoriesList,
-      categoryGroupsList,
-      getCategoryTypeFunc,
-    );
+  const { categorySummaryMap, warnings: summaryWarnings } = createCategorySummary(
+    categorySpending,
+    categoriesList,
+    categoryGroupsList,
+    getCategoryTypeFunc,
+  );
   allWarnings.push(...summaryWarnings);
 
-  // Convert to sorted array for display
-  const categorySummary = Object.values(categorySummaryMap)
-    .sort((a, b) => {
-      // First sort by group name
-      if (a.groupName < b.groupName) return -1;
-      if (a.groupName > b.groupName) return 1;
-
-      // Then by category name
-      return a.categoryName.localeCompare(b.categoryName);
-    });
+  const categorySummary = Object.values(categorySummaryMap).sort((a, b) => {
+    if (a.groupName < b.groupName) return -1;
+    if (a.groupName > b.groupName) return 1;
+    return a.categoryName.localeCompare(b.categoryName);
+  });
 
   return {
-    hisTotalShared: hisTotalShared,
-    herTotalShared: herTotalShared,
-    hisTotalForHer: hisTotalForHer,
-    herTotalForHim: herTotalForHim,
-    hisTotalForHim: hisTotalForHim,
-    herTotalForHer: herTotalForHer,
-    reimbursementAmount: reimbursementAmount,
+    hisTotalShared,
+    herTotalShared,
+    hisTotalForHer,
+    herTotalForHim,
+    hisTotalForHim,
+    herTotalForHer,
+    reimbursementAmount,
     reimbursementDirection,
     categorySummary,
     warnings: allWarnings,
