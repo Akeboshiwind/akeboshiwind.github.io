@@ -358,9 +358,22 @@ const App = () => {
     }
   };
 
-  // Navigate to current month
+  // Navigate to current calendar month
+  const getCurrentMonth = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  };
+
   const goToCurrentMonth = () => {
-    if (availableMonths.length > 0) {
+    if (availableMonths.length === 0) return;
+
+    const currentMonth = getCurrentMonth();
+    const exists = availableMonths.some(m => m.month === currentMonth);
+
+    if (exists) {
+      setSelectedMonth(currentMonth);
+    } else {
+      // Fall back to latest month if current month not available
       setSelectedMonth(availableMonths[0].month);
     }
   };
@@ -852,14 +865,14 @@ const App = () => {
             <div className="flex">
               <button
                 onClick={goToCurrentMonth}
-                disabled={availableMonths.length === 0 || availableMonths[0].month === selectedMonth}
+                disabled={availableMonths.length === 0 || getCurrentMonth() === selectedMonth}
                 className={`px-3 py-1 ${
-                  availableMonths.length === 0 || availableMonths[0].month === selectedMonth
+                  availableMonths.length === 0 || getCurrentMonth() === selectedMonth
                     ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
                     : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500'
                 } rounded mr-2`}
               >
-                Latest
+                Current
               </button>
               <button
                 onClick={goToNextMonth}
