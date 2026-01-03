@@ -1,16 +1,15 @@
-export function isValidType(type, forCalculation = false) {
-  const validConfigTypes = ["His", "Hers", "Shared", "Unset"];
-  const validCalculationTypes = ["His", "Hers", "Shared"];
+export function isValidType(type, allowUnset = true) {
+  const validTypes = allowUnset
+    ? ["His", "Hers", "Shared", "Unset"]
+    : ["His", "Hers", "Shared"];
 
-  return forCalculation
-    ? validCalculationTypes.includes(type)
-    : validConfigTypes.includes(type);
+  return validTypes.includes(type);
 }
 
-export function createTypeWarning(id, name, type, forCalculation = false) {
-  const expectedTypes = forCalculation
-    ? "His, Hers, or Shared"
-    : "His, Hers, Shared, or Unset";
+export function createTypeWarning(id, name, type, allowUnset = true) {
+  const expectedTypes = allowUnset
+    ? "His, Hers, Shared, or Unset"
+    : "His, Hers, or Shared";
 
   return {
     id: `invalid-type-${id}`,
@@ -19,188 +18,214 @@ export function createTypeWarning(id, name, type, forCalculation = false) {
   };
 }
 
-export function isInflowTransaction(transaction) {
-  return transaction.category_name === "Inflow: Ready to Assign";
-}
+export const isInflowTransaction = (tx) => tx.category_name === "Inflow: Ready to Assign";
+export const isUncategorizedTransaction = (tx) => tx.category_name === "Uncategorized";
+export const isTransferTransaction = (tx) => tx.transfer_transaction_id || tx.transfer_account_id;
 
-export function isUncategorizedTransaction(transaction) {
-  return transaction.category_name === "Uncategorized";
-}
+function expandSplitTransaction(transaction) {
+  const warnings = [];
 
-export function filterTransactions(
-  transactionsList,
-  getAccountTypeFunc,
-  getCategoryTypeFunc,
-) {
-  const transactionWarnings = [];
-  const processedTransactions = [];
-
-  transactionsList.forEach((transaction) => {
-    if (transaction.transfer_transaction_id || transaction.transfer_account_id) {
-      return;
-    }
-
-    if (transaction.subtransactions && transaction.subtransactions.length > 0) {
-      transaction.subtransactions.forEach((subtransaction, index) => {
-        if (!subtransaction.category_id) {
-          transactionWarnings.push({
-            id: `subtransaction-${transaction.id}-${index}`,
-            message: `Subtransaction of "${transaction.payee_name}" (${transaction.date}) has no category assigned.`,
-            details: "Subtransactions must have a category assigned in YNAB.",
-          });
-          return;
-        }
-
-        processedTransactions.push({
-          ...transaction,
-          id: `${transaction.id}:sub:${index}`,
-          amount: subtransaction.amount,
-          category_id: subtransaction.category_id,
-          category_name: subtransaction.category_name,
-          subtransactions: [],
-          original_transaction_id: transaction.id,
+  const expanded = transaction.subtransactions
+    .map((sub, index) => {
+      if (!sub.category_id) {
+        warnings.push({
+          id: `subtransaction-${transaction.id}-${index}`,
+          message: `Subtransaction of "${transaction.payee_name}" (${transaction.date}) has no category assigned.`,
+          details: "Subtransactions must have a category assigned in YNAB.",
         });
-      });
-    } else {
-      processedTransactions.push(transaction);
-    }
-  });
+        return null;
+      }
 
-  const validTransactions = processedTransactions.filter((transaction) => {
-    if (!transaction.category_id) {
-      transactionWarnings.push({
-        id: `transaction-${transaction.id}`,
-        message: `Transaction "${transaction.payee_name}" (${transaction.date}) has no category assigned.`,
+      return {
+        ...transaction,
+        id: `${transaction.id}:sub:${index}`,
+        amount: sub.amount,
+        category_id: sub.category_id,
+        category_name: sub.category_name,
+        subtransactions: [],
+        original_transaction_id: transaction.id,
+      };
+    })
+    .filter(Boolean);
+
+  return { expanded, warnings };
+}
+
+function expandTransactions(transactions) {
+  return transactions.reduce(
+    (acc, tx) => {
+      if (tx.subtransactions?.length > 0) {
+        const { expanded, warnings } = expandSplitTransaction(tx);
+        return {
+          processed: [...acc.processed, ...expanded],
+          warnings: [...acc.warnings, ...warnings],
+        };
+      }
+      return { ...acc, processed: [...acc.processed, tx] };
+    },
+    { processed: [], warnings: [] }
+  );
+}
+
+function validateTransaction(tx, getAccountType, getCategoryType) {
+  if (!tx.category_id) {
+    return {
+      valid: false,
+      warning: {
+        id: `transaction-${tx.id}`,
+        message: `Transaction "${tx.payee_name}" (${tx.date}) has no category assigned.`,
         details: "Transaction must have a category assigned in YNAB.",
-      });
-      return false;
-    }
+      },
+    };
+  }
 
-    if (isInflowTransaction(transaction)) {
-      return false;
-    }
+  if (isInflowTransaction(tx)) {
+    return { valid: false, warning: null };
+  }
 
-    if (isUncategorizedTransaction(transaction)) {
-      transactionWarnings.push({
-        id: `unassigned-transaction-${transaction.id}`,
-        message: `Transaction "${transaction.payee_name}" (${transaction.date}) is uncategorized.`,
+  if (isUncategorizedTransaction(tx)) {
+    return {
+      valid: false,
+      warning: {
+        id: `unassigned-transaction-${tx.id}`,
+        message: `Transaction "${tx.payee_name}" (${tx.date}) is uncategorized.`,
         details: "This transaction is in the 'Uncategorized' category. Please assign it to a proper category in YNAB.",
-      });
-      return false;
-    }
+      },
+    };
+  }
 
-    const accountType = getAccountTypeFunc(transaction.account_id);
-    if (!isValidType(accountType, true)) {
-      transactionWarnings.push(
-        createTypeWarning(
-          `transaction-account-${transaction.id}`,
-          `Transaction "${transaction.payee_name}" (${transaction.date}) account`,
-          accountType,
-          true,
-        ),
-      );
-      return false;
-    }
+  const accountType = getAccountType(tx.account_id);
+  if (!isValidType(accountType, false)) {
+    return {
+      valid: false,
+      warning: createTypeWarning(
+        `transaction-account-${tx.id}`,
+        `Transaction "${tx.payee_name}" (${tx.date}) account`,
+        accountType,
+        false,
+      ),
+    };
+  }
 
-    const categoryType = getCategoryTypeFunc(transaction.category_id);
-    if (!isValidType(categoryType, true)) {
-      transactionWarnings.push(
-        createTypeWarning(
-          `transaction-category-${transaction.id}`,
-          `Transaction "${transaction.payee_name}" (${transaction.date}) category`,
-          categoryType,
-          true,
-        ),
-      );
-      return false;
-    }
+  const categoryType = getCategoryType(tx.category_id);
+  if (!isValidType(categoryType, false)) {
+    return {
+      valid: false,
+      warning: createTypeWarning(
+        `transaction-category-${tx.id}`,
+        `Transaction "${tx.payee_name}" (${tx.date}) category`,
+        categoryType,
+        false,
+      ),
+    };
+  }
 
-    return true;
-  });
+  return { valid: true, warning: null };
+}
 
-  return { validTransactions, transactionWarnings };
+export function filterTransactions(transactionsList, getAccountTypeFunc, getCategoryTypeFunc) {
+  const nonTransfers = transactionsList.filter((tx) => !isTransferTransaction(tx));
+  const { processed, warnings: expandWarnings } = expandTransactions(nonTransfers);
+
+  const { valid, warnings: validationWarnings } = processed.reduce(
+    (acc, tx) => {
+      const result = validateTransaction(tx, getAccountTypeFunc, getCategoryTypeFunc);
+      if (result.valid) {
+        return { valid: [...acc.valid, tx], warnings: acc.warnings };
+      }
+      if (result.warning) {
+        return { valid: acc.valid, warnings: [...acc.warnings, result.warning] };
+      }
+      return acc;
+    },
+    { valid: [], warnings: [] }
+  );
+
+  return {
+    validTransactions: valid,
+    transactionWarnings: [...expandWarnings, ...validationWarnings],
+  };
 }
 
 export function calculateCategorySpending(validTransactions, getAccountTypeFunc) {
-  const categorySpending = {};
   const warnings = [];
 
-  validTransactions.forEach((transaction) => {
-    const accountType = getAccountTypeFunc(transaction.account_id);
-    const categoryId = transaction.category_id;
-    const amount = -transaction.amount;
+  const categorySpending = validTransactions.reduce((acc, tx) => {
+    const accountType = getAccountTypeFunc(tx.account_id);
+    const amount = -tx.amount;
 
-    if (!isValidType(accountType, true)) {
+    if (!isValidType(accountType, false)) {
       warnings.push(
         createTypeWarning(
-          `account-${transaction.id}`,
-          `Transaction "${transaction.payee_name}" (${transaction.date}) account`,
+          `account-${tx.id}`,
+          `Transaction "${tx.payee_name}" (${tx.date}) account`,
           accountType,
-          true,
+          false,
         ),
       );
-      return;
+      return acc;
     }
 
-    if (!categorySpending[categoryId]) {
-      categorySpending[categoryId] = { hisSpending: 0, herSpending: 0 };
-    }
+    const current = acc[tx.category_id] || { hisSpending: 0, herSpending: 0 };
 
     if (accountType === "His") {
-      categorySpending[categoryId].hisSpending += amount;
-    } else if (accountType === "Hers") {
-      categorySpending[categoryId].herSpending += amount;
+      return { ...acc, [tx.category_id]: { ...current, hisSpending: current.hisSpending + amount } };
     }
-    // 'Shared' account transactions are not counted in either
-  });
+    if (accountType === "Hers") {
+      return { ...acc, [tx.category_id]: { ...current, herSpending: current.herSpending + amount } };
+    }
+    return acc;
+  }, {});
 
   return { categorySpending, warnings };
 }
 
-export function calculateSpendingTotals(
-  categorySpending,
-  categoriesList,
-  getCategoryTypeFunc,
-) {
-  let hisTotalShared = 0;
-  let herTotalShared = 0;
-  let hisTotalForHer = 0;
-  let herTotalForHim = 0;
-  let hisTotalForHim = 0;
-  let herTotalForHer = 0;
-  const warnings = [];
+export function calculateSpendingTotals(categorySpending, categoriesList, getCategoryTypeFunc) {
+  const initial = {
+    hisTotalShared: 0,
+    herTotalShared: 0,
+    hisTotalForHer: 0,
+    herTotalForHim: 0,
+    hisTotalForHim: 0,
+    herTotalForHer: 0,
+    warnings: [],
+  };
 
-  Object.entries(categorySpending).forEach(([categoryId, spending]) => {
+  return Object.entries(categorySpending).reduce((acc, [categoryId, spending]) => {
     const categoryType = getCategoryTypeFunc(categoryId);
 
-    if (!isValidType(categoryType, true)) {
+    if (!isValidType(categoryType, false)) {
       const category = categoriesList.find((c) => c.id === categoryId);
       const categoryName = category ? category.name : `Category ID: ${categoryId}`;
-      warnings.push(createTypeWarning(`category-${categoryId}`, categoryName, categoryType, true));
-      return;
+      return {
+        ...acc,
+        warnings: [...acc.warnings, createTypeWarning(`category-${categoryId}`, categoryName, categoryType, false)],
+      };
     }
 
     if (categoryType === "Shared") {
-      hisTotalShared += spending.hisSpending;
-      herTotalShared += spending.herSpending;
-    } else if (categoryType === "His") {
-      hisTotalForHim += spending.hisSpending;
-      herTotalForHim += spending.herSpending;
-    } else if (categoryType === "Hers") {
-      herTotalForHer += spending.herSpending;
-      hisTotalForHer += spending.hisSpending;
+      return {
+        ...acc,
+        hisTotalShared: acc.hisTotalShared + spending.hisSpending,
+        herTotalShared: acc.herTotalShared + spending.herSpending,
+      };
     }
-  });
-
-  return {
-    hisTotalShared,
-    herTotalShared,
-    hisTotalForHer,
-    herTotalForHim,
-    hisTotalForHim,
-    herTotalForHer,
-    warnings,
-  };
+    if (categoryType === "His") {
+      return {
+        ...acc,
+        hisTotalForHim: acc.hisTotalForHim + spending.hisSpending,
+        herTotalForHim: acc.herTotalForHim + spending.herSpending,
+      };
+    }
+    if (categoryType === "Hers") {
+      return {
+        ...acc,
+        herTotalForHer: acc.herTotalForHer + spending.herSpending,
+        hisTotalForHer: acc.hisTotalForHer + spending.hisSpending,
+      };
+    }
+    return acc;
+  }, initial);
 }
 
 export function calculateReimbursementValues(spendingTotals) {
@@ -215,55 +240,72 @@ export function calculateReimbursementValues(spendingTotals) {
   };
 }
 
-export function createCategorySummary(
-  categorySpending,
-  categoriesList,
-  categoryGroupsList,
-  getCategoryTypeFunc,
-) {
-  const categorySummaryMap = {};
-  const warnings = [];
-
-  Object.entries(categorySpending).forEach(([categoryId, spending]) => {
-    const category = categoriesList.find((c) => c.id === categoryId);
-    if (!category) {
-      warnings.push({
+function lookupCategoryMetadata(categoryId, categoriesList, categoryGroupsList) {
+  const category = categoriesList.find((c) => c.id === categoryId);
+  if (!category) {
+    return {
+      error: {
         id: `missing-category-${categoryId}`,
         message: `Category with ID "${categoryId}" was not found in the categories list.`,
         details: "This may indicate a deleted category or data synchronization issue.",
-      });
-      return;
-    }
+      },
+    };
+  }
 
-    const group = categoryGroupsList.find((g) => g.id === category.category_group_id);
-    if (!group) {
-      warnings.push({
+  const group = categoryGroupsList.find((g) => g.id === category.category_group_id);
+  if (!group) {
+    return {
+      error: {
         id: `missing-group-${category.category_group_id}`,
         message: `Category group with ID "${category.category_group_id}" was not found for category "${category.name}".`,
         details: "This may indicate a deleted category group or data synchronization issue.",
-      });
-      return;
-    }
-
-    const categoryType = getCategoryTypeFunc(categoryId);
-
-    if (!isValidType(categoryType)) {
-      warnings.push(createTypeWarning(`summary-category-${categoryId}`, `Category "${category.name}"`, categoryType));
-    }
-
-    categorySummaryMap[categoryId] = {
-      categoryId,
-      categoryName: category.name,
-      groupId: group.id,
-      groupName: group.name,
-      type: categoryType,
-      hisSpending: spending.hisSpending,
-      herSpending: spending.herSpending,
+      },
     };
-  });
+  }
 
-  return { categorySummaryMap, warnings };
+  return { category, group };
 }
+
+export function createCategorySummary(categorySpending, categoriesList, categoryGroupsList, getCategoryTypeFunc) {
+  const initial = { categorySummaryMap: {}, warnings: [] };
+
+  return Object.entries(categorySpending).reduce((acc, [categoryId, spending]) => {
+    const lookup = lookupCategoryMetadata(categoryId, categoriesList, categoryGroupsList);
+
+    if (lookup.error) {
+      return { ...acc, warnings: [...acc.warnings, lookup.error] };
+    }
+
+    const { category, group } = lookup;
+    const categoryType = getCategoryTypeFunc(categoryId);
+    const warnings = !isValidType(categoryType)
+      ? [...acc.warnings, createTypeWarning(`summary-category-${categoryId}`, `Category "${category.name}"`, categoryType)]
+      : acc.warnings;
+
+    return {
+      warnings,
+      categorySummaryMap: {
+        ...acc.categorySummaryMap,
+        [categoryId]: {
+          categoryId,
+          categoryName: category.name,
+          groupId: group.id,
+          groupName: group.name,
+          type: categoryType,
+          hisSpending: spending.hisSpending,
+          herSpending: spending.herSpending,
+        },
+      },
+    };
+  }, initial);
+}
+
+const sortCategorySummary = (summary) =>
+  Object.values(summary).sort((a, b) => {
+    if (a.groupName < b.groupName) return -1;
+    if (a.groupName > b.groupName) return 1;
+    return a.categoryName.localeCompare(b.categoryName);
+  });
 
 export function calculateReimbursementPure(
   transactionsList,
@@ -325,12 +367,6 @@ export function calculateReimbursementPure(
   );
   allWarnings.push(...summaryWarnings);
 
-  const categorySummary = Object.values(categorySummaryMap).sort((a, b) => {
-    if (a.groupName < b.groupName) return -1;
-    if (a.groupName > b.groupName) return 1;
-    return a.categoryName.localeCompare(b.categoryName);
-  });
-
   return {
     hisTotalShared,
     herTotalShared,
@@ -340,7 +376,7 @@ export function calculateReimbursementPure(
     herTotalForHer,
     reimbursementAmount,
     reimbursementDirection,
-    categorySummary,
+    categorySummary: sortCategorySummary(categorySummaryMap),
     warnings: allWarnings,
   };
 }
