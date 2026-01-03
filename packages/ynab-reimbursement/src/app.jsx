@@ -3,9 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { ynab } from './ynab.js';
 import { calculateReimbursementPure } from './calculations.js';
 import { useLocalStorage } from './hooks.js';
+import { milliunitsToDisplayAmount, formatMonth, getCurrentMonth } from './utils.js';
 import './app.css';
-
-const milliunitsToDisplayAmount = (milliunits) => (milliunits / 1000).toFixed(2);
 
 const CONFIG_PREFIX = 'ynabReimbursement_';
 const ACCOUNT_TYPES = ['Unset', 'His', 'Hers', 'Shared'];
@@ -248,11 +247,6 @@ const App = () => {
     }
   };
 
-  const getCurrentMonth = () => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-  };
-
   const goToCurrentMonth = () => {
     if (availableMonths.length === 0) return;
     const currentMonth = getCurrentMonth();
@@ -262,11 +256,6 @@ const App = () => {
     } else {
       setSelectedMonth(availableMonths[0].month);
     }
-  };
-
-  const formatMonth = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
 
   const getCategoryType = (categoryId) => {
