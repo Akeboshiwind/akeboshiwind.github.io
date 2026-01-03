@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export const useLocalStorage = (key, initialValue, prefix = 'ynabReimbursement_') => {
+export const useLocalStorage = (key, initialValue, prefix = '') => {
   const prefixedKey = `${prefix}${key}`;
 
   const [storedValue, setStoredValue] = useState(() => {

@@ -13,7 +13,7 @@ describe("useLocalStorage", () => {
   });
 
   test("returns stored value when localStorage has data", () => {
-    localStorage.setItem("ynabReimbursement_testKey", JSON.stringify("stored"));
+    localStorage.setItem("testKey", JSON.stringify("stored"));
     const { result } = renderHook(() => useLocalStorage("testKey", "default"));
     expect(result.current[0]).toBe("stored");
   });
@@ -26,20 +26,20 @@ describe("useLocalStorage", () => {
     });
 
     expect(result.current[0]).toBe("updated");
-    expect(JSON.parse(localStorage.getItem("ynabReimbursement_testKey"))).toBe("updated");
+    expect(JSON.parse(localStorage.getItem("testKey"))).toBe("updated");
   });
 
-  test("uses custom prefix", () => {
+  test("uses prefix when provided", () => {
     const { result } = renderHook(() =>
-      useLocalStorage("testKey", "value", "custom_")
+      useLocalStorage("testKey", "initial", "ynab_")
     );
 
     act(() => {
-      result.current[1]("customValue");
+      result.current[1]("prefixedValue");
     });
 
-    expect(JSON.parse(localStorage.getItem("custom_testKey"))).toBe("customValue");
-    expect(localStorage.getItem("ynabReimbursement_testKey")).toBeNull();
+    expect(JSON.parse(localStorage.getItem("ynab_testKey"))).toBe("prefixedValue");
+    expect(localStorage.getItem("testKey")).toBeNull();
   });
 
   test("writes to new prefixed key when prefix changes", () => {

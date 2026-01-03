@@ -20,21 +20,21 @@ const App = () => {
   const CATEGORY_TYPES = ['Unset', 'His', 'Hers', 'Shared'];
 
   // Config states
-  const [accessToken, setAccessToken] = useLocalStorage('accessToken', '');
-  const [selectedBudgetId, setSelectedBudgetId] = useLocalStorage('selectedBudgetId', '');
-  const [budgets, setBudgets] = useLocalStorage('budgets', []);
+  const [accessToken, setAccessToken] = useLocalStorage('accessToken', '', CONFIG_PREFIX);
+  const [selectedBudgetId, setSelectedBudgetId] = useLocalStorage('selectedBudgetId', '', CONFIG_PREFIX);
+  const [budgets, setBudgets] = useLocalStorage('budgets', [], CONFIG_PREFIX);
 
   // Data states
-  const [accounts, setAccounts] = useLocalStorage('accounts', []);
-  const [categories, setCategories] = useLocalStorage('categories', []);
-  const [categoryGroups, setCategoryGroups] = useLocalStorage('categoryGroups', []);
+  const [accounts, setAccounts] = useLocalStorage('accounts', [], CONFIG_PREFIX);
+  const [categories, setCategories] = useLocalStorage('categories', [], CONFIG_PREFIX);
+  const [categoryGroups, setCategoryGroups] = useLocalStorage('categoryGroups', [], CONFIG_PREFIX);
   const [transactions, setTransactions] = useState([]);
-  const [availableMonths, setAvailableMonths] = useLocalStorage('availableMonths', []);
+  const [availableMonths, setAvailableMonths] = useLocalStorage('availableMonths', [], CONFIG_PREFIX);
 
   // Account and category type configurations
-  const [accountTypes, setAccountTypes] = useLocalStorage('accountTypes', {});
-  const [categoryTypes, setCategoryTypes] = useLocalStorage('categoryTypes', {});
-  const [categoryGroupTypes, setCategoryGroupTypes] = useLocalStorage('categoryGroupTypes', {});
+  const [accountTypes, setAccountTypes] = useLocalStorage('accountTypes', {}, CONFIG_PREFIX);
+  const [categoryTypes, setCategoryTypes] = useLocalStorage('categoryTypes', {}, CONFIG_PREFIX);
+  const [categoryGroupTypes, setCategoryGroupTypes] = useLocalStorage('categoryGroupTypes', {}, CONFIG_PREFIX);
 
   // UI states
   const [currentView, setCurrentView] = useState('main');
