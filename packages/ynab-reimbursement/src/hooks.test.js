@@ -41,4 +41,20 @@ describe("useLocalStorage", () => {
     expect(JSON.parse(localStorage.getItem("custom_testKey"))).toBe("customValue");
     expect(localStorage.getItem("ynabReimbursement_testKey")).toBeNull();
   });
+
+  test("writes to new prefixed key when prefix changes", () => {
+    const { result, rerender } = renderHook(
+      ({ prefix }) => useLocalStorage("testKey", "initial", prefix),
+      { initialProps: { prefix: "prefix1_" } }
+    );
+
+    act(() => {
+      result.current[1]("value1");
+    });
+    expect(JSON.parse(localStorage.getItem("prefix1_testKey"))).toBe("value1");
+
+    rerender({ prefix: "prefix2_" });
+
+    expect(JSON.parse(localStorage.getItem("prefix2_testKey"))).toBe("value1");
+  });
 });

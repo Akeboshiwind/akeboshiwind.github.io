@@ -19,7 +19,7 @@ export const useLocalStorage = (key, initialValue, prefix = 'ynabReimbursement_'
     } catch (error) {
       console.error(`Error saving ${key} to localStorage:`, error);
     }
-  }, [storedValue, key]);
+  }, [storedValue, prefixedKey]);
 
   return [storedValue, setStoredValue];
 };
