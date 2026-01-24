@@ -1,0 +1,57 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => {
+    return import.meta.env.PROD ? !data.draft : true;
+  });
+
+  return posts.map(post => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await post.render();
+---
+
+<Layout
+  title={post.data.title}
+  description={post.data.title}
+  type="article"
+  publishedTime={post.data.date}
+>
+  <article>
+    <h1>
+      {post.data.title}
+      {post.data.draft && <span class="draft-marker">[DRAFT]</span>}
+    </h1>
+
+    <p>
+      <time datetime={post.data.date.toISOString().split('T')[0]}>
+        {post.data.date.toISOString().split('T')[0]}
+      </time>
+    </p>
+
+    <Content />
+
+    {post.data.tags && post.data.tags.length > 0 && (
+      <p>
+        Tags: {post.data.tags.map((tag, i) => (
+          <span>
+            {i > 0 && ', '}
+            #{tag}
+          </span>
+        ))}
+      </p>
+    )}
+
+    {post.data.discussLink && (
+      <p>
+        <a href={post.data.discussLink}>Discuss this post</a>
+      </p>
+    )}
+  </article>
+</Layout>

@@ -1,0 +1,15 @@
+---
+interface Props {
+  type?: 'info' | 'warning' | 'danger' | 'success' | 'note';
+  title?: string;
+}
+
+const { type = 'info', title } = Astro.props;
+---
+
+<div class={`admonition admonition-${type}`}>
+  {title && <div class="admonition-title">{title}</div>}
+  <div class="admonition-content">
+    <slot />
+  </div>
+</div>

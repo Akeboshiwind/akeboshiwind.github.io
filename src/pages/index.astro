@@ -1,0 +1,36 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = await getCollection('blog', ({ data }) => {
+  return import.meta.env.PROD ? !data.draft : true;
+});
+
+const recentPosts = posts
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 5);
+---
+
+<Layout>
+  <h1>Welcome</h1>
+  <p>
+    This site focuses on Clojure, programming, and occasional thoughts about technology.
+  </p>
+
+  <h2>Recent Posts</h2>
+  <ul class="post-list">
+    {recentPosts.map(post => (
+      <li>
+        <time datetime={post.data.date.toISOString().split('T')[0]}>
+          {post.data.date.toISOString().split('T')[0]}
+        </time>
+        <a href={`/blog/${post.slug}/`}>
+          {post.data.title}
+          {post.data.draft && <span class="draft-marker">[DRAFT]</span>}
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  <p><a href="/blog/">View all posts &rarr;</a></p>
+</Layout>

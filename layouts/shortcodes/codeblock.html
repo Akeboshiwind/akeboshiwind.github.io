@@ -1,6 +1,0 @@
-{{ $filename := .Get "filename" }}
-{{ $language := .Get "lang" }}
-<div class="code-with-filename">
-  <code class="codeblock-name">{{ $filename }}</code>
-  {{ if $language }}{{ highlight (trim .Inner "\n") $language }}{{ else }}<pre><code>{{ trim .Inner "\n" }}</code></pre>{{ end }}
-</div>

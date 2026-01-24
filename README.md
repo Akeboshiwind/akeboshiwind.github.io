@@ -1,18 +1,23 @@
-# My Blog
+# Blog by the Rocks
 
-Built with [Hugo](https://gohugo.io/) using the [Bear Blog](https://github.com/janraasch/hugo-bearblog) theme.
-
-Link: blog.bythe.rocks
+Personal blog built with [Astro](https://astro.build/).
 
 ## Development
 
-### Running the site locally
-
 ```bash
-# Start development server including draft posts
-hugo server -D
+npm install
+npm run dev
 ```
 
-### Deployment
+## Build
 
-The site is automatically deployed to GitHub Pages when changes are pushed to the main branch.
+```bash
+npm run build
+npm run preview  # Preview the build
+```
+
+## Structure
+
+- `src/content/blog/` - Blog posts (Markdown/MDX)
+- `src/pages/` - Astro pages
+- `packages/` - Interactive tools (Squint/ClojureScript SPAs)

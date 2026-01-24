@@ -1,0 +1,79 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Babashka
+        uses: DeLaGuardo/setup-clojure@12.5
+        with:
+          bb: latest
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Astro dependencies
+        run: npm ci
+
+      - name: Build bitemporal-playground
+        run: |
+          cd packages/bitemporal-playground
+          bun install
+          bb build:ci
+          mkdir -p ../../public/tools/bitemporal
+          cp -r target/public/* ../../public/tools/bitemporal/
+
+      - name: Build christmas-talk
+        run: |
+          cd packages/christmas-talk
+          bun install
+          bb build:ci
+          mkdir -p ../../public/talk/christmas
+          cp -r target/public/* ../../public/talk/christmas/
+
+      - name: Build chat-wrapped
+        run: |
+          cd packages/chat-wrapped
+          bun install
+          bb build:ci
+          mkdir -p ../../public/talk/chat-wrapped
+          cp -r target/public/* ../../public/talk/chat-wrapped/
+
+      - name: Build ynab-reimbursement
+        run: |
+          cd packages/ynab-reimbursement
+          bun install
+          bb build:ci
+          mkdir -p ../../public/tools/ynab-reimbursement
+          cp -r target/public/* ../../public/tools/ynab-reimbursement/
+
+      - name: Build Astro
+        run: npm run build
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/master'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          cname: blog.bythe.rocks

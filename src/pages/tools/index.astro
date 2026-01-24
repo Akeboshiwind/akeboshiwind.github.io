@@ -1,0 +1,35 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const tools = [
+  {
+    title: 'Bitemporal Visualizer',
+    url: '/tools/bitemporal/',
+    date: '2025-12-19',
+  },
+  {
+    title: 'YNAB Reimbursement Report',
+    url: '/tools/ynab-reimbursement/',
+    date: '2025-05-11',
+  },
+  {
+    title: 'Bill Splitter',
+    url: '/tools/bill/',
+    date: '2025-03-28',
+  },
+];
+---
+
+<Layout title="Tools" description="A collection of useful tools">
+  <h1>Tools</h1>
+  <p>A collection of useful tools mostly created with Claude.</p>
+
+  <ul class="post-list">
+    {tools.map(tool => (
+      <li>
+        <time datetime={tool.date}>{tool.date}</time>
+        <a href={tool.url}>{tool.title}</a>
+      </li>
+    ))}
+  </ul>
+</Layout>

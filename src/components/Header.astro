@@ -1,0 +1,17 @@
+---
+const links = [
+  { href: '/', label: 'Home' },
+  { href: '/blog/', label: 'Blog' },
+  { href: '/tools/', label: 'Tools' },
+  { href: '/blog/rss.xml', label: 'Feed' },
+];
+---
+
+<header>
+  <a href="/" class="site-title">Blog by the Rocks</a>
+  <nav>
+    {links.map(link => (
+      <a href={link.href}>{link.label}</a>
+    ))}
+  </nav>
+</header>
