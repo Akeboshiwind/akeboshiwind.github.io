@@ -27,9 +27,30 @@ const Component = () => {
 
   const defaultPeople = ['Alice', 'Bob', 'Charlie'];
 
+  // Default assignments: Alice (salad, coffee), Bob (burger, coffee), Charlie (pasta, water), shared (garlic bread)
+  const defaultAssignments = {
+    '1-0': ['Alice'],           // Caesar Salad
+    '2-0': ['Alice'],           // Coffee 1
+    '2-1': ['Bob'],             // Coffee 2
+    '3-0': ['Bob'],             // Burger
+    '4-0': ['Charlie'],         // Pasta
+    '5-0': ['Charlie'],         // Sparkling Water
+    '6-0': ['Alice', 'Bob', 'Charlie'], // Garlic Bread (shared)
+  };
+
+  const defaultShares = {
+    '1-0': { 'Alice': 100 },
+    '2-0': { 'Alice': 100 },
+    '2-1': { 'Bob': 100 },
+    '3-0': { 'Bob': 100 },
+    '4-0': { 'Charlie': 100 },
+    '5-0': { 'Charlie': 100 },
+    '6-0': { 'Alice': 33.33, 'Bob': 33.33, 'Charlie': 33.34 },
+  };
+
   const [people, setPeople] = useState(loadFromLocalStorage('people', defaultPeople));
-  const [personShares, setPersonShares] = useState(loadFromLocalStorage('personShares', {}));
-  const [itemAssignments, setItemAssignments] = useState(loadFromLocalStorage('itemAssignments', {}));
+  const [personShares, setPersonShares] = useState(loadFromLocalStorage('personShares', defaultShares));
+  const [itemAssignments, setItemAssignments] = useState(loadFromLocalStorage('itemAssignments', defaultAssignments));
   const [items, setItems] = useState(loadFromLocalStorage('items', defaultItems));
   const [expandedRows, setExpandedRows] = useState(loadFromLocalStorage('expandedRows', {}));
   const [processingError, setProcessingError] = useState(null);
@@ -165,8 +186,8 @@ Here's an example of the expected format with sample data:
   const resetData = () => {
     ['people','personShares','itemAssignments','items','expandedRows','currency','homeCurrency','exchangeRate','showCurrencySettings','showPeopleSettings']
       .forEach(k => localStorage.removeItem(`billSplitter_${k}`));
-    setPeople(defaultPeople); setPersonShares({}); setItemAssignments({}); setItems(defaultItems);
-    setExpandedRows({}); setProcessingError(null); setCurrency('£'); setHomeCurrency('£');
+    setPeople(defaultPeople); setPersonShares(defaultShares); setItemAssignments(defaultAssignments); setItems(defaultItems);
+    setExpandedRows({}); setProcessingError(null); setCurrency('$'); setHomeCurrency('$');
     setExchangeRate(1); setShowCurrencySettings(false); setShowPeopleSettings(false);
   };
 
