@@ -17,22 +17,15 @@ const Component = () => {
   };
 
   const defaultItems = [
-    { name: 'Ribeye Medium R', price: 24.00, quantity: 1 },
-    { name: 'Ribeye Rare', price: 24.00, quantity: 2 },
-    { name: 'Fajitas Beef', price: 18.50, quantity: 2 },
-    { name: 'Fajitas Pork', price: 16.00, quantity: 1 },
-    { name: 'Ribs de Cerdo', price: 20.00, quantity: 1 },
-    { name: 'Papas Fritas PR', price: 5.00, quantity: 1 },
-    { name: 'Espárragos Verd', price: 5.00, quantity: 1 },
-    { name: 'Papas Canarias', price: 5.00, quantity: 1 },
-    { name: 'Agua', price: 3.50, quantity: 1 },
-    { name: 'Fanta Naranja', price: 2.90, quantity: 1 },
-    { name: 'Fanta Limón', price: 2.90, quantity: 1 },
-    { name: 'Jarra', price: 4.10, quantity: 2 },
-    { name: 'Cuba Libre', price: 5.80, quantity: 1 }
+    { name: 'Caesar Salad', price: 12.00, quantity: 1 },
+    { name: 'Coffee', price: 5.00, quantity: 2 },
+    { name: 'Burger', price: 16.00, quantity: 1 },
+    { name: 'Pasta', price: 14.00, quantity: 1 },
+    { name: 'Sparkling Water', price: 4.00, quantity: 1 },
+    { name: 'Garlic Bread', price: 8.00, quantity: 1 },
   ].map((item, index) => ({ ...item, id: index + 1 }));
 
-  const defaultPeople = ['Liam', 'Zack', 'McMillan', 'Hilton', 'Crowson', 'Rowland', 'Oliver'];
+  const defaultPeople = ['Alice', 'Bob', 'Charlie'];
 
   const [people, setPeople] = useState(loadFromLocalStorage('people', defaultPeople));
   const [personShares, setPersonShares] = useState(loadFromLocalStorage('personShares', {}));
@@ -40,8 +33,8 @@ const Component = () => {
   const [items, setItems] = useState(loadFromLocalStorage('items', defaultItems));
   const [expandedRows, setExpandedRows] = useState(loadFromLocalStorage('expandedRows', {}));
   const [processingError, setProcessingError] = useState(null);
-  const [currency, setCurrency] = useState(loadFromLocalStorage('currency', '£'));
-  const [homeCurrency, setHomeCurrency] = useState(loadFromLocalStorage('homeCurrency', '£'));
+  const [currency, setCurrency] = useState(loadFromLocalStorage('currency', '$'));
+  const [homeCurrency, setHomeCurrency] = useState(loadFromLocalStorage('homeCurrency', '$'));
   const [exchangeRate, setExchangeRate] = useState(loadFromLocalStorage('exchangeRate', 1));
   const [showCurrencySettings, setShowCurrencySettings] = useState(loadFromLocalStorage('showCurrencySettings', false));
   const [showPeopleSettings, setShowPeopleSettings] = useState(loadFromLocalStorage('showPeopleSettings', false));
@@ -57,7 +50,7 @@ If this is not a receipt, simply respond with: "Not a receipt"
 Here's an example of the expected format with sample data:
 {
   "items": ${JSON.stringify(defaultItems.map(({id, ...item}) => item))},
-  "currency": "£"
+  "currency": "$"
 }`;
 
   useEffect(() => { localStorage.setItem('billSplitter_people', JSON.stringify(people)); }, [people]);
