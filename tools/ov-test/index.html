@@ -185,6 +185,67 @@
     .crop-overlay-left { left: 0; width: 0; }
     .crop-overlay-right { right: 0; width: 0; }
 
+    .zoom-slider-container {
+      position: absolute;
+      bottom: 10px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    .zoom-slider-track {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 8px 12px;
+      border-radius: 20px;
+      pointer-events: auto;
+    }
+
+    .zoom-slider-track label {
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    .zoom-slider-track input[type="range"] {
+      width: 100px;
+      height: 4px;
+      -webkit-appearance: none;
+      background: #444;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .zoom-slider-track input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      background: #667eea;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .zoom-slider-track input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      background: #667eea;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+    }
+
+    .zoom-slider-track span {
+      font-size: 11px;
+      color: #888;
+      min-width: 32px;
+      text-align: center;
+    }
+
     .canvas-container {
       position: relative;
       display: none;
@@ -461,7 +522,7 @@
       margin-bottom: 15px;
       text-align: center;
     }
-  </style></head> <body> <div class="container"> <a href="/tools/" class="back-link">&larr; Back to Tools</a> <h1>Ovulation Test Reader</h1> <div class="upload-area" id="uploadArea"> <button type="button" class="upload-btn" id="fileBtn">Upload Photo</button> <input type="file" id="fileInput" accept="image/*"> </div> <div class="canvas-container" id="canvasContainer"> <canvas id="mainCanvas"></canvas> <div class="marker" id="controlMarker"> <span class="marker-label">Control</span> </div> <div class="marker" id="testMarker"> <span class="marker-label">Test</span> </div> <div class="marker" id="baseMarker"> <span class="marker-label">Base</span> </div> <!-- Crop handles --> <div class="crop-handle crop-left" id="cropLeft"></div> <div class="crop-handle crop-right" id="cropRight"></div> <div class="crop-overlay crop-overlay-left" id="cropOverlayLeft"></div> <div class="crop-overlay crop-overlay-right" id="cropOverlayRight"></div> </div> <div class="controls" id="controls"> <div class="control-row"> <label for="rotationSlider">Rotate:</label> <input type="range" id="rotationSlider" min="-180" max="180" value="0" step="1"> <span id="rotationValue">0°</span> </div> <span class="control-hint">Drag edges to crop</span> </div> <p class="instructions" id="instructions" style="display:none;">
+  </style></head> <body> <div class="container"> <a href="/tools/" class="back-link">&larr; Back to Tools</a> <h1>Ovulation Test Reader</h1> <div class="upload-area" id="uploadArea"> <button type="button" class="upload-btn" id="fileBtn">Upload Photo</button> <input type="file" id="fileInput" accept="image/*"> </div> <div class="canvas-container" id="canvasContainer"> <canvas id="mainCanvas"></canvas> <div class="zoom-slider-container" id="zoomSliderContainer"> <div class="zoom-slider-track"> <label>Rotate</label> <input type="range" id="rotationSlider" min="-180" max="180" value="0" step="1"> <span id="rotationValue">0°</span> </div> <div class="zoom-slider-track"> <label>Zoom</label> <input type="range" id="zoomSlider" min="1" max="4" value="1" step="0.1"> <span id="zoomValue">1.0x</span> </div> </div> <div class="marker" id="controlMarker"> <span class="marker-label">Control</span> </div> <div class="marker" id="testMarker"> <span class="marker-label">Test</span> </div> <div class="marker" id="baseMarker"> <span class="marker-label">Base</span> </div> <!-- Crop handles --> <div class="crop-handle crop-left" id="cropLeft"></div> <div class="crop-handle crop-right" id="cropRight"></div> <div class="crop-overlay crop-overlay-left" id="cropOverlayLeft"></div> <div class="crop-overlay crop-overlay-right" id="cropOverlayRight"></div> </div> <div class="controls" id="controls"> <span class="control-hint">Drag edges to crop</span> </div> <p class="instructions" id="instructions" style="display:none;">
 Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control line &nbsp;
 <span style="color:#f472b6">Pink</span> → Test line &nbsp;
 <span style="color:#60a5fa">Blue</span> → Base/background
@@ -497,6 +558,8 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
     const editSaveBtn = document.getElementById('editSaveBtn');
     const editCancelBtn = document.getElementById('editCancelBtn');
     const editDeleteBtn = document.getElementById('editDeleteBtn');
+    const zoomSlider = document.getElementById('zoomSlider');
+    const zoomValue = document.getElementById('zoomValue');
 
     const markers = {
       control: document.getElementById('controlMarker'),
@@ -514,6 +577,7 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
     let cropLeftPercent = 0;
     let cropRightPercent = 0;
     let scale = 1;
+    let zoom = 1;
     let activeMarker = null;
     let activeCropHandle = null;
     let currentScore = 0;
@@ -540,6 +604,9 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
         rotation = 0;
         rotationSlider.value = 0;
         rotationValue.textContent = '0°';
+        zoom = 1;
+        zoomSlider.value = 1;
+        zoomValue.textContent = '1.0x';
         cropLeftPercent = 0;
         cropRightPercent = 0;
 
@@ -581,6 +648,12 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate((rotation * Math.PI) / 180);
 
+      // Apply zoom centered on the crop region
+      const cropCenterPercent = cropLeftPercent + (100 - cropLeftPercent - cropRightPercent) / 2;
+      const cropCenterX = (cropCenterPercent / 100 - 0.5) * canvas.width;
+      ctx.translate(-cropCenterX * (zoom - 1), 0);
+      ctx.scale(zoom, zoom);
+
       const drawWidth = img.width * scale;
       const drawHeight = img.height * scale;
       ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
@@ -597,6 +670,13 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
     rotationSlider.addEventListener('input', () => {
       rotation = parseInt(rotationSlider.value, 10);
       rotationValue.textContent = rotation + '°';
+      redrawCanvas();
+    });
+
+    // Zoom slider
+    zoomSlider.addEventListener('input', () => {
+      zoom = parseFloat(zoomSlider.value);
+      zoomValue.textContent = zoom.toFixed(1) + 'x';
       redrawCanvas();
     });
 
