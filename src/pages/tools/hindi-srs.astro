@@ -573,12 +573,22 @@
         </div>
     </div>
 
-    <button class="settings-btn" id="settingsBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-            <circle cx="12" cy="12" r="3"/>
-        </svg>
-    </button>
+    <div style="position: fixed; top: 20px; right: 20px; display: flex; gap: 8px; z-index: 100;">
+        <button class="settings-btn" id="refreshBtn" style="position: static;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M21 21v-5h-5"/>
+            </svg>
+        </button>
+        <button class="settings-btn" id="settingsBtn" style="position: static;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+        </button>
+    </div>
 
     <div class="main-content">
         <div id="cardArea">
@@ -838,7 +848,20 @@
             return newCard;
         }
 
-        function getNextCard(cards, settings) {
+        // Fisher-Yates shuffle
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Queue of cards to show (randomized)
+        let cardQueue = [];
+
+        function buildQueue(cards, settings) {
             const now = Date.now();
             const today = new Date().toDateString();
 
@@ -849,22 +872,29 @@
                 saveSettings(settings);
             }
 
-            // Priority: due cards first
+            // Collect due cards
             const dueCards = cards.filter(c => c.due <= now && c.state !== 'new');
-            if (dueCards.length > 0) {
-                dueCards.sort((a, b) => a.due - b.due);
-                return dueCards[0];
+
+            // Collect new cards if under daily limit
+            let newCards = [];
+            const remainingNew = settings.newCardsPerDay - settings.newCardsToday;
+            if (remainingNew > 0) {
+                const allNew = cards.filter(c => c.state === 'new');
+                newCards = shuffle(allNew).slice(0, remainingNew);
             }
 
-            // Then new cards if under daily limit
-            if (settings.newCardsToday < settings.newCardsPerDay) {
-                const newCards = cards.filter(c => c.state === 'new');
-                if (newCards.length > 0) {
-                    return newCards[0];
-                }
+            // Combine and shuffle
+            cardQueue = shuffle([...dueCards, ...newCards]);
+        }
+
+        function getNextCard(cards, settings) {
+            // If queue is empty, rebuild it
+            if (cardQueue.length === 0) {
+                buildQueue(cards, settings);
             }
 
-            return null;
+            // Return next card from queue (or null if still empty)
+            return cardQueue.shift() || null;
         }
 
         function formatInterval(card, rating) {
@@ -930,6 +960,12 @@
             currentCard = getNextCard(cards, settings);
             isFlipped = false;
             ratingButtons.classList.remove('visible');
+
+            if (!currentCard) {
+                // Try rebuilding the queue once more (cards may have become due)
+                buildQueue(cards, settings);
+                currentCard = cardQueue.shift() || null;
+            }
 
             if (!currentCard) {
                 const newCards = cards.filter(c => c.state === 'new');
@@ -1008,6 +1044,11 @@
             btn.addEventListener('click', () => {
                 handleRating(parseInt(btn.dataset.rating));
             });
+        });
+
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            buildQueue(cards, settings);
+            renderCard();
         });
 
         settingsBtn.addEventListener('click', () => {
