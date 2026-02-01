@@ -1,0 +1,1070 @@
+---
+// Hindi Letters SRS - spaced repetition flashcards
+---
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hindi Letters SRS | Blog by the Rocks</title>
+    <meta name="description" content="Learn Hindi letters with spaced repetition flashcards" />
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style is:inline>
+        :root {
+            --bg: #0a0a0f;
+            --card-bg: #12121a;
+            --card-border: #1e1e2a;
+            --text: #e8e8ec;
+            --text-dim: #6b6b7a;
+            --accent: #f97316;
+            --accent-glow: rgba(249, 115, 22, 0.15);
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+            --radius: 16px;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #f8f8fa;
+                --card-bg: #ffffff;
+                --card-border: #d0d0d8;
+                --text: #1a1a1f;
+                --text-dim: #6b6b7a;
+                --accent: #ea580c;
+                --accent-glow: rgba(234, 88, 12, 0.12);
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.9rem;
+            z-index: 100;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .settings-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        .settings-btn:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .settings-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text-dim);
+            transition: stroke 0.2s;
+        }
+
+        .settings-btn:hover svg {
+            stroke: var(--accent);
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            width: 100%;
+        }
+
+        .card-container {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: var(--radius);
+            text-align: center;
+            position: relative;
+            cursor: pointer;
+            aspect-ratio: 4 / 3;
+            width: 100%;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            gap: 12px;
+        }
+
+        .card:active {
+            transform: scale(0.98);
+        }
+
+        .card-front,
+        .card-back {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-back {
+            display: none;
+        }
+
+        .card.flipped .card-front {
+            display: none;
+        }
+
+        .card.flipped .card-back {
+            display: flex;
+        }
+
+        .card-hint {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .devanagari {
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            font-size: clamp(4rem, 15vw, 7rem);
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1;
+            text-shadow: 0 0 60px var(--accent-glow);
+        }
+
+        .card-back .devanagari {
+            font-size: clamp(2.5rem, 10vw, 4rem);
+        }
+
+        .romanization {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .pronunciation {
+            font-size: 1.1rem;
+            color: var(--text-dim);
+        }
+
+        .rating-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            width: 100%;
+            max-width: 380px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+
+        .rating-buttons.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .rating-btn {
+            flex: 1;
+            padding: 16px 12px;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .rating-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .rating-btn.again {
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+        .rating-btn.again:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger);
+        }
+
+        .rating-btn.hard {
+            border-color: rgba(234, 179, 8, 0.3);
+        }
+        .rating-btn.hard:hover {
+            background: rgba(234, 179, 8, 0.1);
+            border-color: var(--warning);
+        }
+
+        .rating-btn.good {
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+        .rating-btn.good:hover {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: var(--success);
+        }
+
+        .rating-btn.easy {
+            border-color: rgba(249, 115, 22, 0.3);
+        }
+        .rating-btn.easy:hover {
+            background: var(--accent-glow);
+            border-color: var(--accent);
+        }
+
+        .rating-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .rating-time {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+
+        .stats-badge {
+            position: fixed;
+            top: 50px;
+            left: 20px;
+            display: flex;
+            gap: 16px;
+            font-size: 0.85rem;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-dim);
+        }
+
+        .stat-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .stat-dot.new { background: var(--accent); }
+        .stat-dot.learning { background: var(--warning); }
+        .stat-dot.review { background: var(--success); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.visible .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-close svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--text-dim);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .stat-value.new { color: var(--accent); }
+        .stat-value.learning { color: var(--warning); }
+        .stat-value.mastered { color: var(--success); }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .letter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+            gap: 8px;
+        }
+
+        .letter-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            font-size: 1.4rem;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: rgba(255, 255, 255, 0.02);
+            position: relative;
+        }
+
+        .letter-cell.new {
+            border-color: rgba(249, 115, 22, 0.4);
+            background: rgba(249, 115, 22, 0.08);
+        }
+
+        .letter-cell.learning {
+            border-color: rgba(234, 179, 8, 0.4);
+            background: rgba(234, 179, 8, 0.08);
+        }
+
+        .letter-cell.mastered {
+            border-color: rgba(34, 197, 94, 0.4);
+            background: rgba(34, 197, 94, 0.08);
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 14px;
+            margin-top: 24px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: transparent;
+            color: var(--danger);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .reset-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger);
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .setting-row label {
+            font-size: 0.95rem;
+        }
+
+        .setting-row input[type="number"] {
+            width: 70px;
+            padding: 8px 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        .setting-info {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 40px;
+        }
+
+        .empty-state-emoji {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        .empty-state-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-text {
+            color: var(--text-dim);
+            margin-bottom: 24px;
+        }
+
+        .empty-state-btn {
+            padding: 12px 24px;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .empty-state-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px var(--accent-glow);
+        }
+
+        @media (max-width: 480px) {
+            .stats-badge {
+                display: none;
+            }
+            .rating-buttons {
+                flex-wrap: wrap;
+            }
+            .rating-btn {
+                flex: 1 1 45%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+
+    <a href="/tools/" class="back-link">&larr; Back to Tools</a>
+
+    <div class="stats-badge">
+        <div class="stat">
+            <div class="stat-dot new"></div>
+            <span id="newCount">0</span> new
+        </div>
+        <div class="stat">
+            <div class="stat-dot learning"></div>
+            <span id="learningCount">0</span> learning
+        </div>
+        <div class="stat">
+            <div class="stat-dot review"></div>
+            <span id="reviewCount">0</span> due
+        </div>
+    </div>
+
+    <button class="settings-btn" id="settingsBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+        </svg>
+    </button>
+
+    <div class="main-content">
+        <div id="cardArea">
+            <!-- Card or empty state rendered here -->
+        </div>
+
+        <div class="rating-buttons" id="ratingButtons">
+            <button class="rating-btn again" data-rating="0">
+                <span class="rating-label">Again</span>
+                <span class="rating-time">&lt;1m</span>
+            </button>
+            <button class="rating-btn hard" data-rating="1">
+                <span class="rating-label">Hard</span>
+                <span class="rating-time" id="hardTime">6m</span>
+            </button>
+            <button class="rating-btn good" data-rating="2">
+                <span class="rating-label">Good</span>
+                <span class="rating-time" id="goodTime">10m</span>
+            </button>
+            <button class="rating-btn easy" data-rating="3">
+                <span class="rating-label">Easy</span>
+                <span class="rating-time" id="easyTime">4d</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Statistics & Settings</h2>
+                <button class="modal-close" id="modalClose">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="section-title">Settings</div>
+                <div class="setting-row">
+                    <label for="newCardsInput">New cards per day</label>
+                    <input type="number" id="newCardsInput" min="1" max="50" value="10">
+                </div>
+                <div class="setting-info" id="newCardsInfo">0 / 10 new cards today</div>
+
+                <div class="section-title" style="margin-top: 24px;">Progress</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value new" id="modalNew">0</div>
+                        <div class="stat-label">New</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value learning" id="modalLearning">0</div>
+                        <div class="stat-label">Learning</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value mastered" id="modalMastered">0</div>
+                        <div class="stat-label">Mastered</div>
+                    </div>
+                </div>
+
+                <div class="section-title">All Letters</div>
+                <div class="letter-grid" id="letterGrid">
+                    <!-- Generated -->
+                </div>
+
+                <button class="reset-btn" id="resetBtn">Reset All Progress</button>
+            </div>
+        </div>
+    </div>
+
+    <script is:inline>
+        // Hindi letters data — vowels + consonants
+        const LETTERS = [
+            // Vowels
+            { char: 'अ', roman: 'a', hint: 'like "u" in "but"' },
+            { char: 'आ', roman: 'ā', hint: 'like "a" in "father"' },
+            { char: 'इ', roman: 'i', hint: 'like "i" in "bit"' },
+            { char: 'ई', roman: 'ī', hint: 'like "ee" in "feet"' },
+            { char: 'उ', roman: 'u', hint: 'like "u" in "put"' },
+            { char: 'ऊ', roman: 'ū', hint: 'like "oo" in "boot"' },
+            { char: 'ए', roman: 'e', hint: 'like "ay" in "say"' },
+            { char: 'ऐ', roman: 'ai', hint: 'like "ai" in "fair"' },
+            { char: 'ओ', roman: 'o', hint: 'like "o" in "go"' },
+            { char: 'औ', roman: 'au', hint: 'like "ow" in "cow"' },
+            { char: 'ऋ', roman: 'ṛ', hint: 'like "ri" in "crisp"' },
+
+            // Consonants - Velars
+            { char: 'क', roman: 'ka', hint: 'like "k" in "skip"' },
+            { char: 'ख', roman: 'kha', hint: 'aspirated "k"' },
+            { char: 'ग', roman: 'ga', hint: 'like "g" in "go"' },
+            { char: 'घ', roman: 'gha', hint: 'aspirated "g"' },
+            { char: 'ङ', roman: 'ṅa', hint: 'like "ng" in "sing"' },
+
+            // Palatals
+            { char: 'च', roman: 'ca', hint: 'like "ch" in "church"' },
+            { char: 'छ', roman: 'cha', hint: 'aspirated "ch"' },
+            { char: 'ज', roman: 'ja', hint: 'like "j" in "jump"' },
+            { char: 'झ', roman: 'jha', hint: 'aspirated "j"' },
+            { char: 'ञ', roman: 'ña', hint: 'like "ny" in "canyon"' },
+
+            // Retroflexes
+            { char: 'ट', roman: 'ṭa', hint: 'retroflex "t"' },
+            { char: 'ठ', roman: 'ṭha', hint: 'aspirated retroflex "t"' },
+            { char: 'ड', roman: 'ḍa', hint: 'retroflex "d"' },
+            { char: 'ढ', roman: 'ḍha', hint: 'aspirated retroflex "d"' },
+            { char: 'ण', roman: 'ṇa', hint: 'retroflex "n"' },
+
+            // Dentals
+            { char: 'त', roman: 'ta', hint: 'dental "t" (tongue on teeth)' },
+            { char: 'थ', roman: 'tha', hint: 'aspirated dental "t"' },
+            { char: 'द', roman: 'da', hint: 'dental "d"' },
+            { char: 'ध', roman: 'dha', hint: 'aspirated dental "d"' },
+            { char: 'न', roman: 'na', hint: 'like "n" in "no"' },
+
+            // Labials
+            { char: 'प', roman: 'pa', hint: 'like "p" in "spin"' },
+            { char: 'फ', roman: 'pha', hint: 'aspirated "p"' },
+            { char: 'ब', roman: 'ba', hint: 'like "b" in "bat"' },
+            { char: 'भ', roman: 'bha', hint: 'aspirated "b"' },
+            { char: 'म', roman: 'ma', hint: 'like "m" in "mom"' },
+
+            // Semivowels
+            { char: 'य', roman: 'ya', hint: 'like "y" in "yes"' },
+            { char: 'र', roman: 'ra', hint: 'flapped "r"' },
+            { char: 'ल', roman: 'la', hint: 'like "l" in "let"' },
+            { char: 'व', roman: 'va', hint: 'like "v" or "w"' },
+
+            // Sibilants & Aspirate
+            { char: 'श', roman: 'śa', hint: 'like "sh" in "ship"' },
+            { char: 'ष', roman: 'ṣa', hint: 'retroflex "sh"' },
+            { char: 'स', roman: 'sa', hint: 'like "s" in "sun"' },
+            { char: 'ह', roman: 'ha', hint: 'like "h" in "hat"' },
+
+            // Additional
+            { char: 'क्ष', roman: 'kṣa', hint: '"k" + "sh"' },
+            { char: 'त्र', roman: 'tra', hint: '"t" + "r"' },
+            { char: 'ज्ञ', roman: 'jña', hint: 'varies by region' },
+        ];
+
+        const STORAGE_KEY = 'hindi-srs-progress';
+        const SETTINGS_KEY = 'hindi-srs-settings';
+
+        function getDefaultSettings() {
+            return {
+                newCardsPerDay: 10,
+                lastNewCardsDate: null,
+                newCardsToday: 0
+            };
+        }
+
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem(SETTINGS_KEY);
+                if (saved) {
+                    return { ...getDefaultSettings(), ...JSON.parse(saved) };
+                }
+            } catch (e) {
+                console.error('Failed to load settings:', e);
+            }
+            return getDefaultSettings();
+        }
+
+        function saveSettings(settings) {
+            try {
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            } catch (e) {
+                console.error('Failed to save settings:', e);
+            }
+        }
+
+        // SM-2 inspired algorithm
+        function getDefaultCard(letter) {
+            return {
+                ...letter,
+                interval: 0,        // days until next review
+                ease: 2.5,          // ease factor
+                reps: 0,            // successful reps
+                lapses: 0,          // times forgotten
+                due: Date.now(),    // when due
+                state: 'new'        // new | learning | review
+            };
+        }
+
+        function loadProgress() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+            } catch (e) {
+                console.error('Failed to load progress:', e);
+            }
+            return LETTERS.map(getDefaultCard);
+        }
+
+        function saveProgress(cards) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
+            } catch (e) {
+                console.error('Failed to save progress:', e);
+            }
+        }
+
+        function scheduleCard(card, rating) {
+            const now = Date.now();
+            const day = 24 * 60 * 60 * 1000;
+            const minute = 60 * 1000;
+
+            let newCard = { ...card };
+
+            if (rating === 0) { // Again
+                newCard.lapses++;
+                newCard.reps = 0;
+                newCard.interval = 0;
+                newCard.ease = Math.max(1.3, newCard.ease - 0.2);
+                newCard.due = now + minute;
+                newCard.state = 'learning';
+            } else if (rating === 1) { // Hard
+                if (newCard.state === 'new' || newCard.state === 'learning') {
+                    newCard.interval = 0;
+                    newCard.due = now + 6 * minute;
+                    newCard.state = 'learning';
+                } else {
+                    newCard.interval = Math.max(1, newCard.interval * 1.2);
+                    newCard.ease = Math.max(1.3, newCard.ease - 0.15);
+                    newCard.due = now + newCard.interval * day;
+                }
+                newCard.reps++;
+            } else if (rating === 2) { // Good
+                if (newCard.state === 'new') {
+                    newCard.interval = 0;
+                    newCard.due = now + 10 * minute;
+                    newCard.state = 'learning';
+                } else if (newCard.state === 'learning') {
+                    newCard.interval = 1;
+                    newCard.due = now + day;
+                    newCard.state = 'review';
+                } else {
+                    newCard.interval = newCard.interval * newCard.ease;
+                    newCard.due = now + newCard.interval * day;
+                }
+                newCard.reps++;
+            } else if (rating === 3) { // Easy
+                if (newCard.state === 'new' || newCard.state === 'learning') {
+                    newCard.interval = 4;
+                    newCard.due = now + 4 * day;
+                    newCard.state = 'review';
+                } else {
+                    newCard.interval = newCard.interval * newCard.ease * 1.3;
+                    newCard.ease = Math.min(3.0, newCard.ease + 0.15);
+                    newCard.due = now + newCard.interval * day;
+                }
+                newCard.reps++;
+            }
+
+            return newCard;
+        }
+
+        function getNextCard(cards, settings) {
+            const now = Date.now();
+            const today = new Date().toDateString();
+
+            // Reset daily counter if it's a new day
+            if (settings.lastNewCardsDate !== today) {
+                settings.lastNewCardsDate = today;
+                settings.newCardsToday = 0;
+                saveSettings(settings);
+            }
+
+            // Priority: due cards first
+            const dueCards = cards.filter(c => c.due <= now && c.state !== 'new');
+            if (dueCards.length > 0) {
+                dueCards.sort((a, b) => a.due - b.due);
+                return dueCards[0];
+            }
+
+            // Then new cards if under daily limit
+            if (settings.newCardsToday < settings.newCardsPerDay) {
+                const newCards = cards.filter(c => c.state === 'new');
+                if (newCards.length > 0) {
+                    return newCards[0];
+                }
+            }
+
+            return null;
+        }
+
+        function formatInterval(card, rating) {
+            const scheduled = scheduleCard(card, rating);
+            const diff = scheduled.due - Date.now();
+            const minutes = Math.round(diff / (60 * 1000));
+            const hours = Math.round(diff / (60 * 60 * 1000));
+            const days = Math.round(diff / (24 * 60 * 60 * 1000));
+
+            if (minutes < 60) return `${Math.max(1, minutes)}m`;
+            if (hours < 24) return `${hours}h`;
+            return `${days}d`;
+        }
+
+        // State
+        let cards = loadProgress();
+        let settings = loadSettings();
+        let currentCard = null;
+        let isFlipped = false;
+
+        // DOM elements
+        const cardArea = document.getElementById('cardArea');
+        const ratingButtons = document.getElementById('ratingButtons');
+        const progressBar = document.getElementById('progressBar');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalClose = document.getElementById('modalClose');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function updateStats() {
+            const now = Date.now();
+            const newCount = cards.filter(c => c.state === 'new').length;
+            const learningCount = cards.filter(c => c.state === 'learning').length;
+            const dueCount = cards.filter(c => c.due <= now && c.state !== 'new').length;
+            const mastered = cards.filter(c => c.state === 'review' && c.interval >= 21).length;
+
+            document.getElementById('newCount').textContent = newCount;
+            document.getElementById('learningCount').textContent = learningCount;
+            document.getElementById('reviewCount').textContent = dueCount;
+
+            // Progress bar: % of cards that are in review state
+            const reviewCards = cards.filter(c => c.state === 'review').length;
+            const progress = (reviewCards / cards.length) * 100;
+            progressBar.style.width = `${progress}%`;
+
+            // Modal stats
+            document.getElementById('modalNew').textContent = newCount;
+            document.getElementById('modalLearning').textContent = learningCount;
+            document.getElementById('modalMastered').textContent = mastered;
+        }
+
+        function updateLetterGrid() {
+            const grid = document.getElementById('letterGrid');
+            grid.innerHTML = cards.map(card => {
+                let cls = 'new';
+                if (card.state === 'learning') cls = 'learning';
+                else if (card.state === 'review') cls = 'mastered';
+                return `<div class="letter-cell ${cls}" title="${card.roman}">${card.char}</div>`;
+            }).join('');
+        }
+
+        function renderCard() {
+            currentCard = getNextCard(cards, settings);
+            isFlipped = false;
+            ratingButtons.classList.remove('visible');
+
+            if (!currentCard) {
+                const newCards = cards.filter(c => c.state === 'new');
+                const hasMoreNew = newCards.length > 0 && settings.newCardsToday >= settings.newCardsPerDay;
+
+                cardArea.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-emoji">${hasMoreNew ? '☀️' : '🎉'}</div>
+                        <div class="empty-state-title">${hasMoreNew ? 'Done for today!' : 'All caught up!'}</div>
+                        <div class="empty-state-text">${hasMoreNew
+                            ? `You've learned ${settings.newCardsToday} new cards today. Come back tomorrow!`
+                            : 'No more cards to review right now.'}</div>
+                    </div>
+                `;
+                return;
+            }
+
+            cardArea.innerHTML = `
+                <div class="card-container">
+                    <div class="card" id="flashcard">
+                        <div class="card-front">
+                            <div class="devanagari">${currentCard.char}</div>
+                            <div class="card-hint">tap to reveal</div>
+                        </div>
+                        <div class="card-back">
+                            <div class="devanagari">${currentCard.char}</div>
+                            <div class="romanization">${currentCard.roman}</div>
+                            <div class="pronunciation">${currentCard.hint}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const flashcard = document.getElementById('flashcard');
+            flashcard.addEventListener('click', flipCard);
+
+            // Update rating button intervals
+            document.getElementById('hardTime').textContent = formatInterval(currentCard, 1);
+            document.getElementById('goodTime').textContent = formatInterval(currentCard, 2);
+            document.getElementById('easyTime').textContent = formatInterval(currentCard, 3);
+        }
+
+        function flipCard() {
+            const flashcard = document.getElementById('flashcard');
+            if (isFlipped) {
+                // Unflip
+                isFlipped = false;
+                flashcard.classList.remove('flipped');
+            } else {
+                // Flip to reveal
+                isFlipped = true;
+                flashcard.classList.add('flipped');
+                ratingButtons.classList.add('visible');
+            }
+        }
+
+        function handleRating(rating) {
+            if (!currentCard) return;
+
+            const idx = cards.findIndex(c => c.char === currentCard.char);
+
+            // Track if this was a new card
+            if (cards[idx].state === 'new') {
+                settings.newCardsToday++;
+                saveSettings(settings);
+            }
+
+            cards[idx] = scheduleCard(cards[idx], rating);
+            saveProgress(cards);
+            updateStats();
+            renderCard();
+        }
+
+        // Event listeners
+        ratingButtons.querySelectorAll('.rating-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                handleRating(parseInt(btn.dataset.rating));
+            });
+        });
+
+        settingsBtn.addEventListener('click', () => {
+            updateLetterGrid();
+            document.getElementById('newCardsInput').value = settings.newCardsPerDay;
+            document.getElementById('newCardsInfo').textContent =
+                `${settings.newCardsToday} / ${settings.newCardsPerDay} new cards today`;
+            modalOverlay.classList.add('visible');
+        });
+
+        document.getElementById('newCardsInput').addEventListener('change', (e) => {
+            const val = parseInt(e.target.value) || 20;
+            settings.newCardsPerDay = Math.min(50, Math.max(1, val));
+            e.target.value = settings.newCardsPerDay;
+            saveSettings(settings);
+            document.getElementById('newCardsInfo').textContent =
+                `${settings.newCardsToday} / ${settings.newCardsPerDay} new cards today`;
+        });
+
+        modalClose.addEventListener('click', () => {
+            modalOverlay.classList.remove('visible');
+        });
+
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                modalOverlay.classList.remove('visible');
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            if (confirm('Reset all progress? This cannot be undone.')) {
+                cards = LETTERS.map(getDefaultCard);
+                saveProgress(cards);
+                updateStats();
+                updateLetterGrid();
+                renderCard();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (modalOverlay.classList.contains('visible')) return;
+
+            if (e.code === 'Space' && !isFlipped) {
+                e.preventDefault();
+                flipCard();
+            } else if (isFlipped) {
+                if (e.key === '1') handleRating(0);
+                else if (e.key === '2') handleRating(1);
+                else if (e.key === '3') handleRating(2);
+                else if (e.key === '4') handleRating(3);
+            }
+        });
+
+        // Init
+        updateStats();
+        renderCard();
+    </script>
+</body>
+</html>
