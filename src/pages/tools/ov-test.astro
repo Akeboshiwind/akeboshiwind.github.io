@@ -207,6 +207,7 @@
       right: 0;
       display: flex;
       justify-content: center;
+      gap: 8px;
       z-index: 15;
       pointer-events: none;
     }
@@ -552,6 +553,11 @@
       <canvas id="mainCanvas"></canvas>
       <div class="zoom-slider-container" id="zoomSliderContainer">
         <div class="zoom-slider-track">
+          <label>Rotate</label>
+          <input type="range" id="rotationSlider" min="-180" max="180" value="0" step="1">
+          <span id="rotationValue">0°</span>
+        </div>
+        <div class="zoom-slider-track">
           <label>Zoom</label>
           <input type="range" id="zoomSlider" min="1" max="4" value="1" step="0.1">
           <span id="zoomValue">1.0x</span>
@@ -575,11 +581,6 @@
     </div>
 
     <div class="controls" id="controls">
-      <div class="control-row">
-        <label for="rotationSlider">Rotate:</label>
-        <input type="range" id="rotationSlider" min="-180" max="180" value="0" step="1">
-        <span id="rotationValue">0°</span>
-      </div>
       <span class="control-hint">Drag edges to crop</span>
     </div>
 
