@@ -460,6 +460,22 @@
       display: flex;
       gap: 10px;
     }
+
+    .action-btn.delete {
+      background: #dc2626;
+      color: white;
+    }
+
+    .action-btn.delete:hover {
+      background: #b91c1c;
+    }
+
+    .edit-title {
+      font-size: 14px;
+      color: #aaa;
+      margin-bottom: 15px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -544,6 +560,23 @@
       </div>
     </div>
 
+    <div class="manual-entry" id="editEntry">
+      <div class="edit-title">Edit Test Result</div>
+      <div class="manual-entry-row">
+        <label for="editScore">Score (0–1):</label>
+        <input type="number" id="editScore" min="0" max="1" step="0.01" value="0.5">
+      </div>
+      <div class="manual-entry-row">
+        <label for="editDate">Date & Time:</label>
+        <input type="datetime-local" id="editDate">
+      </div>
+      <div class="manual-entry-buttons">
+        <button type="button" class="action-btn delete" id="editDeleteBtn">Delete</button>
+        <button type="button" class="action-btn cancel" id="editCancelBtn">Cancel</button>
+        <button type="button" class="action-btn save" id="editSaveBtn">Save</button>
+      </div>
+    </div>
+
     <div class="action-buttons" id="actionButtons">
       <button id="cancelBtn" class="action-btn cancel">Cancel</button>
       <button id="saveBtn" class="action-btn save">Save</button>
@@ -576,6 +609,12 @@
     const manualDate = document.getElementById('manualDate');
     const manualSaveBtn = document.getElementById('manualSaveBtn');
     const manualCancelBtn = document.getElementById('manualCancelBtn');
+    const editEntry = document.getElementById('editEntry');
+    const editScore = document.getElementById('editScore');
+    const editDate = document.getElementById('editDate');
+    const editSaveBtn = document.getElementById('editSaveBtn');
+    const editCancelBtn = document.getElementById('editCancelBtn');
+    const editDeleteBtn = document.getElementById('editDeleteBtn');
 
     const markers = {
       control: document.getElementById('controlMarker'),
@@ -596,10 +635,12 @@
     let activeMarker = null;
     let activeCropHandle = null;
     let currentScore = 0;
+    let editingIndex = -1; // index of entry being edited
 
     // Data storage
     let testData = JSON.parse(localStorage.getItem('ovulationTests') || '[]');
     let graphOffset = 0; // days offset for scrolling (0 = today is rightmost)
+    let graphPadding = { top: 20, right: 10, bottom: 40, left: 35 }; // shared for click detection
 
     // Initialize
     showGraphView();
@@ -928,6 +969,116 @@
       manualEntryBtn.style.display = 'block';
     });
 
+    // Graph click to edit
+    graphCanvas.addEventListener('click', (e) => {
+      const rect = graphCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      const w = rect.width;
+      const h = rect.height;
+      const graphW = w - graphPadding.left - graphPadding.right;
+      const graphH = h - graphPadding.top - graphPadding.bottom;
+
+      // Calculate date range (same as drawGraph)
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 1 - graphOffset);
+      endDate.setHours(0, 0, 0, 0);
+      const startDate = new Date(endDate);
+      startDate.setDate(startDate.getDate() - 29);
+      const endOfEndDate = new Date(endDate);
+      endOfEndDate.setHours(23, 59, 59, 999);
+
+      // Find clicked point
+      const clickRadius = 15;
+      let clickedIndex = -1;
+
+      for (let i = 0; i < testData.length; i++) {
+        const entry = testData[i];
+        const d = new Date(entry.timestamp);
+        if (d < startDate || d > endOfEndDate) continue;
+
+        const daysDiff = (d - startDate) / (1000 * 60 * 60 * 24);
+        const px = graphPadding.left + (daysDiff / 29) * graphW;
+        const py = graphPadding.top + graphH - entry.score * graphH;
+
+        const dist = Math.sqrt((clickX - px) ** 2 + (clickY - py) ** 2);
+        if (dist < clickRadius) {
+          clickedIndex = i;
+          break;
+        }
+      }
+
+      if (clickedIndex >= 0) {
+        openEditForm(clickedIndex);
+      }
+    });
+
+    function openEditForm(index) {
+      editingIndex = index;
+      const entry = testData[index];
+
+      // Populate form
+      editScore.value = entry.score.toFixed(2);
+      const d = new Date(entry.timestamp);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      editDate.value = d.toISOString().slice(0, 16);
+
+      // Show edit form, hide buttons
+      editEntry.style.display = 'block';
+      newTestBtn.style.display = 'none';
+      manualEntryBtn.style.display = 'none';
+      manualEntry.style.display = 'none';
+    }
+
+    // Edit save
+    editSaveBtn.addEventListener('click', () => {
+      const score = parseFloat(editScore.value);
+      if (isNaN(score) || score < 0 || score > 1) {
+        alert('Score must be between 0 and 1');
+        return;
+      }
+
+      const dateVal = editDate.value;
+      if (!dateVal) {
+        alert('Please select a date and time');
+        return;
+      }
+
+      testData[editingIndex].score = score;
+      testData[editingIndex].timestamp = new Date(dateVal).toISOString();
+      localStorage.setItem('ovulationTests', JSON.stringify(testData));
+
+      editEntry.style.display = 'none';
+      newTestBtn.style.display = 'block';
+      manualEntryBtn.style.display = 'block';
+      editingIndex = -1;
+      drawGraph();
+    });
+
+    // Edit cancel
+    editCancelBtn.addEventListener('click', () => {
+      editEntry.style.display = 'none';
+      newTestBtn.style.display = 'block';
+      manualEntryBtn.style.display = 'block';
+      editingIndex = -1;
+    });
+
+    // Edit delete
+    editDeleteBtn.addEventListener('click', () => {
+      if (confirm('Delete this test result?')) {
+        testData.splice(editingIndex, 1);
+        localStorage.setItem('ovulationTests', JSON.stringify(testData));
+
+        editEntry.style.display = 'none';
+        newTestBtn.style.display = 'block';
+        manualEntryBtn.style.display = 'block';
+        editingIndex = -1;
+        drawGraph();
+      }
+    });
+
     // Graph navigation
     prevBtn.addEventListener('click', () => {
       graphOffset += 15;
@@ -955,6 +1106,8 @@
       newTestBtn.style.display = 'block';
       manualEntryBtn.style.display = 'block';
       manualEntry.style.display = 'none';
+      editEntry.style.display = 'none';
+      editingIndex = -1;
       graphOffset = 0;
       drawGraph();
     }
