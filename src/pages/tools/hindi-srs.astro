@@ -805,7 +805,7 @@
                 newCard.reps = 0;
                 newCard.interval = 0;
                 newCard.ease = Math.max(1.3, newCard.ease - 0.2);
-                newCard.due = now + minute;
+                newCard.due = now;
                 newCard.state = 'learning';
             } else if (rating === 1) { // Hard
                 if (newCard.state === 'new' || newCard.state === 'learning') {
