@@ -522,6 +522,31 @@
             box-shadow: 0 8px 20px var(--accent-glow);
         }
 
+        .upcoming-list {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            margin-top: 24px;
+        }
+
+        .upcoming-item {
+            display: flex;
+            gap: 12px;
+            font-size: 1.1rem;
+            align-items: baseline;
+        }
+
+        .upcoming-char {
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            font-size: 1.3rem;
+        }
+
+        .upcoming-time {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
         @media (max-width: 480px) {
             .stats-badge {
                 display: none;
@@ -785,6 +810,24 @@
             return `${days}d`;
         }
 
+        function formatTimeToDue(card) {
+            const diff = card.due - Date.now();
+            if (diff <= 0) return 'now';
+            const minutes = Math.round(diff / (60 * 1000));
+            const hours = Math.round(diff / (60 * 60 * 1000));
+            const days = Math.round(diff / (24 * 60 * 60 * 1000));
+
+            if (minutes < 60) return `${Math.max(1, minutes)}m`;
+            if (hours < 24) return `${hours}h`;
+            return `${days}d`;
+        }
+
+        function getUpcomingCards(cards, count = 10) {
+            return [...cards]
+                .sort((a, b) => a.due - b.due)
+                .slice(0, count);
+        }
+
         // State
         let cards = loadProgress();
         let settings = loadSettings();
@@ -847,6 +890,15 @@
                 const newCards = cards.filter(c => c.state === 'new');
                 const hasMoreNew = newCards.length > 0 && settings.newCardsToday >= settings.newCardsPerDay;
 
+                const upcoming = getUpcomingCards(cards);
+                const upcomingHtml = upcoming.map((card, i) => {
+                    const opacity = 1 - (i * 0.09);
+                    return `<div class="upcoming-item" style="opacity: ${opacity}">
+                        <span class="upcoming-char">${card.char}</span>
+                        <span class="upcoming-time">${formatTimeToDue(card)}</span>
+                    </div>`;
+                }).join('');
+
                 cardArea.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-emoji">${hasMoreNew ? '☀️' : '🎉'}</div>
@@ -854,6 +906,7 @@
                         <div class="empty-state-text">${hasMoreNew
                             ? `You've learned ${settings.newCardsToday} new cards today. Come back tomorrow!`
                             : 'No more cards to review right now.'}</div>
+                        <div class="upcoming-list">${upcomingHtml}</div>
                     </div>
                 `;
                 return;
