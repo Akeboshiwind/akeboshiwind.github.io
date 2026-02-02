@@ -824,6 +824,7 @@
 
         function getUpcomingCards(cards, count = 10) {
             return [...cards]
+                .filter(c => c.state !== 'new')
                 .sort((a, b) => a.due - b.due)
                 .slice(0, count);
         }
