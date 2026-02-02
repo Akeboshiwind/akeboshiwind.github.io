@@ -9,6 +9,11 @@ const posts = await getCollection('blog', ({ data }) => {
 const recentPosts = posts
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
   .slice(0, 5);
+
+const tools = await getCollection('tools');
+const recentTools = tools
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 5);
 ---
 
 <Layout>
@@ -33,4 +38,18 @@ const recentPosts = posts
   </ul>
 
   <p><a href="/blog/">View all posts &rarr;</a></p>
+
+  <h2>Recent Tools</h2>
+  <ul class="post-list">
+    {recentTools.map(tool => (
+      <li>
+        <time datetime={tool.data.date.toISOString().split('T')[0]}>
+          {tool.data.date.toISOString().split('T')[0]}
+        </time>
+        <a href={tool.data.url || `/tools/${tool.id.replace('.json', '')}/`}>{tool.data.title}</a>
+      </li>
+    ))}
+  </ul>
+
+  <p><a href="/tools/">View all tools &rarr;</a></p>
 </Layout>
