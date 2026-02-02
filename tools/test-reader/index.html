@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Ovulation Test Reader | Blog by the Rocks</title><meta name="description" content="Analyze ovulation test strips and track results over time"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="shortcut icon" href="/favicon.ico"><style>
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Lateral Flow Test Reader | Blog by the Rocks</title><meta name="description" content="Analyze lateral flow test strips (COVID, ovulation, etc.) and track results over time"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="shortcut icon" href="/favicon.ico"><style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -522,11 +522,91 @@
       margin-bottom: 15px;
       text-align: center;
     }
-  </style></head> <body> <div class="container"> <a href="/tools/" class="back-link">&larr; Back to Tools</a> <h1>Ovulation Test Reader</h1> <div class="upload-area" id="uploadArea"> <button type="button" class="upload-btn" id="fileBtn">Upload Photo</button> <input type="file" id="fileInput" accept="image/*"> </div> <div class="canvas-container" id="canvasContainer"> <canvas id="mainCanvas"></canvas> <div class="zoom-slider-container" id="zoomSliderContainer"> <div class="zoom-slider-track"> <label>Rotate</label> <input type="range" id="rotationSlider" min="-180" max="180" value="0" step="1"> <span id="rotationValue">0°</span> </div> <div class="zoom-slider-track"> <label>Zoom</label> <input type="range" id="zoomSlider" min="1" max="4" value="1" step="0.1"> <span id="zoomValue">1.0x</span> </div> </div> <div class="marker" id="controlMarker"> <span class="marker-label">Control</span> </div> <div class="marker" id="testMarker"> <span class="marker-label">Test</span> </div> <div class="marker" id="baseMarker"> <span class="marker-label">Base</span> </div> <!-- Crop handles --> <div class="crop-handle crop-left" id="cropLeft"></div> <div class="crop-handle crop-right" id="cropRight"></div> <div class="crop-overlay crop-overlay-left" id="cropOverlayLeft"></div> <div class="crop-overlay crop-overlay-right" id="cropOverlayRight"></div> </div> <div class="controls" id="controls"> <span class="control-hint">Drag edges to crop</span> </div> <p class="instructions" id="instructions" style="display:none;">
+
+    /* Test list styles */
+    .test-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .test-item {
+      background: #252542;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .test-item:hover {
+      background: #2d2d4a;
+    }
+
+    .test-item-name {
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .test-item-meta {
+      font-size: 0.85rem;
+      color: #888;
+    }
+
+    .create-test-form {
+      display: none;
+      background: #252542;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .create-test-form input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #444;
+      border-radius: 8px;
+      background: #1a1a2e;
+      color: #eee;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+
+    .create-test-form input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #888;
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+  </style></head> <body> <div class="container"> <a href="/tools/" class="back-link" id="toolsLink">&larr; Back to Tools</a> <a href="#" class="back-link" id="backToListLink" style="display:none;">&larr; Back to Tests</a> <h1 id="pageTitle">Lateral Flow Test Reader</h1> <!-- Test List View --> <div id="testListView"> <div class="test-list" id="testList"></div> <div class="create-test-form" id="createTestForm"> <input type="text" id="newTestName" placeholder="Test name (e.g., COVID, Ovulation)"> <div class="manual-entry-buttons"> <button type="button" class="action-btn cancel" id="createCancelBtn">Cancel</button> <button type="button" class="action-btn save" id="createSaveBtn">Create</button> </div> </div> <button class="upload-btn" id="createTestBtn">+ Create Test</button> </div> <!-- Test Detail View (existing UI) --> <div id="testDetailView" style="display:none;"> <div class="upload-area" id="uploadArea"> <button type="button" class="upload-btn" id="fileBtn">Upload Photo</button> <input type="file" id="fileInput" accept="image/*"> </div> <div class="canvas-container" id="canvasContainer"> <canvas id="mainCanvas"></canvas> <div class="zoom-slider-container" id="zoomSliderContainer"> <div class="zoom-slider-track"> <label>Rotate</label> <input type="range" id="rotationSlider" min="-180" max="180" value="0" step="1"> <span id="rotationValue">0°</span> </div> <div class="zoom-slider-track"> <label>Zoom</label> <input type="range" id="zoomSlider" min="1" max="4" value="1" step="0.1"> <span id="zoomValue">1.0x</span> </div> </div> <div class="marker" id="controlMarker"> <span class="marker-label">Control</span> </div> <div class="marker" id="testMarker"> <span class="marker-label">Test</span> </div> <div class="marker" id="baseMarker"> <span class="marker-label">Base</span> </div> <!-- Crop handles --> <div class="crop-handle crop-left" id="cropLeft"></div> <div class="crop-handle crop-right" id="cropRight"></div> <div class="crop-overlay crop-overlay-left" id="cropOverlayLeft"></div> <div class="crop-overlay crop-overlay-right" id="cropOverlayRight"></div> </div> <div class="controls" id="controls"> <span class="control-hint">Drag edges to crop</span> </div> <p class="instructions" id="instructions" style="display:none;">
 Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control line &nbsp;
 <span style="color:#f472b6">Pink</span> → Test line &nbsp;
 <span style="color:#60a5fa">Blue</span> → Base/background
-</p> <div class="results" id="results"> <div style="text-align:center;color:#888;">Test / Control Ratio</div> <div class="score" id="scoreValue">0.00</div> <div class="score-bar"> <div class="score-indicator" id="scoreIndicator"></div> </div> <div class="debug" id="debug"></div> </div> <div class="graph-container" id="graphContainer"> <div class="graph-header"> <button type="button" class="nav-btn" id="prevBtn">◀ 15 days</button> <span id="dateRange"></span> <button type="button" class="nav-btn" id="nextBtn">15 days ▶</button> </div> <canvas id="graphCanvas"></canvas> </div> <button class="upload-btn" id="newTestBtn" style="display:none;">+ New Test</button> <button class="upload-btn secondary" id="manualEntryBtn" style="display:none;">Manual Entry</button> <div class="manual-entry" id="manualEntry"> <div class="manual-entry-row"> <label for="manualScore">Score (0–1):</label> <input type="number" id="manualScore" min="0" max="1" step="0.01" value="0.5"> </div> <div class="manual-entry-row"> <label for="manualDate">Date & Time:</label> <input type="datetime-local" id="manualDate"> </div> <div class="manual-entry-buttons"> <button type="button" class="action-btn cancel" id="manualCancelBtn">Cancel</button> <button type="button" class="action-btn save" id="manualSaveBtn">Save</button> </div> </div> <div class="manual-entry" id="editEntry"> <div class="edit-title">Edit Test Result</div> <div class="manual-entry-row"> <label for="editScore">Score (0–1):</label> <input type="number" id="editScore" min="0" max="1" step="0.01" value="0.5"> </div> <div class="manual-entry-row"> <label for="editDate">Date & Time:</label> <input type="datetime-local" id="editDate"> </div> <div class="manual-entry-buttons"> <button type="button" class="action-btn delete" id="editDeleteBtn">Delete</button> <button type="button" class="action-btn cancel" id="editCancelBtn">Cancel</button> <button type="button" class="action-btn save" id="editSaveBtn">Save</button> </div> </div> <div class="action-buttons" id="actionButtons"> <button id="cancelBtn" class="action-btn cancel">Cancel</button> <button id="saveBtn" class="action-btn save">Save</button> </div> </div> <script>
+</p> <div class="results" id="results"> <div style="text-align:center;color:#888;">Test / Control Ratio</div> <div class="score" id="scoreValue">0.00</div> <div class="score-bar"> <div class="score-indicator" id="scoreIndicator"></div> </div> <div class="debug" id="debug"></div> </div> <div class="graph-container" id="graphContainer"> <div class="graph-header"> <button type="button" class="nav-btn" id="prevBtn">◀ 15 days</button> <span id="dateRange"></span> <button type="button" class="nav-btn" id="nextBtn">15 days ▶</button> </div> <canvas id="graphCanvas"></canvas> </div> <button class="upload-btn" id="newTestBtn" style="display:none;">+ New Test</button> <button class="upload-btn secondary" id="manualEntryBtn" style="display:none;">Manual Entry</button> <div class="manual-entry" id="manualEntry"> <div class="manual-entry-row"> <label for="manualScore">Score (0–1):</label> <input type="number" id="manualScore" min="0" max="1" step="0.01" value="0.5"> </div> <div class="manual-entry-row"> <label for="manualDate">Date & Time:</label> <input type="datetime-local" id="manualDate"> </div> <div class="manual-entry-buttons"> <button type="button" class="action-btn cancel" id="manualCancelBtn">Cancel</button> <button type="button" class="action-btn save" id="manualSaveBtn">Save</button> </div> </div> <div class="manual-entry" id="editEntry"> <div class="edit-title">Edit Test Result</div> <div class="manual-entry-row"> <label for="editScore">Score (0–1):</label> <input type="number" id="editScore" min="0" max="1" step="0.01" value="0.5"> </div> <div class="manual-entry-row"> <label for="editDate">Date & Time:</label> <input type="datetime-local" id="editDate"> </div> <div class="manual-entry-buttons"> <button type="button" class="action-btn delete" id="editDeleteBtn">Delete</button> <button type="button" class="action-btn cancel" id="editCancelBtn">Cancel</button> <button type="button" class="action-btn save" id="editSaveBtn">Save</button> </div> </div> <div class="action-buttons" id="actionButtons"> <button id="cancelBtn" class="action-btn cancel">Cancel</button> <button id="saveBtn" class="action-btn save">Save</button> </div> </div><!-- /testDetailView --> </div> <script>
+    // DOM elements - List view
+    const testListView = document.getElementById('testListView');
+    const testList = document.getElementById('testList');
+    const createTestBtn = document.getElementById('createTestBtn');
+    const createTestForm = document.getElementById('createTestForm');
+    const newTestName = document.getElementById('newTestName');
+    const createSaveBtn = document.getElementById('createSaveBtn');
+    const createCancelBtn = document.getElementById('createCancelBtn');
+    const toolsLink = document.getElementById('toolsLink');
+    const backToListLink = document.getElementById('backToListLink');
+    const pageTitle = document.getElementById('pageTitle');
+
+    // DOM elements - Detail view
+    const testDetailView = document.getElementById('testDetailView');
     const fileInput = document.getElementById('fileInput');
     const fileBtn = document.getElementById('fileBtn');
     const uploadArea = document.getElementById('uploadArea');
@@ -583,13 +663,172 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
     let currentScore = 0;
     let editingIndex = -1; // index of entry being edited
 
-    // Data storage
-    let testData = JSON.parse(localStorage.getItem('ovulationTests') || '[]');
-    let graphOffset = 0; // days offset for scrolling (0 = today is rightmost)
-    let graphPadding = { top: 20, right: 10, bottom: 40, left: 35 }; // shared for click detection
+    // Data storage - new model
+    const STORAGE_KEY = 'testReaderData';
+    let appData = loadData();
+    let currentTestId = null;
+    let testData = []; // current test's data
+    let graphOffset = 0;
+    let graphPadding = { top: 20, right: 10, bottom: 40, left: 35 };
+
+    function loadData() {
+      // Try new format first
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+
+      // Migrate from old format
+      const oldData = localStorage.getItem('ovulationTests');
+      if (oldData) {
+        const migratedData = {
+          tests: [{
+            id: generateId(),
+            name: 'Migrated Data',
+            createdAt: new Date().toISOString(),
+            data: JSON.parse(oldData)
+          }]
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(migratedData));
+        localStorage.removeItem('ovulationTests');
+        return migratedData;
+      }
+
+      // Fresh start
+      return { tests: [] };
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    }
+
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+
+    function getCurrentTest() {
+      return appData.tests.find(t => t.id === currentTestId);
+    }
 
     // Initialize
-    showGraphView();
+    showTestList();
+
+    // ========== TEST LIST VIEW ==========
+
+    function showTestList() {
+      testListView.style.display = 'block';
+      testDetailView.style.display = 'none';
+      toolsLink.style.display = 'inline';
+      backToListLink.style.display = 'none';
+      pageTitle.textContent = 'Lateral Flow Test Reader';
+      createTestForm.style.display = 'none';
+      createTestBtn.style.display = 'block';
+      currentTestId = null;
+      renderTestList();
+    }
+
+    function renderTestList() {
+      if (appData.tests.length === 0) {
+        testList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <p>No tests yet.<br>Create one to get started.</p>
+          </div>
+        `;
+        return;
+      }
+
+      testList.innerHTML = appData.tests.map(test => {
+        const entryCount = test.data.length;
+        const lastEntry = test.data.length > 0
+          ? new Date(test.data[test.data.length - 1].timestamp).toLocaleDateString()
+          : 'No entries';
+        return `
+          <div class="test-item" data-id="${test.id}">
+            <div class="test-item-name">${escapeHtml(test.name)}</div>
+            <div class="test-item-meta">${entryCount} entries · Last: ${lastEntry}</div>
+          </div>
+        `;
+      }).join('');
+
+      // Add click handlers
+      testList.querySelectorAll('.test-item').forEach(item => {
+        item.addEventListener('click', () => {
+          openTest(item.dataset.id);
+        });
+      });
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function openTest(testId) {
+      currentTestId = testId;
+      const test = getCurrentTest();
+      if (!test) return;
+
+      testData = test.data;
+      testListView.style.display = 'none';
+      testDetailView.style.display = 'block';
+      toolsLink.style.display = 'none';
+      backToListLink.style.display = 'inline';
+      pageTitle.textContent = test.name;
+
+      showGraphView();
+    }
+
+    // Create test form handlers
+    createTestBtn.addEventListener('click', () => {
+      createTestForm.style.display = 'block';
+      createTestBtn.style.display = 'none';
+      newTestName.value = '';
+      newTestName.focus();
+    });
+
+    createCancelBtn.addEventListener('click', () => {
+      createTestForm.style.display = 'none';
+      createTestBtn.style.display = 'block';
+    });
+
+    createSaveBtn.addEventListener('click', () => {
+      const name = newTestName.value.trim();
+      if (!name) {
+        alert('Please enter a test name');
+        return;
+      }
+
+      const newTest = {
+        id: generateId(),
+        name: name,
+        createdAt: new Date().toISOString(),
+        data: []
+      };
+      appData.tests.push(newTest);
+      saveData();
+
+      createTestForm.style.display = 'none';
+      createTestBtn.style.display = 'block';
+      openTest(newTest.id);
+    });
+
+    newTestName.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        createSaveBtn.click();
+      } else if (e.key === 'Escape') {
+        createCancelBtn.click();
+      }
+    });
+
+    // Back to list
+    backToListLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showTestList();
+    });
+
+    // ========== TEST DETAIL VIEW ==========
 
     // Upload handling
     fileBtn.addEventListener('click', () => fileInput.click());
@@ -866,7 +1105,11 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
         timestamp: new Date().toISOString()
       };
       testData.push(entry);
-      localStorage.setItem('ovulationTests', JSON.stringify(testData));
+      const test = getCurrentTest();
+      if (test) {
+        test.data = testData;
+        saveData();
+      }
       showGraphView();
     });
 
@@ -916,7 +1159,11 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
         manual: true
       };
       testData.push(entry);
-      localStorage.setItem('ovulationTests', JSON.stringify(testData));
+      const test = getCurrentTest();
+      if (test) {
+        test.data = testData;
+        saveData();
+      }
 
       manualEntry.style.display = 'none';
       newTestBtn.style.display = 'block';
@@ -1010,7 +1257,11 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
 
       testData[editingIndex].score = score;
       testData[editingIndex].timestamp = new Date(dateVal).toISOString();
-      localStorage.setItem('ovulationTests', JSON.stringify(testData));
+      const test = getCurrentTest();
+      if (test) {
+        test.data = testData;
+        saveData();
+      }
 
       editEntry.style.display = 'none';
       newTestBtn.style.display = 'block';
@@ -1031,7 +1282,11 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
     editDeleteBtn.addEventListener('click', () => {
       if (confirm('Delete this test result?')) {
         testData.splice(editingIndex, 1);
-        localStorage.setItem('ovulationTests', JSON.stringify(testData));
+        const test = getCurrentTest();
+        if (test) {
+          test.data = testData;
+          saveData();
+        }
 
         editEntry.style.display = 'none';
         newTestBtn.style.display = 'block';
