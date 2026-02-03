@@ -592,7 +592,7 @@
 Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control line &nbsp;
 <span style="color:#f472b6">Pink</span> → Test line &nbsp;
 <span style="color:#60a5fa">Blue</span> → Base/background
-</p> <div class="results" id="results"> <div style="text-align:center;color:#888;">Test / Control Ratio</div> <div class="score" id="scoreValue">0.00</div> <div class="score-bar"> <div class="score-indicator" id="scoreIndicator"></div> </div> <div class="debug" id="debug"></div> </div> <div class="graph-container" id="graphContainer"> <div class="graph-header"> <button type="button" class="nav-btn" id="prevBtn">◀ 15 days</button> <span id="dateRange"></span> <button type="button" class="nav-btn" id="nextBtn">15 days ▶</button> </div> <canvas id="graphCanvas"></canvas> </div> <button class="upload-btn" id="newTestBtn" style="display:none;">+ New Test</button> <button class="upload-btn secondary" id="manualEntryBtn" style="display:none;">Manual Entry</button> <div class="manual-entry" id="manualEntry"> <div class="manual-entry-row"> <label for="manualScore">Score (0–1):</label> <input type="number" id="manualScore" min="0" max="1" step="0.01" value="0.5"> </div> <div class="manual-entry-row"> <label for="manualDate">Date & Time:</label> <input type="datetime-local" id="manualDate"> </div> <div class="manual-entry-buttons"> <button type="button" class="action-btn cancel" id="manualCancelBtn">Cancel</button> <button type="button" class="action-btn save" id="manualSaveBtn">Save</button> </div> </div> <div class="manual-entry" id="editEntry"> <div class="edit-title">Edit Test Result</div> <div class="manual-entry-row"> <label for="editScore">Score (0–1):</label> <input type="number" id="editScore" min="0" max="1" step="0.01" value="0.5"> </div> <div class="manual-entry-row"> <label for="editDate">Date & Time:</label> <input type="datetime-local" id="editDate"> </div> <div class="manual-entry-buttons"> <button type="button" class="action-btn delete" id="editDeleteBtn">Delete</button> <button type="button" class="action-btn cancel" id="editCancelBtn">Cancel</button> <button type="button" class="action-btn save" id="editSaveBtn">Save</button> </div> </div> <div class="action-buttons" id="actionButtons"> <button id="cancelBtn" class="action-btn cancel">Cancel</button> <button id="saveBtn" class="action-btn save">Save</button> </div> </div><!-- /testDetailView --> </div> <script>
+</p> <div class="results" id="results"> <div style="text-align:center;color:#888;">Test / Control Ratio</div> <div class="score" id="scoreValue">0.00</div> <div class="score-bar"> <div class="score-indicator" id="scoreIndicator"></div> </div> <div class="debug" id="debug"></div> </div> <div class="graph-container" id="graphContainer"> <div class="graph-header"> <button type="button" class="nav-btn" id="prevBtn">◀ 15 days</button> <span id="dateRange"></span> <button type="button" class="nav-btn" id="nextBtn">15 days ▶</button> </div> <canvas id="graphCanvas"></canvas> </div> <button class="upload-btn" id="newTestBtn" style="display:none;">+ New Test</button> <button class="upload-btn secondary" id="manualEntryBtn" style="display:none;">Manual Entry</button> <div class="manual-entry" id="manualEntry"> <div class="manual-entry-row"> <label for="manualScore">Score:</label> <input type="number" id="manualScore" min="0" step="0.01" value="0.5"> </div> <div class="manual-entry-row"> <label for="manualDate">Date & Time:</label> <input type="datetime-local" id="manualDate"> </div> <div class="manual-entry-buttons"> <button type="button" class="action-btn cancel" id="manualCancelBtn">Cancel</button> <button type="button" class="action-btn save" id="manualSaveBtn">Save</button> </div> </div> <div class="manual-entry" id="editEntry"> <div class="edit-title">Edit Test Result</div> <div class="manual-entry-row"> <label for="editScore">Score:</label> <input type="number" id="editScore" min="0" step="0.01" value="0.5"> </div> <div class="manual-entry-row"> <label for="editDate">Date & Time:</label> <input type="datetime-local" id="editDate"> </div> <div class="manual-entry-buttons"> <button type="button" class="action-btn delete" id="editDeleteBtn">Delete</button> <button type="button" class="action-btn cancel" id="editCancelBtn">Cancel</button> <button type="button" class="action-btn save" id="editSaveBtn">Save</button> </div> </div> <div class="action-buttons" id="actionButtons"> <button id="cancelBtn" class="action-btn cancel">Cancel</button> <button id="saveBtn" class="action-btn save">Save</button> </div> </div><!-- /testDetailView --> </div> <script>
     // DOM elements - List view
     const testListView = document.getElementById('testListView');
     const testList = document.getElementById('testList');
@@ -1068,10 +1068,10 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
       const controlIntensity = getIntensity(controlColor, baseColor);
       const testIntensity = getIntensity(testColor, baseColor);
 
-      // Ratio: test / control, clamped to 0-1
+      // Ratio: test / control
       let ratio = 0;
       if (controlIntensity > 5) { // Minimum threshold to avoid division issues
-        ratio = Math.min(1, Math.max(0, testIntensity / controlIntensity));
+        ratio = testIntensity / controlIntensity;
       }
 
       // Update UI
@@ -1142,8 +1142,8 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
     // Manual save
     manualSaveBtn.addEventListener('click', () => {
       const score = parseFloat(manualScore.value);
-      if (isNaN(score) || score < 0 || score > 1) {
-        alert('Score must be between 0 and 1');
+      if (isNaN(score) || score <= 0) {
+        alert('Score must be greater than 0');
         return;
       }
 
@@ -1199,6 +1199,14 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
       const endOfEndDate = new Date(endDate);
       endOfEndDate.setHours(23, 59, 59, 999);
 
+      // Calculate yMax (same as drawGraph)
+      const rangeData = testData.filter(entry => {
+        const d = new Date(entry.timestamp);
+        return d >= startDate && d <= endOfEndDate;
+      });
+      const maxScore = rangeData.length > 0 ? Math.max(...rangeData.map(e => e.score)) : 0;
+      const yMax = Math.max(1, maxScore);
+
       // Find clicked point
       const clickRadius = 15;
       let clickedIndex = -1;
@@ -1210,7 +1218,7 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
 
         const daysDiff = (d - startDate) / (1000 * 60 * 60 * 24);
         const px = graphPadding.left + (daysDiff / 29) * graphW;
-        const py = graphPadding.top + graphH - entry.score * graphH;
+        const py = graphPadding.top + graphH - (entry.score / yMax) * graphH;
 
         const dist = Math.sqrt((clickX - px) ** 2 + (clickY - py) ** 2);
         if (dist < clickRadius) {
@@ -1244,8 +1252,8 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
     // Edit save
     editSaveBtn.addEventListener('click', () => {
       const score = parseFloat(editScore.value);
-      if (isNaN(score) || score < 0 || score > 1) {
-        alert('Score must be between 0 and 1');
+      if (isNaN(score) || score <= 0) {
+        alert('Score must be greater than 0');
         return;
       }
 
@@ -1361,6 +1369,19 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
       // Disable next button if at today
       nextBtn.disabled = graphOffset === 0;
 
+      // Filter data to this range (include all of endDate day)
+      const endOfEndDate = new Date(endDate);
+      endOfEndDate.setHours(23, 59, 59, 999);
+
+      const rangeData = testData.filter(entry => {
+        const d = new Date(entry.timestamp);
+        return d >= startDate && d <= endOfEndDate;
+      });
+
+      // Calculate Y-axis max: at least 1, or higher if data exceeds 1
+      const maxScore = rangeData.length > 0 ? Math.max(...rangeData.map(e => e.score)) : 0;
+      const yMax = Math.max(1, maxScore);
+
       // Draw vertical grid lines for each day
       graphCtx.font = '10px -apple-system, sans-serif';
       graphCtx.textAlign = 'center';
@@ -1383,7 +1404,7 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
         graphCtx.fillText(d.getDate(), x, h - 8);
       }
 
-      // Horizontal grid (0, 0.25, 0.5, 0.75, 1.0)
+      // Horizontal grid (0 to yMax in 4 steps)
       for (let i = 0; i <= 4; i++) {
         const y = padding.top + graphH - (i / 4) * graphH;
         graphCtx.strokeStyle = '#3a3a5a';
@@ -1397,17 +1418,8 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
         graphCtx.fillStyle = '#888';
         graphCtx.font = '11px -apple-system, sans-serif';
         graphCtx.textAlign = 'right';
-        graphCtx.fillText((i * 0.25).toFixed(2), padding.left - 5, y + 4);
+        graphCtx.fillText((i * yMax / 4).toFixed(2), padding.left - 5, y + 4);
       }
-
-      // Filter data to this range (include all of endDate day)
-      const endOfEndDate = new Date(endDate);
-      endOfEndDate.setHours(23, 59, 59, 999);
-
-      const rangeData = testData.filter(entry => {
-        const d = new Date(entry.timestamp);
-        return d >= startDate && d <= endOfEndDate;
-      });
 
       // Draw points and lines
       if (rangeData.length > 0) {
@@ -1421,7 +1433,7 @@ Drag markers to align:<br> <span style="color:#4ade80">Green</span> → Control 
         };
 
         const getY = (score) => {
-          return padding.top + graphH - score * graphH;
+          return padding.top + graphH - (score / yMax) * graphH;
         };
 
         // Draw line
