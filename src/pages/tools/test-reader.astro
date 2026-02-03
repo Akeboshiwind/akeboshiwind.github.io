@@ -697,8 +697,8 @@
 
     <div class="manual-entry" id="manualEntry">
       <div class="manual-entry-row">
-        <label for="manualScore">Score (0–1):</label>
-        <input type="number" id="manualScore" min="0" max="1" step="0.01" value="0.5">
+        <label for="manualScore">Score:</label>
+        <input type="number" id="manualScore" min="0" step="0.01" value="0.5">
       </div>
       <div class="manual-entry-row">
         <label for="manualDate">Date & Time:</label>
@@ -713,8 +713,8 @@
     <div class="manual-entry" id="editEntry">
       <div class="edit-title">Edit Test Result</div>
       <div class="manual-entry-row">
-        <label for="editScore">Score (0–1):</label>
-        <input type="number" id="editScore" min="0" max="1" step="0.01" value="0.5">
+        <label for="editScore">Score:</label>
+        <input type="number" id="editScore" min="0" step="0.01" value="0.5">
       </div>
       <div class="manual-entry-row">
         <label for="editDate">Date & Time:</label>
@@ -1210,10 +1210,10 @@
       const controlIntensity = getIntensity(controlColor, baseColor);
       const testIntensity = getIntensity(testColor, baseColor);
 
-      // Ratio: test / control, clamped to 0-1
+      // Ratio: test / control
       let ratio = 0;
       if (controlIntensity > 5) { // Minimum threshold to avoid division issues
-        ratio = Math.min(1, Math.max(0, testIntensity / controlIntensity));
+        ratio = testIntensity / controlIntensity;
       }
 
       // Update UI
@@ -1284,8 +1284,8 @@
     // Manual save
     manualSaveBtn.addEventListener('click', () => {
       const score = parseFloat(manualScore.value);
-      if (isNaN(score) || score < 0 || score > 1) {
-        alert('Score must be between 0 and 1');
+      if (isNaN(score) || score <= 0) {
+        alert('Score must be greater than 0');
         return;
       }
 
@@ -1341,6 +1341,14 @@
       const endOfEndDate = new Date(endDate);
       endOfEndDate.setHours(23, 59, 59, 999);
 
+      // Calculate yMax (same as drawGraph)
+      const rangeData = testData.filter(entry => {
+        const d = new Date(entry.timestamp);
+        return d >= startDate && d <= endOfEndDate;
+      });
+      const maxScore = rangeData.length > 0 ? Math.max(...rangeData.map(e => e.score)) : 0;
+      const yMax = Math.max(1, maxScore);
+
       // Find clicked point
       const clickRadius = 15;
       let clickedIndex = -1;
@@ -1352,7 +1360,7 @@
 
         const daysDiff = (d - startDate) / (1000 * 60 * 60 * 24);
         const px = graphPadding.left + (daysDiff / 29) * graphW;
-        const py = graphPadding.top + graphH - entry.score * graphH;
+        const py = graphPadding.top + graphH - (entry.score / yMax) * graphH;
 
         const dist = Math.sqrt((clickX - px) ** 2 + (clickY - py) ** 2);
         if (dist < clickRadius) {
@@ -1386,8 +1394,8 @@
     // Edit save
     editSaveBtn.addEventListener('click', () => {
       const score = parseFloat(editScore.value);
-      if (isNaN(score) || score < 0 || score > 1) {
-        alert('Score must be between 0 and 1');
+      if (isNaN(score) || score <= 0) {
+        alert('Score must be greater than 0');
         return;
       }
 
@@ -1503,6 +1511,19 @@
       // Disable next button if at today
       nextBtn.disabled = graphOffset === 0;
 
+      // Filter data to this range (include all of endDate day)
+      const endOfEndDate = new Date(endDate);
+      endOfEndDate.setHours(23, 59, 59, 999);
+
+      const rangeData = testData.filter(entry => {
+        const d = new Date(entry.timestamp);
+        return d >= startDate && d <= endOfEndDate;
+      });
+
+      // Calculate Y-axis max: at least 1, or higher if data exceeds 1
+      const maxScore = rangeData.length > 0 ? Math.max(...rangeData.map(e => e.score)) : 0;
+      const yMax = Math.max(1, maxScore);
+
       // Draw vertical grid lines for each day
       graphCtx.font = '10px -apple-system, sans-serif';
       graphCtx.textAlign = 'center';
@@ -1525,7 +1546,7 @@
         graphCtx.fillText(d.getDate(), x, h - 8);
       }
 
-      // Horizontal grid (0, 0.25, 0.5, 0.75, 1.0)
+      // Horizontal grid (0 to yMax in 4 steps)
       for (let i = 0; i <= 4; i++) {
         const y = padding.top + graphH - (i / 4) * graphH;
         graphCtx.strokeStyle = '#3a3a5a';
@@ -1539,17 +1560,8 @@
         graphCtx.fillStyle = '#888';
         graphCtx.font = '11px -apple-system, sans-serif';
         graphCtx.textAlign = 'right';
-        graphCtx.fillText((i * 0.25).toFixed(2), padding.left - 5, y + 4);
+        graphCtx.fillText((i * yMax / 4).toFixed(2), padding.left - 5, y + 4);
       }
-
-      // Filter data to this range (include all of endDate day)
-      const endOfEndDate = new Date(endDate);
-      endOfEndDate.setHours(23, 59, 59, 999);
-
-      const rangeData = testData.filter(entry => {
-        const d = new Date(entry.timestamp);
-        return d >= startDate && d <= endOfEndDate;
-      });
 
       // Draw points and lines
       if (rangeData.length > 0) {
@@ -1563,7 +1575,7 @@
         };
 
         const getY = (score) => {
-          return padding.top + graphH - score * graphH;
+          return padding.top + graphH - (score / yMax) * graphH;
         };
 
         // Draw line
