@@ -1,0 +1,5 @@
+{
+  "title": "Text to Speech",
+  "date": "2026-02-03",
+  "description": "Convert text to natural speech using OpenAI's TTS API with chunked generation and voice customization."
+}
