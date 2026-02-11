@@ -654,10 +654,10 @@
             <div class="modal-body">
                 <div class="section-title">Settings</div>
                 <div class="setting-row">
-                    <label for="newCardsInput">New cards per day</label>
-                    <input type="number" id="newCardsInput" min="1" max="50" value="10">
+                    <label for="maxLearningInput">Max learning cards</label>
+                    <input type="number" id="maxLearningInput" min="1" max="50" value="10">
                 </div>
-                <div class="setting-info" id="newCardsInfo">0 / 10 new cards today</div>
+                <div class="setting-info" id="learningCardsInfo">0 / 10 learning cards</div>
 
                 <div class="section-title" style="margin-top: 24px;">Progress</div>
                 <div class="stats-grid">
@@ -759,17 +759,29 @@
 
         function getDefaultSettings() {
             return {
-                newCardsPerDay: 10,
-                lastNewCardsDate: null,
-                newCardsToday: 0
+                maxLearningCards: 10
             };
+        }
+
+        function migrateSettings(settings) {
+            // Migrate from old daily-counter format
+            if ('newCardsPerDay' in settings) {
+                settings.maxLearningCards = settings.newCardsPerDay;
+                delete settings.newCardsPerDay;
+                delete settings.lastNewCardsDate;
+                delete settings.newCardsToday;
+            }
+            return settings;
         }
 
         function loadSettings() {
             try {
                 const saved = localStorage.getItem(SETTINGS_KEY);
                 if (saved) {
-                    return { ...getDefaultSettings(), ...JSON.parse(saved) };
+                    let settings = { ...getDefaultSettings(), ...JSON.parse(saved) };
+                    settings = migrateSettings(settings);
+                    saveSettings(settings);
+                    return settings;
                 }
             } catch (e) {
                 console.error('Failed to load settings:', e);
@@ -888,24 +900,19 @@
 
         function buildQueue(cards, settings) {
             const now = Date.now();
-            const today = new Date().toDateString();
-
-            // Reset daily counter if it's a new day
-            if (settings.lastNewCardsDate !== today) {
-                settings.lastNewCardsDate = today;
-                settings.newCardsToday = 0;
-                saveSettings(settings);
-            }
 
             // Collect due cards
             const dueCards = cards.filter(c => c.due <= now && c.state !== 'new');
 
-            // Collect new cards if under daily limit
+            // Count active learning cards
+            const learningCount = cards.filter(c => c.state === 'learning').length;
+
+            // Introduce new cards only if under the learning card threshold
             let newCards = [];
-            const remainingNew = settings.newCardsPerDay - settings.newCardsToday;
-            if (remainingNew > 0) {
+            const remainingSlots = settings.maxLearningCards - learningCount;
+            if (remainingSlots > 0) {
                 const allNew = cards.filter(c => c.state === 'new');
-                newCards = shuffle(allNew).slice(0, remainingNew);
+                newCards = shuffle(allNew).slice(0, remainingSlots);
             }
 
             // Combine and shuffle
@@ -1012,8 +1019,9 @@
             }
 
             if (!currentCard) {
-                const newCards = cards.filter(c => c.state === 'new');
-                const hasMoreNew = newCards.length > 0 && settings.newCardsToday >= settings.newCardsPerDay;
+                const unusedNew = cards.filter(c => c.state === 'new');
+                const learningCount = cards.filter(c => c.state === 'learning').length;
+                const atLearningLimit = unusedNew.length > 0 && learningCount >= settings.maxLearningCards;
 
                 const upcoming = getUpcomingCards(cards);
                 const upcomingHtml = upcoming.map((card, i) => {
@@ -1026,10 +1034,10 @@
 
                 cardArea.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-state-emoji">${hasMoreNew ? '☀️' : '🎉'}</div>
-                        <div class="empty-state-title">${hasMoreNew ? 'Done for today!' : 'All caught up!'}</div>
-                        <div class="empty-state-text">${hasMoreNew
-                            ? `You've learned ${settings.newCardsToday} new cards today. Come back tomorrow!`
+                        <div class="empty-state-emoji">${atLearningLimit ? '☀️' : '🎉'}</div>
+                        <div class="empty-state-title">${atLearningLimit ? 'Focus on learning!' : 'All caught up!'}</div>
+                        <div class="empty-state-text">${atLearningLimit
+                            ? `You have ${learningCount} cards in learning. Review them before adding more!`
                             : 'No more cards to review right now.'}</div>
                         <div class="upcoming-list">${upcomingHtml}</div>
                     </div>
@@ -1081,12 +1089,6 @@
 
             const idx = cards.findIndex(c => c.char === currentCard.char);
 
-            // Track if this was a new card
-            if (cards[idx].state === 'new') {
-                settings.newCardsToday++;
-                saveSettings(settings);
-            }
-
             cards[idx] = scheduleCard(cards[idx], rating);
             saveProgress(cards);
             updateStats();
@@ -1107,19 +1109,21 @@
 
         settingsBtn.addEventListener('click', () => {
             updateLetterGrid();
-            document.getElementById('newCardsInput').value = settings.newCardsPerDay;
-            document.getElementById('newCardsInfo').textContent =
-                `${settings.newCardsToday} / ${settings.newCardsPerDay} new cards today`;
+            const learningCount = cards.filter(c => c.state === 'learning').length;
+            document.getElementById('maxLearningInput').value = settings.maxLearningCards;
+            document.getElementById('learningCardsInfo').textContent =
+                `${learningCount} / ${settings.maxLearningCards} learning cards`;
             modalOverlay.classList.add('visible');
         });
 
-        document.getElementById('newCardsInput').addEventListener('change', (e) => {
-            const val = parseInt(e.target.value) || 20;
-            settings.newCardsPerDay = Math.min(50, Math.max(1, val));
-            e.target.value = settings.newCardsPerDay;
+        document.getElementById('maxLearningInput').addEventListener('change', (e) => {
+            const val = parseInt(e.target.value) || 10;
+            settings.maxLearningCards = Math.min(50, Math.max(1, val));
+            e.target.value = settings.maxLearningCards;
             saveSettings(settings);
-            document.getElementById('newCardsInfo').textContent =
-                `${settings.newCardsToday} / ${settings.newCardsPerDay} new cards today`;
+            const learningCount = cards.filter(c => c.state === 'learning').length;
+            document.getElementById('learningCardsInfo').textContent =
+                `${learningCount} / ${settings.maxLearningCards} learning cards`;
         });
 
         modalClose.addEventListener('click', () => {
