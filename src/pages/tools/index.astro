@@ -2,6 +2,8 @@
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
+const base = import.meta.env.BASE_URL;
+
 const tools = await getCollection('tools');
 const sortedTools = tools.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 ---
@@ -16,7 +18,7 @@ const sortedTools = tools.sort((a, b) => b.data.date.getTime() - a.data.date.get
         <time datetime={tool.data.date.toISOString().split('T')[0]}>
           {tool.data.date.toISOString().split('T')[0]}
         </time>
-        <a href={tool.data.url || `/tools/${tool.id.replace('.json', '')}/`}>{tool.data.title}</a>
+        <a href={tool.data.url || `${base}tools/${tool.id.replace('.json', '')}/`}>{tool.data.title}</a>
       </li>
     ))}
   </ul>

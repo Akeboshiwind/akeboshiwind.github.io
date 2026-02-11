@@ -6,6 +6,8 @@ const posts = await getCollection('blog', ({ data }) => {
   return import.meta.env.PROD ? !data.draft : true;
 });
 
+const base = import.meta.env.BASE_URL;
+
 const sortedPosts = posts.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 ---
 
@@ -18,7 +20,7 @@ const sortedPosts = posts.sort((a, b) => b.data.date.getTime() - a.data.date.get
         <time datetime={post.data.date.toISOString().split('T')[0]}>
           {post.data.date.toISOString().split('T')[0]}
         </time>
-        <a href={`/blog/${post.slug}/`}>
+        <a href={`${base}blog/${post.slug}/`}>
           {post.data.title}
           {post.data.draft && <span class="draft-marker">[DRAFT]</span>}
         </a>
