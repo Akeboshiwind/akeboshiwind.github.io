@@ -94,7 +94,7 @@ const Component = () => {
   const [serviceCharge, setServiceCharge] = useState(loadFromLocalStorage('serviceCharge', 0));
   const [serviceChargeMode, setServiceChargeMode] = useState(loadFromLocalStorage('serviceChargeMode', '%'));
   const [expandedSummary, setExpandedSummary] = useState({});
-  const [showTaxSettings, setShowTaxSettings] = useState(true);
+  const [showTaxSettings, setShowTaxSettings] = useState(false);
 
   const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price, quantity, and an English translation of the item name. Also identify the currency used in the receipt (£, $, €, etc.). If the receipt shows a tax/VAT amount or a service charge, extract those too.
 
