@@ -106,3 +106,4 @@ jobs:
         with:
           source-dir: ./dist/
           umbrella-dir: pr-preview
+          pages-base-url: https://blog.bythe.rocks
