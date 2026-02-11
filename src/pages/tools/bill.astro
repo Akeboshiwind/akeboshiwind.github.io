@@ -94,7 +94,7 @@ const Component = () => {
   const [serviceCharge, setServiceCharge] = useState(loadFromLocalStorage('serviceCharge', 0));
   const [serviceChargeMode, setServiceChargeMode] = useState(loadFromLocalStorage('serviceChargeMode', '%'));
   const [expandedSummary, setExpandedSummary] = useState({});
-  const [showTaxSettings, setShowTaxSettings] = useState(loadFromLocalStorage('showTaxSettings', true));
+  const [showTaxSettings, setShowTaxSettings] = useState(true);
 
   const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price, quantity, and an English translation of the item name. Also identify the currency used in the receipt (£, $, €, etc.). If the receipt shows a tax/VAT amount or a service charge, extract those too.
 
@@ -137,7 +137,7 @@ Here's an example of the expected format with sample data:
   useEffect(() => { localStorage.setItem('billSplitter_tax', JSON.stringify(tax)); }, [tax]);
   useEffect(() => { localStorage.setItem('billSplitter_serviceCharge', JSON.stringify(serviceCharge)); }, [serviceCharge]);
   useEffect(() => { localStorage.setItem('billSplitter_serviceChargeMode', JSON.stringify(serviceChargeMode)); }, [serviceChargeMode]);
-  useEffect(() => { localStorage.setItem('billSplitter_showTaxSettings', JSON.stringify(showTaxSettings)); }, [showTaxSettings]);
+
 
   const expandedItems = items.flatMap(item =>
     Array(item.quantity).fill().map((_, i) => ({
@@ -253,12 +253,12 @@ Here's an example of the expected format with sample data:
   };
 
   const resetData = () => {
-    ['people','personShares','itemAssignments','items','expandedRows','currency','homeCurrency','exchangeRate','showCurrencySettings','showPeopleSettings','tax','serviceCharge','serviceChargeMode','showTaxSettings']
+    ['people','personShares','itemAssignments','items','expandedRows','currency','homeCurrency','exchangeRate','showCurrencySettings','showPeopleSettings','tax','serviceCharge','serviceChargeMode']
       .forEach(k => localStorage.removeItem(`billSplitter_${k}`));
     setPeople(defaultPeople); setPersonShares(defaultShares); setItemAssignments(defaultAssignments); setItems(defaultItems);
     setExpandedRows({}); setProcessingError(null); setCurrency('$'); setHomeCurrency('$');
     setExchangeRate(1); setShowCurrencySettings(false); setShowPeopleSettings(false);
-    setTax(0); setServiceCharge(0); setServiceChargeMode('%'); setShowTaxSettings(true); setExpandedSummary({});
+    setTax(0); setServiceCharge(0); setServiceChargeMode('%'); setExpandedSummary({});
   };
 
   return (
