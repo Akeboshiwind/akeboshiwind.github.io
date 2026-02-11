@@ -376,8 +376,8 @@ Here's an example of the expected format with sample data:
           </div>
           <div className="p-2 bg-white dark:bg-gray-800 rounded">
             <h3 className="font-semibold text-sm mb-2">Bill Total</h3>
-            <div className="flex justify-between py-1 border-b dark:border-gray-700"><span className="font-bold">Total:</span><span className="font-bold">{currency}{billTotal}</span></div>
-            <div className="flex justify-between py-1"><span className={parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600' : 'text-green-600'}>Allocated:</span><span className={parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600' : 'text-green-600'}>{currency}{allocatedTotal}</span></div>
+            <div className="flex justify-between py-1 border-b dark:border-gray-700"><span className="font-bold">Total:</span><span className="font-bold">{currency}{billTotal}{currency !== homeCurrency && exchangeRate !== 1 && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(parseFloat(billTotal)).toFixed(2)})</span>}</span></div>
+            <div className="flex justify-between py-1"><span className={parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600' : 'text-green-600'}>Allocated:</span><span className={parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600' : 'text-green-600'}>{currency}{allocatedTotal}{currency !== homeCurrency && exchangeRate !== 1 && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(parseFloat(allocatedTotal)).toFixed(2)})</span>}</span></div>
           </div>
         </div>
       </div>
