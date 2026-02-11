@@ -59,19 +59,27 @@ const Component = () => {
   const [exchangeRate, setExchangeRate] = useState(loadFromLocalStorage('exchangeRate', 1));
   const [showCurrencySettings, setShowCurrencySettings] = useState(loadFromLocalStorage('showCurrencySettings', false));
   const [showPeopleSettings, setShowPeopleSettings] = useState(loadFromLocalStorage('showPeopleSettings', false));
+  const [tax, setTax] = useState(loadFromLocalStorage('tax', 0));
+  const [serviceCharge, setServiceCharge] = useState(loadFromLocalStorage('serviceCharge', 0));
+  const [serviceChargeMode, setServiceChargeMode] = useState(loadFromLocalStorage('serviceChargeMode', '%'));
+  const [expandedSummary, setExpandedSummary] = useState({});
 
-  const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price, quantity, and an English translation of the item name. Also identify the currency used in the receipt (£, $, €, etc.).
+  const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price, quantity, and an English translation of the item name. Also identify the currency used in the receipt (£, $, €, etc.). If the receipt shows a tax/VAT amount or a service charge, extract those too.
 
-Format the output as a JSON object with two fields:
+Format the output as a JSON object with these fields:
 1. "items": An array of items, each with name (as it appears on the receipt), price (as a unit price, not the line total — e.g. if the receipt shows 2 x 2.80€, the price is 2.80, not 5.60), quantity (as a number), and translation (English translation of the item name)
 2. "currency": The currency symbol used in the receipt (£, $, €, etc.)
+3. "tax": (optional) The total tax/VAT amount as a number, if shown on the receipt
+4. "serviceCharge": (optional) The service charge as a fixed amount, if shown on the receipt
+5. "serviceChargePercent": (optional) The service charge as a percentage, if shown on the receipt (prefer this over serviceCharge if both are available)
 
 If this is not a receipt, simply respond with: "Not a receipt"
 
 Here's an example of the expected format with sample data:
 {
   "items": ${JSON.stringify(defaultItems.map(({id, ...item}) => item))},
-  "currency": "€"
+  "currency": "€",
+  "tax": 3.54
 }`;
 
   useEffect(() => { localStorage.setItem('billSplitter_people', JSON.stringify(people)); }, [people]);
@@ -94,6 +102,9 @@ Here's an example of the expected format with sample data:
   useEffect(() => { localStorage.setItem('billSplitter_exchangeRate', exchangeRate.toString()); }, [exchangeRate]);
   useEffect(() => { localStorage.setItem('billSplitter_showCurrencySettings', JSON.stringify(showCurrencySettings)); }, [showCurrencySettings]);
   useEffect(() => { localStorage.setItem('billSplitter_showPeopleSettings', JSON.stringify(showPeopleSettings)); }, [showPeopleSettings]);
+  useEffect(() => { localStorage.setItem('billSplitter_tax', JSON.stringify(tax)); }, [tax]);
+  useEffect(() => { localStorage.setItem('billSplitter_serviceCharge', JSON.stringify(serviceCharge)); }, [serviceCharge]);
+  useEffect(() => { localStorage.setItem('billSplitter_serviceChargeMode', JSON.stringify(serviceChargeMode)); }, [serviceChargeMode]);
 
   const expandedItems = items.flatMap(item =>
     Array(item.quantity).fill().map((_, i) => ({
@@ -168,21 +179,34 @@ Here's an example of the expected format with sample data:
     return amount * exchangeRate;
   };
 
+  const billSubtotal = expandedItems.reduce((sum, item) => sum + item.price, 0);
+  const serviceChargeAmount = serviceChargeMode === '%'
+    ? billSubtotal * (serviceCharge / 100)
+    : serviceCharge;
+
   const calculatePersonTotal = (person) => {
-    let total = 0;
+    let itemTotal = 0;
     expandedItems.forEach(item => {
       if (personShares[item.uniqueId] && personShares[item.uniqueId][person]) {
-        total += (item.price * (personShares[item.uniqueId][person] / 100));
+        itemTotal += (item.price * (personShares[item.uniqueId][person] / 100));
       }
     });
-    return total.toFixed(2);
+    const proportion = billSubtotal > 0 ? itemTotal / billSubtotal : 0;
+    const personTax = tax * proportion;
+    const personService = serviceChargeAmount * proportion;
+    return {
+      items: itemTotal,
+      tax: personTax,
+      service: personService,
+      total: itemTotal + personTax + personService,
+    };
   };
 
   const updateItemName = (id, newName) => setItems(prev => prev.map(item => item.id === id ? { ...item, name: newName } : item));
   const updateItemPrice = (id, newPrice) => setItems(prev => prev.map(item => item.id === id ? { ...item, price: parseFloat(newPrice) || 0 } : item));
 
-  const billTotal = expandedItems.reduce((sum, item) => sum + item.price, 0).toFixed(2);
-  const allocatedTotal = people.reduce((sum, person) => sum + parseFloat(calculatePersonTotal(person)), 0).toFixed(2);
+  const billTotal = (billSubtotal + tax + serviceChargeAmount).toFixed(2);
+  const allocatedTotal = people.reduce((sum, person) => sum + calculatePersonTotal(person).total, 0).toFixed(2);
   const canItemBeSplit = (itemUniqueId) => (itemAssignments[itemUniqueId]?.length ?? 0) >= 2;
 
   const toggleExpandedRow = (itemUniqueId) => {
@@ -196,11 +220,12 @@ Here's an example of the expected format with sample data:
   };
 
   const resetData = () => {
-    ['people','personShares','itemAssignments','items','expandedRows','currency','homeCurrency','exchangeRate','showCurrencySettings','showPeopleSettings']
+    ['people','personShares','itemAssignments','items','expandedRows','currency','homeCurrency','exchangeRate','showCurrencySettings','showPeopleSettings','tax','serviceCharge','serviceChargeMode']
       .forEach(k => localStorage.removeItem(`billSplitter_${k}`));
     setPeople(defaultPeople); setPersonShares(defaultShares); setItemAssignments(defaultAssignments); setItems(defaultItems);
     setExpandedRows({}); setProcessingError(null); setCurrency('$'); setHomeCurrency('$');
     setExchangeRate(1); setShowCurrencySettings(false); setShowPeopleSettings(false);
+    setTax(0); setServiceCharge(0); setServiceChargeMode('%'); setExpandedSummary({});
   };
 
   return (
@@ -245,6 +270,10 @@ Here's an example of the expected format with sample data:
               if (data.items && Array.isArray(data.items)) {
                 setItems(data.items.map((item, i) => ({ id: i + 1, name: item.name || 'Unnamed', price: parseFloat(item.price) || 0, quantity: parseInt(item.quantity) || 1, translation: item.translation || '' })));
                 if (data.currency) setCurrency(data.currency);
+                setTax(parseFloat(data.tax) || 0);
+                if (data.serviceChargePercent != null) { setServiceCharge(parseFloat(data.serviceChargePercent) || 0); setServiceChargeMode('%'); }
+                else if (data.serviceCharge != null) { setServiceCharge(parseFloat(data.serviceCharge) || 0); setServiceChargeMode('fixed'); }
+                else { setServiceCharge(0); }
                 setPersonShares({}); setItemAssignments({}); setExpandedRows({}); setProcessingError(null);
               } else setProcessingError('Invalid format');
             } catch { setProcessingError('Invalid JSON'); }
@@ -335,6 +364,27 @@ Here's an example of the expected format with sample data:
       </div>
 
       <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-2">Tax & Service Charge</h2>
+        <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium mb-1">Tax ({currency})</label>
+            <input type="number" min="0" step="0.01" value={tax} onChange={(e) => setTax(parseFloat(e.target.value) || 0)} className="w-32 p-2 border dark:border-gray-600 rounded dark:bg-gray-700" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Service Charge</label>
+            <div className="flex items-center gap-2">
+              <input type="number" min="0" step="0.01" value={serviceCharge} onChange={(e) => setServiceCharge(parseFloat(e.target.value) || 0)} className="w-32 p-2 border dark:border-gray-600 rounded dark:bg-gray-700" />
+              <select value={serviceChargeMode} onChange={(e) => setServiceChargeMode(e.target.value)} className="p-2 border dark:border-gray-600 rounded dark:bg-gray-700">
+                <option value="%">%</option>
+                <option value="fixed">{currency}</option>
+              </select>
+            </div>
+            {serviceChargeMode === '%' && serviceCharge > 0 && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">= {currency}{serviceChargeAmount.toFixed(2)}</p>}
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-lg font-semibold">Currency Settings</h2>
           <button onClick={() => setShowCurrencySettings(!showCurrencySettings)} className="text-blue-500 hover:text-blue-700 text-sm">{showCurrencySettings ? 'Hide ▲' : 'Show ▼'}</button>
@@ -356,15 +406,34 @@ Here's an example of the expected format with sample data:
           <div className="p-2 bg-white dark:bg-gray-800 rounded">
             <h3 className="font-semibold text-sm mb-2">Per Person</h3>
             {people.map((p,i) => {
-              const amt = calculatePersonTotal(p);
-              const home = convertToHomeCurrency(parseFloat(amt)).toFixed(2);
-              return <div key={i} className="flex justify-between py-1 border-b dark:border-gray-700"><span>{p}:</span><span className="font-semibold">{currency}{amt}{currency !== homeCurrency && exchangeRate !== 1 && <span className="text-gray-500 ml-1 text-sm">({homeCurrency}{home})</span>}</span></div>;
+              const breakdown = calculatePersonTotal(p);
+              const totalStr = breakdown.total.toFixed(2);
+              const homeTotal = convertToHomeCurrency(breakdown.total).toFixed(2);
+              const hasExtras = tax > 0 || serviceChargeAmount > 0;
+              const isExpanded = expandedSummary[p];
+              const showHome = currency !== homeCurrency && exchangeRate !== 1;
+              return <div key={i}>
+                <div className={`flex justify-between py-1 border-b dark:border-gray-700 ${hasExtras ? 'cursor-pointer' : ''}`} onClick={() => hasExtras && setExpandedSummary(prev => ({ ...prev, [p]: !prev[p] }))}>
+                  <span>{p}: {hasExtras && <span className="text-xs text-gray-400">{isExpanded ? '▾' : '▸'}</span>}</span>
+                  <span className="font-semibold">{currency}{totalStr}{showHome && <span className="text-gray-500 ml-1 text-sm">({homeCurrency}{homeTotal})</span>}</span>
+                </div>
+                {isExpanded && <div className="pl-4 py-1 text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
+                  <div className="flex justify-between"><span>Items:</span><span>{currency}{breakdown.items.toFixed(2)}{showHome && <span className="ml-1">({homeCurrency}{convertToHomeCurrency(breakdown.items).toFixed(2)})</span>}</span></div>
+                  {tax > 0 && <div className="flex justify-between"><span>Tax:</span><span>{currency}{breakdown.tax.toFixed(2)}{showHome && <span className="ml-1">({homeCurrency}{convertToHomeCurrency(breakdown.tax).toFixed(2)})</span>}</span></div>}
+                  {serviceChargeAmount > 0 && <div className="flex justify-between"><span>Service:</span><span>{currency}{breakdown.service.toFixed(2)}{showHome && <span className="ml-1">({homeCurrency}{convertToHomeCurrency(breakdown.service).toFixed(2)})</span>}</span></div>}
+                </div>}
+              </div>;
             })}
           </div>
           <div className="p-2 bg-white dark:bg-gray-800 rounded">
             <h3 className="font-semibold text-sm mb-2">Bill Total</h3>
-            <div className="flex justify-between py-1 border-b dark:border-gray-700"><span className="font-bold">Total:</span><span className="font-bold">{currency}{billTotal}{currency !== homeCurrency && exchangeRate !== 1 && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(parseFloat(billTotal)).toFixed(2)})</span>}</span></div>
-            <div className="flex justify-between py-1"><span className={parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600' : 'text-green-600'}>Allocated:</span><span className={parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600' : 'text-green-600'}>{currency}{allocatedTotal}{currency !== homeCurrency && exchangeRate !== 1 && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(parseFloat(allocatedTotal)).toFixed(2)})</span>}</span></div>
+            {(() => { const showHome = currency !== homeCurrency && exchangeRate !== 1; return <>
+              <div className="flex justify-between py-1 border-b dark:border-gray-700 text-sm"><span>Subtotal:</span><span>{currency}{billSubtotal.toFixed(2)}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(billSubtotal).toFixed(2)})</span>}</span></div>
+              {tax > 0 && <div className="flex justify-between py-1 border-b dark:border-gray-700 text-sm"><span>Tax:</span><span>{currency}{tax.toFixed(2)}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(tax).toFixed(2)})</span>}</span></div>}
+              {serviceChargeAmount > 0 && <div className="flex justify-between py-1 border-b dark:border-gray-700 text-sm"><span>Service:</span><span>{currency}{serviceChargeAmount.toFixed(2)}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(serviceChargeAmount).toFixed(2)})</span>}</span></div>}
+              <div className="flex justify-between py-1 border-b dark:border-gray-700"><span className="font-bold">Total:</span><span className="font-bold">{currency}{billTotal}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(parseFloat(billTotal)).toFixed(2)})</span>}</span></div>
+              <div className="flex justify-between py-1"><span className={parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600' : 'text-green-600'}>Allocated:</span><span className={parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600' : 'text-green-600'}>{currency}{allocatedTotal}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(parseFloat(allocatedTotal)).toFixed(2)})</span>}</span></div>
+            </>; })()}
           </div>
         </div>
       </div>
