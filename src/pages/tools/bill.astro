@@ -91,7 +91,7 @@ const Component = () => {
   const [showCurrencySettings, setShowCurrencySettings] = useState(loadFromLocalStorage('showCurrencySettings', false));
   const [showPeopleSettings, setShowPeopleSettings] = useState(loadFromLocalStorage('showPeopleSettings', false));
 
-  const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price, quantity, and an English translation of the item name. Also identify the currency used in the receipt (£, $, €, etc.).
+  const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price (as a unit price, not the line total — e.g. if the receipt shows 2 x 2.80€, the price is 2.80, not 5.60), quantity, and an English translation of the item name. Also identify the currency used in the receipt (£, $, €, etc.).
 
 Format the output as a JSON object with two fields:
 1. "items": An array of items, each with name (as it appears on the receipt), price (as a number), quantity (as a number), and translation (English translation of the item name)
