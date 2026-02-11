@@ -2,6 +2,8 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
+const base = import.meta.env.BASE_URL;
+
 const posts = await getCollection('blog', ({ data }) => {
   return import.meta.env.PROD ? !data.draft : true;
 });
@@ -29,7 +31,7 @@ const recentTools = tools
         <time datetime={post.data.date.toISOString().split('T')[0]}>
           {post.data.date.toISOString().split('T')[0]}
         </time>
-        <a href={`/blog/${post.slug}/`}>
+        <a href={`${base}blog/${post.slug}/`}>
           {post.data.title}
           {post.data.draft && <span class="draft-marker">[DRAFT]</span>}
         </a>
@@ -37,7 +39,7 @@ const recentTools = tools
     ))}
   </ul>
 
-  <p><a href="/blog/">View all posts &rarr;</a></p>
+  <p><a href={`${base}blog/`}>View all posts &rarr;</a></p>
 
   <h2>Recent Tools</h2>
   <ul class="post-list">
@@ -46,10 +48,10 @@ const recentTools = tools
         <time datetime={tool.data.date.toISOString().split('T')[0]}>
           {tool.data.date.toISOString().split('T')[0]}
         </time>
-        <a href={tool.data.url || `/tools/${tool.id.replace('.json', '')}/`}>{tool.data.title}</a>
+        <a href={tool.data.url || `${base}tools/${tool.id.replace('.json', '')}/`}>{tool.data.title}</a>
       </li>
     ))}
   </ul>
 
-  <p><a href="/tools/">View all tools &rarr;</a></p>
+  <p><a href={`${base}tools/`}>View all tools &rarr;</a></p>
 </Layout>

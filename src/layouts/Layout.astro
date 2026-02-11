@@ -44,7 +44,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   <link rel="canonical" href={canonicalURL} />
 
   <!-- RSS -->
-  <link rel="alternate" type="application/rss+xml" href="/blog/rss.xml" title={siteTitle} />
+  <link rel="alternate" type="application/rss+xml" href={`${import.meta.env.BASE_URL}blog/rss.xml`} title={siteTitle} />
 
   <!-- Open Graph -->
   <meta property="og:type" content={type} />
