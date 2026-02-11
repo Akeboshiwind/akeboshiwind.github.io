@@ -5,37 +5,51 @@ on:
     branches:
       - master
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
   workflow_dispatch:
 
 permissions:
   contents: write
+  pull-requests: write
+
+concurrency: preview-${{ github.ref }}
 
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
+        if: github.event.action != 'closed'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup Bun
+        if: github.event.action != 'closed'
         uses: oven-sh/setup-bun@v2
 
       - name: Setup Babashka
+        if: github.event.action != 'closed'
         uses: DeLaGuardo/setup-clojure@12.5
         with:
           bb: latest
 
       - name: Setup Node
+        if: github.event.action != 'closed'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Install Astro dependencies
+        if: github.event.action != 'closed'
         run: npm ci
 
       - name: Build bitemporal-playground
+        if: github.event.action != 'closed'
         run: |
           cd packages/bitemporal-playground
           bun install
@@ -44,6 +58,7 @@ jobs:
           cp -r target/public/* ../../public/tools/bitemporal/
 
       - name: Build christmas-talk
+        if: github.event.action != 'closed'
         run: |
           cd packages/christmas-talk
           bun install
@@ -52,6 +67,7 @@ jobs:
           cp -r target/public/* ../../public/talk/christmas/
 
       - name: Build chat-wrapped
+        if: github.event.action != 'closed'
         run: |
           cd packages/chat-wrapped
           bun install
@@ -60,6 +76,7 @@ jobs:
           cp -r target/public/* ../../public/talk/chat-wrapped/
 
       - name: Build ynab-reimbursement
+        if: github.event.action != 'closed'
         run: |
           cd packages/ynab-reimbursement
           bun install
@@ -68,7 +85,12 @@ jobs:
           cp -r target/public/* ../../public/tools/ynab-reimbursement/
 
       - name: Build Astro
+        if: github.event.action != 'closed' && github.event_name == 'push'
         run: npm run build
+
+      - name: Build Astro (PR preview)
+        if: github.event.action != 'closed' && github.event_name == 'pull_request'
+        run: npx astro build --base /pr-preview/pr-${{ github.event.number }}/
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
@@ -77,3 +99,10 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           cname: blog.bythe.rocks
+
+      - name: Deploy PR preview
+        if: github.event_name == 'pull_request'
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: ./dist/
+          umbrella-dir: pr-preview
