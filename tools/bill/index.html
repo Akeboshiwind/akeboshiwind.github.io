@@ -135,28 +135,32 @@ Here's an example of the expected format with sample data:
   };
 
   const toggleAllPeople = (itemUniqueId) => {
-    const newAssignments = { ...itemAssignments };
-    const currentAssignees = newAssignments[itemUniqueId] || [];
-    if (currentAssignees.length === people.length) {
-      delete newAssignments[itemUniqueId];
-    } else {
-      newAssignments[itemUniqueId] = [...people];
-    }
-    setItemAssignments(newAssignments);
-    updateSharesFromAssignments(newAssignments);
+    setItemAssignments(prev => {
+      const newAssignments = { ...prev };
+      const currentAssignees = newAssignments[itemUniqueId] || [];
+      if (currentAssignees.length === people.length) {
+        delete newAssignments[itemUniqueId];
+      } else {
+        newAssignments[itemUniqueId] = [...people];
+      }
+      updateSharesFromAssignments(newAssignments);
+      return newAssignments;
+    });
   };
 
   const togglePersonAssignment = (itemUniqueId, person) => {
-    const newAssignments = { ...itemAssignments };
-    const currentAssignees = newAssignments[itemUniqueId] || [];
-    if (currentAssignees.includes(person)) {
-      newAssignments[itemUniqueId] = currentAssignees.filter(p => p !== person);
-      if (newAssignments[itemUniqueId].length === 0) delete newAssignments[itemUniqueId];
-    } else {
-      newAssignments[itemUniqueId] = [...currentAssignees, person];
-    }
-    setItemAssignments(newAssignments);
-    updateSharesFromAssignments(newAssignments);
+    setItemAssignments(prev => {
+      const newAssignments = { ...prev };
+      const currentAssignees = newAssignments[itemUniqueId] || [];
+      if (currentAssignees.includes(person)) {
+        newAssignments[itemUniqueId] = currentAssignees.filter(p => p !== person);
+        if (newAssignments[itemUniqueId].length === 0) delete newAssignments[itemUniqueId];
+      } else {
+        newAssignments[itemUniqueId] = [...currentAssignees, person];
+      }
+      updateSharesFromAssignments(newAssignments);
+      return newAssignments;
+    });
   };
 
   const handleShareChange = (itemUniqueId, person, share) => {
