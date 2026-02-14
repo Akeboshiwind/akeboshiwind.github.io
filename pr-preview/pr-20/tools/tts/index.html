@@ -1,0 +1,1482 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Text to Speech | Blog by the Rocks</title><meta name="description" content="Convert text to speech using OpenAI's TTS API"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="shortcut icon" href="/favicon.ico"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet"><style>
+        :root {
+            --bg: #0a0a0f;
+            --card-bg: #12121a;
+            --card-border: #1e1e2a;
+            --text: #e8e8ec;
+            --text-dim: #6b6b7a;
+            --accent: #f97316;
+            --accent-glow: rgba(249, 115, 22, 0.15);
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+            --radius: 16px;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #f8f8fa;
+                --card-bg: #ffffff;
+                --card-border: #d0d0d8;
+                --text: #1a1a1f;
+                --text-dim: #6b6b7a;
+                --accent: #ea580c;
+                --accent-glow: rgba(234, 88, 12, 0.12);
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.9rem;
+            z-index: 100;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .settings-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        .settings-btn:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .settings-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text-dim);
+            transition: stroke 0.2s;
+        }
+
+        .settings-btn:hover svg {
+            stroke: var(--accent);
+        }
+
+        /* Views */
+        .view {
+            display: none;
+            flex: 1;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        /* API Key View */
+        #apiKeyView {
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .key-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 40px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .key-card h1 {
+            font-size: 1.8rem;
+            margin-bottom: 12px;
+        }
+
+        .key-card p {
+            color: var(--text-dim);
+            margin-bottom: 24px;
+        }
+
+        .key-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 1rem;
+            margin-bottom: 16px;
+            font-family: 'DM Mono', monospace;
+        }
+
+        .key-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .primary-btn {
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--accent);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .primary-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px var(--accent-glow);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .key-info {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--card-border);
+            text-align: left;
+        }
+
+        .key-info p {
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+
+        .key-info p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Input View */
+        #inputView {
+            flex-direction: column;
+            padding: 80px 20px 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .input-header {
+            margin-bottom: 16px;
+        }
+
+        .input-header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .text-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .text-input {
+            flex: 1;
+            width: 100%;
+            padding: 20px;
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: none;
+            font-family: 'DM Sans', sans-serif;
+            min-height: 300px;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .text-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .input-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 16px;
+            padding: 16px 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+        }
+
+        .chunk-preview {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        .chunk-preview strong {
+            color: var(--text);
+        }
+
+        .generate-btn {
+            padding: 12px 28px;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .generate-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Play View */
+        #playView {
+            flex-direction: column;
+            padding: 80px 20px 140px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .play-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .play-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .back-to-input {
+            padding: 8px 16px;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .back-to-input:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .chunks-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chunk-card {
+            padding: 16px 20px;
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 12px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .chunk-card:hover {
+            border-color: var(--text-dim);
+        }
+
+        .chunk-card.playing {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .chunk-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .chunk-number {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        .chunk-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+        }
+
+        .chunk-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .chunk-status-dot.pending { background: var(--text-dim); }
+        .chunk-status-dot.generating { background: var(--warning); animation: pulse 1s infinite; }
+        .chunk-status-dot.completed { background: var(--success); }
+        .chunk-status-dot.failed { background: var(--danger); }
+        .chunk-status-dot.retrying { background: var(--warning); animation: pulse 0.5s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .chunk-status-text {
+            color: var(--text-dim);
+            text-transform: capitalize;
+        }
+
+        .chunk-retry-btn {
+            margin-left: auto;
+            padding: 4px 10px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: transparent;
+            border-radius: 6px;
+            color: var(--danger);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chunk-retry-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger);
+        }
+
+        .chunk-text {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: var(--text);
+            white-space: pre-wrap;
+        }
+
+        /* Floating Player */
+        .floating-player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border-top: 1px solid var(--card-border);
+            padding: 16px 20px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .floating-player.visible {
+            display: block;
+        }
+
+        .player-inner {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .player-row-scrubber,
+        .player-row-buttons {
+            display: contents;
+        }
+
+        .player-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--card-border);
+            background: var(--bg);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            color: var(--text);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .player-btn:hover:not(:disabled) {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .player-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .player-btn.play-pause {
+            width: 48px;
+            height: 48px;
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .player-btn.play-pause:hover:not(:disabled) {
+            background: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .player-btn.play-pause svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        .scrubber-container {
+            flex: 1;
+            min-width: 150px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .scrubber {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--card-border);
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .scrubber::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .time-display {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            font-family: 'DM Mono', monospace;
+            white-space: nowrap;
+        }
+
+        .speed-select {
+            padding: 6px 10px;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .waiting-indicator {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: var(--accent-glow);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--accent);
+            text-align: center;
+            display: none;
+        }
+
+        .waiting-indicator.visible {
+            display: block;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1001;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.visible .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--card-bg);
+            z-index: 1;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-close svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--text-dim);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+        }
+
+        .setting-section {
+            margin-bottom: 28px;
+        }
+
+        .setting-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .setting-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .setting-row .key-input {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .small-btn {
+            padding: 10px 16px;
+            border: 1px solid var(--card-border);
+            background: var(--bg);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .small-btn:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .small-btn.danger {
+            border-color: rgba(239, 68, 68, 0.3);
+            color: var(--danger);
+        }
+
+        .small-btn.danger:hover {
+            border-color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Voice Grid */
+        .voice-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 8px;
+        }
+
+        .voice-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .voice-option:hover {
+            border-color: var(--text-dim);
+        }
+
+        .voice-option.selected {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .voice-option input {
+            display: none;
+        }
+
+        .voice-name {
+            flex: 1;
+            font-size: 0.85rem;
+            text-transform: capitalize;
+        }
+
+        .voice-preview-btn {
+            width: 26px;
+            height: 26px;
+            border: none;
+            background: var(--bg);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .voice-preview-btn:hover {
+            background: var(--accent-glow);
+        }
+
+        .voice-preview-btn svg {
+            width: 12px;
+            height: 12px;
+            fill: var(--text-dim);
+        }
+
+        .voice-preview-btn:hover svg {
+            fill: var(--accent);
+        }
+
+        .voice-preview-btn.loading {
+            animation: pulse 1s infinite;
+        }
+
+        /* Voice Instructions */
+        .instructions-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            resize: vertical;
+            min-height: 80px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .instructions-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .instructions-hint {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 8px;
+        }
+
+        @media (max-width: 600px) {
+            .player-controls {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .player-row-scrubber,
+            .player-row-buttons {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                width: 100%;
+            }
+
+            .player-row-scrubber {
+                justify-content: stretch;
+                order: -1;
+            }
+
+            .player-row-scrubber .scrubber-container {
+                flex: 1;
+            }
+
+            .player-row-buttons {
+                justify-content: center;
+            }
+
+            #inputView, #playView {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+        }
+    </style></head> <body> <a href="/pr-preview/pr-20/tools/" class="back-link">&larr; Back to Tools</a> <button class="settings-btn" id="settingsBtn" style="display: none;"> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path> <circle cx="12" cy="12" r="3"></circle> </svg> </button> <!-- API Key View --> <div id="apiKeyView" class="view active"> <div class="key-card"> <h1>Text to Speech</h1> <p>Enter your OpenAI API key to convert text to speech.</p> <input type="password" class="key-input" id="apiKeyInput" placeholder="sk-..."> <button class="primary-btn" id="saveKeyBtn">Save Key</button> <div class="key-info"> <p>Your key is stored locally in your browser and never sent to any server except OpenAI.</p> <p>Required: TTS API access (models like gpt-4o-mini-tts)</p> </div> </div> </div> <!-- Input View --> <div id="inputView" class="view"> <div class="input-header"> <h1>Enter Text</h1> </div> <div class="text-container"> <textarea class="text-input" id="textInput" placeholder="Paste or type your text here..."></textarea> </div> <div class="input-footer"> <div class="chunk-preview"> <span id="chunkCount">0</span> chunk(s) will be generated
+</div> <button class="generate-btn" id="generateBtn" disabled>Generate Audio</button> </div> </div> <!-- Play View --> <div id="playView" class="view"> <div class="play-header"> <h1>Audio</h1> <button class="back-to-input" id="backToInputBtn">Edit Text</button> </div> <div class="chunks-container" id="chunksContainer"> <!-- Chunks rendered here --> </div> </div> <!-- Floating Player --> <div class="floating-player" id="floatingPlayer"> <div class="player-inner"> <div class="player-controls"> <div class="player-row-buttons"> <button class="player-btn" id="skipBackBtn" title="Back 15 seconds" disabled>-15s</button> <button class="player-btn play-pause" id="playPauseBtn" title="Play/Pause" disabled> <svg viewBox="0 0 24 24" id="playIcon"><polygon points="5,3 19,12 5,21"></polygon></svg> <svg viewBox="0 0 24 24" id="pauseIcon" style="display:none"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg> </button> <button class="player-btn" id="skipForwardBtn" title="Forward 30 seconds" disabled>+30s</button> <select class="speed-select" id="speedSelect"> <option value="0.5">0.5x</option> <option value="0.75">0.75x</option> <option value="1" selected>1x</option> <option value="1.25">1.25x</option> <option value="1.5">1.5x</option> <option value="2">2x</option> </select> </div> <div class="player-row-scrubber"> <div class="scrubber-container"> <input type="range" class="scrubber" id="scrubber" min="0" max="100" value="0" disabled> </div> <span class="time-display" id="timeDisplay">0:00 / 0:00</span> </div> </div> <div class="waiting-indicator" id="waitingIndicator">Waiting for more audio to generate...</div> </div> </div> <!-- Settings Modal --> <div class="modal-overlay" id="settingsModal"> <div class="modal"> <div class="modal-header"> <h2 class="modal-title">Settings</h2> <button class="modal-close" id="modalClose"> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <line x1="18" y1="6" x2="6" y2="18"></line> <line x1="6" y1="6" x2="18" y2="18"></line> </svg> </button> </div> <div class="modal-body"> <div class="setting-section"> <div class="section-title">API Key</div> <div class="setting-row"> <input type="password" class="key-input" id="modalApiKey" placeholder="sk-..."> <button class="small-btn" id="updateKeyBtn">Update</button> <button class="small-btn danger" id="clearKeyBtn">Clear</button> </div> </div> <div class="setting-section"> <div class="section-title">Voice</div> <div class="voice-grid" id="voiceGrid"></div> </div> <div class="setting-section"> <div class="section-title">Voice Instructions</div> <textarea class="instructions-textarea" id="voiceInstructions" placeholder="e.g., Speak warmly and clearly, with a calm tone..."></textarea> <p class="instructions-hint">Optional: Describe how the voice should speak. This affects tone, pace, and delivery style.</p> </div> </div> </div> </div> <audio id="audioPlayer"></audio> <script>
+        // Constants
+        const VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer', 'verse', 'marin', 'cedar'];
+        const STORAGE_KEYS = {
+            apiKey: 'tts-api-key',
+            voice: 'tts-voice',
+            instructions: 'tts-instructions'
+        };
+        const MAX_CHUNK_SIZE = 4000;
+        const MAX_RETRIES = 3;
+        const RETRY_DELAYS = [1000, 2000, 4000];
+        const CONCURRENCY_LIMIT = 3;
+        const PREVIEW_TEXT = "Hello, this is a preview of my voice.";
+
+        // State
+        const state = {
+            apiKey: localStorage.getItem(STORAGE_KEYS.apiKey) || '',
+            voice: localStorage.getItem(STORAGE_KEYS.voice) || 'nova',
+            voiceInstructions: localStorage.getItem(STORAGE_KEYS.instructions) || '',
+            text: '',
+            chunks: [],
+            generation: 'idle',
+            lastError: null
+        };
+
+        const player = {
+            currentChunkIndex: 0,
+            isPlaying: false,
+            playbackRate: 1.0,
+            waitingForMore: false
+        };
+
+        // DOM Elements
+        const apiKeyView = document.getElementById('apiKeyView');
+        const inputView = document.getElementById('inputView');
+        const playView = document.getElementById('playView');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const modalClose = document.getElementById('modalClose');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveKeyBtn = document.getElementById('saveKeyBtn');
+        const modalApiKey = document.getElementById('modalApiKey');
+        const updateKeyBtn = document.getElementById('updateKeyBtn');
+        const clearKeyBtn = document.getElementById('clearKeyBtn');
+        const voiceGrid = document.getElementById('voiceGrid');
+        const voiceInstructions = document.getElementById('voiceInstructions');
+        const textInput = document.getElementById('textInput');
+        const chunkCount = document.getElementById('chunkCount');
+        const generateBtn = document.getElementById('generateBtn');
+        const backToInputBtn = document.getElementById('backToInputBtn');
+        const chunksContainer = document.getElementById('chunksContainer');
+        const floatingPlayer = document.getElementById('floatingPlayer');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const skipBackBtn = document.getElementById('skipBackBtn');
+        const skipForwardBtn = document.getElementById('skipForwardBtn');
+        const scrubber = document.getElementById('scrubber');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const speedSelect = document.getElementById('speedSelect');
+        const waitingIndicator = document.getElementById('waitingIndicator');
+
+        // Event emitter
+        const events = new EventTarget();
+        function emit(name, detail = {}) {
+            events.dispatchEvent(new CustomEvent(name, { detail }));
+        }
+        function on(name, handler) {
+            events.addEventListener(name, e => handler(e.detail));
+        }
+
+        // View management
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+
+            // Show settings on input and play views
+            settingsBtn.style.display = (viewId === 'inputView' || viewId === 'playView') ? 'flex' : 'none';
+
+            // Show floating player only on play view
+            floatingPlayer.classList.toggle('visible', viewId === 'playView');
+        }
+
+        function init() {
+            if (state.apiKey) {
+                showView('inputView');
+            } else {
+                showView('apiKeyView');
+            }
+            renderVoiceGrid();
+            voiceInstructions.value = state.voiceInstructions;
+            updateChunkPreview();
+        }
+
+        // API Key handling
+        function saveApiKey(key) {
+            state.apiKey = key;
+            localStorage.setItem(STORAGE_KEYS.apiKey, key);
+        }
+
+        function clearApiKey() {
+            state.apiKey = '';
+            localStorage.removeItem(STORAGE_KEYS.apiKey);
+        }
+
+        saveKeyBtn.addEventListener('click', () => {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                saveApiKey(key);
+                showView('inputView');
+            }
+        });
+
+        apiKeyInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') saveKeyBtn.click();
+        });
+
+        updateKeyBtn.addEventListener('click', () => {
+            const key = modalApiKey.value.trim();
+            if (key) {
+                saveApiKey(key);
+                modalApiKey.value = '';
+            }
+        });
+
+        clearKeyBtn.addEventListener('click', () => {
+            if (confirm('Clear API key? You will need to enter it again.')) {
+                clearApiKey();
+                settingsModal.classList.remove('visible');
+                showView('apiKeyView');
+            }
+        });
+
+        // Voice selection
+        function renderVoiceGrid() {
+            voiceGrid.innerHTML = VOICES.map(voice => `
+                <label class="voice-option ${state.voice === voice ? 'selected' : ''}">
+                    <input type="radio" name="voice" value="${voice}" ${state.voice === voice ? 'checked' : ''}>
+                    <span class="voice-name">${voice}</span>
+                    <button type="button" class="voice-preview-btn" data-voice="${voice}" title="Preview">
+                        <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                    </button>
+                </label>
+            `).join('');
+
+            voiceGrid.querySelectorAll('input[name="voice"]').forEach(input => {
+                input.addEventListener('change', () => {
+                    state.voice = input.value;
+                    localStorage.setItem(STORAGE_KEYS.voice, state.voice);
+                    renderVoiceGrid();
+                });
+            });
+
+            voiceGrid.querySelectorAll('.voice-preview-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const voice = btn.dataset.voice;
+                    btn.classList.add('loading');
+                    try {
+                        await previewVoice(voice);
+                    } finally {
+                        btn.classList.remove('loading');
+                    }
+                });
+            });
+        }
+
+        async function previewVoice(voice) {
+            try {
+                const blob = await generateTTS(PREVIEW_TEXT, voice, '');
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                audio.oncanplaythrough = () => {
+                    audio.play().catch(err => console.error('Preview failed:', err));
+                };
+                audio.onended = () => URL.revokeObjectURL(url);
+                audio.onerror = () => URL.revokeObjectURL(url);
+            } catch (error) {
+                alert('Preview failed: ' + error.message);
+            }
+        }
+
+        // Voice instructions
+        voiceInstructions.addEventListener('input', () => {
+            state.voiceInstructions = voiceInstructions.value;
+            localStorage.setItem(STORAGE_KEYS.instructions, state.voiceInstructions);
+        });
+
+        // Settings modal
+        settingsBtn.addEventListener('click', () => {
+            modalApiKey.value = '';
+            modalApiKey.placeholder = state.apiKey ? 'sk-...' + state.apiKey.slice(-4) : 'sk-...';
+            settingsModal.classList.add('visible');
+        });
+
+        modalClose.addEventListener('click', () => {
+            settingsModal.classList.remove('visible');
+        });
+
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                settingsModal.classList.remove('visible');
+            }
+        });
+
+        // Text chunking
+        function splitIntoChunks(text) {
+            const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim());
+            const chunks = [];
+
+            for (const para of paragraphs) {
+                const trimmed = para.trim();
+                if (trimmed.length <= MAX_CHUNK_SIZE) {
+                    chunks.push(trimmed);
+                } else {
+                    const sentences = trimmed.match(/[^.!?]+[.!?]+\s*/g) || [trimmed];
+                    let current = '';
+
+                    for (const sentence of sentences) {
+                        if ((current + sentence).length > MAX_CHUNK_SIZE) {
+                            if (current) chunks.push(current.trim());
+                            current = sentence;
+                        } else {
+                            current += sentence;
+                        }
+                    }
+                    if (current) chunks.push(current.trim());
+                }
+            }
+
+            return chunks.map((text, id) => ({
+                id,
+                text,
+                status: 'pending',
+                audioBlob: null,
+                audioUrl: null,
+                duration: 0,
+                retryCount: 0,
+                error: null
+            }));
+        }
+
+        function updateChunkPreview() {
+            const text = textInput.value.trim();
+            const chunks = text ? splitIntoChunks(text) : [];
+            chunkCount.textContent = chunks.length;
+            generateBtn.disabled = chunks.length === 0;
+        }
+
+        textInput.addEventListener('input', updateChunkPreview);
+
+        // OpenAI TTS API
+        async function generateTTS(text, voice, instructions) {
+            const body = {
+                model: 'gpt-4o-mini-tts',
+                voice: voice,
+                input: text
+            };
+
+            if (instructions && instructions.trim()) {
+                body.instructions = instructions.trim();
+            }
+
+            const response = await fetch('https://api.openai.com/v1/audio/speech', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${state.apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`API error ${response.status}: ${errorText}`);
+            }
+
+            return await response.blob();
+        }
+
+        // Get duration of audio from URL
+        function getAudioDuration(url) {
+            return new Promise((resolve) => {
+                const audio = new Audio();
+                audio.addEventListener('loadedmetadata', () => {
+                    resolve(audio.duration);
+                });
+                audio.addEventListener('error', () => {
+                    resolve(0);
+                });
+                audio.src = url;
+            });
+        }
+
+        // Chunk generation
+        async function generateChunk(chunk) {
+            chunk.status = 'generating';
+            emit('chunk-status-changed', { id: chunk.id });
+
+            try {
+                chunk.audioBlob = await generateTTS(chunk.text, state.voice, state.voiceInstructions);
+                chunk.audioUrl = URL.createObjectURL(chunk.audioBlob);
+                chunk.duration = await getAudioDuration(chunk.audioUrl);
+                chunk.status = 'completed';
+                chunk.error = null;
+                emit('chunk-completed', { id: chunk.id });
+                checkPlayableAudio();
+            } catch (error) {
+                chunk.error = error.message;
+
+                if (chunk.retryCount < MAX_RETRIES) {
+                    chunk.status = 'failed';
+                    emit('chunk-status-changed', { id: chunk.id });
+
+                    const delay = RETRY_DELAYS[chunk.retryCount];
+                    chunk.retryCount++;
+
+                    await new Promise(r => setTimeout(r, delay));
+
+                    chunk.status = 'retrying';
+                    emit('chunk-status-changed', { id: chunk.id });
+                    return generateChunk(chunk);
+                } else {
+                    chunk.status = 'failed';
+                    emit('chunk-failed', { id: chunk.id, error: error.message });
+                }
+            }
+        }
+
+        async function generateAllChunks() {
+            const pending = [...state.chunks.filter(c => c.status === 'pending' || c.status === 'failed')];
+            const active = new Set();
+
+            state.generation = 'generating';
+
+            return new Promise((resolve) => {
+                function startNext() {
+                    while (active.size < CONCURRENCY_LIMIT && pending.length > 0) {
+                        const chunk = pending.shift();
+                        active.add(chunk.id);
+
+                        generateChunk(chunk).finally(() => {
+                            active.delete(chunk.id);
+
+                            if (pending.length === 0 && active.size === 0) {
+                                const hasFailures = state.chunks.some(c => c.status === 'failed');
+                                state.generation = hasFailures ? 'error' : 'complete';
+                                resolve();
+                            } else {
+                                startNext();
+                            }
+                        });
+                    }
+                }
+                startNext();
+            });
+        }
+
+        // Playable audio tracking
+        let lastPlayableCount = 0;
+
+        function getPlayableCount() {
+            let count = 0;
+            for (const chunk of state.chunks) {
+                if (chunk.status === 'completed') {
+                    count++;
+                } else {
+                    break;
+                }
+            }
+            return count;
+        }
+
+        function checkPlayableAudio() {
+            const current = getPlayableCount();
+            if (current > lastPlayableCount) {
+                lastPlayableCount = current;
+                emit('playable-audio-extended', { playableCount: current });
+                updatePlayerState();
+            }
+        }
+
+        // Render chunks on play view
+        function renderChunks() {
+            chunksContainer.innerHTML = state.chunks.map((chunk, i) => `
+                <div class="chunk-card ${player.currentChunkIndex === i && player.isPlaying ? 'playing' : ''}" data-chunk-id="${chunk.id}">
+                    <div class="chunk-card-header">
+                        <span class="chunk-number">Chunk ${i + 1}</span>
+                        <div class="chunk-status">
+                            <div class="chunk-status-dot ${chunk.status}"></div>
+                            <span class="chunk-status-text">${chunk.status}</span>
+                        </div>
+                        ${chunk.status === 'failed' ? `<button class="chunk-retry-btn" data-id="${chunk.id}">Retry</button>` : ''}
+                    </div>
+                    <div class="chunk-text">${escapeHtml(chunk.text)}</div>
+                </div>
+            `).join('');
+
+            // Click to play chunk
+            chunksContainer.querySelectorAll('.chunk-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('chunk-retry-btn')) return;
+                    const id = parseInt(card.dataset.chunkId);
+                    const chunk = state.chunks.find(c => c.id === id);
+                    if (chunk && chunk.status === 'completed') {
+                        player.currentChunkIndex = id;
+                        playCurrentChunk();
+                    }
+                });
+            });
+
+            // Retry buttons
+            chunksContainer.querySelectorAll('.chunk-retry-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.dataset.id);
+                    const chunk = state.chunks.find(c => c.id === id);
+                    if (chunk) {
+                        chunk.retryCount = 0;
+                        chunk.status = 'pending';
+                        generateChunk(chunk);
+                    }
+                });
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updatePlayingChunkHighlight() {
+            chunksContainer.querySelectorAll('.chunk-card').forEach((card, i) => {
+                card.classList.toggle('playing', player.currentChunkIndex === i && player.isPlaying);
+            });
+        }
+
+        // Audio player
+        function getTotalPlayableDuration() {
+            let total = 0;
+            for (const chunk of state.chunks) {
+                if (chunk.status === 'completed' && chunk.duration) {
+                    total += chunk.duration;
+                } else {
+                    break;
+                }
+            }
+            return total;
+        }
+
+        function getGlobalPosition() {
+            let position = 0;
+            for (let i = 0; i < player.currentChunkIndex; i++) {
+                const chunk = state.chunks[i];
+                if (chunk && chunk.duration) {
+                    position += chunk.duration;
+                }
+            }
+            position += audioPlayer.currentTime || 0;
+            return position;
+        }
+
+        function seekToGlobalPosition(globalTime) {
+            let remaining = globalTime;
+            const playableCount = getPlayableCount();
+
+            for (let i = 0; i < playableCount; i++) {
+                const chunk = state.chunks[i];
+                if (!chunk || !chunk.duration) continue;
+
+                if (remaining <= chunk.duration) {
+                    if (i !== player.currentChunkIndex) {
+                        player.currentChunkIndex = i;
+                        audioPlayer.src = chunk.audioUrl;
+                        audioPlayer.oncanplaythrough = () => {
+                            audioPlayer.oncanplaythrough = null;
+                            audioPlayer.currentTime = remaining;
+                            if (player.isPlaying) {
+                                audioPlayer.play().catch(err => console.error('Seek play failed:', err));
+                            }
+                            updatePlayingChunkHighlight();
+                        };
+                    } else {
+                        audioPlayer.currentTime = remaining;
+                    }
+                    return;
+                }
+                remaining -= chunk.duration;
+            }
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updatePlayerState() {
+            const playable = getPlayableCount();
+            const hasAudio = playable > 0;
+
+            playPauseBtn.disabled = !hasAudio;
+            skipBackBtn.disabled = !hasAudio;
+            skipForwardBtn.disabled = !hasAudio;
+            scrubber.disabled = !hasAudio;
+
+            if (hasAudio && player.waitingForMore && player.isPlaying) {
+                player.waitingForMore = false;
+                waitingIndicator.classList.remove('visible');
+                playCurrentChunk();
+            }
+        }
+
+        function playCurrentChunk() {
+            const chunk = state.chunks[player.currentChunkIndex];
+            if (!chunk || chunk.status !== 'completed') {
+                player.waitingForMore = true;
+                waitingIndicator.classList.add('visible');
+                return;
+            }
+
+            audioPlayer.src = chunk.audioUrl;
+            audioPlayer.playbackRate = player.playbackRate;
+
+            audioPlayer.oncanplaythrough = () => {
+                audioPlayer.oncanplaythrough = null;
+                audioPlayer.play().catch(err => {
+                    console.error('Playback failed:', err);
+                    player.isPlaying = false;
+                    updatePlayPauseIcon();
+                });
+            };
+
+            player.isPlaying = true;
+            updatePlayPauseIcon();
+            updatePlayingChunkHighlight();
+        }
+
+        function updatePlayPauseIcon() {
+            playIcon.style.display = player.isPlaying ? 'none' : 'block';
+            pauseIcon.style.display = player.isPlaying ? 'block' : 'none';
+        }
+
+        playPauseBtn.addEventListener('click', () => {
+            if (player.isPlaying) {
+                audioPlayer.pause();
+                player.isPlaying = false;
+                updatePlayPauseIcon();
+                updatePlayingChunkHighlight();
+            } else {
+                if (audioPlayer.src && audioPlayer.readyState >= 2) {
+                    audioPlayer.play().then(() => {
+                        player.isPlaying = true;
+                        updatePlayPauseIcon();
+                        updatePlayingChunkHighlight();
+                    }).catch(err => {
+                        console.error('Playback failed:', err);
+                    });
+                } else {
+                    playCurrentChunk();
+                }
+            }
+        });
+
+        audioPlayer.addEventListener('ended', () => {
+            const nextIndex = player.currentChunkIndex + 1;
+            const playable = getPlayableCount();
+
+            if (nextIndex < playable) {
+                player.currentChunkIndex = nextIndex;
+                playCurrentChunk();
+            } else if (nextIndex < state.chunks.length) {
+                player.waitingForMore = true;
+                waitingIndicator.classList.add('visible');
+            } else {
+                player.isPlaying = false;
+                player.currentChunkIndex = 0;
+                updatePlayPauseIcon();
+                updatePlayingChunkHighlight();
+            }
+        });
+
+        audioPlayer.addEventListener('timeupdate', () => {
+            const totalDuration = getTotalPlayableDuration();
+            const globalPosition = getGlobalPosition();
+
+            if (totalDuration > 0) {
+                scrubber.value = (globalPosition / totalDuration) * 100;
+            }
+
+            timeDisplay.textContent = `${formatTime(globalPosition)} / ${formatTime(totalDuration)}`;
+        });
+
+        scrubber.addEventListener('input', () => {
+            const totalDuration = getTotalPlayableDuration();
+            const targetPosition = (scrubber.value / 100) * totalDuration;
+            seekToGlobalPosition(targetPosition);
+        });
+
+        skipBackBtn.addEventListener('click', () => {
+            const globalPos = getGlobalPosition();
+            seekToGlobalPosition(Math.max(0, globalPos - 15));
+        });
+
+        skipForwardBtn.addEventListener('click', () => {
+            const globalPos = getGlobalPosition();
+            const totalDuration = getTotalPlayableDuration();
+            seekToGlobalPosition(Math.min(totalDuration, globalPos + 30));
+        });
+
+        speedSelect.addEventListener('change', () => {
+            player.playbackRate = parseFloat(speedSelect.value);
+            audioPlayer.playbackRate = player.playbackRate;
+        });
+
+        // Navigation
+        generateBtn.addEventListener('click', async () => {
+            const text = textInput.value.trim();
+            if (!text) return;
+
+            // Clean up old audio URLs
+            state.chunks.forEach(c => {
+                if (c.audioUrl) URL.revokeObjectURL(c.audioUrl);
+            });
+
+            // Reset state
+            state.text = text;
+            state.chunks = splitIntoChunks(text);
+            state.generation = 'idle';
+            lastPlayableCount = 0;
+            player.currentChunkIndex = 0;
+            player.isPlaying = false;
+            player.waitingForMore = false;
+            audioPlayer.src = '';
+            waitingIndicator.classList.remove('visible');
+            updatePlayPauseIcon();
+
+            // Switch to play view
+            showView('playView');
+            renderChunks();
+
+            // Start generation
+            await generateAllChunks();
+        });
+
+        backToInputBtn.addEventListener('click', () => {
+            // Pause audio
+            audioPlayer.pause();
+            player.isPlaying = false;
+            updatePlayPauseIcon();
+
+            showView('inputView');
+        });
+
+        // Event listeners
+        on('chunk-status-changed', () => renderChunks());
+        on('chunk-completed', () => renderChunks());
+        on('chunk-failed', () => renderChunks());
+        on('playable-audio-extended', () => updatePlayerState());
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+            if (settingsModal.classList.contains('visible')) return;
+
+            if (e.code === 'Space' && playView.classList.contains('active')) {
+                e.preventDefault();
+                playPauseBtn.click();
+            } else if (e.key === 'ArrowLeft' && playView.classList.contains('active')) {
+                skipBackBtn.click();
+            } else if (e.key === 'ArrowRight' && playView.classList.contains('active')) {
+                skipForwardBtn.click();
+            }
+        });
+
+        // Initialize
+        init();
+    </script> </body> </html>
