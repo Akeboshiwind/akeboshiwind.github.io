@@ -7,7 +7,7 @@ const PHASE_COLORS = {
   honing: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
 };
 
-export const SettingsModal = ({ list, onSave, onViewHistory, onDelete, onClose }) => {
+export const SettingsModal = ({ list, onSave, onDelete, onClose }) => {
   const [name, setName] = useState(list.name);
   const [description, setDescription] = useState(list.description);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -95,15 +95,6 @@ export const SettingsModal = ({ list, onSave, onViewHistory, onDelete, onClose }
               Save Changes
             </button>
           </form>
-
-          {/* History */}
-          <button
-            onClick={onViewHistory}
-            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left flex items-center justify-between"
-          >
-            <span>View recommendation history</span>
-            <span className="text-gray-400">→</span>
-          </button>
 
           {/* Delete */}
           {!confirmDelete ? (
