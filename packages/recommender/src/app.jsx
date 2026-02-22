@@ -174,6 +174,7 @@ const App = () => {
             setGenerateError(null);
           }}
           onOpenSettings={() => setShowSettings(true)}
+          onOpenHistory={() => setShowHistory(true)}
           isGenerating={isGenerating}
           generateError={generateError}
           onRetryGenerate={() => {
@@ -207,10 +208,6 @@ const App = () => {
         <SettingsModal
           list={activeList}
           onSave={handleSaveSettings}
-          onViewHistory={() => {
-            setShowSettings(false);
-            setShowHistory(true);
-          }}
           onDelete={handleDeleteList}
           onClose={() => setShowSettings(false)}
         />
