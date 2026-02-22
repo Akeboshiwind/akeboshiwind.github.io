@@ -80,10 +80,17 @@ export const HistoryModal = ({ list, onClose }) => {
                     {reviewed.map(r => (
                       <div
                         key={r.id}
-                        className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700"
+                        className="py-2 border-b border-gray-100 dark:border-gray-700"
                       >
-                        <span className="text-sm text-gray-700 dark:text-gray-300">{r.text}</span>
-                        <StatusBadge status={r.status} />
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">{r.text}</span>
+                          <StatusBadge status={r.status} />
+                        </div>
+                        {r.note && (
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 italic">
+                            "{r.note}"
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>

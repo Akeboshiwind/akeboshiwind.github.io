@@ -7,6 +7,7 @@ import { ApiKeyView } from './components/ApiKeyView.jsx';
 import { ListsView } from './components/ListsView.jsx';
 import { CreateListModal } from './components/CreateListModal.jsx';
 import { RecommendationsView } from './components/RecommendationsView.jsx';
+import { SeenModal } from './components/SeenModal.jsx';
 import { SettingsModal } from './components/SettingsModal.jsx';
 import { HistoryModal } from './components/HistoryModal.jsx';
 import './app.css';
@@ -23,6 +24,7 @@ const App = () => {
   const [showCreateList, setShowCreateList] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [pendingSeen, setPendingSeen] = useState(null); // recId
 
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -102,18 +104,23 @@ const App = () => {
   };
 
   const handleSeen = recId => {
+    setPendingSeen(recId);
+  };
+
+  const handleConfirmSeen = note => {
     setLists(prev =>
       prev.map(list => {
         if (list.id !== activeListId) return list;
         return {
           ...list,
           recommendations: list.recommendations.map(r => {
-            if (r.id !== recId) return r;
-            return { ...r, status: 'seen', reviewedAt: Date.now() };
+            if (r.id !== pendingSeen) return r;
+            return { ...r, status: 'seen', note: note || '', reviewedAt: Date.now() };
           }),
         };
       }),
     );
+    setPendingSeen(null);
   };
 
   const handleSaveSettings = updates => {
@@ -163,6 +170,14 @@ const App = () => {
       )}
 
       {/* Modals */}
+      {pendingSeen && activeList && (
+        <SeenModal
+          recommendation={activeList.recommendations.find(r => r.id === pendingSeen)?.text || ''}
+          onSubmit={handleConfirmSeen}
+          onSkip={() => handleConfirmSeen('')}
+        />
+      )}
+
       {showCreateList && (
         <CreateListModal
           onCreate={handleCreateList}
