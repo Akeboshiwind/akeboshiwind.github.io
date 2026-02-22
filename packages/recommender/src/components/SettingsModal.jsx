@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getPhase, getPhaseLabel, getPhaseDescription } from '../utils.js';
+import { PromptModal } from './PromptModal.jsx';
 
 const PHASE_COLORS = {
   exploring: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
@@ -11,6 +12,7 @@ export const SettingsModal = ({ list, onSave, onDelete, onClose }) => {
   const [name, setName] = useState(list.name);
   const [description, setDescription] = useState(list.description);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
 
   const phase = getPhase(list);
   const reviewed = list.recommendations.filter(r => r.status !== 'pending').length;
@@ -96,6 +98,14 @@ export const SettingsModal = ({ list, onSave, onDelete, onClose }) => {
             </button>
           </form>
 
+          {/* Prompt */}
+          <button
+            onClick={() => setShowPrompt(true)}
+            className="w-full px-4 py-2 text-gray-500 dark:text-gray-400 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors text-left"
+          >
+            View current prompt
+          </button>
+
           {/* Delete */}
           {!confirmDelete ? (
             <button
@@ -128,5 +138,6 @@ export const SettingsModal = ({ list, onSave, onDelete, onClose }) => {
         </div>
       </div>
     </div>
+      {showPrompt && <PromptModal list={list} onClose={() => setShowPrompt(false)} />}
   );
 };

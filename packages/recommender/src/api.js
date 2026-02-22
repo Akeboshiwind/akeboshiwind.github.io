@@ -76,6 +76,14 @@ Already suggested but not yet reviewed (DO NOT repeat these either):
 ${pendingText}`;
 }
 
+export function buildFullPrompt(list) {
+  const phase = getPhase(list);
+  return {
+    system: buildSystemPrompt(phase),
+    user: buildUserMessage(list),
+  };
+}
+
 export async function generateRecommendations(apiKey, list) {
   const phase = getPhase(list);
   const systemPrompt = buildSystemPrompt(phase);
