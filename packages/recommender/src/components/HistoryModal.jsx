@@ -1,17 +1,10 @@
 import React from 'react';
 
 const StatusBadge = ({ status }) => {
-  if (status === 'liked') {
+  if (status === 'seen') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
-        <span>👍</span> Liked
-      </span>
-    );
-  }
-  if (status === 'disliked') {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-red-500 dark:text-red-400">
-        <span>👎</span> Disliked
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+        <span>📝</span> Seen
       </span>
     );
   }
@@ -87,17 +80,10 @@ export const HistoryModal = ({ list, onClose }) => {
                     {reviewed.map(r => (
                       <div
                         key={r.id}
-                        className="py-2 border-b border-gray-100 dark:border-gray-700"
+                        className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{r.text}</span>
-                          <StatusBadge status={r.status} />
-                        </div>
-                        {r.feedback && (
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 italic">
-                            "{r.feedback}"
-                          </p>
-                        )}
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{r.text}</span>
+                        <StatusBadge status={r.status} />
                       </div>
                     ))}
                   </div>
