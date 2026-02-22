@@ -123,6 +123,21 @@ const App = () => {
     setPendingSeen(null);
   };
 
+  const handleAddCustom = (text, note) => {
+    setLists(prev =>
+      prev.map(list => {
+        if (list.id !== activeListId) return list;
+        return {
+          ...list,
+          recommendations: [
+            ...list.recommendations,
+            { id: generateId(), text, status: 'seen', note, round: null, generatedAt: null, reviewedAt: Date.now() },
+          ],
+        };
+      }),
+    );
+  };
+
   const handleUpdateNote = (recId, note) => {
     setLists(prev =>
       prev.map(list => {
@@ -214,7 +229,7 @@ const App = () => {
       )}
 
       {showHistory && activeList && (
-        <HistoryModal list={activeList} onClose={() => setShowHistory(false)} onUpdateNote={handleUpdateNote} />
+        <HistoryModal list={activeList} onClose={() => setShowHistory(false)} onUpdateNote={handleUpdateNote} onAddCustom={handleAddCustom} />
       )}
     </>
   );
