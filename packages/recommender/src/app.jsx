@@ -123,6 +123,20 @@ const App = () => {
     setPendingSeen(null);
   };
 
+  const handleUpdateNote = (recId, note) => {
+    setLists(prev =>
+      prev.map(list => {
+        if (list.id !== activeListId) return list;
+        return {
+          ...list,
+          recommendations: list.recommendations.map(r =>
+            r.id === recId ? { ...r, note } : r,
+          ),
+        };
+      }),
+    );
+  };
+
   const handleSaveSettings = updates => {
     setLists(prev => prev.map(l => (l.id === activeListId ? { ...l, ...updates } : l)));
     setShowSettings(false);
@@ -199,7 +213,7 @@ const App = () => {
       )}
 
       {showHistory && activeList && (
-        <HistoryModal list={activeList} onClose={() => setShowHistory(false)} />
+        <HistoryModal list={activeList} onClose={() => setShowHistory(false)} onUpdateNote={handleUpdateNote} />
       )}
     </>
   );
