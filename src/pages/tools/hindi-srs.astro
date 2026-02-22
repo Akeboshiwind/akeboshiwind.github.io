@@ -565,6 +565,39 @@
             font-size: 0.9rem;
         }
 
+        .undo-area {
+            display: flex;
+            justify-content: center;
+            margin-top: 12px;
+            width: 100%;
+            max-width: 380px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .undo-area.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .undo-btn {
+            padding: 8px 20px;
+            border: 1px solid var(--card-border);
+            background: transparent;
+            color: var(--text-dim);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .undo-btn:hover {
+            border-color: var(--text-dim);
+            color: var(--text);
+        }
+
         @media (max-width: 480px) {
             .stats-badge {
                 display: none;
@@ -637,6 +670,10 @@
                 <span class="rating-label">Easy</span>
                 <span class="rating-time" id="easyTime">4d</span>
             </button>
+        </div>
+
+        <div class="undo-area" id="undoArea">
+            <button class="undo-btn" id="undoBtn">&#8592; Back</button>
         </div>
     </div>
 
@@ -965,10 +1002,12 @@
         let settings = loadSettings();
         let currentCard = null;
         let isFlipped = false;
+        let lastAction = null; // { cardChar, previousState } for undo
 
         // DOM elements
         const cardArea = document.getElementById('cardArea');
         const ratingButtons = document.getElementById('ratingButtons');
+        const undoArea = document.getElementById('undoArea');
         const progressBar = document.getElementById('progressBar');
         const settingsBtn = document.getElementById('settingsBtn');
         const modalOverlay = document.getElementById('modalOverlay');
@@ -1011,6 +1050,7 @@
             currentCard = getNextCard(cards, settings);
             isFlipped = false;
             ratingButtons.classList.remove('visible');
+            undoArea.classList.remove('visible');
 
             if (!currentCard) {
                 // Try rebuilding the queue once more (cards may have become due)
@@ -1089,8 +1129,33 @@
 
             const idx = cards.findIndex(c => c.char === currentCard.char);
 
+            // Save state for undo
+            lastAction = {
+                cardChar: currentCard.char,
+                previousState: { ...cards[idx] },
+                card: { ...currentCard }
+            };
+
             cards[idx] = scheduleCard(cards[idx], rating);
             saveProgress(cards);
+            updateStats();
+            renderCard();
+
+            // Show undo button after rating
+            undoArea.classList.add('visible');
+        }
+
+        function undoRating() {
+            if (!lastAction) return;
+
+            const idx = cards.findIndex(c => c.char === lastAction.cardChar);
+            cards[idx] = { ...lastAction.previousState };
+            saveProgress(cards);
+
+            // Put the card back at the front of the queue
+            cardQueue.unshift(lastAction.card);
+
+            lastAction = null;
             updateStats();
             renderCard();
         }
@@ -1101,6 +1166,8 @@
                 handleRating(parseInt(btn.dataset.rating));
             });
         });
+
+        document.getElementById('undoBtn').addEventListener('click', undoRating);
 
         document.getElementById('refreshBtn').addEventListener('click', () => {
             buildQueue(cards, settings);
@@ -1158,6 +1225,13 @@
                 else if (e.key === '2') handleRating(1);
                 else if (e.key === '3') handleRating(2);
                 else if (e.key === '4') handleRating(3);
+            }
+
+            if (e.key === 'u' || e.code === 'Backspace') {
+                if (lastAction) {
+                    e.preventDefault();
+                    undoRating();
+                }
             }
         });
 
