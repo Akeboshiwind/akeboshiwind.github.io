@@ -192,6 +192,7 @@ const App = () => {
         <SeenModal
           recommendation={activeList.recommendations.find(r => r.id === pendingSeen)?.text || ''}
           onSubmit={handleConfirmSeen}
+          onClose={() => setPendingSeen(null)}
         />
       )}
 

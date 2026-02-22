@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-export const SeenModal = ({ recommendation, onSubmit }) => {
+export const SeenModal = ({ recommendation, onSubmit, onClose }) => {
   const [note, setNote] = useState('');
   const textareaRef = useRef(null);
 
@@ -18,9 +18,17 @@ export const SeenModal = ({ recommendation, onSubmit }) => {
     <div className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-end sm:items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg shadow-xl">
         <div className="p-6">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xl">📝</span>
-            <span className="font-semibold text-gray-700 dark:text-gray-300">Marked as seen</span>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📝</span>
+              <span className="font-semibold text-gray-700 dark:text-gray-300">Marked as seen</span>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              ✕
+            </button>
           </div>
           <p className="text-gray-900 dark:text-gray-100 font-medium mb-4 text-sm">
             {recommendation}
