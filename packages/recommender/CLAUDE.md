@@ -42,3 +42,8 @@ target/public/      # Final build output
 - Bun - Bundler
 - Babashka - Task runner
 - Anthropic Claude API - Recommendation generation
+
+## Important Notes
+
+### Relative paths in index.html
+Asset paths in `src/index.html` **must** use relative paths (`./app.css`, `./app.js`), not absolute paths (`/app.css`). The build script rewrites these paths using the `--base-path` flag at build time. Absolute paths break PR branch preview builds, which are served from a subdirectory (e.g. `/tools/recommender/`) rather than the root.

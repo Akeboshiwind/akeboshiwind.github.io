@@ -10,10 +10,11 @@ import { RecommendationsView } from './components/RecommendationsView.jsx';
 import { SeenModal } from './components/SeenModal.jsx';
 import { SettingsModal } from './components/SettingsModal.jsx';
 import { HistoryModal } from './components/HistoryModal.jsx';
+import { ImportExportModal } from './components/ImportExportModal.jsx';
 import './app.css';
 
 const App = () => {
-  const [apiKey, setApiKey] = useLocalStorage('recommender_apiKey', '');
+  const [apiKey, setApiKey] = useLocalStorage('apiKey', '');
   const [lists, setLists] = useLocalStorage('recommender_lists', []);
 
   // Navigation
@@ -24,6 +25,7 @@ const App = () => {
   const [showCreateList, setShowCreateList] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showImportExport, setShowImportExport] = useState(false);
   const [pendingSeen, setPendingSeen] = useState(null); // recId
 
   // Generation state
@@ -164,6 +166,10 @@ const App = () => {
     setView('lists');
   };
 
+  const handleImport = data => {
+    setLists(data);
+  };
+
   // Show API key screen if no key set
   if (!apiKey) {
     return <ApiKeyView onSave={setApiKey} />;
@@ -177,6 +183,7 @@ const App = () => {
           onSelectList={handleSelectList}
           onCreateList={() => setShowCreateList(true)}
           onChangeApiKey={() => setApiKey('')}
+          onOpenImportExport={() => setShowImportExport(true)}
         />
       )}
 
@@ -230,6 +237,14 @@ const App = () => {
 
       {showHistory && activeList && (
         <HistoryModal list={activeList} onClose={() => setShowHistory(false)} onUpdateNote={handleUpdateNote} onAddCustom={handleAddCustom} />
+      )}
+
+      {showImportExport && (
+        <ImportExportModal
+          lists={lists}
+          onImport={handleImport}
+          onClose={() => setShowImportExport(false)}
+        />
       )}
     </>
   );
