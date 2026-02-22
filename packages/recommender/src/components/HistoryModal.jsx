@@ -58,8 +58,58 @@ const NoteEditor = ({ note, onSave, onCancel }) => {
   );
 };
 
-export const HistoryModal = ({ list, onClose, onUpdateNote }) => {
+const AddItemForm = ({ onSave, onCancel }) => {
+  const [text, setText] = useState('');
+  const [note, setNote] = useState('');
+  const inputRef = useRef(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    if (!text.trim() || !note.trim()) return;
+    onSave(text.trim(), note.trim());
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-3 flex-shrink-0">
+      <input
+        ref={inputRef}
+        value={text}
+        onChange={e => setText(e.target.value)}
+        placeholder="Item name"
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+      />
+      <textarea
+        value={note}
+        onChange={e => setNote(e.target.value)}
+        placeholder="Add a note..."
+        rows={2}
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+      />
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={!text.trim() || !note.trim()}
+          className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+        >
+          Add
+        </button>
+      </div>
+    </form>
+  );
+};
+
+export const HistoryModal = ({ list, onClose, onUpdateNote, onAddCustom }) => {
   const [editingId, setEditingId] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const reviewed = list.recommendations
     .filter(r => r.status !== 'pending')
@@ -95,7 +145,7 @@ export const HistoryModal = ({ list, onClose, onUpdateNote }) => {
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 p-6">
+        <div className="overflow-y-auto flex-1 p-6 min-h-0">
           {reviewed.length === 0 && pending.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-8">
               No recommendations yet.
@@ -173,6 +223,22 @@ export const HistoryModal = ({ list, onClose, onUpdateNote }) => {
             </div>
           )}
         </div>
+
+        {showAddForm ? (
+          <AddItemForm
+            onSave={(text, note) => { onAddCustom(text, note); setShowAddForm(false); }}
+            onCancel={() => setShowAddForm(false)}
+          />
+        ) : (
+          <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex-shrink-0">
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="w-full py-2 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 font-medium transition-colors"
+            >
+              + Add item
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
