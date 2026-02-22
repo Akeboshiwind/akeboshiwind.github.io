@@ -2,14 +2,15 @@ import React from 'react';
 
 const RecommendationCard = ({ rec, onSeen }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-      <p className="text-gray-900 dark:text-gray-100 font-medium mb-4">{rec.text}</p>
-      <button
-        onClick={() => onSeen(rec.id)}
-        className="w-full flex items-center justify-center gap-1.5 py-2 px-3 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-      >
-        <span>📝</span> Mark as seen
-      </button>
+    <div
+      onClick={() => onSeen(rec.id)}
+      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center gap-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700 sm:hover:bg-gray-50 sm:dark:hover:bg-gray-700/50 transition-colors"
+    >
+      <p className="text-gray-900 dark:text-gray-100 font-medium flex-1">{rec.text}</p>
+      <span className="flex-shrink-0 flex items-center gap-1.5 py-1.5 px-2.5 border border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 rounded-lg text-sm font-medium">
+        <span>📝</span>
+        <span className="hidden sm:inline">Mark as seen</span>
+      </span>
     </div>
   );
 };
