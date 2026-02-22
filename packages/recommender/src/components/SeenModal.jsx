@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-export const SeenModal = ({ recommendation, onSubmit, onSkip }) => {
+export const SeenModal = ({ recommendation, onSubmit }) => {
   const [note, setNote] = useState('');
   const textareaRef = useRef(null);
 
@@ -10,6 +10,7 @@ export const SeenModal = ({ recommendation, onSubmit, onSkip }) => {
 
   const handleSubmit = e => {
     e.preventDefault();
+    if (!note.trim()) return;
     onSubmit(note.trim());
   };
 
@@ -28,7 +29,7 @@ export const SeenModal = ({ recommendation, onSubmit, onSkip }) => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1.5">
-                Any notes? <span className="text-gray-400">(optional)</span>
+                Add a note
               </label>
               <textarea
                 ref={textareaRef}
@@ -40,21 +41,13 @@ export const SeenModal = ({ recommendation, onSubmit, onSkip }) => {
               />
             </div>
 
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onSkip}
-                className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                Skip
-              </button>
-              <button
-                type="submit"
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors"
-              >
-                Save
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={!note.trim()}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors"
+            >
+              Save
+            </button>
           </form>
         </div>
       </div>
