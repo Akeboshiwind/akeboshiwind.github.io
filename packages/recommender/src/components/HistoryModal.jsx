@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { PromptModal } from './PromptModal.jsx';
 
 const StatusBadge = ({ status }) => {
   if (status === 'seen') {
@@ -110,6 +111,7 @@ const AddItemForm = ({ onSave, onCancel }) => {
 export const HistoryModal = ({ list, onClose, onUpdateNote, onAddCustom }) => {
   const [editingId, setEditingId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
 
   const reviewed = list.recommendations
     .filter(r => r.status !== 'pending')
@@ -230,15 +232,22 @@ export const HistoryModal = ({ list, onClose, onUpdateNote, onAddCustom }) => {
             onCancel={() => setShowAddForm(false)}
           />
         ) : (
-          <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex-shrink-0">
+          <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex-shrink-0 flex gap-2">
             <button
               onClick={() => setShowAddForm(true)}
-              className="w-full py-2 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 font-medium transition-colors"
+              className="flex-1 py-2 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 font-medium transition-colors"
             >
               + Add item
             </button>
+            <button
+              onClick={() => setShowPrompt(true)}
+              className="flex-1 py-2 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 font-medium transition-colors"
+            >
+              View prompt
+            </button>
           </div>
         )}
+      {showPrompt && <PromptModal list={list} onClose={() => setShowPrompt(false)} />}
       </div>
     </div>
   );
