@@ -1,0 +1,13 @@
+{
+  "name": "recommender",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "bun-plugin-tailwind": "^0.1.2",
+    "tailwindcss": "^4.1.17"
+  }
+}
