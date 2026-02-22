@@ -54,11 +54,11 @@ function buildSystemPrompt(phase) {
 }
 
 function buildUserMessage(list) {
-  const allRecommended = list.recommendations.map(r => r.text);
+  const allRecommended = list.recommendations;
 
   const previousList =
     allRecommended.length > 0
-      ? allRecommended.map(t => `- ${t}`).join('\n')
+      ? allRecommended.map(r => `- ${r.text}${r.note ? ` — "${r.note}"` : ''}`).join('\n')
       : 'None yet.';
 
   return `User description: "${list.description}"
