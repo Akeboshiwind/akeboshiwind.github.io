@@ -14,7 +14,7 @@ import { ImportExportModal } from './components/ImportExportModal.jsx';
 import './app.css';
 
 const App = () => {
-  const [apiKey, setApiKey] = useLocalStorage('apiKey', '');
+  const [apiKey, setApiKey] = useLocalStorage('anthropic_apiKey', '');
   const [lists, setLists] = useLocalStorage('recommender_lists', []);
 
   // Navigation
