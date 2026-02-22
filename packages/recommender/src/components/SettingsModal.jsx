@@ -29,6 +29,7 @@ export const SettingsModal = ({ list, onSave, onDelete, onClose }) => {
   };
 
   return (
+    <>
     <div
       className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center p-4 z-50"
       onClick={handleBackdropClick}
@@ -139,5 +140,6 @@ export const SettingsModal = ({ list, onSave, onDelete, onClose }) => {
       </div>
     </div>
       {showPrompt && <PromptModal list={list} onClose={() => setShowPrompt(false)} />}
+    </>
   );
 };
