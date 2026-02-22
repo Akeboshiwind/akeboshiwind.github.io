@@ -7,7 +7,6 @@ import { ApiKeyView } from './components/ApiKeyView.jsx';
 import { ListsView } from './components/ListsView.jsx';
 import { CreateListModal } from './components/CreateListModal.jsx';
 import { RecommendationsView } from './components/RecommendationsView.jsx';
-import { FeedbackModal } from './components/FeedbackModal.jsx';
 import { SettingsModal } from './components/SettingsModal.jsx';
 import { HistoryModal } from './components/HistoryModal.jsx';
 import './app.css';
@@ -24,7 +23,6 @@ const App = () => {
   const [showCreateList, setShowCreateList] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [pendingFeedback, setPendingFeedback] = useState(null); // { recId, reaction }
 
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -103,14 +101,7 @@ const App = () => {
     setView('recommendations');
   };
 
-  const handleReact = (recId, reaction) => {
-    setPendingFeedback({ recId, reaction });
-  };
-
-  const handleFeedbackSubmit = feedback => {
-    if (!pendingFeedback || !activeListId) return;
-    const { recId, reaction } = pendingFeedback;
-
+  const handleSeen = recId => {
     setLists(prev =>
       prev.map(list => {
         if (list.id !== activeListId) return list;
@@ -118,14 +109,11 @@ const App = () => {
           ...list,
           recommendations: list.recommendations.map(r => {
             if (r.id !== recId) return r;
-            return { ...r, status: reaction, feedback, reviewedAt: Date.now() };
+            return { ...r, status: 'seen', reviewedAt: Date.now() };
           }),
         };
       }),
     );
-
-    setPendingFeedback(null);
-    // Auto-generation is triggered by the pendingCount → 0 useEffect
   };
 
   const handleSaveSettings = updates => {
@@ -159,7 +147,7 @@ const App = () => {
       {view === 'recommendations' && activeList && (
         <RecommendationsView
           list={activeList}
-          onReact={handleReact}
+          onSeen={handleSeen}
           onBack={() => {
             setView('lists');
             setGenerateError(null);
@@ -179,17 +167,6 @@ const App = () => {
         <CreateListModal
           onCreate={handleCreateList}
           onClose={() => setShowCreateList(false)}
-        />
-      )}
-
-      {pendingFeedback && activeList && (
-        <FeedbackModal
-          recommendation={
-            activeList.recommendations.find(r => r.id === pendingFeedback.recId)?.text || ''
-          }
-          reaction={pendingFeedback.reaction}
-          onSubmit={handleFeedbackSubmit}
-          onClose={() => setPendingFeedback(null)}
         />
       )}
 
