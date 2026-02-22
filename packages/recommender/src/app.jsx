@@ -180,6 +180,10 @@ const App = () => {
             setGenerateError(null);
             runGenerate(activeList);
           }}
+          onGenerateMore={() => {
+            setGenerateError(null);
+            runGenerate(activeList);
+          }}
         />
       )}
 

@@ -23,6 +23,7 @@ export const RecommendationsView = ({
   isGenerating,
   generateError,
   onRetryGenerate,
+  onGenerateMore,
 }) => {
   const pending = list.recommendations.filter(r => r.status === 'pending');
   const reviewed = list.recommendations.filter(r => r.status !== 'pending');
@@ -115,6 +116,13 @@ export const RecommendationsView = ({
             {pending.map(rec => (
               <RecommendationCard key={rec.id} rec={rec} onSeen={onSeen} />
             ))}
+            <button
+              onClick={onGenerateMore}
+              disabled={isGenerating}
+              className="w-full py-2.5 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 font-medium transition-colors"
+            >
+              Generate more
+            </button>
           </div>
         )}
 

@@ -54,17 +54,26 @@ function buildSystemPrompt(phase) {
 }
 
 function buildUserMessage(list) {
-  const allRecommended = list.recommendations;
+  const seen = list.recommendations.filter(r => r.status === 'seen');
+  const pending = list.recommendations.filter(r => r.status === 'pending');
 
-  const previousList =
-    allRecommended.length > 0
-      ? allRecommended.map(r => `- ${r.text}${r.note ? ` — "${r.note}"` : ''}`).join('\n')
+  const seenText =
+    seen.length > 0
+      ? seen.map(r => `- ${r.text}${r.note ? ` — "${r.note}"` : ''}`).join('\n')
       : 'None yet.';
+
+  const pendingText =
+    pending.length > 0
+      ? pending.map(r => `- ${r.text}`).join('\n')
+      : 'None.';
 
   return `User description: "${list.description}"
 
-Already seen (DO NOT repeat any of these):
-${previousList}`;
+Already seen (notes provide context for future recommendations):
+${seenText}
+
+Already suggested but not yet reviewed (DO NOT repeat these either):
+${pendingText}`;
 }
 
 export async function generateRecommendations(apiKey, list) {
