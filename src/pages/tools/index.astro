@@ -1,4 +1,5 @@
 ---
+import { Image } from 'astro:assets';
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
@@ -7,12 +8,15 @@ const base = import.meta.env.BASE_URL;
 const tools = await getCollection('tools');
 const sortedTools = tools.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
+const screenshots = import.meta.glob<{ default: ImageMetadata }>('../../assets/tools/*.png', { eager: true });
+
 function toolUrl(tool: { id: string; data: { url?: string } }) {
   return tool.data.url || `${base}tools/${tool.id.replace('.json', '')}/`;
 }
 
-function screenshotPath(tool: { id: string }) {
-  return `${base}tools/screenshots/${tool.id.replace('.json', '')}.png`;
+function screenshot(tool: { id: string }) {
+  const key = `../../assets/tools/${tool.id.replace('.json', '')}.png`;
+  return screenshots[key]?.default;
 }
 ---
 
@@ -21,23 +25,30 @@ function screenshotPath(tool: { id: string }) {
   <p>A collection of useful tools mostly created with Claude.</p>
 
   <div class="tool-grid">
-    {sortedTools.map(tool => (
-      <a href={toolUrl(tool)} class="tool-card">
-        <img
-          src={screenshotPath(tool)}
-          alt={`Screenshot of ${tool.data.title}`}
-          class="tool-screenshot"
-          loading="lazy"
-        />
-        <div class="tool-info">
-          <h2 class="tool-title">{tool.data.title}</h2>
-          <p class="tool-description">{tool.data.description}</p>
-          <time datetime={tool.data.date.toISOString().split('T')[0]}>
-            {tool.data.date.toISOString().split('T')[0]}
-          </time>
-        </div>
-      </a>
-    ))}
+    {sortedTools.map(tool => {
+      const img = screenshot(tool);
+      return (
+        <a href={toolUrl(tool)} class="tool-card">
+          {img && (
+            <Image
+              src={img}
+              alt={`Screenshot of ${tool.data.title}`}
+              class="tool-screenshot"
+              loading="lazy"
+              widths={[360, 720]}
+              sizes="(max-width: 600px) 100vw, 50vw"
+            />
+          )}
+          <div class="tool-info">
+            <h2 class="tool-title">{tool.data.title}</h2>
+            <p class="tool-description">{tool.data.description}</p>
+            <time datetime={tool.data.date.toISOString().split('T')[0]}>
+              {tool.data.date.toISOString().split('T')[0]}
+            </time>
+          </div>
+        </a>
+      );
+    })}
   </div>
 </Layout>
 

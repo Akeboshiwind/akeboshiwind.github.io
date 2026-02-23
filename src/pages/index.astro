@@ -1,4 +1,5 @@
 ---
+import { Image } from 'astro:assets';
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
@@ -17,12 +18,15 @@ const recentTools = tools
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
   .slice(0, 4);
 
+const screenshots = import.meta.glob<{ default: ImageMetadata }>('../assets/tools/*.png', { eager: true });
+
 function toolUrl(tool: { id: string; data: { url?: string } }) {
   return tool.data.url || `${base}tools/${tool.id.replace('.json', '')}/`;
 }
 
-function screenshotPath(tool: { id: string }) {
-  return `${base}tools/screenshots/${tool.id.replace('.json', '')}.png`;
+function screenshot(tool: { id: string }) {
+  const key = `../assets/tools/${tool.id.replace('.json', '')}.png`;
+  return screenshots[key]?.default;
 }
 ---
 
@@ -51,20 +55,27 @@ function screenshotPath(tool: { id: string }) {
 
   <h2>Recent Tools</h2>
   <div class="tool-grid">
-    {recentTools.map(tool => (
-      <a href={toolUrl(tool)} class="tool-card">
-        <img
-          src={screenshotPath(tool)}
-          alt={`Screenshot of ${tool.data.title}`}
-          class="tool-screenshot"
-          loading="lazy"
-        />
-        <div class="tool-info">
-          <h2 class="tool-title">{tool.data.title}</h2>
-          <p class="tool-description">{tool.data.description}</p>
-        </div>
-      </a>
-    ))}
+    {recentTools.map(tool => {
+      const img = screenshot(tool);
+      return (
+        <a href={toolUrl(tool)} class="tool-card">
+          {img && (
+            <Image
+              src={img}
+              alt={`Screenshot of ${tool.data.title}`}
+              class="tool-screenshot"
+              loading="lazy"
+              widths={[360, 720]}
+              sizes="(max-width: 600px) 100vw, 50vw"
+            />
+          )}
+          <div class="tool-info">
+            <h2 class="tool-title">{tool.data.title}</h2>
+            <p class="tool-description">{tool.data.description}</p>
+          </div>
+        </a>
+      );
+    })}
   </div>
 
   <p><a href={`${base}tools/`}>View all tools &rarr;</a></p>
