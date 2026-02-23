@@ -2,6 +2,8 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import squint from './plugins/vite-plugin-squint.js';
 
 export default defineConfig({
   site: 'https://blog.bythe.rocks',
@@ -13,6 +15,6 @@ export default defineConfig({
     },
   },
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [squint(), tailwindcss(), react()],
   },
 });

@@ -27,70 +27,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Bun
-        if: github.event.action != 'closed'
-        uses: oven-sh/setup-bun@v2
-
-      - name: Setup Babashka
-        if: github.event.action != 'closed'
-        uses: DeLaGuardo/setup-clojure@12.5
-        with:
-          bb: latest
-
       - name: Setup Node
         if: github.event.action != 'closed'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install Astro dependencies
+      - name: Install dependencies
         if: github.event.action != 'closed'
         run: npm ci
-
-      - name: Build bitemporal-playground
-        if: github.event.action != 'closed'
-        run: |
-          cd packages/bitemporal-playground
-          bun install
-          bb build:ci
-          mkdir -p ../../public/tools/bitemporal
-          cp -r target/public/* ../../public/tools/bitemporal/
-
-      - name: Build christmas-talk
-        if: github.event.action != 'closed'
-        run: |
-          cd packages/christmas-talk
-          bun install
-          bb build:ci
-          mkdir -p ../../public/talk/christmas
-          cp -r target/public/* ../../public/talk/christmas/
-
-      - name: Build chat-wrapped
-        if: github.event.action != 'closed'
-        run: |
-          cd packages/chat-wrapped
-          bun install
-          bb build:ci
-          mkdir -p ../../public/talk/chat-wrapped
-          cp -r target/public/* ../../public/talk/chat-wrapped/
-
-      - name: Build ynab-reimbursement
-        if: github.event.action != 'closed'
-        run: |
-          cd packages/ynab-reimbursement
-          bun install
-          bb build:ci
-          mkdir -p ../../public/tools/ynab-reimbursement
-          cp -r target/public/* ../../public/tools/ynab-reimbursement/
-
-      - name: Build recommender
-        if: github.event.action != 'closed'
-        run: |
-          cd packages/recommender
-          bun install
-          bb build:ci
-          mkdir -p ../../public/tools/recommender
-          cp -r target/public/* ../../public/tools/recommender/
 
       - name: Build Astro
         if: github.event.action != 'closed' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')

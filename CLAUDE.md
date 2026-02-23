@@ -5,8 +5,8 @@ Personal blog built with Astro, with interactive tools and presentations.
 ## Commands
 
 ```bash
-npm run dev           # Dev server (drafts visible)
-npm run build         # Build for production
+npm run dev           # Dev server (drafts visible, all apps included)
+npm run build         # Build for production (blog + all apps)
 npm run preview       # Preview production build
 ```
 
@@ -16,27 +16,29 @@ npm run preview       # Preview production build
 src/
   content/blog/      # Blog posts (Markdown/MDX)
   pages/             # Astro pages
+    tools/
+      bitemporal/    # Bitemporal Visualizer (Squint + Reagami + Ably)
+      ynab-reimbursement/  # YNAB Reimbursement (React)
+      recommender/   # Recommender (React + Claude API)
+    talk/
+      christmas/     # Christmas Talk (Squint + Reagami + Ably)
+      chat-wrapped/  # Chat Wrapped (Squint + React)
   layouts/           # Layout components
   components/        # Reusable components
   styles/            # Global CSS
-public/              # Static assets (favicons, etc.)
-packages/            # Frontend tools (each has own CLAUDE.md)
-  bitemporal-playground/
-  christmas-talk/
-  chat-wrapped/
-  ynab-reimbursement/
+public/              # Static assets (favicons, logos, images)
+plugins/             # Vite plugins (squint compiler)
 ```
 
-## Working on Packages
+Each app page has an `index.astro` (SPA shell) and a `_app/` directory with source code.
+The `_` prefix excludes it from Astro's file-based routing.
 
-Each package in `/packages/` is self-contained with its own CLAUDE.md.
-For focused context, run Claude from the package directory:
+## Apps
 
-```bash
-cd packages/chat-wrapped && claude
-```
+All apps are built through Astro's Vite pipeline — no separate build step needed.
 
-Packages build to `public/tools/*` or `public/talk/*` (gitignored).
+- **Squint apps** (.cljs) are compiled on-the-fly by `plugins/vite-plugin-squint.js`
+- **React apps** (.jsx) use `@vitejs/plugin-react`
 
 ## Code Style
 
@@ -48,5 +50,6 @@ Packages build to `public/tools/*` or `public/talk/*` (gitignored).
 
 - [Astro](https://astro.build/) - Static site generator
 - MDX for posts with components
-
-Packages use [Bun](https://bun.sh/) + [Squint](https://github.com/squint-cljs/squint) - see each package's CLAUDE.md for details.
+- [Squint](https://github.com/squint-cljs/squint) - ClojureScript to JS compiler (via Vite plugin)
+- React - UI for some apps
+- Tailwind CSS 4 - Styling
