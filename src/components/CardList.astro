@@ -13,27 +13,32 @@ interface CardItem {
 
 interface Props {
   items: CardItem[];
+  showImages?: boolean;
 }
 
-const { items } = Astro.props;
+const { items, showImages = true } = Astro.props;
 ---
 
 <div class="flex flex-col gap-1.5 mt-6">
   {items.map(item => (
-    <a href={item.url} class="group flex flex-row items-stretch border border-border rounded-lg overflow-hidden no-underline text-inherit transition-colors duration-200 hover:border-link visited:text-inherit">
-      {item.image && (
-        <Image
-          src={item.image}
-          alt={`Screenshot of ${item.title}`}
-          class="w-[72px] min-w-[72px] max-sm:w-[56px] max-sm:min-w-[56px] h-full object-cover object-left-top border-r border-border"
-          loading="lazy"
-          widths={[200, 360]}
-          sizes="100px"
-        />
+    <div class="flex flex-row items-stretch overflow-hidden">
+      {showImages && (
+        <a href={item.url} class="w-[72px] min-w-[72px] max-sm:w-[56px] max-sm:min-w-[56px] mr-3 block">
+          {item.image && (
+            <Image
+              src={item.image}
+              alt={`Screenshot of ${item.title}`}
+              class="w-full h-full object-cover object-left-top rounded"
+              loading="lazy"
+              widths={[200, 360]}
+              sizes="100px"
+            />
+          )}
+        </a>
       )}
-      <div class="flex flex-col justify-center px-3 py-1 min-w-0">
+      <div class="flex flex-col justify-center py-1 min-w-0">
         <div class="flex items-baseline gap-2 flex-wrap">
-          <h2 class="text-xs font-semibold m-0 text-link group-visited:text-link-visited whitespace-nowrap">{item.title}</h2>
+          <h2 class="text-xs font-semibold m-0 whitespace-nowrap"><a href={item.url} class="text-link visited:text-link-visited no-underline hover:underline">{item.title}</a></h2>
           {item.date && (
             <time datetime={item.date.toISOString().split('T')[0]} class="font-mono text-xs opacity-50">
               {item.date.toISOString().split('T')[0]}
@@ -45,6 +50,6 @@ const { items } = Astro.props;
           <p class="text-xs m-0 mt-0.5 text-text leading-snug opacity-80">{item.description}</p>
         )}
       </div>
-    </a>
+    </div>
   ))}
 </div>
