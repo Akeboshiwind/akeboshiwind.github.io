@@ -15,7 +15,8 @@ packages/*/build/
 
 # Package outputs (built in CI)
 public/talk
-public/tools
+public/tools/*
+!public/tools/screenshots
 
 # OS generated files
 .DS_Store
