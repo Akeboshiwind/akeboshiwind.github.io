@@ -56,7 +56,7 @@ function screenshot(tool: { id: string }) {
   .tool-grid {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 0.75rem;
     margin-top: 1.5rem;
   }
 
@@ -81,8 +81,8 @@ function screenshot(tool: { id: string }) {
   }
 
   .tool-screenshot {
-    width: 280px;
-    min-width: 280px;
+    width: 180px;
+    min-width: 180px;
     aspect-ratio: 16 / 10;
     object-fit: cover;
     object-position: top left;
@@ -120,8 +120,8 @@ function screenshot(tool: { id: string }) {
 
   @media (max-width: 600px) {
     .tool-screenshot {
-      width: 120px;
-      min-width: 120px;
+      width: 100px;
+      min-width: 100px;
     }
   }
 </style>
