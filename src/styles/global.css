@@ -7,14 +7,14 @@
   --color-link-visited: var(--link-visited);
   --color-text: var(--text);
   --color-heading: var(--heading);
+  --color-bg: var(--bg);
+  --color-code-bg: var(--code-bg);
+  --color-code-text: var(--code-text);
+  --font-sans: Verdana, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-/* Theme variables */
-
 :root {
-  --width: 720px;
-  --font-main: Verdana, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --bg: #fff;
   --text: #444;
   --heading: #222;
@@ -38,28 +38,7 @@
   }
 }
 
-/* Base resets */
-
-* {
-  box-sizing: border-box;
-}
-
-html {
-  font-family: var(--font-main);
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--text);
-  background: var(--bg);
-}
-
-body {
-  margin: 0 auto;
-  padding: 1.25rem;
-  max-width: var(--width);
-}
-
-/* Prose overrides — customise typography plugin to match the site theme */
-
+/* Map theme colours to prose — these are variable assignments, not element styles */
 .prose {
   --tw-prose-body: var(--text);
   --tw-prose-headings: var(--heading);
@@ -70,62 +49,11 @@ body {
   --tw-prose-pre-code: var(--code-text);
   --tw-prose-quotes: var(--text);
   --tw-prose-quote-borders: var(--border);
-  --tw-prose-th-borders: var(--border);
-  --tw-prose-td-borders: var(--border);
-  --tw-prose-hr: var(--border);
   --tw-prose-counters: var(--text);
   --tw-prose-bullets: var(--text);
-  font-family: var(--font-main);
-  max-width: none;
-  line-height: 1.6;
 }
 
-/* Tighter spacing to match original styles */
-.prose :where(p, ul, ol, pre, blockquote, table, hr, h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  margin-top: 1em;
-  margin-bottom: 1em;
-}
-
-.prose :where(h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
-}
-
-.prose :where(li):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  margin-top: 0.25em;
-  margin-bottom: 0.25em;
-}
-
-.prose :where(a):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  text-decoration: none;
-}
-
-.prose :where(a:hover):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  text-decoration: underline;
-}
-
-.prose :where(a:visited):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  color: var(--link-visited);
-}
-
-.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  font-family: var(--font-mono);
-  background: var(--code-bg);
-  padding: 0.15em 0.3em;
-  border-radius: 3px;
-  font-weight: normal;
-}
-
-.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *))::before,
-.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *))::after {
-  content: none;
-}
-
-.prose :where(pre):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  font-family: var(--font-mono);
-}
-
-/* Preserve Shiki syntax highlighting colours */
+/* Preserve Shiki syntax highlighting — no element modifier can target pre>code>span */
 .prose :where(pre code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   color: inherit;
   background: none;
@@ -134,101 +62,4 @@ body {
 
 .prose :where(pre code span):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   color: inherit;
-}
-
-.prose :where(blockquote):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  font-style: italic;
-}
-
-.prose :where(hr):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  border-top-style: dashed;
-}
-
-.prose :where(time):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-}
-
-/* CodeBlock component */
-.code-with-filename {
-  position: relative;
-  margin: 1em 0;
-}
-
-.codeblock-name {
-  font-family: var(--font-mono);
-  font-size: 0.75em;
-  color: #888;
-  position: absolute;
-  top: 0.5em;
-  left: 1em;
-  z-index: 1;
-}
-
-.code-with-filename pre {
-  padding-top: 2em !important;
-}
-
-/* Admonition component */
-.admonition {
-  margin: 1.5em 0;
-  padding: 0.8em 1em;
-  border-left: 4px solid;
-  border-radius: 4px;
-}
-
-.admonition-title {
-  font-weight: bold;
-  margin-bottom: 0.5em;
-}
-
-.admonition-content p:last-child {
-  margin-bottom: 0;
-}
-
-.admonition-info {
-  background: rgba(85, 149, 214, 0.1);
-  border-color: #5595d6;
-}
-.admonition-info .admonition-title { color: #5595d6; }
-
-.admonition-warning {
-  background: rgba(255, 185, 0, 0.1);
-  border-color: #ffb900;
-}
-.admonition-warning .admonition-title { color: #ffb900; }
-
-.admonition-danger {
-  background: rgba(231, 76, 60, 0.1);
-  border-color: #e74c3c;
-}
-.admonition-danger .admonition-title { color: #e74c3c; }
-
-.admonition-success {
-  background: rgba(46, 204, 113, 0.1);
-  border-color: #2ecc71;
-}
-.admonition-success .admonition-title { color: #2ecc71; }
-
-.admonition-note {
-  background: rgba(149, 165, 166, 0.1);
-  border-color: #95a5a6;
-}
-.admonition-note .admonition-title { color: #95a5a6; }
-
-@media (prefers-color-scheme: dark) {
-  .admonition-info { background: rgba(85, 149, 214, 0.15); }
-  .admonition-info .admonition-title { color: #78aee2; }
-
-  .admonition-warning { background: rgba(255, 185, 0, 0.15); }
-  .admonition-warning .admonition-title { color: #ffc426; }
-
-  .admonition-danger { background: rgba(231, 76, 60, 0.15); }
-  .admonition-danger .admonition-title { color: #e95e4f; }
-
-  .admonition-success { background: rgba(46, 204, 113, 0.15); }
-  .admonition-success .admonition-title { color: #40d47e; }
-
-  .admonition-note { background: rgba(149, 165, 166, 0.15); }
-  .admonition-note .admonition-title { color: #a4b2b3; }
 }
