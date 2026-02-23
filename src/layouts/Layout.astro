@@ -22,7 +22,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="font-sans text-base leading-relaxed text-text bg-bg">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -59,12 +59,12 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   <meta name="twitter:title" content={pageTitle} />
   <meta name="twitter:description" content={description} />
 </head>
-<body>
+<body class="mx-auto px-5 max-w-[720px]">
   <Header />
   <main>
     <slot />
   </main>
-  <footer>
+  <footer class="mt-12 py-4 text-center text-sm text-text opacity-70">
     <p>&copy; {new Date().getFullYear()} Blog by the Rocks</p>
   </footer>
 </body>

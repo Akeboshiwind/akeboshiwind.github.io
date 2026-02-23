@@ -23,14 +23,17 @@ const { Content } = await post.render();
   type="article"
   publishedTime={post.data.date}
 >
-  <article>
+  <article class="prose prose-sm font-sans max-w-none leading-relaxed
+    prose-a:text-link prose-a:no-underline hover:prose-a:underline prose-a:visited:text-link-visited
+    prose-code:font-mono prose-code:bg-code-bg prose-code:text-code-text prose-code:px-1 prose-code:rounded-sm prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
+    prose-pre:font-mono">
     <h1>
       {post.data.title}
-      {post.data.draft && <span class="draft-marker">[DRAFT]</span>}
+      {post.data.draft && <span class="text-red-700 italic text-sm">[DRAFT]</span>}
     </h1>
 
     <p>
-      <time datetime={post.data.date.toISOString().split('T')[0]}>
+      <time datetime={post.data.date.toISOString().split('T')[0]} class="font-mono text-[0.9rem]">
         {post.data.date.toISOString().split('T')[0]}
       </time>
     </p>

@@ -7,7 +7,15 @@ interface Props {
 const { filename, lang } = Astro.props;
 ---
 
-<div class="code-with-filename">
-  <code class="codeblock-name">{filename}</code>
-  <slot />
+<div class="relative my-4">
+  <code class="font-mono text-[0.75em] text-gray-400 absolute top-2 left-4 z-10">{filename}</code>
+  <div class="codeblock-slot">
+    <slot />
+  </div>
 </div>
+
+<style>
+  .codeblock-slot :global(pre) {
+    padding-top: 2em !important;
+  }
+</style>

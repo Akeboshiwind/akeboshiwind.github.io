@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import CardList from '../components/CardList.astro';
 import { getCollection } from 'astro:content';
 
 const base = import.meta.env.BASE_URL;
@@ -15,43 +16,47 @@ const recentPosts = posts
 const tools = await getCollection('tools');
 const recentTools = tools
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0, 5);
+  .slice(0, 4);
+
+const screenshots = import.meta.glob<{ default: import('astro').ImageMetadata }>('../assets/tools/*.png', { eager: true });
+
+function toolUrl(tool: { id: string; data: { url?: string } }) {
+  return tool.data.url || `${base}tools/${tool.id.replace('.json', '')}/`;
+}
+
+function screenshot(tool: { id: string }) {
+  const key = `../assets/tools/${tool.id.replace('.json', '')}.png`;
+  return screenshots[key]?.default;
+}
+
+const postItems = recentPosts.map(post => ({
+  url: `${base}blog/${post.slug}/`,
+  title: post.data.title,
+  date: post.data.date,
+  draft: post.data.draft,
+}));
+
+const toolItems = recentTools.map(tool => ({
+  url: toolUrl(tool),
+  title: tool.data.title,
+  description: tool.data.description,
+  image: screenshot(tool),
+}));
 ---
 
 <Layout>
-  <h1>Welcome</h1>
-  <p>
+  <h1 class="text-2xl font-bold text-heading mt-6 mb-2">Welcome</h1>
+  <p class="my-4">
     This site focuses on Clojure, programming, and occasional thoughts about technology.
   </p>
 
-  <h2>Recent Posts</h2>
-  <ul class="post-list">
-    {recentPosts.map(post => (
-      <li>
-        <time datetime={post.data.date.toISOString().split('T')[0]}>
-          {post.data.date.toISOString().split('T')[0]}
-        </time>
-        <a href={`${base}blog/${post.slug}/`}>
-          {post.data.title}
-          {post.data.draft && <span class="draft-marker">[DRAFT]</span>}
-        </a>
-      </li>
-    ))}
-  </ul>
+  <h2 class="text-xl font-bold text-heading mt-6 mb-2">Recent Posts</h2>
+  <CardList items={postItems} showImages={false} />
 
-  <p><a href={`${base}blog/`}>View all posts &rarr;</a></p>
+  <p class="my-4"><a href={`${base}blog/`} class="text-link visited:text-link-visited no-underline hover:underline">View all posts &rarr;</a></p>
 
-  <h2>Recent Tools</h2>
-  <ul class="post-list">
-    {recentTools.map(tool => (
-      <li>
-        <time datetime={tool.data.date.toISOString().split('T')[0]}>
-          {tool.data.date.toISOString().split('T')[0]}
-        </time>
-        <a href={tool.data.url || `${base}tools/${tool.id.replace('.json', '')}/`}>{tool.data.title}</a>
-      </li>
-    ))}
-  </ul>
+  <h2 class="text-xl font-bold text-heading mt-6 mb-2">Recent Tools</h2>
+  <CardList items={toolItems} />
 
-  <p><a href={`${base}tools/`}>View all tools &rarr;</a></p>
+  <p class="my-4"><a href={`${base}tools/`} class="text-link visited:text-link-visited no-underline hover:underline">View all tools &rarr;</a></p>
 </Layout>
