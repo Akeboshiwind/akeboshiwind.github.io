@@ -9,14 +9,6 @@ node_modules/
 .env
 .env.production
 
-# Package build artifacts
-packages/*/target/
-packages/*/build/
-
-# Package outputs (built in CI)
-public/talk
-public/tools
-
 # OS generated files
 .DS_Store
 .DS_Store?
