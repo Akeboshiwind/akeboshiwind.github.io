@@ -15,7 +15,15 @@ const recentPosts = posts
 const tools = await getCollection('tools');
 const recentTools = tools
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0, 5);
+  .slice(0, 4);
+
+function toolUrl(tool: { id: string; data: { url?: string } }) {
+  return tool.data.url || `${base}tools/${tool.id.replace('.json', '')}/`;
+}
+
+function screenshotPath(tool: { id: string }) {
+  return `${base}tools/screenshots/${tool.id.replace('.json', '')}.png`;
+}
 ---
 
 <Layout>
@@ -42,16 +50,86 @@ const recentTools = tools
   <p><a href={`${base}blog/`}>View all posts &rarr;</a></p>
 
   <h2>Recent Tools</h2>
-  <ul class="post-list">
+  <div class="tool-grid">
     {recentTools.map(tool => (
-      <li>
-        <time datetime={tool.data.date.toISOString().split('T')[0]}>
-          {tool.data.date.toISOString().split('T')[0]}
-        </time>
-        <a href={tool.data.url || `${base}tools/${tool.id.replace('.json', '')}/`}>{tool.data.title}</a>
-      </li>
+      <a href={toolUrl(tool)} class="tool-card">
+        <img
+          src={screenshotPath(tool)}
+          alt={`Screenshot of ${tool.data.title}`}
+          class="tool-screenshot"
+          loading="lazy"
+        />
+        <div class="tool-info">
+          <h2 class="tool-title">{tool.data.title}</h2>
+          <p class="tool-description">{tool.data.description}</p>
+        </div>
+      </a>
     ))}
-  </ul>
+  </div>
 
   <p><a href={`${base}tools/`}>View all tools &rarr;</a></p>
 </Layout>
+
+<style>
+  .tool-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+    margin-top: 1rem;
+  }
+
+  .tool-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s;
+  }
+
+  .tool-card:visited {
+    color: inherit;
+  }
+
+  .tool-card:hover {
+    border-color: var(--link);
+    text-decoration: none;
+  }
+
+  .tool-screenshot {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    object-position: top left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tool-info {
+    padding: 0.75rem 1rem;
+  }
+
+  .tool-title {
+    font-size: 1rem;
+    margin: 0 0 0.25rem;
+    color: var(--link);
+  }
+
+  .tool-card:visited .tool-title {
+    color: var(--link-visited);
+  }
+
+  .tool-description {
+    font-size: 0.8rem;
+    margin: 0;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  @media (max-width: 600px) {
+    .tool-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
