@@ -23,10 +23,10 @@ const { Content } = await post.render();
   type="article"
   publishedTime={post.data.date}
 >
-  <article>
+  <article class="prose">
     <h1>
       {post.data.title}
-      {post.data.draft && <span class="draft-marker">[DRAFT]</span>}
+      {post.data.draft && <span class="text-red-700 italic text-sm">[DRAFT]</span>}
     </h1>
 
     <p>

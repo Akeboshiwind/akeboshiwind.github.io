@@ -1,13 +1,15 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --color-border: var(--border);
   --color-link: var(--link);
   --color-link-visited: var(--link-visited);
   --color-text: var(--text);
+  --color-heading: var(--heading);
 }
 
-/* Nano-inspired minimal styles */
+/* Theme variables */
 
 :root {
   --width: 720px;
@@ -36,6 +38,8 @@
   }
 }
 
+/* Base resets */
+
 * {
   box-sizing: border-box;
 }
@@ -54,145 +58,95 @@ body {
   max-width: var(--width);
 }
 
-/* Typography */
-h1, h2, h3, h4, h5, h6 {
-  color: var(--heading);
-  font-weight: bold;
-  line-height: 1.3;
-  margin: 1.5em 0 0.5em;
+/* Prose overrides — customise typography plugin to match the site theme */
+
+.prose {
+  --tw-prose-body: var(--text);
+  --tw-prose-headings: var(--heading);
+  --tw-prose-links: var(--link);
+  --tw-prose-bold: var(--heading);
+  --tw-prose-code: var(--code-text);
+  --tw-prose-pre-bg: var(--code-bg);
+  --tw-prose-pre-code: var(--code-text);
+  --tw-prose-quotes: var(--text);
+  --tw-prose-quote-borders: var(--border);
+  --tw-prose-th-borders: var(--border);
+  --tw-prose-td-borders: var(--border);
+  --tw-prose-hr: var(--border);
+  --tw-prose-counters: var(--text);
+  --tw-prose-bullets: var(--text);
+  font-family: var(--font-main);
+  max-width: none;
+  line-height: 1.6;
 }
 
-h1 { font-size: 1.75rem; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.25rem; }
+/* Tighter spacing to match original styles */
+.prose :where(p, ul, ol, pre, blockquote, table, hr, h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
 
-a {
-  color: var(--link);
+.prose :where(h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose :where(li):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+.prose :where(a):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   text-decoration: none;
 }
 
-a:hover {
+.prose :where(a:hover):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   text-decoration: underline;
 }
 
-a:visited {
+.prose :where(a:visited):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   color: var(--link-visited);
 }
 
-p {
-  margin: 1em 0;
-}
-
-/* Code */
-code {
+.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   font-family: var(--font-mono);
-  font-size: 0.9em;
+  background: var(--code-bg);
   padding: 0.15em 0.3em;
-  background: var(--code-bg);
   border-radius: 3px;
+  font-weight: normal;
 }
 
-pre {
-  background: var(--code-bg);
-  padding: 1em;
-  border-radius: 5px;
-  overflow-x: auto;
-  margin: 1em 0;
+.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *))::before,
+.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *))::after {
+  content: none;
 }
 
-pre code {
-  padding: 0;
+.prose :where(pre):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  font-family: var(--font-mono);
+}
+
+/* Preserve Shiki syntax highlighting colours */
+.prose :where(pre code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  color: inherit;
   background: none;
+  padding: 0;
 }
 
-/* Lists */
-ul, ol {
-  padding-left: 1.5em;
+.prose :where(pre code span):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  color: inherit;
 }
 
-ul {
-  list-style: disc;
-}
-
-ol {
-  list-style: decimal;
-}
-
-li {
-  margin: 0.25em 0;
-}
-
-/* Blockquote */
-blockquote {
-  border-left: 3px solid var(--border);
-  margin: 1em 0;
-  padding-left: 1em;
-  color: var(--text);
+.prose :where(blockquote):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   font-style: italic;
 }
 
-/* Table */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1em 0;
+.prose :where(hr):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  border-top-style: dashed;
 }
 
-th, td {
-  border: 1px solid var(--border);
-  padding: 0.5em;
-  text-align: left;
-}
-
-/* Images */
-img {
-  max-width: 100%;
-  height: auto;
-}
-
-/* Horizontal rule */
-hr {
-  border: 0;
-  border-top: 1px dashed var(--border);
-  margin: 2em 0;
-}
-
-/* Time */
-time {
+.prose :where(time):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   font-family: var(--font-mono);
   font-size: 0.9rem;
-  color: var(--text);
-}
-
-/* Header */
-header {
-  margin-bottom: 2em;
-}
-
-header nav {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-header .site-title {
-  font-size: 1.25rem;
-  font-weight: bold;
-  color: var(--heading);
-}
-
-header .site-title:hover {
-  text-decoration: none;
-}
-
-/* Footer */
-footer {
-  margin-top: 3em;
-  padding: 1em 0;
-  text-align: center;
-  font-size: 0.875rem;
-  color: var(--text);
-  opacity: 0.7;
 }
 
 /* CodeBlock component */

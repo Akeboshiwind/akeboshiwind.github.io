@@ -18,31 +18,31 @@ interface Props {
 const { items } = Astro.props;
 ---
 
-<div class="flex flex-col gap-2 mt-6">
+<div class="flex flex-col gap-1.5 mt-6">
   {items.map(item => (
-    <a href={item.url} class="group flex flex-row items-center border border-border rounded-lg overflow-hidden no-underline text-inherit transition-colors duration-200 hover:border-link visited:text-inherit hover:no-underline">
+    <a href={item.url} class="group flex flex-row items-stretch border border-border rounded-lg overflow-hidden no-underline text-inherit transition-colors duration-200 hover:border-link visited:text-inherit">
       {item.image && (
         <Image
           src={item.image}
           alt={`Screenshot of ${item.title}`}
-          class="w-[100px] min-w-[100px] max-sm:w-[72px] max-sm:min-w-[72px] h-full object-cover object-left-top border-r border-border"
+          class="w-[72px] min-w-[72px] max-sm:w-[56px] max-sm:min-w-[56px] h-full object-cover object-left-top border-r border-border"
           loading="lazy"
           widths={[200, 360]}
           sizes="100px"
         />
       )}
-      <div class="flex flex-col justify-center px-3 py-2 min-w-0">
+      <div class="flex flex-col justify-center px-3 py-1 min-w-0">
         <div class="flex items-baseline gap-2 flex-wrap">
-          <h2 class="text-sm font-semibold m-0 text-link group-visited:text-link-visited whitespace-nowrap">{item.title}</h2>
+          <h2 class="text-xs font-semibold m-0 text-link group-visited:text-link-visited whitespace-nowrap">{item.title}</h2>
           {item.date && (
-            <time datetime={item.date.toISOString().split('T')[0]} class="text-xs opacity-50">
+            <time datetime={item.date.toISOString().split('T')[0]} class="font-mono text-xs opacity-50">
               {item.date.toISOString().split('T')[0]}
             </time>
           )}
           {item.draft && <span class="text-red-700 text-xs italic">[DRAFT]</span>}
         </div>
         {item.description && (
-          <p class="text-xs m-0 mt-0.5 text-text leading-snug opacity-80 line-clamp-1">{item.description}</p>
+          <p class="text-xs m-0 mt-0.5 text-text leading-snug opacity-80">{item.description}</p>
         )}
       </div>
     </a>

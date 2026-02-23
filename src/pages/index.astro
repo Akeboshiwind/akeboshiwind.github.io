@@ -45,18 +45,18 @@ const toolItems = recentTools.map(tool => ({
 ---
 
 <Layout>
-  <h1>Welcome</h1>
-  <p>
+  <h1 class="text-2xl font-bold text-heading mt-6 mb-2">Welcome</h1>
+  <p class="my-4">
     This site focuses on Clojure, programming, and occasional thoughts about technology.
   </p>
 
-  <h2>Recent Posts</h2>
+  <h2 class="text-xl font-bold text-heading mt-6 mb-2">Recent Posts</h2>
   <CardList items={postItems} />
 
-  <p><a href={`${base}blog/`}>View all posts &rarr;</a></p>
+  <p class="my-4"><a href={`${base}blog/`} class="text-link visited:text-link-visited no-underline hover:underline">View all posts &rarr;</a></p>
 
-  <h2>Recent Tools</h2>
+  <h2 class="text-xl font-bold text-heading mt-6 mb-2">Recent Tools</h2>
   <CardList items={toolItems} />
 
-  <p><a href={`${base}tools/`}>View all tools &rarr;</a></p>
+  <p class="my-4"><a href={`${base}tools/`} class="text-link visited:text-link-visited no-underline hover:underline">View all tools &rarr;</a></p>
 </Layout>
