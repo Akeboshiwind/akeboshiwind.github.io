@@ -1,6 +1,6 @@
 ---
-import { Image } from 'astro:assets';
 import Layout from '../../layouts/Layout.astro';
+import CardList from '../../components/CardList.astro';
 import { getCollection } from 'astro:content';
 
 const base = import.meta.env.BASE_URL;
@@ -8,7 +8,7 @@ const base = import.meta.env.BASE_URL;
 const tools = await getCollection('tools');
 const sortedTools = tools.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
-const screenshots = import.meta.glob<{ default: ImageMetadata }>('../../assets/tools/*.png', { eager: true });
+const screenshots = import.meta.glob<{ default: import('astro').ImageMetadata }>('../../assets/tools/*.png', { eager: true });
 
 function toolUrl(tool: { id: string; data: { url?: string } }) {
   return tool.data.url || `${base}tools/${tool.id.replace('.json', '')}/`;
@@ -18,110 +18,19 @@ function screenshot(tool: { id: string }) {
   const key = `../../assets/tools/${tool.id.replace('.json', '')}.png`;
   return screenshots[key]?.default;
 }
+
+const items = sortedTools.map(tool => ({
+  url: toolUrl(tool),
+  title: tool.data.title,
+  description: tool.data.description,
+  date: tool.data.date,
+  image: screenshot(tool),
+}));
 ---
 
 <Layout title="Tools" description="A collection of useful tools">
   <h1>Tools</h1>
   <p>A collection of useful tools mostly created with Claude.</p>
 
-  <div class="tool-grid">
-    {sortedTools.map(tool => {
-      const img = screenshot(tool);
-      return (
-        <a href={toolUrl(tool)} class="tool-card">
-          {img && (
-            <Image
-              src={img}
-              alt={`Screenshot of ${tool.data.title}`}
-              class="tool-screenshot"
-              loading="lazy"
-              widths={[360, 720]}
-              sizes="(max-width: 600px) 100vw, 50vw"
-            />
-          )}
-          <div class="tool-info">
-            <h2 class="tool-title">{tool.data.title}</h2>
-            <p class="tool-description">{tool.data.description}</p>
-            <time datetime={tool.data.date.toISOString().split('T')[0]}>
-              {tool.data.date.toISOString().split('T')[0]}
-            </time>
-          </div>
-        </a>
-      );
-    })}
-  </div>
+  <CardList items={items} />
 </Layout>
-
-<style>
-  .tool-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-  }
-
-  .tool-card {
-    display: flex;
-    flex-direction: row;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-    text-decoration: none;
-    color: inherit;
-    transition: border-color 0.2s;
-  }
-
-  .tool-card:visited {
-    color: inherit;
-  }
-
-  .tool-card:hover {
-    border-color: var(--link);
-    text-decoration: none;
-  }
-
-  .tool-screenshot {
-    width: 180px;
-    min-width: 180px;
-    aspect-ratio: 16 / 10;
-    object-fit: cover;
-    object-position: top left;
-    border-right: 1px solid var(--border);
-  }
-
-  .tool-info {
-    padding: 0.75rem 1rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-
-  .tool-title {
-    font-size: 1.1rem;
-    margin: 0 0 0.25rem;
-    color: var(--link);
-  }
-
-  .tool-card:visited .tool-title {
-    color: var(--link-visited);
-  }
-
-  .tool-description {
-    font-size: 0.85rem;
-    margin: 0 0 0.5rem;
-    color: var(--text);
-    line-height: 1.4;
-  }
-
-  .tool-info time {
-    font-size: 0.8rem;
-    opacity: 0.7;
-  }
-
-  @media (max-width: 600px) {
-    .tool-screenshot {
-      width: 100px;
-      min-width: 100px;
-    }
-  }
-</style>

@@ -1,3 +1,18 @@
+@import "tailwindcss" layer(tailwind);
+@layer tailwind {
+  @theme {
+    --color-border: var(--border);
+    --color-link: var(--link);
+    --color-link-visited: var(--link-visited);
+    --color-text: var(--text);
+  }
+}
+
+/* Disable Tailwind preflight so existing styles are preserved */
+@layer base {
+  /* intentionally empty - our styles below take precedence */
+}
+
 /* Nano-inspired minimal styles */
 
 :root {
@@ -175,36 +190,6 @@ footer {
   font-size: 0.875rem;
   color: var(--text);
   opacity: 0.7;
-}
-
-/* Blog post list */
-.post-list {
-  list-style: none;
-  padding: 0;
-}
-
-.post-list li {
-  display: flex;
-  gap: 1rem;
-  margin: 0.5em 0;
-  align-items: baseline;
-}
-
-.post-list time {
-  flex-shrink: 0;
-  width: 7rem;
-}
-
-.post-list a:visited {
-  color: var(--link-visited);
-}
-
-/* Draft marker */
-.draft-marker {
-  color: #c00;
-  font-size: 0.8em;
-  font-style: italic;
-  margin-left: 0.5em;
 }
 
 /* CodeBlock component */

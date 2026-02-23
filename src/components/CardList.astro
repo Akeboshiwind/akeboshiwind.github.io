@@ -1,0 +1,48 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface CardItem {
+  url: string;
+  title: string;
+  description?: string;
+  date?: Date;
+  draft?: boolean;
+  image?: ImageMetadata;
+}
+
+interface Props {
+  items: CardItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="flex flex-col gap-3 mt-6">
+  {items.map(item => (
+    <a href={item.url} class="group flex flex-row border border-border rounded-lg overflow-hidden no-underline text-inherit transition-colors duration-200 hover:border-link visited:text-inherit hover:no-underline">
+      {item.image && (
+        <Image
+          src={item.image}
+          alt={`Screenshot of ${item.title}`}
+          class="w-[180px] min-w-[180px] max-sm:w-[100px] max-sm:min-w-[100px] aspect-[16/10] object-cover object-left-top border-r border-border"
+          loading="lazy"
+          widths={[200, 360]}
+          sizes="180px"
+        />
+      )}
+      <div class="flex flex-col justify-center px-4 py-3">
+        <h2 class="text-[1.1rem] m-0 mb-1 text-link group-visited:text-link-visited">{item.title}</h2>
+        {item.description && (
+          <p class="text-sm m-0 mb-2 text-text leading-snug">{item.description}</p>
+        )}
+        {item.date && (
+          <time datetime={item.date.toISOString().split('T')[0]} class="text-xs opacity-70">
+            {item.date.toISOString().split('T')[0]}
+          </time>
+        )}
+        {item.draft && <span class="text-red-700 text-xs italic ml-2">[DRAFT]</span>}
+      </div>
+    </a>
+  ))}
+</div>
