@@ -1,4 +1,4 @@
-@import "tailwindcss" layer(tailwind);
+@import "tailwindcss" layer(tailwind) preflight(false);
 @layer tailwind {
   @theme {
     --color-border: var(--border);
@@ -6,11 +6,6 @@
     --color-link-visited: var(--link-visited);
     --color-text: var(--text);
   }
-}
-
-/* Disable Tailwind preflight so existing styles are preserved */
-@layer base {
-  /* intentionally empty - our styles below take precedence */
 }
 
 /* Nano-inspired minimal styles */
