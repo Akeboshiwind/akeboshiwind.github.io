@@ -16,5 +16,14 @@ export default defineConfig({
   },
   vite: {
     plugins: [squint(), tailwindcss(), react()],
+    server: {
+      proxy: {
+        '/notion-proxy': {
+          target: 'https://api.notion.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/notion-proxy/, '/v1'),
+        },
+      },
+    },
   },
 });
