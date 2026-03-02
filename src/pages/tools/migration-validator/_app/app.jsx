@@ -1,5 +1,6 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createRoot } from "react-dom/client";
+import "./app.css";
 
 const LS_PREFIX = "migrationValidator_";
 
@@ -65,13 +66,11 @@ const EDGE_CASES = [
   { id: "identities_fate", label: "Identities — check if transferred anywhere" },
 ];
 
-// Confidence calculation: P(catching ≥1 defect) = 1 - (1-d)^n
-// where d = assumed defect rate, n = number of passed checks
 const DEFECT_THRESHOLDS = [
-  { rate: 0.01, label: "1%", desc: "1-in-100 entries broken" },
-  { rate: 0.05, label: "5%", desc: "1-in-20 entries broken" },
-  { rate: 0.10, label: "10%", desc: "1-in-10 entries broken" },
-  { rate: 0.20, label: "20%", desc: "1-in-5 entries broken" },
+  { rate: 0.01, label: "1%", desc: "1-in-100 broken" },
+  { rate: 0.05, label: "5%", desc: "1-in-20 broken" },
+  { rate: 0.10, label: "10%", desc: "1-in-10 broken" },
+  { rate: 0.20, label: "20%", desc: "1-in-5 broken" },
 ];
 
 function ConfidenceMeter({ passedCount, failedCount }) {
@@ -82,21 +81,27 @@ function ConfidenceMeter({ passedCount, failedCount }) {
 
   const headline = failedCount > 0 ? null : 1 - Math.pow(1 - 0.05, passedCount);
   const headlinePct = headline !== null ? Math.min(headline * 100, 99.99) : 0;
+  const samplesFor90at5 = Math.ceil(Math.log(1 - 0.90) / Math.log(1 - 0.05));
+  const samplesFor95at5 = Math.ceil(Math.log(1 - 0.95) / Math.log(1 - 0.05));
 
-  const samplesFor90at5 = Math.ceil(Math.log(1 - 0.90) / Math.log(1 - 0.05)); // 45
-  const samplesFor95at5 = Math.ceil(Math.log(1 - 0.95) / Math.log(1 - 0.05)); // 59
+  const headlineColor = headlinePct >= 95 ? "text-green-600 dark:text-green-400"
+    : headlinePct >= 80 ? "text-blue-600 dark:text-blue-400"
+    : headlinePct >= 50 ? "text-amber-600 dark:text-amber-500"
+    : "text-gray-400 dark:text-gray-500";
+
+  const barColor = headlinePct >= 95 ? "bg-green-500"
+    : headlinePct >= 80 ? "bg-blue-500"
+    : headlinePct >= 50 ? "bg-amber-500"
+    : "bg-gray-300 dark:bg-gray-600";
 
   return (
-    <div style={{
-      background: "#0a0a16", border: "1px solid #1e1e3a", borderRadius: 12,
-      padding: 20, marginBottom: 20,
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-4">
+      <div className="flex justify-between items-start mb-4 gap-4">
         <div>
-          <div style={{ color: "#818cf8", fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>
+          <div className="text-xs font-bold tracking-wider uppercase text-blue-600 dark:text-blue-400 mb-1">
             Detection Confidence
           </div>
-          <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>
+          <div className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
             {failedCount > 0
               ? "Failures detected — defect rate is non-zero. Fix issues before continuing."
               : passedCount === 0
@@ -105,79 +110,51 @@ function ConfidenceMeter({ passedCount, failedCount }) {
           </div>
         </div>
         {failedCount > 0 ? (
-          <div style={{
-            background: "#2e0a0a", border: "1px solid #7f1d1d", borderRadius: 8,
-            padding: "8px 14px", textAlign: "center",
-          }}>
-            <div style={{ color: "#f87171", fontSize: 20, fontWeight: 800 }}>!</div>
-            <div style={{ color: "#f87171", fontSize: 10, fontWeight: 700 }}>{failedCount} FAIL{failedCount > 1 ? "S" : ""}</div>
+          <div className="flex-shrink-0 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2 text-center">
+            <div className="text-red-600 dark:text-red-400 text-xl font-bold">!</div>
+            <div className="text-red-600 dark:text-red-400 text-xs font-bold">{failedCount} FAIL{failedCount > 1 ? "S" : ""}</div>
           </div>
         ) : (
-          <div style={{ textAlign: "right" }}>
-            <div style={{
-              fontSize: 28, fontWeight: 800, fontFamily: "'Space Mono', monospace",
-              color: headlinePct >= 95 ? "#34d399" : headlinePct >= 80 ? "#818cf8" : headlinePct >= 50 ? "#fbbf24" : "#6b7280",
-              lineHeight: 1,
-            }}>
+          <div className="flex-shrink-0 text-right">
+            <div className={`text-3xl font-bold tabular-nums ${headlineColor}`}>
               {passedCount === 0 ? "—" : `${headlinePct.toFixed(1)}%`}
             </div>
-            <div style={{ color: "#4b5563", fontSize: 10, marginTop: 2 }}>at 5% defect rate</div>
+            <div className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">at 5% defect rate</div>
           </div>
         )}
       </div>
 
       {failedCount === 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{
-            width: "100%", height: 8, background: "#111", borderRadius: 4,
-            overflow: "hidden", position: "relative",
-          }}>
-            <div style={{
-              width: `${headlinePct}%`, height: "100%", borderRadius: 4,
-              background: headlinePct >= 95 ? "linear-gradient(90deg, #059669, #34d399)"
-                : headlinePct >= 80 ? "linear-gradient(90deg, #4338ca, #818cf8)"
-                : headlinePct >= 50 ? "linear-gradient(90deg, #b45309, #fbbf24)"
-                : "linear-gradient(90deg, #374151, #6b7280)",
-              transition: "width 0.5s ease, background 0.5s ease",
-            }} />
-            {[90, 95].map(pct => (
-              <div key={pct} style={{
-                position: "absolute", top: 0, left: `${pct}%`, width: 1, height: "100%",
-                background: headlinePct >= pct ? "transparent" : "#333",
-              }} />
-            ))}
+        <div className="mb-4">
+          <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+              style={{ width: `${headlinePct}%` }}
+            />
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-            <span style={{ color: "#333", fontSize: 10 }}>0%</span>
-            <span style={{ color: headlinePct >= 90 ? "#34d399" : "#333", fontSize: 10, position: "relative", left: "-5%" }}>90%</span>
-            <span style={{ color: headlinePct >= 95 ? "#34d399" : "#333", fontSize: 10 }}>95%</span>
+          <div className="flex justify-between mt-1 text-xs text-gray-400 dark:text-gray-500">
+            <span>0%</span>
+            <span className={headlinePct >= 90 ? "text-green-500 font-medium" : ""}>90%</span>
+            <span className={headlinePct >= 95 ? "text-green-500 font-medium" : ""}>95%</span>
           </div>
         </div>
       )}
 
       {passedCount > 0 && failedCount === 0 && (
-        <div style={{
-          display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6,
-        }}>
+        <div className="grid grid-cols-4 gap-2">
           {confidences.map(c => {
             const pct = c.confidence !== null ? c.confidence * 100 : 0;
+            const color = pct >= 95 ? "text-green-600 dark:text-green-400"
+              : pct >= 80 ? "text-blue-600 dark:text-blue-400"
+              : pct >= 50 ? "text-amber-600 dark:text-amber-500"
+              : "text-gray-400 dark:text-gray-500";
             return (
-              <div key={c.label} style={{
-                background: "#0c0c14", border: "1px solid #16162a", borderRadius: 8,
-                padding: "10px 8px", textAlign: "center",
-              }}>
-                <div style={{
-                  fontSize: 16, fontWeight: 800, fontFamily: "'Space Mono', monospace",
-                  color: pct >= 95 ? "#34d399" : pct >= 80 ? "#818cf8" : pct >= 50 ? "#fbbf24" : "#6b7280",
-                }}>
+              <div key={c.label} className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-2 text-center">
+                <div className={`text-base font-bold tabular-nums ${color}`}>
                   {pct >= 99.99 ? ">99.9" : pct.toFixed(1)}%
                 </div>
-                <div style={{ color: "#6b7280", fontSize: 10, marginTop: 2 }}>
-                  if {c.label} broken
-                </div>
-                <div style={{ color: "#333", fontSize: 9, marginTop: 1 }}>
-                  {c.desc}
-                </div>
+                <div className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">if {c.label} broken</div>
+                <div className="text-gray-400 dark:text-gray-500 text-xs">{c.desc}</div>
               </div>
             );
           })}
@@ -185,38 +162,39 @@ function ConfidenceMeter({ passedCount, failedCount }) {
       )}
 
       {passedCount > 0 && passedCount < samplesFor95at5 && failedCount === 0 && (
-        <div style={{ marginTop: 12, color: "#4b5563", fontSize: 11, lineHeight: 1.6 }}>
+        <p className="mt-3 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
           {passedCount < samplesFor90at5
-            ? `${samplesFor90at5 - passedCount} more passing checks for 90% confidence at 5% defect rate. For CXP, ~15-20 is pragmatically sufficient.`
+            ? `${samplesFor90at5 - passedCount} more passing checks for 90% confidence at 5% defect rate. ~15–20 is pragmatically sufficient.`
             : `${samplesFor95at5 - passedCount} more for 95% confidence at 5% defect rate.`}
-        </div>
+        </p>
       )}
 
       {passedCount >= samplesFor95at5 && failedCount === 0 && (
-        <div style={{ marginTop: 12, color: "#34d399", fontSize: 12, fontWeight: 600 }}>
+        <p className="mt-3 text-sm text-green-600 dark:text-green-400 font-semibold">
           ✓ Statistically robust — 95%+ confidence of catching a 5% defect rate.
-        </div>
+        </p>
       )}
     </div>
   );
 }
 
 function StatusBadge({ status }) {
-  const styles = {
-    pass: { bg: "#0a2e1a", color: "#34d399", border: "#166534", text: "PASS" },
-    fail: { bg: "#2e0a0a", color: "#f87171", border: "#7f1d1d", text: "FAIL" },
-    warn: { bg: "#2e2a0a", color: "#fbbf24", border: "#78350f", text: "WARN" },
-    pending: { bg: "#1a1a2e", color: "#818cf8", border: "#312e81", text: "—" },
+  const cls = {
+    pass: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800",
+    fail: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800",
+    warn: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500 border-amber-200 dark:border-amber-800",
+    pending: "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600",
   };
-  const s = styles[status] || styles.pending;
+  const text = { pass: "PASS", fail: "FAIL", warn: "WARN", pending: "—" };
+  const s = cls[status] || cls.pending;
   return (
-    <span style={{
-      display: "inline-block", padding: "2px 10px", borderRadius: 4,
-      background: s.bg, color: s.color, border: `1px solid ${s.border}`,
-      fontSize: 11, fontWeight: 700, letterSpacing: 1, fontFamily: "'JetBrains Mono', monospace",
-    }}>{s.text}</span>
+    <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold tracking-wide border ${s}`}>
+      {text[status] || "—"}
+    </span>
   );
 }
+
+const inputCls = "border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500 w-full";
 
 function CountRow({ label, bwValue, apValue, onBwChange, onApChange, tolerance = 0.05 }) {
   const bw = parseInt(bwValue) || 0;
@@ -232,47 +210,38 @@ function CountRow({ label, bwValue, apValue, onBwChange, onApChange, tolerance =
     }
   }
   return (
-    <div style={{
-      display: "grid", gridTemplateColumns: "1fr 100px 100px 70px",
-      gap: 12, alignItems: "center", padding: "10px 0",
-      borderBottom: "1px solid #1e1e2e",
-    }}>
-      <span style={{ color: "#c4b5fd", fontSize: 14, fontFamily: "'Space Mono', monospace" }}>{label}</span>
-      <input type="number" min="0" placeholder="BW" value={bwValue}
-        onChange={e => onBwChange(e.target.value)}
-        style={inputStyle} />
-      <input type="number" min="0" placeholder="AP" value={apValue}
-        onChange={e => onApChange(e.target.value)}
-        style={inputStyle} />
-      <div style={{ textAlign: "center" }}><StatusBadge status={status} /></div>
+    <div className="grid grid-cols-[1fr_100px_100px_70px] gap-3 items-center py-2.5 border-b border-gray-100 dark:border-gray-700">
+      <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+      <input type="number" min="0" placeholder="BW" value={bwValue} onChange={e => onBwChange(e.target.value)} className={inputCls} />
+      <input type="number" min="0" placeholder="AP" value={apValue} onChange={e => onApChange(e.target.value)} className={inputCls} />
+      <div className="text-center"><StatusBadge status={status} /></div>
     </div>
   );
 }
 
 function SpotCheckItem({ item, checked, result, onToggle, onResult }) {
+  const bgCls = checked
+    ? result === "pass" ? "bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800"
+    : result === "fail" ? "bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800"
+    : "bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800"
+    : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700";
   return (
-    <div style={{
-      padding: "12px 16px", borderRadius: 8,
-      background: checked ? (result === "pass" ? "#0a1e14" : result === "fail" ? "#1e0a0a" : "#0f0f1a") : "#0c0c14",
-      border: `1px solid ${checked ? (result === "pass" ? "#166534" : result === "fail" ? "#7f1d1d" : "#1e1e3a") : "#16162a"}`,
-      transition: "all 0.2s ease",
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flex: 1 }}>
-          <input type="checkbox" checked={checked} onChange={onToggle}
-            style={{ accentColor: "#818cf8", width: 16, height: 16 }} />
-          <span style={{ color: "#e2e8f0", fontSize: 14, fontFamily: "'Space Mono', monospace" }}>{item.label}</span>
+    <div className={`p-3 rounded-lg border transition-all ${bgCls}`}>
+      <div className="flex justify-between items-center mb-1">
+        <label className="flex items-center gap-2 cursor-pointer flex-1">
+          <input type="checkbox" checked={checked} onChange={onToggle} className="accent-blue-600 w-4 h-4" />
+          <span className="text-sm text-gray-800 dark:text-gray-200">{item.label}</span>
         </label>
         {checked && (
-          <div style={{ display: "flex", gap: 4 }}>
+          <div className="flex gap-1.5">
             <button onClick={() => onResult("pass")}
-              style={{ ...tinyBtnStyle, background: result === "pass" ? "#166534" : "#111", color: result === "pass" ? "#34d399" : "#555" }}>✓</button>
+              className={`px-2.5 py-1 rounded text-sm font-bold border transition-colors ${result === "pass" ? "bg-green-600 text-white border-green-600" : "bg-white dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 hover:border-green-400"}`}>✓</button>
             <button onClick={() => onResult("fail")}
-              style={{ ...tinyBtnStyle, background: result === "fail" ? "#7f1d1d" : "#111", color: result === "fail" ? "#f87171" : "#555" }}>✗</button>
+              className={`px-2.5 py-1 rounded text-sm font-bold border transition-colors ${result === "fail" ? "bg-red-600 text-white border-red-600" : "bg-white dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 hover:border-red-400"}`}>✗</button>
           </div>
         )}
       </div>
-      <div style={{ color: "#6b7280", fontSize: 12, marginLeft: 24, fontFamily: "'Space Mono', monospace" }}>{item.desc}</div>
+      <p className="text-xs text-gray-500 dark:text-gray-400 ml-6">{item.desc}</p>
     </div>
   );
 }
@@ -303,23 +272,23 @@ function NameDiffTool() {
   }, [diff, searchTerm]);
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <h3 style={h3Style}>⊟ Name Diff Tool</h3>
-      <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 12, fontFamily: "'Space Mono', monospace" }}>
+    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+      <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">⊟ Name Diff Tool</h3>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
         Paste entry names from Bitwarden and Apple Passwords to find what's missing. One name per line.
       </p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+      <div className="grid grid-cols-2 gap-3 mb-3">
         <div>
-          <label style={labelStyle}>Bitwarden names</label>
+          <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Bitwarden names</label>
           <textarea value={bwNames} onChange={e => setBwNames(e.target.value)}
-            placeholder={"GitHub\nNetflix\nAWS Console\n…"}
-            style={{ ...textareaStyle, height: 140 }} />
+            placeholder={"GitHub\nNetflix\nAWS Console"}
+            className="w-full h-36 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500 resize-y" />
         </div>
         <div>
-          <label style={labelStyle}>Apple Passwords names</label>
+          <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Apple Passwords names</label>
           <textarea value={apNames} onChange={e => setApNames(e.target.value)}
-            placeholder={"github.com\nnetflix.com\nAWS Console\n…"}
-            style={{ ...textareaStyle, height: 140 }} />
+            placeholder={"github.com\nnetflix.com\nAWS Console"}
+            className="w-full h-36 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500 resize-y" />
         </div>
       </div>
 
@@ -327,45 +296,45 @@ function NameDiffTool() {
         <>
           <input type="text" placeholder="Search names..." value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            style={{ ...inputStyle, width: "100%", marginBottom: 12 }} />
+            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500 mb-3" />
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-            <div style={statBoxStyle("#312e81")}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#818cf8" }}>{diff.matched.length}</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Matched</div>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{diff.matched.length}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Matched</div>
             </div>
-            <div style={statBoxStyle("#7f1d1d")}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#f87171" }}>{diff.missing.length}</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Missing from AP</div>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">{diff.missing.length}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Missing from AP</div>
             </div>
-            <div style={statBoxStyle("#78350f")}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#fbbf24" }}>{diff.extra.length}</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Extra in AP</div>
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-amber-600 dark:text-amber-500">{diff.extra.length}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Extra in AP</div>
             </div>
           </div>
 
           {filtered.missing.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ ...labelStyle, color: "#f87171" }}>Missing from Apple Passwords ({filtered.missing.length})</label>
-              <div style={{ background: "#1a0a0a", border: "1px solid #7f1d1d", borderRadius: 8, padding: 12, maxHeight: 160, overflowY: "auto" }}>
+            <div className="mb-3">
+              <label className="block text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide mb-1">Missing from Apple Passwords ({filtered.missing.length})</label>
+              <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-3 max-h-40 overflow-y-auto">
                 {filtered.missing.map((n, i) => (
-                  <div key={i} style={{ color: "#fca5a5", fontSize: 13, padding: "3px 0", fontFamily: "'Space Mono', monospace" }}>• {n}</div>
+                  <div key={i} className="text-sm text-red-700 dark:text-red-300 py-0.5">• {n}</div>
                 ))}
               </div>
             </div>
           )}
           {filtered.extra.length > 0 && (
-            <div>
-              <label style={{ ...labelStyle, color: "#fbbf24" }}>Extra in Apple Passwords ({filtered.extra.length})</label>
-              <div style={{ background: "#1a1a0a", border: "1px solid #78350f", borderRadius: 8, padding: 12, maxHeight: 160, overflowY: "auto" }}>
+            <div className="mb-3">
+              <label className="block text-xs font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wide mb-1">Extra in Apple Passwords ({filtered.extra.length})</label>
+              <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg p-3 max-h-40 overflow-y-auto">
                 {filtered.extra.map((n, i) => (
-                  <div key={i} style={{ color: "#fde68a", fontSize: 13, padding: "3px 0", fontFamily: "'Space Mono', monospace" }}>• {n}</div>
+                  <div key={i} className="text-sm text-amber-700 dark:text-amber-300 py-0.5">• {n}</div>
                 ))}
               </div>
             </div>
           )}
-          <p style={{ color: "#4b5563", fontSize: 11, marginTop: 8, fontFamily: "'Space Mono', monospace" }}>
-            Note: Name matching is case-insensitive and exact. Apple Passwords may use domain names instead of titles — extras are likely renamed entries, not actual extras.
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            Note: Matching is case-insensitive and exact. Apple Passwords may use domain names — extras are likely renamed entries, not actual extras.
           </p>
         </>
       )}
@@ -384,27 +353,27 @@ function UplockSection({ items, setItems, type }) {
   const doneCount = items.filter(i => i.done).length;
 
   return (
-    <div style={{ marginBottom: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <h4 style={{ color: "#c4b5fd", fontSize: 14, fontFamily: "'Space Mono', monospace", margin: 0 }}>
+    <div className="mb-5">
+      <div className="flex justify-between items-center mb-1">
+        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           {type.icon} {type.label}
-          {items.length > 0 && <span style={{ color: "#6b7280", fontWeight: 400 }}> — {doneCount}/{items.length}</span>}
+          {items.length > 0 && <span className="text-gray-400 dark:text-gray-500 font-normal"> — {doneCount}/{items.length}</span>}
         </h4>
-        <button onClick={addItem} style={addBtnStyle}>+ Add</button>
+        <button onClick={addItem}
+          className="text-xs px-3 py-1 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 font-medium transition-colors">
+          + Add
+        </button>
       </div>
-      <p style={{ color: "#4b5563", fontSize: 12, marginBottom: 8, fontFamily: "'Space Mono', monospace" }}>{type.tip}</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">{type.tip}</p>
       {items.map((item, i) => (
-        <div key={i} style={{
-          display: "flex", gap: 8, alignItems: "center", marginBottom: 4,
-          opacity: item.done ? 0.5 : 1, transition: "opacity 0.2s",
-        }}>
+        <div key={i} className={`flex gap-2 items-center mb-1.5 transition-opacity ${item.done ? "opacity-50" : ""}`}>
           <input type="checkbox" checked={item.done} onChange={() => updateItem(i, "done", !item.done)}
-            style={{ accentColor: "#818cf8", width: 14, height: 14 }} />
+            className="accent-blue-600 w-3.5 h-3.5 flex-shrink-0" />
           <input type="text" placeholder="Item name…" value={item.name}
             onChange={e => updateItem(i, "name", e.target.value)}
-            style={{ ...inputStyle, flex: 1, textDecoration: item.done ? "line-through" : "none" }} />
+            className={`flex-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-2 py-1 text-sm text-gray-900 dark:text-gray-100 outline-none focus:ring-1 focus:ring-blue-500 ${item.done ? "line-through" : ""}`} />
           <button onClick={() => removeItem(i)}
-            style={{ ...tinyBtnStyle, color: "#4b5563", background: "transparent" }}>×</button>
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none px-1 flex-shrink-0">×</button>
         </div>
       ))}
     </div>
@@ -415,10 +384,10 @@ function ProgressRing({ progress, size = 48, stroke = 4 }) {
   const radius = (size - stroke) / 2;
   const circ = 2 * Math.PI * radius;
   const offset = circ - (progress / 100) * circ;
-  const color = progress === 100 ? "#34d399" : progress > 60 ? "#818cf8" : "#fbbf24";
+  const color = progress === 100 ? "#16a34a" : progress > 60 ? "#2563eb" : "#d97706";
   return (
     <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-      <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="#1e1e2e" strokeWidth={stroke} />
+      <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="#e5e7eb" strokeWidth={stroke} />
       <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke={color} strokeWidth={stroke}
         strokeDasharray={circ} strokeDashoffset={offset}
         strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.4s ease, stroke 0.4s ease" }} />
@@ -426,42 +395,9 @@ function ProgressRing({ progress, size = 48, stroke = 4 }) {
   );
 }
 
-// Styles
-const inputStyle = {
-  background: "#0c0c14", border: "1px solid #1e1e3a", borderRadius: 6,
-  color: "#e2e8f0", padding: "8px 12px", fontSize: 13, outline: "none",
-  fontFamily: "'Space Mono', monospace",
-};
-const textareaStyle = {
-  ...inputStyle, width: "100%", resize: "vertical", boxSizing: "border-box",
-};
-const labelStyle = {
-  display: "block", color: "#818cf8", fontSize: 11, fontWeight: 700,
-  marginBottom: 4, letterSpacing: 1, textTransform: "uppercase",
-  fontFamily: "'Space Mono', monospace",
-};
-const h3Style = {
-  color: "#e2e8f0", fontSize: 16, fontWeight: 700, marginBottom: 12,
-  fontFamily: "'Space Mono', monospace",
-};
-const tinyBtnStyle = {
-  padding: "4px 10px", borderRadius: 4, border: "1px solid #1e1e3a",
-  cursor: "pointer", fontSize: 14, fontWeight: 700, transition: "all 0.15s",
-};
-const addBtnStyle = {
-  padding: "4px 14px", borderRadius: 6, border: "1px solid #312e81",
-  background: "#1a1a2e", color: "#818cf8", cursor: "pointer", fontSize: 12,
-  fontFamily: "'Space Mono', monospace", fontWeight: 600,
-};
-const statBoxStyle = (borderColor) => ({
-  background: "#0c0c14", border: `1px solid ${borderColor}`, borderRadius: 8,
-  padding: "12px 8px", textAlign: "center",
-});
-
 function MigrationValidator() {
   const [activePhase, setActivePhase] = useLocalStorage("activePhase", "counts");
 
-  // Phase 1: Counts
   const [counts, setCounts] = useLocalStorage("counts", {
     logins: { bw: "", ap: "" },
     passkeys: { bw: "", ap: "" },
@@ -472,60 +408,48 @@ function MigrationValidator() {
     attachments: { bw: "", ap: "" },
   });
 
-  // Phase 2: Spot checks
   const [spotChecks, setSpotChecks] = useLocalStorage("spotChecks",
     Object.fromEntries(SPOT_CHECK_CATEGORIES.map(c => [c.id, { items: Array(c.target).fill(null).map(() => ({ checked: false, result: null })) }]))
   );
 
-  // Phase 3: Real-world
   const [realWorld, setRealWorld] = useLocalStorage("realWorld", {
     banking: false, email: false, totp_site: false, passkey_site: false, complex_pw: false,
   });
 
-  // Phase 4: Edge cases
   const [edgeCases, setEdgeCases] = useLocalStorage("edgeCases",
     Object.fromEntries(EDGE_CASES.map(e => [e.id, { checked: false, result: null }]))
   );
 
-  // Phase 5: Uplock items
   const [uplockItems, setUplockItems] = useLocalStorage("uplockItems",
     Object.fromEntries(UPLOCK_TYPES.map(t => [t.id, []]))
   );
 
-  // Phase 6: Cutover
   const [cutoverSteps, setCutoverSteps] = useLocalStorage("cutoverSteps",
     Object.fromEntries(CUTOVER_STEPS.map(s => [s.id, false]))
   );
 
-  // Progress calculation
   const progress = useMemo(() => {
     const phases = {};
 
-    // Counts: % of fields filled
     const countFields = Object.values(counts);
     const filledCount = countFields.filter(c => c.bw !== "" && c.ap !== "").length;
     phases.counts = Math.round((filledCount / countFields.length) * 100);
 
-    // Spot checks: % of target checks completed with a result
     const totalTarget = SPOT_CHECK_CATEGORIES.reduce((s, c) => s + c.target, 0);
     const totalDone = Object.values(spotChecks).reduce((s, cat) =>
       s + cat.items.filter(i => i.checked && i.result).length, 0);
     phases.spotcheck = Math.round((totalDone / totalTarget) * 100);
 
-    // Real world: % checked
     const rwDone = Object.values(realWorld).filter(Boolean).length;
     phases.realworld = Math.round((rwDone / Object.keys(realWorld).length) * 100);
 
-    // Edge cases: % with result
     const ecDone = Object.values(edgeCases).filter(e => e.checked && e.result).length;
     phases.edgecases = Math.round((ecDone / EDGE_CASES.length) * 100);
 
-    // Uplock: % done
     const uplockTotal = Object.values(uplockItems).reduce((s, arr) => s + arr.length, 0);
     const uplockDone = Object.values(uplockItems).reduce((s, arr) => s + arr.filter(i => i.done).length, 0);
     phases.uplock = uplockTotal === 0 ? 0 : Math.round((uplockDone / uplockTotal) * 100);
 
-    // Cutover
     const cutDone = Object.values(cutoverSteps).filter(Boolean).length;
     phases.cutover = Math.round((cutDone / CUTOVER_STEPS.length) * 100);
 
@@ -533,16 +457,14 @@ function MigrationValidator() {
     return { ...phases, overall };
   }, [counts, spotChecks, realWorld, edgeCases, uplockItems, cutoverSteps]);
 
-  // Feedback
   const feedback = useMemo(() => {
     const msgs = [];
-    // Count mismatches
     const loginBw = parseInt(counts.logins.bw) || 0;
     const loginAp = parseInt(counts.logins.ap) || 0;
     if (counts.logins.bw && counts.logins.ap) {
       if (loginBw > 0 && loginAp === 0) msgs.push({ type: "fail", text: "No logins in Apple Passwords — CXP transfer may have failed entirely." });
       else if (loginBw > 0 && Math.abs(loginAp - loginBw) / loginBw > 0.15)
-        msgs.push({ type: "fail", text: `Login count mismatch: ${loginBw} in BW vs ${loginAp} in AP (>${15}% difference). Use the name diff tool to find what's missing.` });
+        msgs.push({ type: "fail", text: `Login count mismatch: ${loginBw} in BW vs ${loginAp} in AP (>15% difference). Use the name diff tool to find what's missing.` });
       else if (loginBw > 0 && Math.abs(loginAp - loginBw) / loginBw > 0.05)
         msgs.push({ type: "warn", text: `Login count slightly off: ${loginBw} in BW vs ${loginAp} in AP. Multi-URL entries may have split. Check the diff tool.` });
       else msgs.push({ type: "pass", text: `Login counts match: ${loginBw} → ${loginAp}` });
@@ -555,11 +477,9 @@ function MigrationValidator() {
       else msgs.push({ type: "pass", text: `TOTP codes: ${totpAp} transferred (expected ${totpBw})` });
     }
 
-    // Spot check failures
     const failures = Object.values(spotChecks).flatMap(c => c.items).filter(i => i.result === "fail").length;
     if (failures > 0) msgs.push({ type: "fail", text: `${failures} spot check failure${failures > 1 ? "s" : ""} found. Investigate before proceeding with cutover.` });
 
-    // Secure notes / cards / identities reminders
     const noteCount = parseInt(counts.secureNotes.bw) || 0;
     const cardCount = parseInt(counts.cards.bw) || 0;
     const identCount = parseInt(counts.identities.bw) || 0;
@@ -573,7 +493,6 @@ function MigrationValidator() {
       else msgs.push({ type: "pass", text: `All ${uplockDone} Uplock items migrated.` });
     }
 
-    // Cutover readiness
     const spotDone = Object.values(spotChecks).flatMap(c => c.items).filter(i => i.checked && i.result === "pass").length;
     const readyForCutover = failures === 0 && spotDone >= 10 && progress.counts === 100;
     if (readyForCutover && progress.uplock >= 100)
@@ -599,97 +518,76 @@ function MigrationValidator() {
   };
 
   return (
-    <div style={{
-      minHeight: "100vh", background: "#06060e", color: "#e2e8f0",
-      fontFamily: "'Space Mono', monospace",
-    }}>
-      <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
 
       {/* Header */}
-      <div style={{
-        padding: "24px 24px 16px", borderBottom: "1px solid #1e1e2e",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-      }}>
-        <div>
-          <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: -0.5 }}>
-            Migration Validator
-          </h1>
-          <p style={{ color: "#4b5563", fontSize: 12, margin: "4px 0 0" }}>Bitwarden → Apple Passwords + Uplock</p>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <ProgressRing progress={progress.overall} />
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: progress.overall === 100 ? "#34d399" : "#818cf8" }}>
-              {progress.overall}%
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div>
+            <a href="../" className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-1 block transition-colors">← Tools</a>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Migration Validator</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Bitwarden → Apple Passwords + Uplock</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <ProgressRing progress={progress.overall} />
+            <div className="text-right">
+              <div className={`text-xl font-bold tabular-nums ${progress.overall === 100 ? "text-green-600 dark:text-green-400" : "text-blue-600 dark:text-blue-400"}`}>
+                {progress.overall}%
+              </div>
+              <div className="text-xs text-gray-400 dark:text-gray-500">complete</div>
             </div>
-            <div style={{ fontSize: 11, color: "#4b5563" }}>complete</div>
           </div>
         </div>
       </div>
 
       {/* Feedback bar */}
       {feedback.length > 0 && (
-        <div style={{ padding: "12px 24px", background: "#0a0a16", borderBottom: "1px solid #1e1e2e" }}>
-          {feedback.map((msg, i) => (
-            <div key={i} style={{
-              display: "flex", gap: 8, alignItems: "flex-start", padding: "4px 0",
-              color: msg.type === "fail" ? "#f87171" : msg.type === "warn" ? "#fbbf24" : "#34d399",
-              fontSize: 13,
-            }}>
-              <span>{msg.type === "fail" ? "✗" : msg.type === "warn" ? "⚠" : "✓"}</span>
-              <span>{msg.text}</span>
-            </div>
-          ))}
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="max-w-3xl mx-auto px-4 py-2.5 space-y-1">
+            {feedback.map((msg, i) => (
+              <div key={i} className={`flex gap-2 items-start text-sm ${msg.type === "fail" ? "text-red-600 dark:text-red-400" : msg.type === "warn" ? "text-amber-600 dark:text-amber-500" : "text-green-600 dark:text-green-400"}`}>
+                <span className="flex-shrink-0">{msg.type === "fail" ? "✗" : msg.type === "warn" ? "⚠" : "✓"}</span>
+                <span>{msg.text}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Phase nav */}
-      <div style={{
-        display: "flex", gap: 2, padding: "12px 24px",
-        borderBottom: "1px solid #1e1e2e", overflowX: "auto",
-      }}>
-        {PHASES.map(phase => (
-          <button key={phase.id} onClick={() => setActivePhase(phase.id)}
-            style={{
-              padding: "8px 16px", borderRadius: 6, border: "none", cursor: "pointer",
-              background: activePhase === phase.id ? "#1a1a2e" : "transparent",
-              color: activePhase === phase.id ? "#818cf8" : "#4b5563",
-              fontSize: 12, fontWeight: 700, fontFamily: "'Space Mono', monospace",
-              transition: "all 0.15s", whiteSpace: "nowrap",
-              display: "flex", alignItems: "center", gap: 6,
-            }}>
-            <span>{phase.icon}</span>
-            <span>{phase.label}</span>
-            {progress[phase.id] === 100 && <span style={{ color: "#34d399", fontSize: 10 }}>✓</span>}
-          </button>
-        ))}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-3xl mx-auto px-4 flex overflow-x-auto">
+          {PHASES.map(phase => (
+            <button key={phase.id} onClick={() => setActivePhase(phase.id)}
+              className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activePhase === phase.id ? "border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"}`}>
+              <span>{phase.icon}</span>
+              <span>{phase.label}</span>
+              {progress[phase.id] === 100 && <span className="text-green-500 text-xs ml-0.5">✓</span>}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Content */}
-      <div style={{ padding: 24, maxWidth: 720, margin: "0 auto" }}>
+      <div className="max-w-3xl mx-auto px-4 py-6">
 
         {/* Phase 1: Counts */}
         {activePhase === "counts" && (
           <div>
-            <h3 style={h3Style}>Phase 1: Count Validation</h3>
-            <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 16 }}>
+            <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Phase 1: Count Validation</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
               Compare item counts side by side. BW = Bitwarden web vault, AP = Apple Passwords app.
             </p>
 
-            <div style={{
-              display: "grid", gridTemplateColumns: "1fr 100px 100px 70px",
-              gap: 12, padding: "8px 0", marginBottom: 4,
-            }}>
-              <span style={labelStyle}>Item type</span>
-              <span style={labelStyle}>Bitwarden</span>
-              <span style={labelStyle}>Apple PW</span>
-              <span style={{ ...labelStyle, textAlign: "center" }}>Status</span>
+            <div className="grid grid-cols-[1fr_100px_100px_70px] gap-3 pb-1.5 mb-1">
+              <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Item type</span>
+              <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Bitwarden</span>
+              <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Apple PW</span>
+              <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide text-center">Status</span>
             </div>
 
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ color: "#818cf8", fontSize: 11, fontWeight: 700, letterSpacing: 1, padding: "8px 0 4px", textTransform: "uppercase" }}>
-                Should have transferred
-              </div>
+            <div className="mb-6">
+              <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide py-2">Should have transferred</div>
               <CountRow label="Logins" bwValue={counts.logins.bw} apValue={counts.logins.ap}
                 onBwChange={v => updateCount("logins", "bw", v)} onApChange={v => updateCount("logins", "ap", v)} />
               <CountRow label="Passkeys" bwValue={counts.passkeys.bw} apValue={counts.passkeys.ap}
@@ -699,23 +597,17 @@ function MigrationValidator() {
             </div>
 
             <div>
-              <div style={{ color: "#fbbf24", fontSize: 11, fontWeight: 700, letterSpacing: 1, padding: "8px 0 4px", textTransform: "uppercase" }}>
-                Won't transfer — need Uplock
-              </div>
+              <div className="text-xs font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wide py-2">Won't transfer — need Uplock</div>
               {["secureNotes", "cards", "identities", "attachments"].map(key => (
-                <div key={key} style={{
-                  display: "grid", gridTemplateColumns: "1fr 100px 1fr 70px",
-                  gap: 12, alignItems: "center", padding: "10px 0",
-                  borderBottom: "1px solid #1e1e2e",
-                }}>
-                  <span style={{ color: "#fbbf24", fontSize: 14, fontFamily: "'Space Mono', monospace" }}>
+                <div key={key} className="grid grid-cols-[1fr_100px_1fr_70px] gap-3 items-center py-2.5 border-b border-gray-100 dark:border-gray-700">
+                  <span className="text-sm text-amber-700 dark:text-amber-400">
                     {key === "secureNotes" ? "Secure Notes" : key === "cards" ? "Cards" : key === "identities" ? "Identities" : "Attachments"}
                   </span>
                   <input type="number" min="0" placeholder="BW" value={counts[key].bw}
                     onChange={e => updateCount(key, "bw", e.target.value)}
-                    style={inputStyle} />
-                  <span style={{ color: "#4b5563", fontSize: 12 }}>→ Uplock</span>
-                  <div style={{ textAlign: "center" }}>
+                    className={inputCls} />
+                  <span className="text-sm text-gray-400 dark:text-gray-500">→ Uplock</span>
+                  <div className="text-center">
                     {counts[key].bw && parseInt(counts[key].bw) > 0
                       ? <StatusBadge status="warn" />
                       : counts[key].bw !== "" ? <StatusBadge status="pass" /> : <StatusBadge status="pending" />}
@@ -731,8 +623,8 @@ function MigrationValidator() {
         {/* Phase 2: Spot Checks */}
         {activePhase === "spotcheck" && (
           <div>
-            <h3 style={h3Style}>Phase 2: Spot Check Passwords</h3>
-            <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 8 }}>
+            <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Phase 2: Spot Check Passwords</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               Check each item, then mark ✓ or ✗. For each: verify URL, username, password, TOTP, and notes match.
             </p>
             <ConfidenceMeter
@@ -741,14 +633,14 @@ function MigrationValidator() {
             />
 
             {SPOT_CHECK_CATEGORIES.map(cat => (
-              <div key={cat.id} style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <label style={labelStyle}>{cat.label} ({cat.target})</label>
-                  <span style={{ color: "#4b5563", fontSize: 11 }}>
+              <div key={cat.id} className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{cat.label} ({cat.target})</label>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
                     {spotChecks[cat.id].items.filter(i => i.result === "pass").length}/{cat.target} passed
                   </span>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <div className="flex flex-col gap-1.5">
                   {spotChecks[cat.id].items.map((item, i) => (
                     <SpotCheckItem key={i} item={{ ...cat, label: `${cat.label} #${i + 1}`, desc: cat.desc }}
                       checked={item.checked} result={item.result}
@@ -764,8 +656,8 @@ function MigrationValidator() {
         {/* Phase 3: Real-world */}
         {activePhase === "realworld" && (
           <div>
-            <h3 style={h3Style}>Phase 3: Live Login Tests</h3>
-            <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 16 }}>
+            <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Phase 3: Live Login Tests</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               Actually sign in to these sites using Apple Passwords autofill. This tests the full flow, not just data presence.
             </p>
             {[
@@ -775,18 +667,14 @@ function MigrationValidator() {
               { key: "passkey_site", label: "Passkey login", desc: "If applicable" },
               { key: "complex_pw", label: "Complex password site", desc: "Special chars, long password" },
             ].map(item => (
-              <label key={item.key} style={{
-                display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 16px",
-                background: realWorld[item.key] ? "#0a1e14" : "#0c0c14",
-                border: `1px solid ${realWorld[item.key] ? "#166534" : "#16162a"}`,
-                borderRadius: 8, marginBottom: 6, cursor: "pointer", transition: "all 0.2s",
-              }}>
+              <label key={item.key}
+                className={`flex gap-3 items-start p-3.5 rounded-xl border mb-2 cursor-pointer transition-all ${realWorld[item.key] ? "bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700"}`}>
                 <input type="checkbox" checked={realWorld[item.key]}
                   onChange={() => setRealWorld(p => ({ ...p, [item.key]: !p[item.key] }))}
-                  style={{ accentColor: "#818cf8", width: 16, height: 16, marginTop: 2 }} />
+                  className="accent-blue-600 w-4 h-4 mt-0.5 flex-shrink-0" />
                 <div>
-                  <div style={{ color: "#e2e8f0", fontSize: 14 }}>{item.label}</div>
-                  <div style={{ color: "#4b5563", fontSize: 12 }}>{item.desc}</div>
+                  <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{item.label}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.desc}</div>
                 </div>
               </label>
             ))}
@@ -796,30 +684,25 @@ function MigrationValidator() {
         {/* Phase 4: Edge Cases */}
         {activePhase === "edgecases" && (
           <div>
-            <h3 style={h3Style}>Phase 4: Edge Cases</h3>
-            <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 16 }}>
+            <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Phase 4: Edge Cases</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               Check each edge case. Mark ✓ if handled correctly or ✗ if data was lost.
             </p>
             {EDGE_CASES.map(ec => (
-              <div key={ec.id} style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "12px 16px", background: "#0c0c14", border: "1px solid #16162a",
-                borderRadius: 8, marginBottom: 6,
-              }}>
-                <label style={{ display: "flex", gap: 8, alignItems: "center", cursor: "pointer", flex: 1 }}>
+              <div key={ec.id}
+                className="flex justify-between items-center p-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl mb-2">
+                <label className="flex gap-2.5 items-center cursor-pointer flex-1">
                   <input type="checkbox" checked={edgeCases[ec.id].checked}
-                    onChange={() => setEdgeCases(p => ({
-                      ...p, [ec.id]: { ...p[ec.id], checked: !p[ec.id].checked }
-                    }))}
-                    style={{ accentColor: "#818cf8", width: 16, height: 16 }} />
-                  <span style={{ color: "#e2e8f0", fontSize: 14 }}>{ec.label}</span>
+                    onChange={() => setEdgeCases(p => ({ ...p, [ec.id]: { ...p[ec.id], checked: !p[ec.id].checked } }))}
+                    className="accent-blue-600 w-4 h-4 flex-shrink-0" />
+                  <span className="text-sm text-gray-800 dark:text-gray-200">{ec.label}</span>
                 </label>
                 {edgeCases[ec.id].checked && (
-                  <div style={{ display: "flex", gap: 4 }}>
+                  <div className="flex gap-1.5 ml-3">
                     <button onClick={() => setEdgeCases(p => ({ ...p, [ec.id]: { ...p[ec.id], result: "pass" } }))}
-                      style={{ ...tinyBtnStyle, background: edgeCases[ec.id].result === "pass" ? "#166534" : "#111", color: edgeCases[ec.id].result === "pass" ? "#34d399" : "#555" }}>✓</button>
+                      className={`px-2.5 py-1 rounded text-sm font-bold border transition-colors ${edgeCases[ec.id].result === "pass" ? "bg-green-600 text-white border-green-600" : "bg-white dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 hover:border-green-400"}`}>✓</button>
                     <button onClick={() => setEdgeCases(p => ({ ...p, [ec.id]: { ...p[ec.id], result: "fail" } }))}
-                      style={{ ...tinyBtnStyle, background: edgeCases[ec.id].result === "fail" ? "#7f1d1d" : "#111", color: edgeCases[ec.id].result === "fail" ? "#f87171" : "#555" }}>✗</button>
+                      className={`px-2.5 py-1 rounded text-sm font-bold border transition-colors ${edgeCases[ec.id].result === "fail" ? "bg-red-600 text-white border-red-600" : "bg-white dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 hover:border-red-400"}`}>✗</button>
                   </div>
                 )}
               </div>
@@ -830,8 +713,8 @@ function MigrationValidator() {
         {/* Phase 5: Uplock */}
         {activePhase === "uplock" && (
           <div>
-            <h3 style={h3Style}>Phase 5: Uplock Migration</h3>
-            <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 16 }}>
+            <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Phase 5: Uplock Migration</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
               Add items from Bitwarden that need manual migration to Uplock. Check them off as you go.
             </p>
             {UPLOCK_TYPES.map(type => (
@@ -845,44 +728,31 @@ function MigrationValidator() {
         {/* Phase 6: Cutover */}
         {activePhase === "cutover" && (
           <div>
-            <h3 style={h3Style}>Phase 6: Cutover</h3>
+            <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Phase 6: Cutover</h3>
             {progress.spotcheck < 80 && (
-              <div style={{
-                padding: "12px 16px", background: "#1e0a0a", border: "1px solid #7f1d1d",
-                borderRadius: 8, marginBottom: 16, color: "#fca5a5", fontSize: 13,
-              }}>
+              <div className="p-3.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl mb-4 text-sm text-amber-700 dark:text-amber-400">
                 ⚠ Spot checks are only {progress.spotcheck}% complete. Finish validation before proceeding.
               </div>
             )}
-            <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 16 }}>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               Only proceed after all validation passes. These steps are in order.
             </p>
             {CUTOVER_STEPS.map((step, i) => (
-              <label key={step.id} style={{
-                display: "flex", gap: 12, alignItems: "center", padding: "14px 16px",
-                background: cutoverSteps[step.id] ? "#0a1e14" : "#0c0c14",
-                border: `1px solid ${cutoverSteps[step.id] ? "#166534" : "#16162a"}`,
-                borderRadius: 8, marginBottom: 6, cursor: "pointer", transition: "all 0.2s",
-              }}>
+              <label key={step.id}
+                className={`flex gap-3 items-center p-3.5 rounded-xl border mb-2 cursor-pointer transition-all ${cutoverSteps[step.id] ? "bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700"}`}>
                 <input type="checkbox" checked={cutoverSteps[step.id]}
                   onChange={() => setCutoverSteps(p => ({ ...p, [step.id]: !p[step.id] }))}
-                  style={{ accentColor: "#818cf8", width: 16, height: 16 }} />
-                <span style={{ color: "#6b7280", fontSize: 13, fontWeight: 700, marginRight: 4 }}>{i + 1}.</span>
-                <span style={{
-                  color: cutoverSteps[step.id] ? "#34d399" : "#e2e8f0", fontSize: 14,
-                  textDecoration: cutoverSteps[step.id] ? "line-through" : "none",
-                }}>{step.label}</span>
+                  className="accent-blue-600 w-4 h-4 flex-shrink-0" />
+                <span className="text-sm text-gray-400 dark:text-gray-500 font-semibold w-5 flex-shrink-0">{i + 1}.</span>
+                <span className={`text-sm ${cutoverSteps[step.id] ? "line-through text-gray-400 dark:text-gray-500" : "text-gray-800 dark:text-gray-200"}`}>{step.label}</span>
               </label>
             ))}
 
             {progress.cutover === 100 && (
-              <div style={{
-                marginTop: 20, padding: "20px 24px", background: "#0a1e14",
-                border: "1px solid #166534", borderRadius: 12, textAlign: "center",
-              }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
-                <div style={{ color: "#34d399", fontSize: 16, fontWeight: 700 }}>Migration Complete</div>
-                <div style={{ color: "#6b7280", fontSize: 13, marginTop: 4 }}>
+              <div className="mt-5 p-5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl text-center">
+                <div className="text-3xl mb-2">✓</div>
+                <div className="text-green-700 dark:text-green-400 font-bold">Migration Complete</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   Keep Bitwarden installed for 1-2 weeks as a safety net.
                 </div>
               </div>
