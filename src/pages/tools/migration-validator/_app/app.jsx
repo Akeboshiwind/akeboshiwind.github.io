@@ -31,18 +31,6 @@ const PHASES = [
   { id: "cutover", label: "Cutover", icon: "⊙" },
 ];
 
-const SPOT_CHECK_CATEGORIES = [
-  { id: "frequent", label: "Frequently used", desc: "Email, bank, social media", target: 4 },
-  { id: "totp", label: "With TOTP codes", desc: "Verify codes match simultaneously", target: 3 },
-  { id: "special", label: "Special chars in password", desc: "Symbols, unicode, emoji", target: 3 },
-  { id: "long", label: "Long passwords (40+ chars)", desc: "Check for truncation", target: 2 },
-  { id: "multiurl", label: "Multiple URLs", desc: "Check all domains work", target: 2 },
-  { id: "custom", label: "Custom fields", desc: "Check if data landed in notes", target: 2 },
-  { id: "notes", label: "With notes", desc: "Verify notes content preserved", target: 2 },
-  { id: "passkey", label: "Passkey login", desc: "If you have any", target: 1 },
-  { id: "recent", label: "Recently added", desc: "Last week or so", target: 2 },
-];
-
 const UPLOCK_TYPES = [
   { id: "notes", label: "Secure Notes", icon: "📝", tip: "Copy-paste content from Bitwarden" },
   { id: "cards", label: "Cards", icon: "💳", tip: "Use Smart Fill — point camera at card" },
@@ -73,13 +61,21 @@ const DEFECT_THRESHOLDS = [
   { rate: 0.20, label: "20%", desc: "1-in-5 broken" },
 ];
 
-function ConfidenceMeter({ passedCount, failedCount }) {
+function InfoBox({ children }) {
+  return (
+    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3.5 py-3 text-sm text-blue-800 dark:text-blue-300 mb-4">
+      {children}
+    </div>
+  );
+}
+
+function ConfidenceMeter({ passed, failed }) {
   const confidences = DEFECT_THRESHOLDS.map(t => ({
     ...t,
-    confidence: failedCount > 0 ? null : 1 - Math.pow(1 - t.rate, passedCount),
+    confidence: failed > 0 ? null : 1 - Math.pow(1 - t.rate, passed),
   }));
 
-  const headline = failedCount > 0 ? null : 1 - Math.pow(1 - 0.05, passedCount);
+  const headline = failed > 0 ? null : 1 - Math.pow(1 - 0.05, passed);
   const headlinePct = headline !== null ? Math.min(headline * 100, 99.99) : 0;
   const samplesFor90at5 = Math.ceil(Math.log(1 - 0.90) / Math.log(1 - 0.05));
   const samplesFor95at5 = Math.ceil(Math.log(1 - 0.95) / Math.log(1 - 0.05));
@@ -95,36 +91,36 @@ function ConfidenceMeter({ passedCount, failedCount }) {
     : "bg-gray-300 dark:bg-gray-600";
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-4">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-5">
       <div className="flex justify-between items-start mb-4 gap-4">
         <div>
           <div className="text-xs font-bold tracking-wider uppercase text-blue-600 dark:text-blue-400 mb-1">
             Detection Confidence
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-            {failedCount > 0
-              ? "Failures detected — defect rate is non-zero. Fix issues before continuing."
-              : passedCount === 0
-              ? "Start checking entries to build confidence."
-              : `With ${passedCount} passed check${passedCount !== 1 ? "s" : ""} and 0 failures:`}
+            {failed > 0
+              ? "Failures detected — fix issues before continuing."
+              : passed === 0
+              ? "Increment the passed counter as you check entries."
+              : `With ${passed} passed check${passed !== 1 ? "s" : ""} and 0 failures:`}
           </div>
         </div>
-        {failedCount > 0 ? (
+        {failed > 0 ? (
           <div className="flex-shrink-0 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2 text-center">
             <div className="text-red-600 dark:text-red-400 text-xl font-bold">!</div>
-            <div className="text-red-600 dark:text-red-400 text-xs font-bold">{failedCount} FAIL{failedCount > 1 ? "S" : ""}</div>
+            <div className="text-red-600 dark:text-red-400 text-xs font-bold">{failed} FAIL{failed > 1 ? "S" : ""}</div>
           </div>
         ) : (
           <div className="flex-shrink-0 text-right">
             <div className={`text-3xl font-bold tabular-nums ${headlineColor}`}>
-              {passedCount === 0 ? "—" : `${headlinePct.toFixed(1)}%`}
+              {passed === 0 ? "—" : `${headlinePct.toFixed(1)}%`}
             </div>
             <div className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">at 5% defect rate</div>
           </div>
         )}
       </div>
 
-      {failedCount === 0 && (
+      {failed === 0 && (
         <div className="mb-4">
           <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
@@ -140,7 +136,7 @@ function ConfidenceMeter({ passedCount, failedCount }) {
         </div>
       )}
 
-      {passedCount > 0 && failedCount === 0 && (
+      {passed > 0 && failed === 0 && (
         <div className="grid grid-cols-4 gap-2">
           {confidences.map(c => {
             const pct = c.confidence !== null ? c.confidence * 100 : 0;
@@ -161,15 +157,15 @@ function ConfidenceMeter({ passedCount, failedCount }) {
         </div>
       )}
 
-      {passedCount > 0 && passedCount < samplesFor95at5 && failedCount === 0 && (
+      {passed > 0 && passed < samplesFor95at5 && failed === 0 && (
         <p className="mt-3 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
-          {passedCount < samplesFor90at5
-            ? `${samplesFor90at5 - passedCount} more passing checks for 90% confidence at 5% defect rate. ~15–20 is pragmatically sufficient.`
-            : `${samplesFor95at5 - passedCount} more for 95% confidence at 5% defect rate.`}
+          {passed < samplesFor90at5
+            ? `${samplesFor90at5 - passed} more for 90% confidence at 5% defect rate. ~15–20 checks is pragmatically sufficient.`
+            : `${samplesFor95at5 - passed} more for 95% confidence at 5% defect rate.`}
         </p>
       )}
 
-      {passedCount >= samplesFor95at5 && failedCount === 0 && (
+      {passed >= samplesFor95at5 && failed === 0 && (
         <p className="mt-3 text-sm text-green-600 dark:text-green-400 font-semibold">
           ✓ Statistically robust — 95%+ confidence of catching a 5% defect rate.
         </p>
@@ -178,70 +174,54 @@ function ConfidenceMeter({ passedCount, failedCount }) {
   );
 }
 
-function StatusBadge({ status }) {
-  const cls = {
-    pass: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800",
-    fail: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800",
-    warn: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500 border-amber-200 dark:border-amber-800",
-    pending: "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600",
-  };
-  const text = { pass: "PASS", fail: "FAIL", warn: "WARN", pending: "—" };
-  const s = cls[status] || cls.pending;
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold tracking-wide border ${s}`}>
-      {text[status] || "—"}
-    </span>
-  );
-}
-
 const inputCls = "border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500 w-full";
 
-function CountRow({ label, bwValue, apValue, onBwChange, onApChange, tolerance = 0.05 }) {
+function CountRow({ label, bwValue, apValue, onBwChange, onApChange }) {
   const bw = parseInt(bwValue) || 0;
   const ap = parseInt(apValue) || 0;
   const filled = bwValue !== "" && apValue !== "";
-  let status = "pending";
-  if (filled) {
-    if (bw === 0 && ap === 0) status = "pass";
-    else if (bw === 0) status = ap > 0 ? "warn" : "pass";
-    else {
-      const diff = Math.abs(ap - bw) / bw;
-      status = diff <= tolerance ? "pass" : diff <= 0.15 ? "warn" : "fail";
-    }
-  }
+  const status = !filled ? "pending" : bw === ap ? "pass" : "fail";
+
+  const badge = {
+    pass: <span className="inline-block px-2 py-0.5 rounded text-xs font-bold tracking-wide border bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">PASS</span>,
+    fail: <span className="inline-block px-2 py-0.5 rounded text-xs font-bold tracking-wide border bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800">FAIL</span>,
+    pending: <span className="inline-block px-2 py-0.5 rounded text-xs font-bold tracking-wide border bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-600">—</span>,
+  };
+
   return (
-    <div className="grid grid-cols-[1fr_100px_100px_70px] gap-3 items-center py-2.5 border-b border-gray-100 dark:border-gray-700">
+    <div className="grid grid-cols-[1fr_100px_100px_60px] gap-3 items-center py-2.5 border-b border-gray-100 dark:border-gray-700">
       <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
       <input type="number" min="0" placeholder="BW" value={bwValue} onChange={e => onBwChange(e.target.value)} className={inputCls} />
       <input type="number" min="0" placeholder="AP" value={apValue} onChange={e => onApChange(e.target.value)} className={inputCls} />
-      <div className="text-center"><StatusBadge status={status} /></div>
+      <div className="text-center">{badge[status]}</div>
     </div>
   );
 }
 
-function SpotCheckItem({ item, checked, result, onToggle, onResult }) {
-  const bgCls = checked
-    ? result === "pass" ? "bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800"
-    : result === "fail" ? "bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800"
-    : "bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800"
-    : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700";
+function Counter({ label, value, onChange, color }) {
+  const colors = {
+    green: {
+      label: "text-green-600 dark:text-green-400",
+      value: "text-green-700 dark:text-green-300",
+      btn: "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40",
+    },
+    red: {
+      label: "text-red-600 dark:text-red-400",
+      value: "text-red-700 dark:text-red-300",
+      btn: "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40",
+    },
+  };
+  const c = colors[color];
   return (
-    <div className={`p-3 rounded-lg border transition-all ${bgCls}`}>
-      <div className="flex justify-between items-center mb-1">
-        <label className="flex items-center gap-2 cursor-pointer flex-1">
-          <input type="checkbox" checked={checked} onChange={onToggle} className="accent-blue-600 w-4 h-4" />
-          <span className="text-sm text-gray-800 dark:text-gray-200">{item.label}</span>
-        </label>
-        {checked && (
-          <div className="flex gap-1.5">
-            <button onClick={() => onResult("pass")}
-              className={`px-2.5 py-1 rounded text-sm font-bold border transition-colors ${result === "pass" ? "bg-green-600 text-white border-green-600" : "bg-white dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 hover:border-green-400"}`}>✓</button>
-            <button onClick={() => onResult("fail")}
-              className={`px-2.5 py-1 rounded text-sm font-bold border transition-colors ${result === "fail" ? "bg-red-600 text-white border-red-600" : "bg-white dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 hover:border-red-400"}`}>✗</button>
-          </div>
-        )}
+    <div className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-center">
+      <div className={`text-xs font-bold uppercase tracking-wider mb-2 ${c.label}`}>{label}</div>
+      <div className="flex items-center justify-center gap-3">
+        <button onClick={() => onChange(Math.max(0, value - 1))}
+          className={`w-8 h-8 rounded-lg border font-bold text-lg leading-none transition-colors ${c.btn}`}>−</button>
+        <span className={`text-3xl font-bold tabular-nums w-10 ${c.value}`}>{value}</span>
+        <button onClick={() => onChange(value + 1)}
+          className={`w-8 h-8 rounded-lg border font-bold text-lg leading-none transition-colors ${c.btn}`}>+</button>
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400 ml-6">{item.desc}</p>
     </div>
   );
 }
@@ -334,7 +314,7 @@ function NameDiffTool() {
             </div>
           )}
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-            Note: Matching is case-insensitive and exact. Apple Passwords may use domain names — extras are likely renamed entries, not actual extras.
+            Note: Matching is case-insensitive and exact. Apple Passwords uses domain names as titles — extras are likely renamed entries, not actual extras.
           </p>
         </>
       )}
@@ -402,15 +382,14 @@ function MigrationValidator() {
     logins: { bw: "", ap: "" },
     passkeys: { bw: "", ap: "" },
     totp: { bw: "", ap: "" },
-    secureNotes: { bw: "", ap: "" },
-    cards: { bw: "", ap: "" },
-    identities: { bw: "", ap: "" },
-    attachments: { bw: "", ap: "" },
+    secureNotes: { bw: "" },
+    cards: { bw: "" },
+    identities: { bw: "" },
+    attachments: { bw: "" },
   });
 
-  const [spotChecks, setSpotChecks] = useLocalStorage("spotChecks",
-    Object.fromEntries(SPOT_CHECK_CATEGORIES.map(c => [c.id, { items: Array(c.target).fill(null).map(() => ({ checked: false, result: null })) }]))
-  );
+  // Simple counters replacing the old per-category checkbox structure
+  const [spotChecks, setSpotChecks] = useLocalStorage("spotChecksV2", { passed: 0, failed: 0 });
 
   const [realWorld, setRealWorld] = useLocalStorage("realWorld", {
     banking: false, email: false, totp_site: false, passkey_site: false, complex_pw: false,
@@ -431,14 +410,20 @@ function MigrationValidator() {
   const progress = useMemo(() => {
     const phases = {};
 
-    const countFields = Object.values(counts);
-    const filledCount = countFields.filter(c => c.bw !== "" && c.ap !== "").length;
-    phases.counts = Math.round((filledCount / countFields.length) * 100);
+    // Counts: all 3 transfer rows need exact matches
+    const transferKeys = ["logins", "passkeys", "totp"];
+    const transferPassed = transferKeys.filter(k => {
+      const { bw, ap } = counts[k];
+      return bw !== "" && ap !== "" && parseInt(bw) === parseInt(ap);
+    }).length;
+    // Uplock rows: just need BW filled
+    const uplockCountKeys = ["secureNotes", "cards", "identities", "attachments"];
+    const uplockFilled = uplockCountKeys.filter(k => counts[k].bw !== "").length;
+    phases.counts = Math.round(((transferPassed + uplockFilled) / (transferKeys.length + uplockCountKeys.length)) * 100);
 
-    const totalTarget = SPOT_CHECK_CATEGORIES.reduce((s, c) => s + c.target, 0);
-    const totalDone = Object.values(spotChecks).reduce((s, cat) =>
-      s + cat.items.filter(i => i.checked && i.result).length, 0);
-    phases.spotcheck = Math.round((totalDone / totalTarget) * 100);
+    // Spot check: use confidence at 5% defect rate as proxy for progress
+    const scHeadline = spotChecks.failed > 0 ? 0 : 1 - Math.pow(1 - 0.05, spotChecks.passed);
+    phases.spotcheck = Math.round(Math.min(scHeadline * 100, 100));
 
     const rwDone = Object.values(realWorld).filter(Boolean).length;
     phases.realworld = Math.round((rwDone / Object.keys(realWorld).length) * 100);
@@ -459,62 +444,55 @@ function MigrationValidator() {
 
   const feedback = useMemo(() => {
     const msgs = [];
+
     const loginBw = parseInt(counts.logins.bw) || 0;
     const loginAp = parseInt(counts.logins.ap) || 0;
     if (counts.logins.bw && counts.logins.ap) {
-      if (loginBw > 0 && loginAp === 0) msgs.push({ type: "fail", text: "No logins in Apple Passwords — CXP transfer may have failed entirely." });
-      else if (loginBw > 0 && Math.abs(loginAp - loginBw) / loginBw > 0.15)
-        msgs.push({ type: "fail", text: `Login count mismatch: ${loginBw} in BW vs ${loginAp} in AP (>15% difference). Use the name diff tool to find what's missing.` });
-      else if (loginBw > 0 && Math.abs(loginAp - loginBw) / loginBw > 0.05)
-        msgs.push({ type: "warn", text: `Login count slightly off: ${loginBw} in BW vs ${loginAp} in AP. Multi-URL entries may have split. Check the diff tool.` });
-      else msgs.push({ type: "pass", text: `Login counts match: ${loginBw} → ${loginAp}` });
+      if (loginBw > 0 && loginAp === 0)
+        msgs.push({ type: "fail", text: "No logins in Apple Passwords — transfer may have failed entirely." });
+      else if (loginBw !== loginAp)
+        msgs.push({ type: "fail", text: `Login count mismatch: ${loginBw} in Bitwarden vs ${loginAp} in Apple Passwords. Use the name diff tool to find what's missing.` });
+      else
+        msgs.push({ type: "pass", text: `Login counts match: ${loginBw}` });
     }
 
     const totpBw = parseInt(counts.totp.bw) || 0;
     const totpAp = parseInt(counts.totp.ap) || 0;
     if (counts.totp.bw && counts.totp.ap && totpBw > 0) {
-      if (totpAp < totpBw) msgs.push({ type: "warn", text: `${totpBw - totpAp} TOTP codes may not have transferred. Verify critical ones generate matching codes.` });
-      else msgs.push({ type: "pass", text: `TOTP codes: ${totpAp} transferred (expected ${totpBw})` });
+      if (totpAp !== totpBw)
+        msgs.push({ type: "fail", text: `TOTP count mismatch: ${totpBw} in Bitwarden vs ${totpAp} in Apple Passwords. Verify critical ones generate matching codes.` });
+      else
+        msgs.push({ type: "pass", text: `TOTP codes match: ${totpAp}` });
     }
 
-    const failures = Object.values(spotChecks).flatMap(c => c.items).filter(i => i.result === "fail").length;
-    if (failures > 0) msgs.push({ type: "fail", text: `${failures} spot check failure${failures > 1 ? "s" : ""} found. Investigate before proceeding with cutover.` });
+    if (spotChecks.failed > 0)
+      msgs.push({ type: "fail", text: `${spotChecks.failed} spot check failure${spotChecks.failed > 1 ? "s" : ""} recorded. Investigate before proceeding.` });
 
-    const noteCount = parseInt(counts.secureNotes.bw) || 0;
-    const cardCount = parseInt(counts.cards.bw) || 0;
-    const identCount = parseInt(counts.identities.bw) || 0;
-    const attachCount = parseInt(counts.attachments.bw) || 0;
-    const manualTotal = noteCount + cardCount + identCount + attachCount;
+    const manualTotal = ["secureNotes", "cards", "identities", "attachments"]
+      .reduce((s, k) => s + (parseInt(counts[k].bw) || 0), 0);
     if (manualTotal > 0) {
       const uplockAdded = Object.values(uplockItems).reduce((s, arr) => s + arr.length, 0);
       const uplockDone = Object.values(uplockItems).reduce((s, arr) => s + arr.filter(i => i.done).length, 0);
-      if (uplockAdded === 0) msgs.push({ type: "warn", text: `You have ${manualTotal} items in Bitwarden that need manual Uplock migration. Add them in the Uplock tab.` });
-      else if (uplockDone < uplockAdded) msgs.push({ type: "warn", text: `${uplockAdded - uplockDone} Uplock items still pending.` });
-      else msgs.push({ type: "pass", text: `All ${uplockDone} Uplock items migrated.` });
+      if (uplockAdded === 0)
+        msgs.push({ type: "warn", text: `You have ${manualTotal} Bitwarden items that need manual Uplock migration. Add them in the Uplock tab.` });
+      else if (uplockDone < uplockAdded)
+        msgs.push({ type: "warn", text: `${uplockAdded - uplockDone} Uplock item${uplockAdded - uplockDone > 1 ? "s" : ""} still pending.` });
+      else
+        msgs.push({ type: "pass", text: `All ${uplockDone} Uplock items migrated.` });
     }
 
-    const spotDone = Object.values(spotChecks).flatMap(c => c.items).filter(i => i.checked && i.result === "pass").length;
-    const readyForCutover = failures === 0 && spotDone >= 10 && progress.counts === 100;
-    if (readyForCutover && progress.uplock >= 100)
-      msgs.push({ type: "pass", text: "Ready for cutover! Proceed to Phase 6." });
-    else if (readyForCutover)
-      msgs.push({ type: "warn", text: "Passwords look good. Finish Uplock migration before cutover." });
+    if (progress.counts === 100 && spotChecks.failed === 0 && spotChecks.passed >= 10) {
+      if (progress.uplock >= 100)
+        msgs.push({ type: "pass", text: "Ready for cutover! Proceed to Phase 6." });
+      else
+        msgs.push({ type: "warn", text: "Passwords look good. Finish Uplock migration before cutover." });
+    }
 
     return msgs;
   }, [counts, spotChecks, uplockItems, progress]);
 
   const updateCount = (key, field, value) => {
     setCounts(prev => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
-  };
-
-  const updateSpotCheck = (catId, idx, field, value) => {
-    setSpotChecks(prev => {
-      const next = { ...prev };
-      const items = [...next[catId].items];
-      items[idx] = { ...items[idx], [field]: value };
-      next[catId] = { items };
-      return next;
-    });
   };
 
   return (
@@ -575,11 +553,21 @@ function MigrationValidator() {
         {activePhase === "counts" && (
           <div>
             <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Phase 1: Count Validation</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-              Compare item counts side by side. BW = Bitwarden web vault, AP = Apple Passwords app.
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Counts must match exactly — any discrepancy means something was lost or duplicated.
             </p>
 
-            <div className="grid grid-cols-[1fr_100px_100px_70px] gap-3 pb-1.5 mb-1">
+            <InfoBox>
+              <p className="font-semibold mb-1">Where to find counts in Bitwarden</p>
+              <p>Go to <strong>vault.bitwarden.com</strong> → My Vault. In the left sidebar, click each type (Logins, Cards, etc.) — the count appears next to the type name. For TOTP, open an entry and look for the Authenticator Key field.</p>
+            </InfoBox>
+
+            <InfoBox>
+              <p className="font-semibold mb-1">Where to find counts in Apple Passwords</p>
+              <p>Open the <strong>Passwords app</strong> on Mac or iPhone. The total login count is shown at the top of the All list. For passkeys, use the Passkeys filter. For TOTP codes, look for entries that show a verification code — there's no dedicated count view, so compare entries one-to-one.</p>
+            </InfoBox>
+
+            <div className="grid grid-cols-[1fr_100px_100px_60px] gap-3 pb-1.5 mb-1">
               <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Item type</span>
               <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Bitwarden</span>
               <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Apple PW</span>
@@ -596,21 +584,32 @@ function MigrationValidator() {
                 onBwChange={v => updateCount("totp", "bw", v)} onApChange={v => updateCount("totp", "ap", v)} />
             </div>
 
-            <div>
+            <div className="mb-6">
               <div className="text-xs font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wide py-2">Won't transfer — need Uplock</div>
-              {["secureNotes", "cards", "identities", "attachments"].map(key => (
-                <div key={key} className="grid grid-cols-[1fr_100px_1fr_70px] gap-3 items-center py-2.5 border-b border-gray-100 dark:border-gray-700">
-                  <span className="text-sm text-amber-700 dark:text-amber-400">
-                    {key === "secureNotes" ? "Secure Notes" : key === "cards" ? "Cards" : key === "identities" ? "Identities" : "Attachments"}
-                  </span>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">Enter your Bitwarden counts below so you know what to migrate manually in Phase 5.</p>
+              <div className="grid grid-cols-[1fr_100px_60px] gap-3 pb-1 mb-1">
+                <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Item type</span>
+                <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Bitwarden</span>
+                <span></span>
+              </div>
+              {[
+                { key: "secureNotes", label: "Secure Notes" },
+                { key: "cards", label: "Cards" },
+                { key: "identities", label: "Identities" },
+                { key: "attachments", label: "Attachments" },
+              ].map(({ key, label }) => (
+                <div key={key} className="grid grid-cols-[1fr_100px_60px] gap-3 items-center py-2.5 border-b border-gray-100 dark:border-gray-700">
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
                   <input type="number" min="0" placeholder="BW" value={counts[key].bw}
                     onChange={e => updateCount(key, "bw", e.target.value)}
                     className={inputCls} />
-                  <span className="text-sm text-gray-400 dark:text-gray-500">→ Uplock</span>
                   <div className="text-center">
-                    {counts[key].bw && parseInt(counts[key].bw) > 0
-                      ? <StatusBadge status="warn" />
-                      : counts[key].bw !== "" ? <StatusBadge status="pass" /> : <StatusBadge status="pending" />}
+                    {counts[key].bw !== ""
+                      ? <span className="inline-block px-2 py-0.5 rounded text-xs font-bold tracking-wide border bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600">
+                          {parseInt(counts[key].bw) === 0 ? "none" : "→ UP"}
+                        </span>
+                      : <span className="inline-block px-2 py-0.5 rounded text-xs font-bold tracking-wide border bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-600">—</span>
+                    }
                   </div>
                 </div>
               ))}
@@ -625,31 +624,40 @@ function MigrationValidator() {
           <div>
             <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Phase 2: Spot Check Passwords</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Check each item, then mark ✓ or ✗. For each: verify URL, username, password, TOTP, and notes match.
+              Manually verify individual entries. For each one you check, confirm the URL, username, password, TOTP code (if any), and notes all match Bitwarden exactly — then tally the result below.
             </p>
-            <ConfidenceMeter
-              passedCount={Object.values(spotChecks).flatMap(c => c.items).filter(i => i.result === "pass").length}
-              failedCount={Object.values(spotChecks).flatMap(c => c.items).filter(i => i.result === "fail").length}
-            />
 
-            {SPOT_CHECK_CATEGORIES.map(cat => (
-              <div key={cat.id} className="mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{cat.label} ({cat.target})</label>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">
-                    {spotChecks[cat.id].items.filter(i => i.result === "pass").length}/{cat.target} passed
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  {spotChecks[cat.id].items.map((item, i) => (
-                    <SpotCheckItem key={i} item={{ ...cat, label: `${cat.label} #${i + 1}`, desc: cat.desc }}
-                      checked={item.checked} result={item.result}
-                      onToggle={() => updateSpotCheck(cat.id, i, "checked", !item.checked)}
-                      onResult={(r) => updateSpotCheck(cat.id, i, "result", r)} />
-                  ))}
-                </div>
+            <ConfidenceMeter passed={spotChecks.passed} failed={spotChecks.failed} />
+
+            <div className="flex gap-3 mb-6">
+              <Counter label="Passed" value={spotChecks.passed} color="green"
+                onChange={v => setSpotChecks(p => ({ ...p, passed: v }))} />
+              <Counter label="Failed" value={spotChecks.failed} color="red"
+                onChange={v => setSpotChecks(p => ({ ...p, failed: v }))} />
+            </div>
+
+            <InfoBox>
+              <p className="font-semibold mb-1">Where to check</p>
+              <p>Open the same entry side-by-side in Bitwarden (vault.bitwarden.com) and Apple Passwords. Reveal both passwords and compare character-by-character. For TOTP, generate a code in each app simultaneously and confirm they match.</p>
+            </InfoBox>
+
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+              <div className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">What to check</div>
+              <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                <p>Pick a variety of entries that exercise different features. Good categories to cover:</p>
+                <ul className="list-disc list-inside space-y-1.5 mt-2 text-gray-500 dark:text-gray-400">
+                  <li><strong className="text-gray-700 dark:text-gray-300">Frequently used</strong> — email, banking, social media. These matter most.</li>
+                  <li><strong className="text-gray-700 dark:text-gray-300">With TOTP codes</strong> — generate both simultaneously and confirm they match.</li>
+                  <li><strong className="text-gray-700 dark:text-gray-300">Long passwords (40+ chars)</strong> — Apple Passwords can truncate very long passwords.</li>
+                  <li><strong className="text-gray-700 dark:text-gray-300">Special characters or emoji</strong> — symbols, unicode, emoji in the password field.</li>
+                  <li><strong className="text-gray-700 dark:text-gray-300">Multiple URLs</strong> — entries with more than one URL; check all domains are present.</li>
+                  <li><strong className="text-gray-700 dark:text-gray-300">With notes</strong> — verify the full note content is preserved.</li>
+                  <li><strong className="text-gray-700 dark:text-gray-300">With custom fields</strong> — these don't transfer natively; check if they landed in the notes field.</li>
+                  <li><strong className="text-gray-700 dark:text-gray-300">Recently added entries</strong> — anything added in the last week or two.</li>
+                  <li><strong className="text-gray-700 dark:text-gray-300">Passkeys</strong> — if you have any, verify the passkey is present and can authenticate.</li>
+                </ul>
               </div>
-            ))}
+            </div>
           </div>
         )}
 
@@ -658,14 +666,18 @@ function MigrationValidator() {
           <div>
             <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Phase 3: Live Login Tests</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Actually sign in to these sites using Apple Passwords autofill. This tests the full flow, not just data presence.
+              Actually sign in to these sites using Apple Passwords autofill. This tests the full flow — not just that data is present but that autofill and TOTP work end-to-end.
             </p>
+            <InfoBox>
+              <p className="font-semibold mb-1">How to test autofill</p>
+              <p>On iPhone: tap the password field — a Passwords suggestion should appear above the keyboard. On Mac: click a password field in Safari — the autofill popup should appear. Make sure you're using Apple Passwords, not Bitwarden.</p>
+            </InfoBox>
             {[
-              { key: "banking", label: "Banking / financial site", desc: "Verify password and any 2FA" },
-              { key: "email", label: "Email account", desc: "Primary email provider" },
-              { key: "totp_site", label: "Site with TOTP", desc: "Verify the code works for 2FA" },
-              { key: "passkey_site", label: "Passkey login", desc: "If applicable" },
-              { key: "complex_pw", label: "Complex password site", desc: "Special chars, long password" },
+              { key: "banking", label: "Banking / financial site", desc: "Verify password, autofill works, and 2FA succeeds" },
+              { key: "email", label: "Email account", desc: "Primary email provider — critical to get right" },
+              { key: "totp_site", label: "Site with TOTP 2FA", desc: "Tap the verification code in Apple Passwords and verify it's accepted" },
+              { key: "passkey_site", label: "Passkey login", desc: "If applicable — verify the passkey authenticates successfully" },
+              { key: "complex_pw", label: "Site with a complex password", desc: "Long password or special characters — checks for truncation or encoding issues" },
             ].map(item => (
               <label key={item.key}
                 className={`flex gap-3 items-start p-3.5 rounded-xl border mb-2 cursor-pointer transition-all ${realWorld[item.key] ? "bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700"}`}>
@@ -686,25 +698,34 @@ function MigrationValidator() {
           <div>
             <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Phase 4: Edge Cases</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Check each edge case. Mark ✓ if handled correctly or ✗ if data was lost.
+              These are known transfer limitations. Check each one that applies to your vault and note whether it was handled or lost.
             </p>
-            {EDGE_CASES.map(ec => (
+            {[
+              { id: "multi_url_autofill", label: "Multi-URL logins autofill on all domains", note: "Open Apple Passwords, find an entry with multiple URLs, and verify all of them appear and autofill correctly." },
+              { id: "custom_fields_fate", label: "Custom fields are present somewhere", note: "Custom fields don't transfer as fields. Check if they landed in the Notes section of the entry in Apple Passwords." },
+              { id: "non_http", label: "Non-http URIs acknowledged as lost", note: "URIs like androidapp:// or ssh:// are dropped. Decide if any of these matter to you." },
+              { id: "cards_wallet", label: "Cards — checked Apple Wallet or Uplock", note: "Credit/debit cards don't transfer to Apple Passwords. They may have imported into Apple Wallet during CXP, or you'll need to add them to Uplock manually." },
+              { id: "identities_fate", label: "Identities — checked if transferred", note: "Bitwarden identities don't map to Apple Passwords. Verify they're in Uplock or that you don't need them." },
+            ].map(ec => (
               <div key={ec.id}
-                className="flex justify-between items-center p-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl mb-2">
-                <label className="flex gap-2.5 items-center cursor-pointer flex-1">
-                  <input type="checkbox" checked={edgeCases[ec.id].checked}
-                    onChange={() => setEdgeCases(p => ({ ...p, [ec.id]: { ...p[ec.id], checked: !p[ec.id].checked } }))}
-                    className="accent-blue-600 w-4 h-4 flex-shrink-0" />
-                  <span className="text-sm text-gray-800 dark:text-gray-200">{ec.label}</span>
-                </label>
-                {edgeCases[ec.id].checked && (
-                  <div className="flex gap-1.5 ml-3">
-                    <button onClick={() => setEdgeCases(p => ({ ...p, [ec.id]: { ...p[ec.id], result: "pass" } }))}
-                      className={`px-2.5 py-1 rounded text-sm font-bold border transition-colors ${edgeCases[ec.id].result === "pass" ? "bg-green-600 text-white border-green-600" : "bg-white dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 hover:border-green-400"}`}>✓</button>
-                    <button onClick={() => setEdgeCases(p => ({ ...p, [ec.id]: { ...p[ec.id], result: "fail" } }))}
-                      className={`px-2.5 py-1 rounded text-sm font-bold border transition-colors ${edgeCases[ec.id].result === "fail" ? "bg-red-600 text-white border-red-600" : "bg-white dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 hover:border-red-400"}`}>✗</button>
-                  </div>
-                )}
+                className={`p-3.5 border rounded-xl mb-2 transition-all ${edgeCases[ec.id]?.result === "pass" ? "bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800" : edgeCases[ec.id]?.result === "fail" ? "bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"}`}>
+                <div className="flex justify-between items-start gap-3">
+                  <label className="flex gap-2.5 items-start cursor-pointer flex-1">
+                    <input type="checkbox" checked={edgeCases[ec.id]?.checked || false}
+                      onChange={() => setEdgeCases(p => ({ ...p, [ec.id]: { ...p[ec.id], checked: !p[ec.id]?.checked } }))}
+                      className="accent-blue-600 w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{ec.label}</span>
+                  </label>
+                  {edgeCases[ec.id]?.checked && (
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      <button onClick={() => setEdgeCases(p => ({ ...p, [ec.id]: { ...p[ec.id], result: "pass" } }))}
+                        className={`px-2.5 py-1 rounded text-sm font-bold border transition-colors ${edgeCases[ec.id]?.result === "pass" ? "bg-green-600 text-white border-green-600" : "bg-white dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 hover:border-green-400"}`}>✓</button>
+                      <button onClick={() => setEdgeCases(p => ({ ...p, [ec.id]: { ...p[ec.id], result: "fail" } }))}
+                        className={`px-2.5 py-1 rounded text-sm font-bold border transition-colors ${edgeCases[ec.id]?.result === "fail" ? "bg-red-600 text-white border-red-600" : "bg-white dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 hover:border-red-400"}`}>✗</button>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 ml-6">{ec.note}</p>
               </div>
             ))}
           </div>
@@ -714,9 +735,13 @@ function MigrationValidator() {
         {activePhase === "uplock" && (
           <div>
             <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Phase 5: Uplock Migration</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-              Add items from Bitwarden that need manual migration to Uplock. Check them off as you go.
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Items that don't transfer via CXP need to be migrated manually into Uplock. Add each item by name and check it off as you go.
             </p>
+            <InfoBox>
+              <p className="font-semibold mb-1">Where to find these in Bitwarden</p>
+              <p>Go to <strong>vault.bitwarden.com</strong> → My Vault and filter by type using the left sidebar. For attachments, open each entry individually — the attachment is shown at the bottom of the entry detail. Download files to your device first, then attach them in Uplock.</p>
+            </InfoBox>
             {UPLOCK_TYPES.map(type => (
               <UplockSection key={type.id} type={type}
                 items={uplockItems[type.id]}
@@ -729,13 +754,13 @@ function MigrationValidator() {
         {activePhase === "cutover" && (
           <div>
             <h3 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">Phase 6: Cutover</h3>
-            {progress.spotcheck < 80 && (
+            {progress.spotcheck < 60 && (
               <div className="p-3.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl mb-4 text-sm text-amber-700 dark:text-amber-400">
-                ⚠ Spot checks are only {progress.spotcheck}% complete. Finish validation before proceeding.
+                ⚠ Spot check confidence is only {progress.spotcheck}%. Consider checking more entries before proceeding.
               </div>
             )}
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Only proceed after all validation passes. These steps are in order.
+              Only proceed once all earlier phases are complete. These steps are in order — don't skip the parallel period.
             </p>
             {CUTOVER_STEPS.map((step, i) => (
               <label key={step.id}
@@ -753,7 +778,7 @@ function MigrationValidator() {
                 <div className="text-3xl mb-2">✓</div>
                 <div className="text-green-700 dark:text-green-400 font-bold">Migration Complete</div>
                 <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Keep Bitwarden installed for 1-2 weeks as a safety net.
+                  Keep Bitwarden installed for 1-2 weeks as a safety net before deactivating your account.
                 </div>
               </div>
             )}
