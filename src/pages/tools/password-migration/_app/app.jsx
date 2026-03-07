@@ -20,30 +20,76 @@ const App = () => {
     try {
       const parsed = await parseZipExport(file);
       setVault(parsed);
+      // Save non-sensitive manifest for rendering without vault
+      const manifest = {};
+      for (const entry of parsed) {
+        manifest[entry.bitwarden_id] = {
+          name: entry.name,
+          type: entry.type,
+          folder_name: entry.folder_name,
+          has_totp: !!entry.totp,
+          has_notes: !!entry.notes,
+          custom_field_count: entry.custom_fields?.length || 0,
+          attachment_count: entry.attachments?.length || 0,
+        };
+      }
+      setProgress(prev => ({ ...prev, manifest }));
     } catch (e) {
       setError(e.message || 'Failed to parse export');
     } finally {
       setIsLoading(false);
     }
-  }, [setVault]);
+  }, [setVault, setProgress]);
 
   const handleReset = useCallback(() => {
     clearAll();
     setVault(null);
-    setProgress({ dispositions: {}, fieldStatuses: {}, userNotes: {}, pinnedId: null, applePasswordsReported: null });
+    setProgress({ manifest: {}, dispositions: {}, fieldStatuses: {}, userNotes: {}, pinnedId: null, applePasswordsReported: null });
   }, [setVault, setProgress]);
 
-  // Merge vault entries with progress data for rendering
+  const hasVault = !!vault;
+  const hasManifest = Object.keys(progress.manifest).length > 0;
+
+  // Build entries: full data if vault loaded, degraded if only manifest
   const entries = useMemo(() => {
-    if (!vault) return null;
-    return vault.map(entry => ({
-      ...entry,
-      disposition: progress.dispositions[entry.bitwarden_id] || null,
-      user_notes: progress.userNotes[entry.bitwarden_id] || '',
-      is_pinned: progress.pinnedId === entry.bitwarden_id,
-      field_statuses: progress.fieldStatuses[entry.bitwarden_id] || entry.field_statuses,
-    }));
-  }, [vault, progress]);
+    if (vault) {
+      return vault.map(entry => ({
+        ...entry,
+        disposition: progress.dispositions[entry.bitwarden_id] || null,
+        user_notes: progress.userNotes[entry.bitwarden_id] || '',
+        is_pinned: progress.pinnedId === entry.bitwarden_id,
+        field_statuses: progress.fieldStatuses[entry.bitwarden_id] || {},
+      }));
+    }
+    if (hasManifest) {
+      return Object.entries(progress.manifest).map(([id, meta]) => ({
+        bitwarden_id: id,
+        name: meta.name,
+        type: meta.type,
+        folder_name: meta.folder_name,
+        uris: [],
+        username: null,
+        password: null,
+        totp: meta.has_totp ? '(hidden)' : null,
+        notes: meta.has_notes ? '(hidden)' : null,
+        custom_fields: Array.from({ length: meta.custom_field_count }, (_, i) => ({
+          name: `Field ${i + 1}`, value: null, is_hidden: true,
+        })),
+        attachments: Array.from({ length: meta.attachment_count }, (_, i) => ({
+          filename: `Attachment ${i + 1}`, content: null, is_binary: false,
+        })),
+        cardholder_name: null, card_brand: null, card_number: null,
+        card_exp_month: null, card_exp_year: null, card_code: null,
+        identity_title: null, identity_first_name: null, identity_last_name: null,
+        identity_email: null, identity_phone: null, identity_address: null,
+        disposition: progress.dispositions[id] || null,
+        user_notes: progress.userNotes[id] || '',
+        is_pinned: progress.pinnedId === id,
+        field_statuses: progress.fieldStatuses[id] || {},
+      }));
+    }
+    return null;
+  }, [vault, progress, hasManifest]);
 
   const handlePin = useCallback((id) => {
     setProgress(prev => ({
@@ -94,32 +140,17 @@ const App = () => {
     setProgress(prev => ({ ...prev, applePasswordsReported: count }));
   }, [setProgress]);
 
-  const hasProgress = Object.keys(progress.dispositions).length > 0
-    || Object.keys(progress.userNotes).length > 0
-    || Object.keys(progress.fieldStatuses).length > 0;
-
   const backLink = (
     <a href="/tools/" className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-4 inline-block">
       &larr; Tools
     </a>
   );
 
-  // No vault loaded — either fresh start or returning with progress
+  // No data at all — fresh start
   if (!entries) {
     return (
       <div className="max-w-xl mx-auto pt-8 px-8">
         {backLink}
-        {hasProgress && (
-          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <p className="text-sm text-amber-800 dark:text-amber-200 font-medium mb-1">
-              Migration in progress
-            </p>
-            <p className="text-sm text-amber-700 dark:text-amber-300">
-              Your progress is saved, but vault data has been cleared.
-              Re-upload your Bitwarden export to continue where you left off.
-            </p>
-          </div>
-        )}
         <UploadView onImport={handleImport} isLoading={isLoading} error={error} />
         <p className="mt-6 text-xs text-gray-400 dark:text-gray-500 text-center">
           Your progress is saved locally. Passwords are cleared when you close this tab.
@@ -140,6 +171,30 @@ const App = () => {
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
         Password Migration Helper
       </h1>
+
+      {!hasVault && (
+        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center justify-between gap-4">
+          <p className="text-sm text-amber-700 dark:text-amber-300">
+            Sensitive data not loaded. Upload your Bitwarden export to view passwords and details.
+          </p>
+          <label className="shrink-0 cursor-pointer px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors">
+            {isLoading ? 'Loading...' : 'Upload .zip'}
+            <input
+              type="file"
+              accept=".zip"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImport(f); }}
+              className="hidden"
+              disabled={isLoading}
+            />
+          </label>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-sm">
+          {error}
+        </div>
+      )}
 
       <ProgressDashboard
         total={total}

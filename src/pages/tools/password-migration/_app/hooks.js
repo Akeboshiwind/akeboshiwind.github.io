@@ -4,6 +4,9 @@ const VAULT_KEY = 'passwordMigration_vault';
 const PROGRESS_KEY = 'passwordMigration_progress';
 
 const EMPTY_PROGRESS = {
+  // Non-sensitive entry metadata for rendering without vault
+  // { [bitwarden_id]: { name, type, folder_name } }
+  manifest: {},
   dispositions: {},
   fieldStatuses: {},
   userNotes: {},
