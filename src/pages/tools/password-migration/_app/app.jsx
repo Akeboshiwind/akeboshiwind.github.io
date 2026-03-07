@@ -94,17 +94,36 @@ const App = () => {
     setProgress(prev => ({ ...prev, applePasswordsReported: count }));
   }, [setProgress]);
 
+  const hasProgress = Object.keys(progress.dispositions).length > 0
+    || Object.keys(progress.userNotes).length > 0
+    || Object.keys(progress.fieldStatuses).length > 0;
+
   const backLink = (
     <a href="/tools/" className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-4 inline-block">
       &larr; Tools
     </a>
   );
 
+  // No vault loaded — either fresh start or returning with progress
   if (!entries) {
     return (
       <div className="max-w-xl mx-auto pt-8 px-8">
         {backLink}
+        {hasProgress && (
+          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <p className="text-sm text-amber-800 dark:text-amber-200 font-medium mb-1">
+              Migration in progress
+            </p>
+            <p className="text-sm text-amber-700 dark:text-amber-300">
+              Your progress is saved, but vault data has been cleared.
+              Re-upload your Bitwarden export to continue where you left off.
+            </p>
+          </div>
+        )}
         <UploadView onImport={handleImport} isLoading={isLoading} error={error} />
+        <p className="mt-6 text-xs text-gray-400 dark:text-gray-500 text-center">
+          Your progress is saved locally. Passwords are cleared when you close this tab.
+        </p>
       </div>
     );
   }
