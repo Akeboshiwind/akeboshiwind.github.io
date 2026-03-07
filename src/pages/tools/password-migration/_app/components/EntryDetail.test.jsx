@@ -81,4 +81,21 @@ describe('EntryDetail', () => {
     render(<EntryDetail entry={makeEntry()} {...handlers} />);
     expect(screen.getByText('API Key')).toBeInTheDocument();
   });
+
+  it('calls onSetFieldStatus with correct 3-arg format', () => {
+    const fns = { ...handlers, onSetFieldStatus: vi.fn() };
+    render(<EntryDetail entry={makeEntry()} {...fns} />);
+
+    // Change the TOTP field status dropdown
+    const selects = screen.getAllByRole('combobox');
+    // First select is TOTP, second is Notes, third is custom field, fourth is attachment
+    fireEvent.change(selects[0], { target: { value: 'migrated' } });
+    expect(fns.onSetFieldStatus).toHaveBeenCalledWith('id-1', 'totp', 'migrated');
+
+    fireEvent.change(selects[2], { target: { value: 'discarded' } });
+    expect(fns.onSetFieldStatus).toHaveBeenCalledWith('id-1', 'custom_field_0', 'discarded');
+
+    fireEvent.change(selects[3], { target: { value: 'migrated' } });
+    expect(fns.onSetFieldStatus).toHaveBeenCalledWith('id-1', 'attachment_0', 'migrated');
+  });
 });

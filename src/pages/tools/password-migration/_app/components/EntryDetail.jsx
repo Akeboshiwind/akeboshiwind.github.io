@@ -124,7 +124,7 @@ export function EntryDetail({
         {totp && (
           <FieldStatusToggle
             value={field_statuses?.totp}
-            onChange={(v) => onSetFieldStatus(bitwarden_id, 'totp', null, v)}
+            onChange={(v) => onSetFieldStatus(bitwarden_id, 'totp', v)}
           />
         )}
       </div>
@@ -135,7 +135,7 @@ export function EntryDetail({
         {notes && (
           <FieldStatusToggle
             value={field_statuses?.notes}
-            onChange={(v) => onSetFieldStatus(bitwarden_id, 'notes', null, v)}
+            onChange={(v) => onSetFieldStatus(bitwarden_id, 'notes', v)}
           />
         )}
       </div>
@@ -184,7 +184,7 @@ export function EntryDetail({
               </div>
               <FieldStatusToggle
                 value={field_statuses?.custom_fields?.[i]}
-                onChange={(v) => onSetFieldStatus(bitwarden_id, 'custom_fields', i, v)}
+                onChange={(v) => onSetFieldStatus(bitwarden_id, `custom_field_${i}`, v)}
               />
             </div>
           ))}
@@ -206,7 +206,7 @@ export function EntryDetail({
               </div>
               <FieldStatusToggle
                 value={field_statuses?.attachments?.[i]}
-                onChange={(v) => onSetFieldStatus(bitwarden_id, 'attachments', i, v)}
+                onChange={(v) => onSetFieldStatus(bitwarden_id, `attachment_${i}`, v)}
               />
             </div>
           ))}
