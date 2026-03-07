@@ -82,8 +82,19 @@ const App = () => {
     });
   }, [updateEntry]);
 
+  const backLink = (
+    <a href="/tools/" className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-4 inline-block">
+      &larr; Tools
+    </a>
+  );
+
   if (!entries) {
-    return <UploadView onImport={handleImport} isLoading={isLoading} error={error} />;
+    return (
+      <div className="max-w-xl mx-auto pt-8 px-8">
+        {backLink}
+        <UploadView onImport={handleImport} isLoading={isLoading} error={error} />
+      </div>
+    );
   }
 
   const total = entries.length;
@@ -94,6 +105,7 @@ const App = () => {
 
   return (
     <div className="max-w-3xl mx-auto p-4">
+      {backLink}
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
         Password Migration Helper
       </h1>
