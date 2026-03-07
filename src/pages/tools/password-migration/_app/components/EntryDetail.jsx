@@ -183,7 +183,7 @@ export function EntryDetail({
                 )}
               </div>
               <FieldStatusToggle
-                value={field_statuses?.custom_fields?.[i]}
+                value={field_statuses?.[`custom_field_${i}`]}
                 onChange={(v) => onSetFieldStatus(bitwarden_id, `custom_field_${i}`, v)}
               />
             </div>
@@ -205,7 +205,7 @@ export function EntryDetail({
                 )}
               </div>
               <FieldStatusToggle
-                value={field_statuses?.attachments?.[i]}
+                value={field_statuses?.[`attachment_${i}`]}
                 onChange={(v) => onSetFieldStatus(bitwarden_id, `attachment_${i}`, v)}
               />
             </div>

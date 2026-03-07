@@ -29,8 +29,8 @@ const makeEntry = (overrides) => ({
   field_statuses: {
     totp: null,
     notes: null,
-    custom_fields: [null],
-    attachments: [null],
+    custom_field_0: null,
+    attachment_0: null,
   },
   ...overrides,
 });

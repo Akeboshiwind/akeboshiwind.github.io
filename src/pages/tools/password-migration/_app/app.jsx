@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
-import { useLocalStorage, clearAllStorage } from './hooks.js';
+import { useVault, useProgress, clearAll } from './hooks.js';
 import { parseZipExport } from './parser.js';
 import { UploadView } from './components/UploadView.jsx';
 import { ProgressDashboard } from './components/ProgressDashboard.jsx';
@@ -9,8 +9,8 @@ import { EntryDetail } from './components/EntryDetail.jsx';
 import './app.css';
 
 const App = () => {
-  const [entries, setEntries] = useLocalStorage('entries', null);
-  const [applePasswordsReported, setApplePasswordsReported] = useLocalStorage('applePasswordsReported', null);
+  const [vault, setVault] = useVault();
+  const [progress, setProgress] = useProgress();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -19,68 +19,80 @@ const App = () => {
     setError(null);
     try {
       const parsed = await parseZipExport(file);
-      setEntries(parsed);
+      setVault(parsed);
     } catch (e) {
       setError(e.message || 'Failed to parse export');
     } finally {
       setIsLoading(false);
     }
-  }, [setEntries]);
+  }, [setVault]);
 
   const handleReset = useCallback(() => {
-    clearAllStorage();
-    setEntries(null);
-    setApplePasswordsReported(null);
-  }, [setEntries, setApplePasswordsReported]);
+    clearAll();
+    setVault(null);
+    setProgress({ dispositions: {}, fieldStatuses: {}, userNotes: {}, pinnedId: null, applePasswordsReported: null });
+  }, [setVault, setProgress]);
 
-  const updateEntry = useCallback((id, updater) => {
-    setEntries(prev => prev.map(e =>
-      e.bitwarden_id === id ? updater(e) : e
-    ));
-  }, [setEntries]);
+  // Merge vault entries with progress data for rendering
+  const entries = useMemo(() => {
+    if (!vault) return null;
+    return vault.map(entry => ({
+      ...entry,
+      disposition: progress.dispositions[entry.bitwarden_id] || null,
+      user_notes: progress.userNotes[entry.bitwarden_id] || '',
+      is_pinned: progress.pinnedId === entry.bitwarden_id,
+      field_statuses: progress.fieldStatuses[entry.bitwarden_id] || entry.field_statuses,
+    }));
+  }, [vault, progress]);
 
   const handlePin = useCallback((id) => {
-    setEntries(prev => prev.map(e => ({
-      ...e,
-      is_pinned: e.bitwarden_id === id ? !e.is_pinned : false,
-    })));
-  }, [setEntries]);
+    setProgress(prev => ({
+      ...prev,
+      pinnedId: prev.pinnedId === id ? null : id,
+    }));
+  }, [setProgress]);
 
   const handleSetDisposition = useCallback((id, disposition) => {
-    updateEntry(id, e => ({ ...e, disposition }));
-  }, [updateEntry]);
+    setProgress(prev => ({
+      ...prev,
+      dispositions: { ...prev.dispositions, [id]: disposition },
+    }));
+  }, [setProgress]);
 
   const handleClearDisposition = useCallback((id) => {
-    updateEntry(id, e => ({ ...e, disposition: null }));
-  }, [updateEntry]);
+    setProgress(prev => {
+      const { [id]: _, ...rest } = prev.dispositions;
+      return { ...prev, dispositions: rest };
+    });
+  }, [setProgress]);
 
   const handleUnpin = useCallback(() => {
-    setEntries(prev => prev.map(e => ({ ...e, is_pinned: false })));
-  }, [setEntries]);
+    setProgress(prev => ({ ...prev, pinnedId: null }));
+  }, [setProgress]);
 
   const handleUpdateNotes = useCallback((id, text) => {
-    updateEntry(id, e => ({ ...e, user_notes: text }));
-  }, [updateEntry]);
+    setProgress(prev => ({
+      ...prev,
+      userNotes: { ...prev.userNotes, [id]: text },
+    }));
+  }, [setProgress]);
 
   const handleSetFieldStatus = useCallback((id, fieldName, status) => {
-    updateEntry(id, e => {
-      const fs = { ...e.field_statuses };
-      if (fieldName === 'totp') {
-        fs.totp = status;
-      } else if (fieldName === 'notes') {
-        fs.notes = status;
-      } else if (fieldName.startsWith('custom_field_')) {
-        const idx = parseInt(fieldName.split('_')[2], 10);
-        fs.custom_fields = [...fs.custom_fields];
-        fs.custom_fields[idx] = status;
-      } else if (fieldName.startsWith('attachment_')) {
-        const idx = parseInt(fieldName.split('_')[1], 10);
-        fs.attachments = [...fs.attachments];
-        fs.attachments[idx] = status;
-      }
-      return { ...e, field_statuses: fs };
+    setProgress(prev => {
+      const existing = prev.fieldStatuses[id] || {};
+      return {
+        ...prev,
+        fieldStatuses: {
+          ...prev.fieldStatuses,
+          [id]: { ...existing, [fieldName]: status },
+        },
+      };
     });
-  }, [updateEntry]);
+  }, [setProgress]);
+
+  const handleApplePasswordsCountChange = useCallback((count) => {
+    setProgress(prev => ({ ...prev, applePasswordsReported: count }));
+  }, [setProgress]);
 
   const backLink = (
     <a href="/tools/" className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-4 inline-block">
@@ -115,8 +127,8 @@ const App = () => {
         done={done}
         remaining={remaining}
         applePasswordsMarked={applePasswordsMarked}
-        applePasswordsReported={applePasswordsReported}
-        onApplePasswordsCountChange={setApplePasswordsReported}
+        applePasswordsReported={progress.applePasswordsReported}
+        onApplePasswordsCountChange={handleApplePasswordsCountChange}
         onReset={handleReset}
       />
 
