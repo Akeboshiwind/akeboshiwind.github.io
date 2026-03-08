@@ -5,7 +5,6 @@ import { parseZipExport } from './parser.js';
 import { UploadView } from './components/UploadView.jsx';
 import { ProgressDashboard } from './components/ProgressDashboard.jsx';
 import { EntryList } from './components/EntryList.jsx';
-import { EntryDetail } from './components/EntryDetail.jsx';
 import './app.css';
 
 const App = () => {
@@ -163,8 +162,6 @@ const App = () => {
   const done = entries.filter(e => e.disposition != null).length;
   const remaining = total - done;
   const applePasswordsMarked = entries.filter(e => e.disposition === 'apple_passwords').length;
-  const pinnedEntry = entries.find(e => e.is_pinned);
-
   return (
     <div className="max-w-3xl mx-auto p-4">
       {backLink}
@@ -206,18 +203,15 @@ const App = () => {
         onReset={handleReset}
       />
 
-      {pinnedEntry && (
-        <EntryDetail
-          entry={pinnedEntry}
-          onSetDisposition={handleSetDisposition}
-          onClearDisposition={handleClearDisposition}
-          onUnpin={handleUnpin}
-          onUpdateNotes={handleUpdateNotes}
-          onSetFieldStatus={handleSetFieldStatus}
-        />
-      )}
-
-      <EntryList entries={entries} onPin={handlePin} />
+      <EntryList
+        entries={entries}
+        onPin={handlePin}
+        onSetDisposition={handleSetDisposition}
+        onClearDisposition={handleClearDisposition}
+        onUnpin={handleUnpin}
+        onUpdateNotes={handleUpdateNotes}
+        onSetFieldStatus={handleSetFieldStatus}
+      />
     </div>
   );
 };

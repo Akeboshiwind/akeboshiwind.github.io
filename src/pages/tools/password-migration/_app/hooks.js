@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 const VAULT_KEY = 'passwordMigration_vault';
 const PROGRESS_KEY = 'passwordMigration_progress';
@@ -29,7 +29,11 @@ export function useVault() {
   const setVault = useCallback((entries) => {
     setVaultState(entries);
     if (entries) {
-      sessionStorage.setItem(VAULT_KEY, JSON.stringify(entries));
+      try {
+        sessionStorage.setItem(VAULT_KEY, JSON.stringify(entries));
+      } catch {
+        // Quota exceeded — vault lives in memory only, won't survive refresh
+      }
     } else {
       sessionStorage.removeItem(VAULT_KEY);
     }
@@ -50,14 +54,19 @@ export function useProgress() {
     }
   });
 
+  const saveTimer = useRef(null);
+
   const setProgress = useCallback((updater) => {
     setProgressState(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      try {
-        localStorage.setItem(PROGRESS_KEY, JSON.stringify(next));
-      } catch {
-        // quota exceeded — progress not saved, but app still works
-      }
+      clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        try {
+          localStorage.setItem(PROGRESS_KEY, JSON.stringify(next));
+        } catch {
+          // quota exceeded — progress not saved, but app still works
+        }
+      }, 300);
       return next;
     });
   }, []);

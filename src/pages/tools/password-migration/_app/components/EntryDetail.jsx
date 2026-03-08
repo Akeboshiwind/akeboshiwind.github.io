@@ -130,7 +130,7 @@ export function EntryDetail({
       </div>
       <div className="flex items-center gap-2">
         <div className="flex-1">
-          <PlainField label="Notes" value={notes} />
+          <RevealField label="Notes" value={notes} />
         </div>
         {notes && (
           <FieldStatusToggle

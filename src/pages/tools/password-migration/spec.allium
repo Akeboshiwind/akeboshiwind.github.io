@@ -1,0 +1,336 @@
+-- allium: 2
+-- password-migration.allium
+
+-- Scope: Audit and track migration of Bitwarden vault entries
+--        to Apple Passwords and Uplock
+-- Includes: Import, entry tracking, field-level disposition, progress
+-- Excludes:
+--   - Generating import files for target apps
+--   - Automatic verification against target app exports
+--   - Bulk operations
+-- Dependencies: None (standalone client-side tool)
+
+------------------------------------------------------------
+-- Enumerations
+------------------------------------------------------------
+
+enum BitwardenItemType { login | secure_note | card | identity }
+
+enum EntryDisposition { apple_passwords | uplock | apple_wallet | deleted }
+-- Cards can go to Apple Wallet or Uplock, user decides per entry
+
+enum FieldStatus { migrated | discarded }
+
+------------------------------------------------------------
+-- Value Types
+------------------------------------------------------------
+
+value CustomField {
+    name: String
+    value: String
+    is_hidden: Boolean
+}
+
+value Attachment {
+    filename: String
+    content: String?
+    -- content is null for binary files (e.g., .p12)
+    is_binary: Boolean
+}
+
+value Uri {
+    uri: String
+}
+
+------------------------------------------------------------
+-- Entities
+------------------------------------------------------------
+
+-- The imported Bitwarden vault, loaded once from a .zip export
+entity Vault {
+    entries: VaultEntry with vault = this
+
+    -- Derived
+    total_count: entries.count
+    done_count: entries where disposition != null -> count
+    remaining_count: total_count - done_count
+}
+
+entity VaultEntry {
+    vault: Vault
+
+    -- Bitwarden source data (immutable after import)
+    bitwarden_id: String
+    name: String
+    type: BitwardenItemType
+    notes: String?
+    is_favorite: Boolean
+    folder_name: String?
+    -- Read-only context from Bitwarden, not used by target apps
+
+    -- Login fields (present when type = login)
+    uris: List<Uri>
+    username: String?
+    password: String?
+    totp: String?
+
+    -- Card fields (present when type = card)
+    cardholder_name: String?
+    card_brand: String?
+    card_number: String?
+    card_exp_month: String?
+    card_exp_year: String?
+    card_code: String?
+
+    -- Identity fields (present when type = identity)
+    identity_title: String?
+    identity_first_name: String?
+    identity_last_name: String?
+    identity_email: String?
+    identity_phone: String?
+    identity_address: String?
+
+    -- Custom fields and attachments
+    custom_fields: List<CustomField>
+    attachments: List<Attachment>
+
+    -- User-controlled migration state
+    disposition: EntryDisposition?
+    user_notes: String?
+    is_pinned: Boolean
+
+    -- Field-level tracking
+    field_statuses: FieldTracking with entry = this
+
+    -- Derived
+    is_done: disposition != null
+    has_custom_fields: custom_fields.count > 0
+    has_totp: totp != null
+    has_attachments: attachments.count > 0
+    has_sensitive_extras: has_custom_fields or has_totp or has_attachments
+}
+
+-- Tracks disposition of individual fields within an entry.
+-- This is for the user's own progress tracking only.
+-- Field tracking does NOT gate whether an entry is considered "done" —
+-- only the entry-level disposition determines that.
+entity FieldTracking {
+    entry: VaultEntry
+
+    totp_status: FieldStatus?
+    notes_status: FieldStatus?
+    custom_field_statuses: List<FieldStatus?>
+    -- Parallel to entry.custom_fields by index
+    attachment_statuses: List<FieldStatus?>
+    -- Parallel to entry.attachments by index
+}
+
+-- Manual checksum input from Apple Passwords
+entity ApplePasswordsChecksum {
+    reported_count: Integer
+    -- User types in how many entries Apple Passwords says it has
+}
+
+------------------------------------------------------------
+-- Rules
+------------------------------------------------------------
+
+-- ## Import flow
+
+rule ImportVault {
+    when: UserUploadsZip(file)
+
+    ensures: Vault.created(
+        -- Parse data.json from zip, create VaultEntry per item
+        -- Extract attachment file contents where readable
+    )
+
+    @guidance
+        -- Parse the .zip client-side using JSZip or similar
+        -- data.json contains the Bitwarden JSON export
+        -- Attachment files are in the zip alongside data.json
+        -- Binary files (e.g., .p12) should be marked is_binary = true
+        -- All data stored in localStorage, never sent to a server
+}
+
+-- ## Entry disposition
+
+rule SetEntryDisposition {
+    when: UserSetsDisposition(entry, disposition)
+
+    ensures: entry.disposition = disposition
+}
+
+rule ClearEntryDisposition {
+    when: UserClearsDisposition(entry)
+
+    ensures: entry.disposition = null
+}
+
+rule PinEntry {
+    when: UserPinsEntry(entry)
+
+    -- Only one entry can be pinned at a time
+    requires: Vault.entries where is_pinned = true -> count <= 1
+
+    ensures: entry.is_pinned = true
+    ensures:
+        for other in Vault.entries where is_pinned = true and bitwarden_id != entry.bitwarden_id:
+            other.is_pinned = false
+}
+
+rule UnpinEntry {
+    when: UserUnpinsEntry(entry)
+
+    ensures: entry.is_pinned = false
+}
+
+-- ## Field tracking
+
+rule SetFieldStatus {
+    when: UserSetsFieldStatus(entry, field_name, status)
+
+    ensures: entry.field_statuses updated for field_name with status
+
+    @guidance
+        -- field_name identifies which field: "totp", "notes",
+        -- "custom_field_0", "custom_field_1", "attachment_0", etc.
+}
+
+-- ## Notes
+
+rule UpdateUserNotes {
+    when: UserUpdatesNotes(entry, text)
+
+    ensures: entry.user_notes = text
+}
+
+-- ## Checksum
+
+rule SetApplePasswordsCount {
+    when: UserEntersApplePasswordsCount(count)
+
+    ensures: ApplePasswordsChecksum.reported_count = count
+}
+
+-- ## Reset
+
+rule ResetAll {
+    when: UserResetsVault
+
+    ensures: Vault deleted
+    ensures: all VaultEntries deleted
+    ensures: all FieldTrackings deleted
+    ensures: ApplePasswordsChecksum deleted
+    ensures: localStorage cleared for this tool
+
+    @guidance
+        -- Requires explicit confirmation from the user
+        -- This is the only way to start over or re-import
+}
+
+------------------------------------------------------------
+-- Invariants
+------------------------------------------------------------
+
+invariant EveryEntryAccountedFor {
+    -- The goal of the tool: when remaining_count = 0,
+    -- every Bitwarden entry has a disposition
+    for entry in Vault.entries:
+        entry.is_done = (entry.disposition != null)
+}
+
+invariant SinglePinnedEntry {
+    -- At most one entry is pinned at any time
+    Vault.entries where is_pinned = true -> count <= 1
+}
+
+invariant DataNeverLeavesClient {
+    -- All vault data, disposition state, and user notes
+    -- are stored exclusively in browser localStorage.
+    -- No network requests are made with vault data.
+}
+
+------------------------------------------------------------
+-- Actor Declarations
+------------------------------------------------------------
+
+actor User {}
+
+------------------------------------------------------------
+-- Surfaces
+------------------------------------------------------------
+
+surface MigrationUI {
+    facing user: User
+
+    -- Upload
+    provides: upload_zip
+        -- File picker for .zip, disabled once vault is loaded
+
+    -- Progress dashboard
+    exposes: vault.total_count, vault.done_count, vault.remaining_count
+    exposes: apple_passwords_checksum.reported_count
+    exposes: apple_passwords_marked_count
+        -- Count of entries with disposition = apple_passwords and is_done
+    exposes: checksum_delta
+        -- apple_passwords_checksum.reported_count - apple_passwords_marked_count
+
+    -- Entry list
+    exposes: active_entries
+        -- Entries where disposition = null, with pinned entry first
+    exposes: done_entries
+        -- Entries where disposition != null, greyed out
+    exposes: search and filter controls
+        -- Text search on name/URIs, filter by type, filter by status
+
+    -- Entry detail (expanded/pinned view)
+    exposes: entry source data
+        -- All Bitwarden fields for the entry
+        -- Passwords, TOTP, hidden custom fields, attachment contents
+        -- behind click-to-reveal
+    provides: set_disposition, clear_disposition
+    provides: pin_entry, unpin_entry
+    provides: set_field_status for each trackable field
+    provides: update_user_notes
+    provides: enter_apple_passwords_count
+
+    -- Reset
+    provides: reset_vault
+        -- Clears all data, returns to upload screen
+        -- Requires confirmation
+
+    @guidance
+        -- Active entries are the primary focus area of the UI
+        -- Done entries are visually de-emphasised (greyed out)
+        -- The pinned entry appears expanded at the top with full detail
+        -- Clicking an unpinned entry pins it and expands it
+        -- Sensitive fields (password, TOTP, hidden custom fields,
+        -- attachment contents) are behind click-to-reveal
+        -- Attachments show filename always; content revealed on click
+        -- Binary attachments just show filename and a note
+        -- Bitwarden folder name shown as a read-only label on each entry
+}
+
+------------------------------------------------------------
+-- Resolved Decisions
+------------------------------------------------------------
+
+-- Cards: can go to Apple Wallet or Uplock, user decides per entry
+-- Folder names: shown as read-only labels for context
+-- Field tracking: progress aid only, does not gate entry completion
+-- Login extras (custom fields, backup codes, API keys): user handles
+--   per-field via field tracking — options are put in Apple Passwords
+--   notes field, create separate Uplock entry, or discard. The tool
+--   surfaces the fields and tracks their status, no automation.
+-- Re-import: not supported. Reset and start over is the only option.
+-- Sensitive data: all behind click-to-reveal (passwords, TOTP,
+--   hidden custom fields, attachment contents)
+
+------------------------------------------------------------
+-- Open Questions
+------------------------------------------------------------
+
+open question "Should the entry list show a visual indicator when an entry has untracked fields, even though it doesn't block completion?"
+
+open question "For the ~580 entries, is alphabetical sort sufficient or would sort by type / sort by has-extras be useful?"

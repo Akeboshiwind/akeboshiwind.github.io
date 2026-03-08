@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useVault, useProgress, clearAll } from './hooks.js';
 
@@ -35,13 +35,18 @@ describe('useProgress', () => {
     expect(result.current[0].pinnedId).toBeNull();
   });
 
-  it('stores progress in localStorage', () => {
+  it('stores progress in localStorage (debounced)', () => {
+    vi.useFakeTimers();
     const { result } = renderHook(() => useProgress());
     act(() => result.current[1](prev => ({ ...prev, pinnedId: 'abc' })));
     expect(result.current[0].pinnedId).toBe('abc');
+    // Not saved yet (debounced)
+    expect(localStorage.getItem('passwordMigration_progress')).toBeNull();
+    act(() => { vi.advanceTimersByTime(300); });
     const stored = JSON.parse(localStorage.getItem('passwordMigration_progress'));
     expect(stored.pinnedId).toBe('abc');
     expect(sessionStorage.getItem('passwordMigration_progress')).toBeNull();
+    vi.useRealTimers();
   });
 });
 
