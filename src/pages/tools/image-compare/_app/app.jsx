@@ -231,6 +231,31 @@ function CompareScreen({ image1, image2, transform1, transform2, onTransformChan
   activeImageRef.current = activeImage;
   onTransformChangeRef.current = onTransformChange;
 
+  // Rescale pixel-based transforms when container resizes (mode switch, orientation change, etc.)
+  const lastSizeRef = useRef(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width === 0 || height === 0) return;
+      const last = lastSizeRef.current;
+      if (last && (last.width !== width || last.height !== height)) {
+        const rx = width / last.width;
+        const ry = height / last.height;
+        const t1 = t1Ref.current;
+        const t2 = t2Ref.current;
+        const needsT1 = t1.x !== 0 || t1.y !== 0;
+        const needsT2 = t2.x !== 0 || t2.y !== 0;
+        if (needsT1) onTransformChangeRef.current('image1', { ...t1, x: t1.x * rx, y: t1.y * ry });
+        if (needsT2) onTransformChangeRef.current('image2', { ...t2, x: t2.x * rx, y: t2.y * ry });
+      }
+      lastSizeRef.current = { width, height };
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   // Pan/pinch events (adjusting mode)
   useEffect(() => {
     if (mode !== 'adjusting') return;
