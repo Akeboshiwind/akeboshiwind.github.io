@@ -36,7 +36,7 @@ const App = () => {
   const pendingCount = activeList ? getPendingCount(activeList) : -1;
 
   const runGenerate = useCallback(
-    async list => {
+    async (list, replace = false) => {
       if (!list || isGenerating) return;
       setIsGenerating(true);
       setGenerateError(null);
@@ -49,10 +49,13 @@ const App = () => {
         setLists(prev =>
           prev.map(l => {
             if (l.id !== list.id) return l;
+            const kept = replace
+              ? l.recommendations.filter(r => r.status !== 'pending')
+              : l.recommendations;
             return {
               ...l,
               recommendations: [
-                ...l.recommendations,
+                ...kept,
                 ...newTexts.map(text => ({
                   id: generateId(),
                   text,
@@ -203,9 +206,9 @@ const App = () => {
             setGenerateError(null);
             runGenerate(activeList);
           }}
-          onGenerateMore={() => {
+          onRegenerate={() => {
             setGenerateError(null);
-            runGenerate(activeList);
+            runGenerate(activeList, true);
           }}
         />
       )}
