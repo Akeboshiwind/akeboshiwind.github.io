@@ -2,17 +2,25 @@ import React, { useState, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import './app.css';
 
-// ——— Sorting Algorithm Generators ———
-// Each generator yields { a, b } pairs and receives a boolean (true = a > b).
+// ——— Sorting Generators ———
+// Protocol: yield { a, b } → receive cmp (number):
+//   cmp > 0  →  a is greater (a should come later in ascending order)
+//   cmp = 0  →  equal
+//   cmp < 0  →  a is smaller
 // Returns the sorted array in ascending order.
 
 function* bubbleSort(items) {
   const arr = [...items];
   for (let i = 0; i < arr.length - 1; i++) {
+    let swapped = false;
     for (let j = 0; j < arr.length - i - 1; j++) {
-      const aIsGreater = yield { a: arr[j], b: arr[j + 1] };
-      if (aIsGreater) [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+      const cmp = yield { a: arr[j], b: arr[j + 1] };
+      if (cmp > 0) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swapped = true;
+      }
     }
+    if (!swapped) break; // Early exit: no swaps means sorted
   }
   return arr;
 }
@@ -22,12 +30,12 @@ function* insertionSort(items) {
   for (let i = 1; i < arr.length; i++) {
     let j = i;
     while (j > 0) {
-      const prevIsGreater = yield { a: arr[j - 1], b: arr[j] };
-      if (prevIsGreater) {
+      const cmp = yield { a: arr[j - 1], b: arr[j] };
+      if (cmp > 0) {
         [arr[j - 1], arr[j]] = [arr[j], arr[j - 1]];
         j--;
       } else {
-        break;
+        break; // Covers both equal (cmp=0) and less-than (cmp<0)
       }
     }
   }
@@ -39,8 +47,8 @@ function* selectionSort(items) {
   for (let i = 0; i < arr.length - 1; i++) {
     let minIdx = i;
     for (let j = i + 1; j < arr.length; j++) {
-      const currentIsGreater = yield { a: arr[minIdx], b: arr[j] };
-      if (currentIsGreater) minIdx = j;
+      const cmp = yield { a: arr[minIdx], b: arr[j] };
+      if (cmp > 0) minIdx = j; // arr[minIdx] > arr[j] → new minimum found
     }
     if (minIdx !== i) [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
   }
@@ -60,11 +68,11 @@ function* mergeSort(items) {
       let li = 0, ri = 0;
       const merged = [];
       while (li < left.length && ri < right.length) {
-        const leftIsGreater = yield { a: left[li], b: right[ri] };
-        if (leftIsGreater) {
-          merged.push(right[ri++]);
+        const cmp = yield { a: left[li], b: right[ri] };
+        if (cmp > 0) {
+          merged.push(right[ri++]); // left > right → take right (smaller)
         } else {
-          merged.push(left[li++]);
+          merged.push(left[li++]); // cmp <= 0 → take left (stable: left wins on equal)
         }
       }
       while (li < left.length) merged.push(left[li++]);
@@ -75,53 +83,72 @@ function* mergeSort(items) {
   return arr;
 }
 
+// 3-way quicksort (Dutch National Flag partition).
+// Partitions into: [< pivot] [== pivot] [> pivot]
+// All equal-to-pivot elements are placed in O(n) and need no further sorting.
 function* quickSort(items) {
   const arr = [...items];
   function* qs(lo, hi) {
     if (hi - lo <= 1) return;
-    // Random pivot for better average-case behavior
+    // Random pivot → move to front
     const pivotIdx = lo + Math.floor(Math.random() * (hi - lo));
-    [arr[pivotIdx], arr[hi - 1]] = [arr[hi - 1], arr[pivotIdx]];
-    const pivotVal = arr[hi - 1];
-    let store = lo;
-    for (let i = lo; i < hi - 1; i++) {
-      const isGreater = yield { a: arr[i], b: pivotVal };
-      if (!isGreater) {
-        [arr[i], arr[store]] = [arr[store], arr[i]];
-        store++;
+    [arr[lo], arr[pivotIdx]] = [arr[pivotIdx], arr[lo]];
+    const pivotVal = arr[lo];
+    // Invariant:
+    //   arr[lo..lt-1]  < pivot  (less-than zone)
+    //   arr[lt..i-1]  == pivot  (equal zone, starts with just the pivot at lt=lo)
+    //   arr[i..gt-1]  = unclassified
+    //   arr[gt..hi-1] > pivot  (greater-than zone)
+    let lt = lo, gt = hi, i = lo + 1;
+    while (i < gt) {
+      const cmp = yield { a: arr[i], b: pivotVal };
+      if (cmp < 0) {
+        [arr[i], arr[lt]] = [arr[lt], arr[i]];
+        lt++; i++;
+      } else if (cmp > 0) {
+        gt--;
+        [arr[i], arr[gt]] = [arr[gt], arr[i]];
+        // Don't advance i — the swapped-in element needs classification
+      } else {
+        i++; // Equal to pivot: absorb into the equal zone
       }
     }
-    [arr[store], arr[hi - 1]] = [arr[hi - 1], arr[store]];
-    yield* qs(lo, store);
-    yield* qs(store + 1, hi);
+    yield* qs(lo, lt);  // Sort the less-than partition
+    yield* qs(gt, hi);  // Sort the greater-than partition
+    // [lt, gt) are all == pivot — already in final position, no recursion needed
   }
   yield* qs(0, arr.length);
   return arr;
 }
 
-// Compute upper-bound comparison count for bottom-up merge sort
+// ——— Helpers ———
+
+// Maximum comparisons for bottom-up merge sort on n elements
 function mergeUpperBound(n) {
   let count = 0;
-  for (let width = 1; width < n; width *= 2) {
-    for (let lo = 0; lo < n; lo += 2 * width) {
-      const mid = Math.min(lo + width, n);
-      const hi = Math.min(lo + 2 * width, n);
-      const rightSize = hi - mid;
-      if (rightSize > 0) count += (mid - lo) + rightSize - 1;
+  for (let w = 1; w < n; w *= 2)
+    for (let lo = 0; lo < n; lo += 2 * w) {
+      const mid = Math.min(lo + w, n);
+      const hi = Math.min(lo + 2 * w, n);
+      const r = hi - mid;
+      if (r > 0) count += (mid - lo) + r - 1;
     }
-  }
   return count;
 }
 
-const ALGORITHMS = {
-  bubble:    { name: 'Bubble Sort',    fn: bubbleSort,    complexity: 'O(n²)',           getTotal: n => n * (n - 1) / 2,  exact: true  },
-  insertion: { name: 'Insertion Sort', fn: insertionSort, complexity: 'O(n²)',           getTotal: n => n * (n - 1) / 2,  exact: false },
-  selection: { name: 'Selection Sort', fn: selectionSort, complexity: 'O(n²)',           getTotal: n => n * (n - 1) / 2,  exact: true  },
-  merge:     { name: 'Merge Sort',     fn: mergeSort,     complexity: 'O(n log n)',      getTotal: n => mergeUpperBound(n), exact: false },
-  quick:     { name: 'Quicksort',      fn: quickSort,     complexity: 'O(n log n) avg',  getTotal: n => n * (n - 1) / 2,  exact: false },
-};
-
-const DEFAULT_ITEMS = ['23', '7', '45', '12', '89', '34', '56', '1', '78', '90'];
+// Minimum comparisons for bottom-up merge sort on n elements
+// (when each merge exhausts the shorter half first)
+function mergeBestCase(n) {
+  let count = 0;
+  for (let w = 1; w < n; w *= 2)
+    for (let lo = 0; lo < n; lo += 2 * w) {
+      const mid = Math.min(lo + w, n);
+      const hi = Math.min(lo + 2 * w, n);
+      const l = mid - lo, r = hi - mid;
+      if (r > 0) count += Math.min(l, r);
+    }
+  return count;
+}
 
 function shuffle(arr) {
   const a = [...arr];
@@ -132,16 +159,192 @@ function shuffle(arr) {
   return a;
 }
 
-function startSort(algorithmKey, items) {
-  const gen = ALGORITHMS[algorithmKey].fn(items);
+function startSort(algoKey, items) {
+  const gen = ALGORITHMS[algoKey].fn(items);
   const first = gen.next();
-  if (first.done) {
+  if (first.done)
     return { gen, done: true, sorted: first.value, comparison: null, completed: 0 };
-  }
   return { gen, done: false, sorted: null, comparison: first.value, completed: 0 };
 }
 
+// ——— Algorithm metadata ———
+
+const ALGORITHMS = {
+  bubble: {
+    name: 'Bubble Sort',
+    fn: bubbleSort,
+    complexity: 'O(n²)',
+    getTotal: n => n * (n - 1) / 2,
+    exact: false,
+    stable: true,
+    description:
+      'Repeatedly scans and swaps adjacent out-of-order pairs. The early exit makes it O(n) on already-sorted data, but it\'s painfully slow on random or reverse-sorted inputs.',
+    estimates: {
+      best:  n => Math.max(0, n - 1),
+      avg:   n => Math.round(n * (n - 1) / 4),
+      worst: n => n * (n - 1) / 2,
+      bestLabel:  'already sorted',
+      worstLabel: 'reverse sorted',
+    },
+    scenarios: [
+      { label: 'Nearly sorted',   rating: 'great', note: 'Early exit kicks in — just a few passes' },
+      { label: 'Random data',     rating: 'poor',  note: 'Full n² comparisons in practice' },
+      { label: 'Reverse sorted',  rating: 'poor',  note: 'Maximum work — every pair must bubble up' },
+      { label: 'Many duplicates', rating: 'ok',    note: 'Stable — equal elements never swap' },
+    ],
+  },
+
+  insertion: {
+    name: 'Insertion Sort',
+    fn: insertionSort,
+    complexity: 'O(n²)',
+    getTotal: n => n * (n - 1) / 2,
+    exact: false,
+    stable: true,
+    description:
+      'Builds a sorted section one element at a time, inserting each into its correct position. The best O(n²) algorithm for nearly-sorted data — and it stops immediately on equal elements.',
+    estimates: {
+      best:  n => Math.max(0, n - 1),
+      avg:   n => Math.round(n * (n - 1) / 4),
+      worst: n => n * (n - 1) / 2,
+      bestLabel:  'already sorted',
+      worstLabel: 'reverse sorted',
+    },
+    scenarios: [
+      { label: 'Nearly sorted',   rating: 'great', note: 'Only 1–2 comparisons per element' },
+      { label: 'Random data',     rating: 'poor',  note: '~n²/4 comparisons on average' },
+      { label: 'Reverse sorted',  rating: 'poor',  note: 'Each element must shift all the way left' },
+      { label: 'Many duplicates', rating: 'great', note: 'Stable and breaks on equal — very efficient' },
+    ],
+  },
+
+  selection: {
+    name: 'Selection Sort',
+    fn: selectionSort,
+    complexity: 'O(n²)',
+    getTotal: n => n * (n - 1) / 2,
+    exact: true, // Always exactly n(n-1)/2 comparisons
+    stable: false,
+    description:
+      'Repeatedly finds the minimum of the unsorted portion and moves it into place. Makes exactly n(n−1)/2 comparisons every single time — no shortcuts, no early exit, no sensitivity to input.',
+    estimates: {
+      best:  n => n * (n - 1) / 2,
+      avg:   n => n * (n - 1) / 2,
+      worst: n => n * (n - 1) / 2,
+      bestLabel:  'always the same',
+      worstLabel: 'always the same',
+    },
+    scenarios: [
+      { label: 'Nearly sorted',   rating: 'poor', note: 'No benefit — always full n² comparisons' },
+      { label: 'Random data',     rating: 'ok',   note: 'Predictable but quadratic' },
+      { label: 'Reverse sorted',  rating: 'ok',   note: 'Same work as any other input' },
+      { label: 'Many duplicates', rating: 'ok',   note: 'Not stable, but comparison count unchanged' },
+    ],
+  },
+
+  merge: {
+    name: 'Merge Sort',
+    fn: mergeSort,
+    complexity: 'O(n log n)',
+    getTotal: n => mergeUpperBound(n),
+    exact: false,
+    stable: true,
+    description:
+      'Splits in half, sorts each half, merges the results. Guaranteed O(n log n) in all cases — there are no bad inputs. The standard for reliable, stable sorting of large datasets.',
+    estimates: {
+      best:  n => mergeBestCase(n),
+      avg:   n => Math.max(0, Math.round(n * Math.log2(Math.max(n, 1)) - n + 1)),
+      worst: n => mergeUpperBound(n),
+      bestLabel:  'one side exhausted first in each merge',
+      worstLabel: 'each merge compares every element',
+    },
+    scenarios: [
+      { label: 'Nearly sorted',   rating: 'ok',    note: 'Still performs all merges — no shortcut' },
+      { label: 'Random data',     rating: 'great', note: 'Optimal O(n log n) guaranteed' },
+      { label: 'Reverse sorted',  rating: 'great', note: 'Same as random — no worst case' },
+      { label: 'Many duplicates', rating: 'great', note: 'Stable — equal elements maintain original order' },
+    ],
+  },
+
+  quick: {
+    name: 'Quicksort (3-way)',
+    fn: quickSort,
+    complexity: 'O(n log n) avg',
+    getTotal: n => n * (n - 1) / 2,
+    exact: false,
+    stable: false,
+    description:
+      'Picks a random pivot and partitions elements into three groups: smaller, equal, and larger. The equal group is placed in one pass and never touched again — making it excellent with duplicates.',
+    estimates: {
+      best:  n => Math.max(0, Math.round(n * Math.log2(Math.max(n, 1)))),
+      avg:   n => Math.max(0, Math.round(1.39 * n * Math.log2(Math.max(n, 1)))),
+      worst: n => n * (n - 1) / 2,
+      bestLabel:  'perfectly balanced partitions',
+      worstLabel: 'always picks worst pivot',
+    },
+    scenarios: [
+      { label: 'Nearly sorted',   rating: 'ok',    note: 'Random pivot prevents sorted-input worst case' },
+      { label: 'Random data',     rating: 'great', note: 'Best practical performance in most benchmarks' },
+      { label: 'Reverse sorted',  rating: 'ok',    note: 'Random pivot avoids O(n²) degenerate behavior' },
+      { label: 'Many duplicates', rating: 'great', note: '3-way partition: all duplicates placed in O(n)' },
+    ],
+  },
+};
+
+// ——— AlgoInfo component ———
+
+const RATING_STYLE = {
+  great: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800',
+  ok:    'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800',
+  poor:  'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800',
+};
+const RATING_ICON = { great: '✓', ok: '~', poor: '✗' };
+
+const AlgoInfo = ({ algoKey, n }) => {
+  const algo = ALGORITHMS[algoKey];
+  const est = algo.estimates;
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-5">
+      <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
+        {algo.description}
+      </p>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs mb-3 pb-3 border-b border-gray-100 dark:border-gray-700">
+        <span className="text-gray-500 dark:text-gray-400">
+          <span className="text-gray-400 dark:text-gray-500">Best </span>
+          <span className="font-mono font-semibold text-gray-800 dark:text-gray-100">{est.best(n)}</span>
+        </span>
+        <span className="text-gray-500 dark:text-gray-400">
+          <span className="text-gray-400 dark:text-gray-500">Avg </span>
+          <span className="font-mono font-semibold text-gray-800 dark:text-gray-100">~{est.avg(n)}</span>
+        </span>
+        <span className="text-gray-500 dark:text-gray-400">
+          <span className="text-gray-400 dark:text-gray-500">Worst </span>
+          <span className="font-mono font-semibold text-gray-800 dark:text-gray-100">{est.worst(n)}</span>
+        </span>
+        <span className="text-gray-300 dark:text-gray-600">·</span>
+        <span className={algo.stable ? 'text-xs text-emerald-600 dark:text-emerald-400' : 'text-xs text-gray-400 dark:text-gray-500'}>
+          {algo.stable ? '= stable' : '≠ unstable'}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {algo.scenarios.map(s => (
+          <span
+            key={s.label}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${RATING_STYLE[s.rating]}`}
+            title={s.note}
+          >
+            <span className="opacity-60">{RATING_ICON[s.rating]}</span>
+            {s.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ——— App ———
+
+const DEFAULT_ITEMS = ['23', '7', '45', '12', '89', '34', '56', '1', '78', '90'];
 
 const App = () => {
   const [algoKey, setAlgoKey] = useState('bubble');
@@ -169,10 +372,11 @@ const App = () => {
 
   const handleShuffle = () => resetSort(algoKey, items);
 
-  const handleConfirm = () => {
+  // cmp: 1 = a > b (a on top is correct), -1 = a < b, 0 = equal
+  const handleConfirm = cmp => {
     const { gen, comparison } = sortState;
     if (!comparison) return;
-    const result = gen.next(topIsA); // topIsA = true means a is on top = a > b
+    const result = gen.next(cmp);
     if (result.done) {
       setSortState(prev => ({ ...prev, done: true, sorted: result.value, comparison: null, completed: prev.completed + 1 }));
     } else {
@@ -183,7 +387,6 @@ const App = () => {
 
   const handleSwap = () => setTopIsA(p => !p);
 
-  // Drag-and-drop for swapping the two items
   const handleDragStart = (e, slot) => {
     dragSource.current = slot;
     e.dataTransfer.effectAllowed = 'move';
@@ -194,9 +397,7 @@ const App = () => {
   };
   const handleDrop = (e, slot) => {
     e.preventDefault();
-    if (dragSource.current !== null && slot !== dragSource.current) {
-      setTopIsA(p => !p);
-    }
+    if (dragSource.current !== null && slot !== dragSource.current) setTopIsA(p => !p);
     setDragOver(null);
     dragSource.current = null;
   };
@@ -240,14 +441,16 @@ const App = () => {
         </p>
 
         {/* Controls */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-4">
           <select
             value={algoKey}
             onChange={e => handleAlgoChange(e.target.value)}
             className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {Object.entries(ALGORITHMS).map(([key, a]) => (
-              <option key={key} value={key}>{a.name} — {a.complexity}</option>
+              <option key={key} value={key}>
+                {a.name} — {a.complexity} — ~{a.estimates.avg(items.length)} comps
+              </option>
             ))}
           </select>
           <button
@@ -267,6 +470,9 @@ const App = () => {
             </svg>
           </button>
         </div>
+
+        {/* Algorithm info panel */}
+        <AlgoInfo algoKey={algoKey} n={items.length} />
 
         {/* Main content */}
         {!sortState.done ? (
@@ -294,10 +500,12 @@ const App = () => {
             {/* Comparison area */}
             <div className="p-5 space-y-2">
               <p className="text-xs text-center text-gray-400 dark:text-gray-500 mb-3">
-                Arrange so the <span className="font-semibold text-emerald-600 dark:text-emerald-400">higher</span> item is on top — drag or use swap
+                Arrange so the{' '}
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">higher</span>
+                {' '}item is on top — drag or swap
               </p>
 
-              {/* Top slot — Higher */}
+              {/* Top slot */}
               <div
                 className={`rounded-xl border-2 transition-all duration-150 ${
                   dragOver === 'top'
@@ -318,9 +526,7 @@ const App = () => {
                   onDragEnd={handleDragEnd}
                   className="px-4 pb-4 cursor-grab active:cursor-grabbing select-none"
                 >
-                  <span className="text-3xl font-bold text-gray-900 dark:text-gray-100 block">
-                    {topItem}
-                  </span>
+                  <span className="text-3xl font-bold text-gray-900 dark:text-gray-100 block">{topItem}</span>
                 </div>
               </div>
 
@@ -338,7 +544,7 @@ const App = () => {
                 </button>
               </div>
 
-              {/* Bottom slot — Lower */}
+              {/* Bottom slot */}
               <div
                 className={`rounded-xl border-2 transition-all duration-150 ${
                   dragOver === 'bottom'
@@ -359,17 +565,22 @@ const App = () => {
                   onDragEnd={handleDragEnd}
                   className="px-4 pb-4 cursor-grab active:cursor-grabbing select-none"
                 >
-                  <span className="text-3xl font-bold text-gray-900 dark:text-gray-100 block">
-                    {bottomItem}
-                  </span>
+                  <span className="text-3xl font-bold text-gray-900 dark:text-gray-100 block">{bottomItem}</span>
                 </div>
               </div>
 
-              {/* Confirm button */}
-              <div className="pt-2">
+              {/* Action buttons */}
+              <div className="pt-2 flex gap-2">
                 <button
-                  onClick={handleConfirm}
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-xl transition-colors text-sm shadow-sm"
+                  onClick={() => handleConfirm(0)}
+                  className="px-4 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-medium rounded-xl transition-colors text-sm"
+                  title="These two items have equal value"
+                >
+                  = Equal
+                </button>
+                <button
+                  onClick={() => handleConfirm(topIsA ? 1 : -1)}
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-xl transition-colors text-sm shadow-sm"
                 >
                   Confirm Order ✓
                 </button>
