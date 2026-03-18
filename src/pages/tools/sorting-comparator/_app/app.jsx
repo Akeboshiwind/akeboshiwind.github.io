@@ -83,6 +83,69 @@ function* mergeSort(items) {
   return arr;
 }
 
+// Binary insertion sort: uses binary search to find the insertion position.
+// Each element is compared via binary search in O(log n) comparisons.
+// The same value pair is never compared twice — every comparison yields new info.
+function* binaryInsertionSort(items) {
+  const arr = [...items];
+  for (let i = 1; i < arr.length; i++) {
+    let lo = 0, hi = i;
+    while (lo < hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      const cmp = yield { a: arr[i], b: arr[mid] };
+      // cmp < 0: arr[i] < arr[mid] → search left half
+      // cmp >= 0: arr[i] >= arr[mid] → search right half (stable: equal goes right)
+      if (cmp < 0) hi = mid; else lo = mid + 1;
+    }
+    // Shift arr[lo..i-1] right and insert arr[i] at position lo
+    const val = arr[i];
+    for (let j = i; j > lo; j--) arr[j] = arr[j - 1];
+    arr[lo] = val;
+  }
+  return arr;
+}
+
+// Adaptive merge sort: checks if left[last] ≤ right[first] before each merge.
+// If the check passes, the entire merge is skipped with just 1 comparison.
+// On nearly-sorted or already-sorted data this dramatically reduces comparisons.
+// When a full merge is needed, the pre-check result is reused — never double-asked.
+function* mergeSortAdaptive(items) {
+  const arr = [...items];
+  const n = arr.length;
+  for (let width = 1; width < n; width *= 2) {
+    for (let lo = 0; lo < n; lo += 2 * width) {
+      const mid = Math.min(lo + width, n);
+      const hi = Math.min(lo + 2 * width, n);
+      const left = arr.slice(lo, mid);
+      const right = arr.slice(mid, hi);
+      if (right.length === 0) continue;
+      // Pre-sorted check: 1 comparison can skip the entire merge
+      const preCmp = yield { a: left[left.length - 1], b: right[0] };
+      if (preCmp <= 0) continue; // left[last] ≤ right[first] → already in order
+      // Full merge needed; reuse preCmp when we reach (li=last, ri=0) in the loop
+      let li = 0, ri = 0;
+      const merged = [];
+      while (li < left.length && ri < right.length) {
+        let cmp;
+        if (li === left.length - 1 && ri === 0) {
+          cmp = preCmp; // Already know: left[last] > right[0]
+        } else {
+          cmp = yield { a: left[li], b: right[ri] };
+        }
+        if (cmp > 0) {
+          merged.push(right[ri++]);
+        } else {
+          merged.push(left[li++]);
+        }
+      }
+      while (li < left.length) merged.push(left[li++]);
+      while (ri < right.length) merged.push(right[ri++]);
+      for (let i = 0; i < merged.length; i++) arr[lo + i] = merged[i];
+    }
+  }
+  return arr;
+}
+
 // 3-way quicksort (Dutch National Flag partition).
 // Partitions into: [< pivot] [== pivot] [> pivot]
 // All equal-to-pivot elements are placed in O(n) and need no further sorting.
@@ -122,6 +185,34 @@ function* quickSort(items) {
 }
 
 // ——— Helpers ———
+
+// Best-case comparisons for binary insertion sort (sorted input: always go right)
+// Each position i costs floor(log2(i+1)) comparisons.
+function binaryInsertBest(n) {
+  let count = 0;
+  for (let i = 1; i < n; i++) count += Math.floor(Math.log2(i + 1));
+  return count;
+}
+
+// Worst-case comparisons for binary insertion sort (reverse-sorted: always go left)
+// Each position i costs ceil(log2(i+1)) comparisons.
+function binaryInsertWorst(n) {
+  let count = 0;
+  for (let i = 1; i < n; i++) count += Math.ceil(Math.log2(i + 1));
+  return count;
+}
+
+// Number of actual merges in bottom-up merge sort (right half non-empty)
+function countMerges(n) {
+  let count = 0;
+  for (let w = 1; w < n; w *= 2)
+    for (let lo = 0; lo < n; lo += 2 * w) {
+      const mid = Math.min(lo + w, n);
+      const hi = Math.min(lo + 2 * w, n);
+      if (hi > mid) count++;
+    }
+  return count;
+}
 
 // Maximum comparisons for bottom-up merge sort on n elements
 function mergeUpperBound(n) {
@@ -177,8 +268,9 @@ const ALGORITHMS = {
     getTotal: n => n * (n - 1) / 2,
     exact: false,
     stable: true,
+    noRepeatPairs: false,
     description:
-      'Repeatedly scans and swaps adjacent out-of-order pairs. The early exit makes it O(n) on already-sorted data, but it\'s painfully slow on random or reverse-sorted inputs.',
+      'Repeatedly scans adjacent pairs and swaps them if out of order. Early exit makes it O(n) on sorted data. Downside for humans: the same adjacent pairs re-appear in every pass, so you\'ll see familiar faces over and over.',
     estimates: {
       best:  n => Math.max(0, n - 1),
       avg:   n => Math.round(n * (n - 1) / 4),
@@ -201,8 +293,9 @@ const ALGORITHMS = {
     getTotal: n => n * (n - 1) / 2,
     exact: false,
     stable: true,
+    noRepeatPairs: false,
     description:
-      'Builds a sorted section one element at a time, inserting each into its correct position. The best O(n²) algorithm for nearly-sorted data — and it stops immediately on equal elements.',
+      'Builds a sorted prefix one element at a time, shifting each new item left until it finds its spot. Best O(n²) algorithm for nearly-sorted data, but linear search means the same pair of values can appear again with duplicate items.',
     estimates: {
       best:  n => Math.max(0, n - 1),
       avg:   n => Math.round(n * (n - 1) / 4),
@@ -214,7 +307,32 @@ const ALGORITHMS = {
       { label: 'Nearly sorted',   rating: 'great', note: 'Only 1–2 comparisons per element' },
       { label: 'Random data',     rating: 'poor',  note: '~n²/4 comparisons on average' },
       { label: 'Reverse sorted',  rating: 'poor',  note: 'Each element must shift all the way left' },
-      { label: 'Many duplicates', rating: 'great', note: 'Stable and breaks on equal — very efficient' },
+      { label: 'Many duplicates', rating: 'ok',    note: 'Stable; but same value pair may reappear' },
+    ],
+  },
+
+  binaryInsertion: {
+    name: 'Binary Insertion Sort',
+    fn: binaryInsertionSort,
+    complexity: 'O(n log n)',
+    getTotal: n => binaryInsertWorst(n),
+    exact: false,
+    stable: true,
+    noRepeatPairs: true,
+    description:
+      'Like insertion sort, but uses binary search to locate the insertion position. Every comparison is unique — you will never see the same pair twice. O(log n) comparisons per element makes for a very fair, varied experience.',
+    estimates: {
+      best:  n => binaryInsertBest(n),
+      avg:   n => Math.round((binaryInsertBest(n) + binaryInsertWorst(n)) / 2),
+      worst: n => binaryInsertWorst(n),
+      bestLabel:  'already sorted',
+      worstLabel: 'reverse sorted',
+    },
+    scenarios: [
+      { label: 'Nearly sorted',   rating: 'ok',    note: 'Binary search does the same work regardless of order' },
+      { label: 'Random data',     rating: 'great', note: 'No repeated pairs — each comparison tells you something new' },
+      { label: 'Reverse sorted',  rating: 'ok',    note: 'Same binary-search count as sorted — no worst case' },
+      { label: 'Many duplicates', rating: 'great', note: 'Stable and handles equals gracefully' },
     ],
   },
 
@@ -225,8 +343,9 @@ const ALGORITHMS = {
     getTotal: n => n * (n - 1) / 2,
     exact: true, // Always exactly n(n-1)/2 comparisons
     stable: false,
+    noRepeatPairs: false,
     description:
-      'Repeatedly finds the minimum of the unsorted portion and moves it into place. Makes exactly n(n−1)/2 comparisons every single time — no shortcuts, no early exit, no sensitivity to input.',
+      'Finds the minimum of the unsorted portion and moves it into place, every round. Makes exactly n(n−1)/2 comparisons regardless of input. Tedious for humans: the current minimum dominates every comparison in a round.',
     estimates: {
       best:  n => n * (n - 1) / 2,
       avg:   n => n * (n - 1) / 2,
@@ -249,8 +368,9 @@ const ALGORITHMS = {
     getTotal: n => mergeUpperBound(n),
     exact: false,
     stable: true,
+    noRepeatPairs: true,
     description:
-      'Splits in half, sorts each half, merges the results. Guaranteed O(n log n) in all cases — there are no bad inputs. The standard for reliable, stable sorting of large datasets.',
+      'Splits in half, sorts each half, merges the results. Guaranteed O(n log n) in all cases. Each pair of values is compared at most once, so you\'ll never see a repeat. For sorted inputs, try Adaptive Merge Sort to skip unnecessary merges.',
     estimates: {
       best:  n => mergeBestCase(n),
       avg:   n => Math.max(0, Math.round(n * Math.log2(Math.max(n, 1)) - n + 1)),
@@ -266,6 +386,31 @@ const ALGORITHMS = {
     ],
   },
 
+  mergeAdaptive: {
+    name: 'Adaptive Merge Sort',
+    fn: mergeSortAdaptive,
+    complexity: 'O(n log n)',
+    getTotal: n => mergeUpperBound(n),
+    exact: false,
+    stable: true,
+    noRepeatPairs: true,
+    description:
+      'Merge sort with a pre-sorted check before each merge: "is left[last] ≤ right[first]?" One comparison can skip an entire merge group. On already-sorted data it uses only one comparison per merge — ideal when you suspect your list is nearly in order.',
+    estimates: {
+      best:  n => countMerges(n),
+      avg:   n => Math.round((countMerges(n) + mergeUpperBound(n)) / 2),
+      worst: n => mergeUpperBound(n),
+      bestLabel:  'already sorted — each merge skipped in 1 comparison',
+      worstLabel: 'each merge needs full comparison work',
+    },
+    scenarios: [
+      { label: 'Nearly sorted',   rating: 'great', note: 'Pre-check skips most or all merges in 1 comparison each' },
+      { label: 'Random data',     rating: 'great', note: 'O(n log n) guaranteed, never asks same pair twice' },
+      { label: 'Reverse sorted',  rating: 'ok',    note: 'Full merges needed, but still no repeated pairs' },
+      { label: 'Many duplicates', rating: 'great', note: 'Stable — equal elements maintain original order' },
+    ],
+  },
+
   quick: {
     name: 'Quicksort (3-way)',
     fn: quickSort,
@@ -273,8 +418,9 @@ const ALGORITHMS = {
     getTotal: n => n * (n - 1) / 2,
     exact: false,
     stable: false,
+    noRepeatPairs: false,
     description:
-      'Picks a random pivot and partitions elements into three groups: smaller, equal, and larger. The equal group is placed in one pass and never touched again — making it excellent with duplicates.',
+      'Picks a random pivot and partitions into smaller, equal, and larger groups. Equal elements are placed in one pass and need no further sorting. Downside for humans: the pivot dominates every comparison within a partition round.',
     estimates: {
       best:  n => Math.max(0, Math.round(n * Math.log2(Math.max(n, 1)))),
       avg:   n => Math.max(0, Math.round(1.39 * n * Math.log2(Math.max(n, 1)))),
@@ -324,6 +470,10 @@ const AlgoInfo = ({ algoKey, n }) => {
         <span className="text-gray-300 dark:text-gray-600">·</span>
         <span className={algo.stable ? 'text-xs text-emerald-600 dark:text-emerald-400' : 'text-xs text-gray-400 dark:text-gray-500'}>
           {algo.stable ? '= stable' : '≠ unstable'}
+        </span>
+        <span className="text-gray-300 dark:text-gray-600">·</span>
+        <span className={algo.noRepeatPairs ? 'text-xs text-blue-600 dark:text-blue-400' : 'text-xs text-gray-400 dark:text-gray-500'}>
+          {algo.noRepeatPairs ? '✓ no repeated pairs' : '↻ may repeat pairs'}
         </span>
       </div>
       <div className="flex flex-wrap gap-1.5">
