@@ -174,18 +174,7 @@ const App = () => {
         </p>
 
         {/* Controls */}
-        <div className="flex gap-2 mb-4">
-          <select
-            value={algoKey}
-            onChange={e => handleAlgoChange(e.target.value)}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {Object.entries(ALGORITHMS).map(([key, a]) => (
-              <option key={key} value={key}>
-                {a.name} — {a.complexity} — ~{a.estimates.avg(items.length)} comps
-              </option>
-            ))}
-          </select>
+        <div className="flex gap-2 mb-2">
           <button
             onClick={handleShuffle}
             className="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors whitespace-nowrap"
@@ -203,6 +192,17 @@ const App = () => {
             </svg>
           </button>
         </div>
+        <select
+          value={algoKey}
+          onChange={e => handleAlgoChange(e.target.value)}
+          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+        >
+          {Object.entries(ALGORITHMS).map(([key, a]) => (
+            <option key={key} value={key}>
+              {a.name} — {a.complexity} — ~{a.estimates.avg(items.length)} comps
+            </option>
+          ))}
+        </select>
 
         {/* Algorithm info panel */}
         <AlgoInfo algoKey={algoKey} n={items.length} />
