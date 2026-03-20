@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
+import './app.css';
 import { fetchAllBenchmarkRuns, BENCHMARK_WORKFLOWS } from './github.js';
 import {
   queryLogAnalytics,
