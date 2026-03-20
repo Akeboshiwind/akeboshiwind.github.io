@@ -1,0 +1,5 @@
+{
+  "title": "XTDB Benchmark Dashboard",
+  "date": "2026-03-20",
+  "description": "Query and visualise XTDB nightly benchmark runs from GitHub Actions and Azure Log Analytics."
+}
