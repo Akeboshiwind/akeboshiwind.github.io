@@ -1,18 +1,7 @@
 ---
 const base = import.meta.env.BASE_URL;
-const links = [
-  { href: base, label: 'Home' },
-  { href: `${base}notes/`, label: 'Notes' },
-  { href: `${base}works/`, label: 'Works' },
-  { href: `${base}notes/rss.xml`, label: 'Feed' },
-];
 ---
 
 <header class="mt-4 mb-8">
   <a href={base} class="text-xl font-bold text-heading no-underline hover:no-underline">{`Blog by the Rocks`}</a>
-  <nav class="flex gap-4 flex-wrap">
-    {links.map(link => (
-      <a href={link.href} class="text-link visited:text-link-visited no-underline hover:underline">{link.label}</a>
-    ))}
-  </nav>
 </header>

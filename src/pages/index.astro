@@ -43,8 +43,6 @@ const rest = allItems.filter(i => !i.pinned).sort((a, b) => b.date.getTime() - a
 ---
 
 <Layout>
-  <h1 class="text-2xl font-bold text-heading mt-6 mb-2">Blog by the Rocks</h1>
-
   {pinned.length > 0 && (
     <>
       <h2 class="text-sm font-semibold text-heading mt-6 mb-1 uppercase tracking-wide opacity-60">Pinned</h2>
