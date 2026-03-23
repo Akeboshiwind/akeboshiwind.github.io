@@ -141,7 +141,7 @@ function UploadScreen({ image1, image2, onImage, onSwap, onCompare }) {
           href="../"
           className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
-          ← Tools
+          ← Home
         </a>
 
         <h1 className="text-2xl font-bold mt-4 mb-6">Image Compare</h1>

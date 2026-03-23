@@ -570,7 +570,7 @@ const App = () => {
             href="../"
             className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
-            ← Tools
+            ← Home
           </a>
         )}
 

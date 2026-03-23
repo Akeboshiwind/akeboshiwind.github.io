@@ -105,7 +105,7 @@ export const ListsView = ({ lists, onSelectList, onCreateList, onChangeApiKey, o
           href="../"
           className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4 transition-colors"
         >
-          ← Tools
+          ← Home
         </a>
 
         <div className="flex items-center justify-between mb-6">
