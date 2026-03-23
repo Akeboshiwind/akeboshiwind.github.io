@@ -6,14 +6,7 @@ import { getCollection } from 'astro:content';
 const base = import.meta.env.BASE_URL;
 
 const notes = await getCollection('notes');
-const recentNotes = notes
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0, 5);
-
 const works = await getCollection('works');
-const recentWorks = works
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0, 4);
 
 const screenshots = import.meta.glob<{ default: import('astro').ImageMetadata }>('../assets/tools/*.png', { eager: true });
 
@@ -26,35 +19,44 @@ function screenshot(work: { id: string }) {
   return screenshots[key]?.default;
 }
 
-const noteItems = recentNotes.map(note => ({
-  url: `${base}${note.slug}/`,
-  title: note.data.title,
-  stage: note.data.stage,
-  date: note.data.date,
-}));
+const allItems = [
+  ...notes.map(note => ({
+    url: `${base}${note.slug}/`,
+    title: note.data.title,
+    stage: note.data.stage,
+    date: note.data.date,
+    pinned: note.data.pinned,
+  })),
+  ...works.map(work => ({
+    url: workUrl(work),
+    title: work.data.title,
+    stage: work.data.stage,
+    description: work.data.description,
+    date: work.data.date,
+    image: screenshot(work),
+    pinned: work.data.pinned,
+  })),
+];
 
-const workItems = recentWorks.map(work => ({
-  url: workUrl(work),
-  title: work.data.title,
-  stage: work.data.stage,
-  description: work.data.description,
-  image: screenshot(work),
-}));
+const pinned = allItems.filter(i => i.pinned).sort((a, b) => b.date.getTime() - a.date.getTime());
+const rest = allItems.filter(i => !i.pinned).sort((a, b) => b.date.getTime() - a.date.getTime());
 ---
 
 <Layout>
-  <h1 class="text-2xl font-bold text-heading mt-6 mb-2">Welcome</h1>
-  <p class="my-4">
-    This site focuses on Clojure, programming, and occasional thoughts about technology.
-  </p>
+  <h1 class="text-2xl font-bold text-heading mt-6 mb-2">Blog by the Rocks</h1>
 
-  <h2 class="text-xl font-bold text-heading mt-6 mb-2">Recent Notes</h2>
-  <CardList items={noteItems} showImages={false} />
+  {pinned.length > 0 && (
+    <>
+      <h2 class="text-sm font-semibold text-heading mt-6 mb-1 uppercase tracking-wide opacity-60">Pinned</h2>
+      <CardList items={pinned} />
+    </>
+  )}
 
-  <p class="my-4"><a href={`${base}notes/`} class="text-link visited:text-link-visited no-underline hover:underline">View all notes &rarr;</a></p>
+  <h2 class="text-sm font-semibold text-heading mt-6 mb-1 uppercase tracking-wide opacity-60">Recent</h2>
+  <CardList items={rest} />
 
-  <h2 class="text-xl font-bold text-heading mt-6 mb-2">Recent Works</h2>
-  <CardList items={workItems} />
-
-  <p class="my-4"><a href={`${base}works/`} class="text-link visited:text-link-visited no-underline hover:underline">View all works &rarr;</a></p>
+  <div class="flex gap-4 my-4">
+    <a href={`${base}notes/`} class="text-link visited:text-link-visited no-underline hover:underline">All notes &rarr;</a>
+    <a href={`${base}works/`} class="text-link visited:text-link-visited no-underline hover:underline">All works &rarr;</a>
+  </div>
 </Layout>
