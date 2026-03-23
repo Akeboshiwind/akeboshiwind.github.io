@@ -29,12 +29,14 @@ function screenshot(work: { id: string }) {
 const noteItems = recentNotes.map(note => ({
   url: `${base}${note.slug}/`,
   title: note.data.title,
+  stage: note.data.stage,
   date: note.data.date,
 }));
 
 const workItems = recentWorks.map(work => ({
   url: workUrl(work),
   title: work.data.title,
+  stage: work.data.stage,
   description: work.data.description,
   image: screenshot(work),
 }));

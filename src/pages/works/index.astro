@@ -22,6 +22,7 @@ function screenshot(work: { id: string }) {
 const items = sortedWorks.map(work => ({
   url: workUrl(work),
   title: work.data.title,
+  stage: work.data.stage,
   description: work.data.description,
   date: work.data.date,
   image: screenshot(work),

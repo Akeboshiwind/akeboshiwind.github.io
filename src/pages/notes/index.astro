@@ -12,6 +12,7 @@ const sortedNotes = notes.sort((a, b) => b.data.date.getTime() - a.data.date.get
 const items = sortedNotes.map(note => ({
   url: `${base}${note.slug}/`,
   title: note.data.title,
+  stage: note.data.stage,
   date: note.data.date,
 }));
 ---

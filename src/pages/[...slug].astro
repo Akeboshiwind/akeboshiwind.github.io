@@ -16,7 +16,7 @@ const { Content } = await note.render();
 ---
 
 <Layout
-  title={note.data.title}
+  title={`A ${note.data.stage}: ${note.data.title}`}
   description={note.data.title}
   type="article"
   publishedTime={note.data.date}
@@ -26,7 +26,7 @@ const { Content } = await note.render();
     prose-code:font-mono prose-code:bg-code-bg prose-code:text-code-text prose-code:px-1 prose-code:rounded-sm prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
     prose-pre:font-mono">
     <h1>
-      {note.data.title}
+      <span class="italic opacity-60 font-normal">A {note.data.stage}:</span> {note.data.title}
     </h1>
 
     <p>
