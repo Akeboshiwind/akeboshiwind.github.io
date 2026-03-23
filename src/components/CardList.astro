@@ -38,7 +38,7 @@ const { items, showImages = true } = Astro.props;
       )}
       <div class="flex flex-col justify-center py-1 min-w-0">
         <div class="flex items-baseline gap-2 flex-wrap">
-          {item.stage && <span class="text-xs italic opacity-60 capitalize">A {item.stage}:</span>}
+          {item.stage && <a href="/stages/" class="text-xs italic opacity-60 capitalize no-underline hover:underline">A {item.stage}:</a>}
           <h2 class="text-xs font-semibold m-0 whitespace-nowrap"><a href={item.url} class="text-link visited:text-link-visited no-underline hover:underline">{item.title}</a></h2>
           {item.date && (
             <time datetime={item.date.toISOString().split('T')[0]} class="font-mono text-xs opacity-50">
