@@ -3,24 +3,21 @@ import Layout from '../../layouts/Layout.astro';
 import CardList from '../../components/CardList.astro';
 import { getCollection } from 'astro:content';
 
-const posts = await getCollection('blog', ({ data }) => {
-  return import.meta.env.PROD ? !data.draft : true;
-});
+const notes = await getCollection('notes');
 
 const base = import.meta.env.BASE_URL;
 
-const sortedPosts = posts.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const sortedNotes = notes.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
-const items = sortedPosts.map(post => ({
-  url: `${base}blog/${post.slug}/`,
-  title: post.data.title,
-  date: post.data.date,
-  draft: post.data.draft,
+const items = sortedNotes.map(note => ({
+  url: `${base}blog/${note.slug}/`,
+  title: note.data.title,
+  date: note.data.date,
 }));
 ---
 
-<Layout title="Blog" description="All blog posts">
-  <h1 class="text-2xl font-bold text-heading mt-6 mb-2">Blog</h1>
+<Layout title="Notes" description="All notes">
+  <h1 class="text-2xl font-bold text-heading mt-6 mb-2">Notes</h1>
 
   <CardList items={items} showImages={false} />
 </Layout>

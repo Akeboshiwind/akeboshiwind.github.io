@@ -1,5 +1,6 @@
 {
   "title": "Recommender",
+  "stage": "scribble",
   "date": "2026-02-22",
   "description": "AI-powered recommendation lists that learn from your feedback using the Anthropic Claude API."
 }

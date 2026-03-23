@@ -1,5 +1,6 @@
 {
   "title": "Bill Splitter",
+  "stage": "scribble",
   "date": "2025-03-28",
   "description": "Split bills fairly between people with different meal costs."
 }

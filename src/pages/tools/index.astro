@@ -5,32 +5,32 @@ import { getCollection } from 'astro:content';
 
 const base = import.meta.env.BASE_URL;
 
-const tools = await getCollection('tools');
-const sortedTools = tools.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const works = await getCollection('works');
+const sortedWorks = works.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
 const screenshots = import.meta.glob<{ default: import('astro').ImageMetadata }>('../../assets/tools/*.png', { eager: true });
 
-function toolUrl(tool: { id: string; data: { url?: string } }) {
-  return tool.data.url || `${base}tools/${tool.id.replace('.json', '')}/`;
+function workUrl(work: { id: string; data: { url?: string } }) {
+  return work.data.url || `${base}tools/${work.id.replace('.json', '')}/`;
 }
 
-function screenshot(tool: { id: string }) {
-  const key = `../../assets/tools/${tool.id.replace('.json', '')}.png`;
+function screenshot(work: { id: string }) {
+  const key = `../../assets/tools/${work.id.replace('.json', '')}.png`;
   return screenshots[key]?.default;
 }
 
-const items = sortedTools.map(tool => ({
-  url: toolUrl(tool),
-  title: tool.data.title,
-  description: tool.data.description,
-  date: tool.data.date,
-  image: screenshot(tool),
+const items = sortedWorks.map(work => ({
+  url: workUrl(work),
+  title: work.data.title,
+  description: work.data.description,
+  date: work.data.date,
+  image: screenshot(work),
 }));
 ---
 
-<Layout title="Tools" description="A collection of useful tools">
-  <h1 class="text-2xl font-bold text-heading mt-6 mb-2">Tools</h1>
-  <p class="my-4">A collection of useful tools mostly created with Claude.</p>
+<Layout title="Works" description="A collection of things I've built">
+  <h1 class="text-2xl font-bold text-heading mt-6 mb-2">Works</h1>
+  <p class="my-4">A collection of things I've built, mostly with Claude.</p>
 
   <CardList items={items} />
 </Layout>

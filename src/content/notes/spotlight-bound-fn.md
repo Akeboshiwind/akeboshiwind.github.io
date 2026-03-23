@@ -1,7 +1,7 @@
 ---
-title: "Clojure Function Spotlight: bound-fn"
+title: "Clojure function spotlight: bound-fn"
+stage: scribble
 date: 2023-11-23
-discussLink: "https://github.com/Akeboshiwind/akeboshiwind.github.io/discussions/4"
 ---
 
 While reading some internal code at [JUXT](https://juxt.pro) I came across a function I'd not seen before: `bound-fn`

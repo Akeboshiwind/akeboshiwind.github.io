@@ -5,42 +5,38 @@ import { getCollection } from 'astro:content';
 
 const base = import.meta.env.BASE_URL;
 
-const posts = await getCollection('blog', ({ data }) => {
-  return import.meta.env.PROD ? !data.draft : true;
-});
-
-const recentPosts = posts
+const notes = await getCollection('notes');
+const recentNotes = notes
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
   .slice(0, 5);
 
-const tools = await getCollection('tools');
-const recentTools = tools
+const works = await getCollection('works');
+const recentWorks = works
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
   .slice(0, 4);
 
 const screenshots = import.meta.glob<{ default: import('astro').ImageMetadata }>('../assets/tools/*.png', { eager: true });
 
-function toolUrl(tool: { id: string; data: { url?: string } }) {
-  return tool.data.url || `${base}tools/${tool.id.replace('.json', '')}/`;
+function workUrl(work: { id: string; data: { url?: string } }) {
+  return work.data.url || `${base}tools/${work.id.replace('.json', '')}/`;
 }
 
-function screenshot(tool: { id: string }) {
-  const key = `../assets/tools/${tool.id.replace('.json', '')}.png`;
+function screenshot(work: { id: string }) {
+  const key = `../assets/tools/${work.id.replace('.json', '')}.png`;
   return screenshots[key]?.default;
 }
 
-const postItems = recentPosts.map(post => ({
-  url: `${base}blog/${post.slug}/`,
-  title: post.data.title,
-  date: post.data.date,
-  draft: post.data.draft,
+const noteItems = recentNotes.map(note => ({
+  url: `${base}blog/${note.slug}/`,
+  title: note.data.title,
+  date: note.data.date,
 }));
 
-const toolItems = recentTools.map(tool => ({
-  url: toolUrl(tool),
-  title: tool.data.title,
-  description: tool.data.description,
-  image: screenshot(tool),
+const workItems = recentWorks.map(work => ({
+  url: workUrl(work),
+  title: work.data.title,
+  description: work.data.description,
+  image: screenshot(work),
 }));
 ---
 
@@ -50,13 +46,13 @@ const toolItems = recentTools.map(tool => ({
     This site focuses on Clojure, programming, and occasional thoughts about technology.
   </p>
 
-  <h2 class="text-xl font-bold text-heading mt-6 mb-2">Recent Posts</h2>
-  <CardList items={postItems} showImages={false} />
+  <h2 class="text-xl font-bold text-heading mt-6 mb-2">Recent Notes</h2>
+  <CardList items={noteItems} showImages={false} />
 
-  <p class="my-4"><a href={`${base}blog/`} class="text-link visited:text-link-visited no-underline hover:underline">View all posts &rarr;</a></p>
+  <p class="my-4"><a href={`${base}blog/`} class="text-link visited:text-link-visited no-underline hover:underline">View all notes &rarr;</a></p>
 
-  <h2 class="text-xl font-bold text-heading mt-6 mb-2">Recent Tools</h2>
-  <CardList items={toolItems} />
+  <h2 class="text-xl font-bold text-heading mt-6 mb-2">Recent Works</h2>
+  <CardList items={workItems} />
 
-  <p class="my-4"><a href={`${base}tools/`} class="text-link visited:text-link-visited no-underline hover:underline">View all tools &rarr;</a></p>
+  <p class="my-4"><a href={`${base}tools/`} class="text-link visited:text-link-visited no-underline hover:underline">View all works &rarr;</a></p>
 </Layout>

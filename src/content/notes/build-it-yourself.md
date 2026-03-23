@@ -1,7 +1,7 @@
 ---
 title: "Just build it yourself"
+stage: scribble
 date: 2026-01-04
-draft: true
 ---
 
 I have a dirty secret to share: I love maintaining my dotfiles.
