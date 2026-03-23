@@ -14,7 +14,7 @@ export async function GET(context: APIContext) {
       .map((note) => ({
         title: note.data.title,
         pubDate: note.data.date,
-        link: `/blog/${note.slug}/`,
+        link: `/${note.slug}/`,
       })),
   });
 }

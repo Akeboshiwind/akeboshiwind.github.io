@@ -27,7 +27,7 @@ function screenshot(work: { id: string }) {
 }
 
 const noteItems = recentNotes.map(note => ({
-  url: `${base}blog/${note.slug}/`,
+  url: `${base}${note.slug}/`,
   title: note.data.title,
   date: note.data.date,
 }));
@@ -49,10 +49,10 @@ const workItems = recentWorks.map(work => ({
   <h2 class="text-xl font-bold text-heading mt-6 mb-2">Recent Notes</h2>
   <CardList items={noteItems} showImages={false} />
 
-  <p class="my-4"><a href={`${base}blog/`} class="text-link visited:text-link-visited no-underline hover:underline">View all notes &rarr;</a></p>
+  <p class="my-4"><a href={`${base}notes/`} class="text-link visited:text-link-visited no-underline hover:underline">View all notes &rarr;</a></p>
 
   <h2 class="text-xl font-bold text-heading mt-6 mb-2">Recent Works</h2>
   <CardList items={workItems} />
 
-  <p class="my-4"><a href={`${base}tools/`} class="text-link visited:text-link-visited no-underline hover:underline">View all works &rarr;</a></p>
+  <p class="my-4"><a href={`${base}works/`} class="text-link visited:text-link-visited no-underline hover:underline">View all works &rarr;</a></p>
 </Layout>
