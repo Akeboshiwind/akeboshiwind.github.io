@@ -1,6 +1,6 @@
 ---
 title: "Clojure function spotlight: bound-fn"
-stage: scribble
+stage: tale
 date: 2023-11-23
 tags: ["clojure", "learning"]
 ---

@@ -1,6 +1,6 @@
 {
   "title": "Image Compress",
-  "stage": "scribble",
+  "stage": "draft",
   "date": "2026-03-11",
   "description": "Compress and resize images in the browser. No upload \u2014 everything stays local.",
   "tags": [
