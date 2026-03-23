@@ -1,4 +1,4 @@
-# Blog by the Rocks
+# By the Rocks
 
 Personal digital garden built with Astro, with interactive works and presentations.
 
