@@ -11,7 +11,7 @@ const works = await getCollection('works');
 const screenshots = import.meta.glob<{ default: import('astro').ImageMetadata }>('../assets/tools/*.png', { eager: true });
 
 function workUrl(work: { id: string; data: { url?: string } }) {
-  return work.data.url || `${base}tools/${work.id.replace('.json', '')}/`;
+  return work.data.url || `${base}${work.id.replace('.json', '')}/`;
 }
 
 function screenshot(work: { id: string }) {
