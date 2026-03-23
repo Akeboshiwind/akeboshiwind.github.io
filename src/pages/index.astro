@@ -52,9 +52,4 @@ const rest = allItems.filter(i => !i.pinned).sort((a, b) => b.date.getTime() - a
 
   <h2 class="text-sm font-semibold text-heading mt-6 mb-1 uppercase tracking-wide opacity-60">Recent</h2>
   <CardList items={rest} />
-
-  <div class="flex gap-4 my-4">
-    <a href={`${base}notes/`} class="text-link visited:text-link-visited no-underline hover:underline">All notes &rarr;</a>
-    <a href={`${base}works/`} class="text-link visited:text-link-visited no-underline hover:underline">All works &rarr;</a>
-  </div>
 </Layout>
