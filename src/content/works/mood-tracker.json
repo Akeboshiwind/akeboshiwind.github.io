@@ -3,5 +3,9 @@
   "stage": "scribble",
   "date": "2025-12-20",
   "description": "Track daily mood and feelings over time.",
-  "url": "https://mood.bythe.rocks/"
+  "url": "https://mood.bythe.rocks/",
+  "tags": [
+    "tool",
+    "personal"
+  ]
 }

@@ -2,5 +2,10 @@
   "title": "Sorting Comparator",
   "stage": "scribble",
   "date": "2026-03-18",
-  "description": "Sort any list by comparing items yourself. See how different algorithms feel when a human drives them."
+  "description": "Sort any list by comparing items yourself. See how different algorithms feel when a human drives them.",
+  "tags": [
+    "tool",
+    "data",
+    "visualization"
+  ]
 }

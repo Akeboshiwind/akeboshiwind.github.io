@@ -2,6 +2,7 @@
 title: "Zippers in Lua"
 stage: scribble
 date: 2023-11-18
+tags: ["data", "learning"]
 ---
 
 <!--

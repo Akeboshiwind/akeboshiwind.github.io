@@ -2,6 +2,7 @@
 title: "Making a case sensitive folder on MacOS"
 stage: scribble
 date: 2025-03-10
+tags: ["devops"]
 ---
 
 First we need to figure out which disk to create our new volume on:

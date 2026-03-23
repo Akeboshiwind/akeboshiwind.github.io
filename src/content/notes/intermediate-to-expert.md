@@ -2,6 +2,7 @@
 title: "Intermediate to Expert"
 stage: scribble
 date: 2023-10-10
+tags: ["learning", "clojure"]
 ---
 
 <!--

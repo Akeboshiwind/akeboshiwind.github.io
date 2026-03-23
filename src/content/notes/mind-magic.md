@@ -2,6 +2,7 @@
 title: "Mind magic for beginners"
 stage: scribble
 date: 2023-10-16
+tags: ["personal", "learning"]
 ---
 
 Note of caution: As a beginner myself, I feel like I ought to be an expert on what things are "beginner level".

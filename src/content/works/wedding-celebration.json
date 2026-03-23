@@ -3,5 +3,9 @@
   "stage": "scribble",
   "date": "2026-01-11",
   "description": "Our wedding celebration website.",
-  "url": "https://celebration.hina-oliver.com/"
+  "url": "https://celebration.hina-oliver.com/",
+  "tags": [
+    "personal",
+    "tool"
+  ]
 }

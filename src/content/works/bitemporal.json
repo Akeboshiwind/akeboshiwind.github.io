@@ -2,5 +2,9 @@
   "title": "Bitemporal Visualizer",
   "stage": "scribble",
   "date": "2025-12-19",
-  "description": "Interactive visualization of bitemporal data concepts."
+  "description": "Interactive visualization of bitemporal data concepts.",
+  "tags": [
+    "visualization",
+    "clojure"
+  ]
 }

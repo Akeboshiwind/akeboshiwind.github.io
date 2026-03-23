@@ -2,5 +2,9 @@
   "title": "Christmas Talk",
   "stage": "scribble",
   "date": "2026-02-23",
-  "description": "Interactive live presentation with audience participation via Ably."
+  "description": "Interactive live presentation with audience participation via Ably.",
+  "tags": [
+    "presentation",
+    "clojure"
+  ]
 }

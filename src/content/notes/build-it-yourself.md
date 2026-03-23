@@ -2,6 +2,7 @@
 title: "Just build it yourself"
 stage: scribble
 date: 2026-01-04
+tags: ["tool", "ai"]
 ---
 
 I have a dirty secret to share: I love maintaining my dotfiles.

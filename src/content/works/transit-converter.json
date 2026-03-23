@@ -2,5 +2,9 @@
   "title": "Transit Converter",
   "stage": "scribble",
   "date": "2026-03-10",
-  "description": "Convert Transit format data to JSON."
+  "description": "Convert Transit format data to JSON.",
+  "tags": [
+    "tool",
+    "clojure"
+  ]
 }
