@@ -17,11 +17,12 @@ src/
   content/notes/     # Written content (Markdown/MDX)
   content/works/     # Built things metadata (JSON, points to pages)
   pages/             # Astro pages
-    [..slug].astro   # Top-level note renderer
-    notes/           # Notes index + RSS
-    works/           # Works index
-    tools/           # Tool SPA pages
-    talk/            # Talk SPA pages
+    [...slug].astro  # Top-level note renderer
+    index.astro      # Front page (mixed feed of notes + works)
+    bitemporal/      # SPA pages (each with index.astro + _app/)
+    sorting-comparator/
+    christmas/
+    ...              # All SPAs at top level
   layouts/           # Layout components
   components/        # Reusable components
   styles/            # Global CSS

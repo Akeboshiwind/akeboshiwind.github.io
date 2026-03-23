@@ -8,14 +8,14 @@ const base = import.meta.env.BASE_URL;
 const notes = await getCollection('notes');
 const works = await getCollection('works');
 
-const screenshots = import.meta.glob<{ default: import('astro').ImageMetadata }>('../assets/tools/*.png', { eager: true });
+const screenshots = import.meta.glob<{ default: import('astro').ImageMetadata }>('../assets/works/*.png', { eager: true });
 
 function workUrl(work: { id: string; data: { url?: string } }) {
   return work.data.url || `${base}${work.id.replace('.json', '')}/`;
 }
 
 function screenshot(work: { id: string }) {
-  const key = `../assets/tools/${work.id.replace('.json', '')}.png`;
+  const key = `../assets/works/${work.id.replace('.json', '')}.png`;
   return screenshots[key]?.default;
 }
 
@@ -24,7 +24,7 @@ const allItems = [
     url: `${base}${note.slug}/`,
     title: note.data.title,
     stage: note.data.stage,
-    date: note.data.date,
+    date: note.data.updated ?? note.data.date,
     pinned: note.data.pinned,
   })),
   ...works.map(work => ({
@@ -32,7 +32,7 @@ const allItems = [
     title: work.data.title,
     stage: work.data.stage,
     description: work.data.description,
-    date: work.data.date,
+    date: work.data.updated ?? work.data.date,
     image: screenshot(work),
     pinned: work.data.pinned,
   })),

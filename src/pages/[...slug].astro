@@ -29,10 +29,18 @@ const { Content } = await note.render();
       <a href="/stages/" class="italic opacity-60 font-normal no-underline hover:underline">A {note.data.stage}:</a> {note.data.title}
     </h1>
 
-    <p>
-      <time datetime={note.data.date.toISOString().split('T')[0]} class="font-mono text-[0.9rem]">
+    <p class="font-mono text-[0.9rem]">
+      <time datetime={note.data.date.toISOString().split('T')[0]}>
         {note.data.date.toISOString().split('T')[0]}
       </time>
+      {note.data.updated && (
+        <span class="opacity-60">
+          {' · updated '}
+          <time datetime={note.data.updated.toISOString().split('T')[0]}>
+            {note.data.updated.toISOString().split('T')[0]}
+          </time>
+        </span>
+      )}
     </p>
 
     <Content />
