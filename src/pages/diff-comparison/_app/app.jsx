@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { computeDiff } from './diff.js';
 import './app.css';
+
+const STORAGE_KEY = 'diff-comparison';
 
 const SAMPLE_LEFT = `function greet(name) {
   console.log("Hello, " + name);
@@ -17,6 +19,14 @@ const SAMPLE_RIGHT = `function greet(name, greeting) {
 }
 
 greet("world", "Hi");`;
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
 
 function CombinedView({ edits }) {
   if (edits.length === 0) {
@@ -158,9 +168,14 @@ function SideBySideView({ edits }) {
 }
 
 function App() {
-  const [left, setLeft] = useState(SAMPLE_LEFT);
-  const [right, setRight] = useState(SAMPLE_RIGHT);
-  const [viewMode, setViewMode] = useState('combined');
+  const saved = loadState();
+  const [left, setLeft] = useState(saved?.left ?? SAMPLE_LEFT);
+  const [right, setRight] = useState(saved?.right ?? SAMPLE_RIGHT);
+  const [viewMode, setViewMode] = useState(saved?.viewMode ?? 'combined');
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ left, right, viewMode }));
+  }, [left, right, viewMode]);
 
   const edits = useMemo(() => computeDiff(left, right), [left, right]);
 
@@ -175,7 +190,13 @@ function App() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Diff Comparison</h1>
+      <a
+        href="../"
+        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+      >
+        ← Home
+      </a>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 mt-2">Diff Comparison</h1>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1 flex flex-col">
