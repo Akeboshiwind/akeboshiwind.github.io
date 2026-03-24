@@ -11,12 +11,12 @@ interface Props {
 
 const {
   title,
-  description = 'Clojure, programming, and occasional thoughts about bytes and nibbles',
+  description,
   type = 'website',
   publishedTime,
 } = Astro.props;
 
-const siteTitle = 'Blog by the Rocks';
+const siteTitle = 'By the Rocks';
 const pageTitle = title ? `${title} | ${siteTitle}` : siteTitle;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 ---
@@ -43,9 +43,6 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   <meta name="description" content={description} />
   <link rel="canonical" href={canonicalURL} />
 
-  <!-- RSS -->
-  <link rel="alternate" type="application/rss+xml" href={`${import.meta.env.BASE_URL}blog/rss.xml`} title={siteTitle} />
-
   <!-- Open Graph -->
   <meta property="og:type" content={type} />
   <meta property="og:url" content={canonicalURL} />
@@ -65,7 +62,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <slot />
   </main>
   <footer class="mt-12 py-4 text-center text-sm text-text opacity-70">
-    <p>&copy; {new Date().getFullYear()} Blog by the Rocks</p>
+    <p>&copy; {new Date().getFullYear()} By the Rocks</p>
   </footer>
 </body>
 </html>

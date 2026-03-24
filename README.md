@@ -1,4 +1,4 @@
-# Blog by the Rocks
+# By the Rocks
 
 Personal blog built with [Astro](https://astro.build/).
 

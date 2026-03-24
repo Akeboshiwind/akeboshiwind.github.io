@@ -1,24 +1,31 @@
 import { defineCollection, z } from 'astro:content';
 
-const blog = defineCollection({
+const stage = z.enum(['scribble', 'draft', 'tale']);
+
+const notes = defineCollection({
   type: 'content',
   schema: z.object({
     title: z.string(),
+    stage: stage,
     date: z.date(),
-    draft: z.boolean().optional().default(false),
-    discussLink: z.string().url().optional(),
+    updated: z.date().optional(),
     tags: z.array(z.string()).optional(),
+    pinned: z.boolean().optional().default(false),
   }),
 });
 
-const tools = defineCollection({
+const works = defineCollection({
   type: 'data',
   schema: z.object({
     title: z.string(),
+    stage: stage,
     date: z.coerce.date(),
+    updated: z.coerce.date().optional(),
     description: z.string(),
-    url: z.string().url().optional(), // for external tools
+    url: z.string().url().optional(),
+    tags: z.array(z.string()).optional(),
+    pinned: z.boolean().optional().default(false),
   }),
 });
 
-export const collections = { blog, tools };
+export const collections = { notes, works };

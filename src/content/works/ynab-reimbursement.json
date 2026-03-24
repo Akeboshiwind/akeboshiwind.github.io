@@ -1,0 +1,10 @@
+{
+  "title": "YNAB Reimbursement Report",
+  "stage": "draft",
+  "date": "2025-05-11",
+  "description": "Generate reimbursement reports from YNAB transaction data.",
+  "tags": [
+    "tool",
+    "finance"
+  ]
+}

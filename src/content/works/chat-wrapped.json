@@ -1,0 +1,10 @@
+{
+  "title": "Chat Wrapped",
+  "stage": "tale",
+  "date": "2025-12-31",
+  "description": "An interactive quiz I built for New Years for my friends",
+  "tags": [
+    "presentation",
+    "clojure"
+  ]
+}

@@ -1,6 +1,0 @@
-{
-  "title": "Glance",
-  "date": "2026-02-21",
-  "description": "CLI tool that summarizes large command outputs for LLMs by skimming head/tail and pattern-matched lines.",
-  "url": "https://github.com/Akeboshiwind/glance"
-}

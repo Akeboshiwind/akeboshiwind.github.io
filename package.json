@@ -1,5 +1,5 @@
 {
-  "name": "blog-by-the-rocks",
+  "name": "by-the-rocks",
   "type": "module",
   "version": "1.0.0",
   "scripts": {
@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.13",
-    "@astrojs/rss": "^4.0.15",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.2.0",
     "@vitejs/plugin-react": "^5.1.4",

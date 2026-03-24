@@ -1,0 +1,11 @@
+{
+  "title": "Sorting Comparator",
+  "stage": "draft",
+  "date": "2026-03-18",
+  "description": "Sort any list by comparing items yourself. See how different algorithms feel when a human drives them.",
+  "tags": [
+    "tool",
+    "data",
+    "visualization"
+  ]
+}

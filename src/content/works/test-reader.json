@@ -1,0 +1,11 @@
+{
+  "title": "Lateral Flow Test Reader",
+  "stage": "draft",
+  "date": "2026-02-01",
+  "description": "Photograph and analyze lateral flow tests with automatic result detection.",
+  "tags": [
+    "tool",
+    "ai",
+    "images"
+  ]
+}

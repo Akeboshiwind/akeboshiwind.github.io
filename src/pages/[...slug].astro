@@ -1,0 +1,59 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const notes = await getCollection('notes');
+
+  return notes.map(note => ({
+    params: { slug: note.slug },
+    props: { note },
+  }));
+}
+
+const { note } = Astro.props;
+const { Content } = await note.render();
+---
+
+<Layout
+  title={`A ${note.data.stage}: ${note.data.title}`}
+  description={note.data.title}
+  type="article"
+  publishedTime={note.data.date}
+>
+  <article class="prose prose-sm font-sans max-w-none leading-relaxed
+    prose-a:text-link prose-a:no-underline hover:prose-a:underline prose-a:visited:text-link-visited
+    prose-code:font-mono prose-code:bg-code-bg prose-code:text-code-text prose-code:px-1 prose-code:rounded-sm prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
+    prose-pre:font-mono">
+    <h1>
+      <a href="/stages/" class="italic opacity-60 font-normal no-underline hover:underline">A {note.data.stage}:</a> {note.data.title}
+    </h1>
+
+    <p class="font-mono text-[0.9rem]">
+      <time datetime={note.data.date.toISOString().split('T')[0]}>
+        {note.data.date.toISOString().split('T')[0]}
+      </time>
+      {note.data.updated && (
+        <span class="opacity-60">
+          {' · updated '}
+          <time datetime={note.data.updated.toISOString().split('T')[0]}>
+            {note.data.updated.toISOString().split('T')[0]}
+          </time>
+        </span>
+      )}
+    </p>
+
+    <Content />
+
+    {note.data.tags && note.data.tags.length > 0 && (
+      <p>
+        Tags: {note.data.tags.map((tag, i) => (
+          <span>
+            {i > 0 && ', '}
+            #{tag}
+          </span>
+        ))}
+      </p>
+    )}
+  </article>
+</Layout>
