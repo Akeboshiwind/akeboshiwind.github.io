@@ -2,7 +2,7 @@
   "title": "Chat Wrapped",
   "stage": "tale",
   "date": "2026-02-23",
-  "description": "Chat Wrapped presentation with quiz elements built in Squint and React.",
+  "description": "An interactive quiz I built for New Years for my friends",
   "tags": [
     "presentation",
     "clojure"
