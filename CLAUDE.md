@@ -44,6 +44,10 @@ Two collections, rendered together on the front page:
 
 - `title`, `stage` (scribble/draft/tale), `date`, `updated`, `tags`, `pinned`
 - Stage prefix ("A scribble:", etc.) is added at render time, not in the data.
+- **Stages** (see `content/notes/stages.md`):
+  - **scribble** — quickly jotted down, unpolished. Tools may have bugs.
+  - **draft** — more thought than the initial idea, but not confident enough to show around.
+  - **tale** — significant thought and effort; happy to share. May still evolve over time.
 
 ## Apps
 
@@ -65,3 +69,7 @@ All apps are built through Astro's Vite pipeline — no separate build step need
 - [Squint](https://github.com/squint-cljs/squint) - ClojureScript to JS compiler (via Vite plugin)
 - React - UI for some apps
 - Tailwind CSS 4 - Styling
+
+## Git
+
+- Default branch: `master`

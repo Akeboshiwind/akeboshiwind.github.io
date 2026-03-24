@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+.diff-line-delete {
+  @apply bg-red-100 dark:bg-red-950;
+}
+.diff-line-insert {
+  @apply bg-green-100 dark:bg-green-950;
+}
+.diff-line-equal {
+  @apply bg-transparent;
+}
+.diff-gutter {
+  @apply select-none text-gray-400 dark:text-gray-600 text-right pr-2 w-10 shrink-0 font-mono text-sm;
+}
+.diff-content {
+  @apply font-mono text-sm whitespace-pre pl-2 flex-1 min-w-0;
+}
+.diff-prefix {
+  @apply select-none text-gray-500 dark:text-gray-500 inline-block w-4;
+}
