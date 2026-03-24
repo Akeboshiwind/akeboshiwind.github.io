@@ -13,7 +13,7 @@
       pathname)))
 
 (def persimmon-img (str base-path "/persimmon.jpeg"))
-(def join-url "blog.bythe.rocks/christmas")
+(def join-url "bythe.rocks/christmas")
 
 
 ;; >> State
