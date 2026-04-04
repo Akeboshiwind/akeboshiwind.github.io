@@ -431,6 +431,7 @@
         .letter-cell {
             aspect-ratio: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             font-family: 'Noto Sans Devanagari', sans-serif;
@@ -439,6 +440,37 @@
             border: 1px solid var(--card-border);
             background: rgba(255, 255, 255, 0.02);
             position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .letter-cell.revealed {
+            aspect-ratio: auto;
+            padding: 8px 4px;
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .letter-cell .letter-roman {
+            display: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.75rem;
+            color: var(--accent);
+            margin-top: 2px;
+        }
+
+        .letter-cell .letter-hint {
+            display: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .letter-cell.revealed .letter-roman,
+        .letter-cell.revealed .letter-hint {
+            display: block;
         }
 
         .letter-cell.new {
@@ -1042,8 +1074,18 @@
                 let cls = 'new';
                 if (card.state === 'learning') cls = 'learning';
                 else if (card.state === 'review') cls = 'mastered';
-                return `<div class="letter-cell ${cls}" title="${card.roman}">${card.char}</div>`;
+                return `<div class="letter-cell ${cls}" data-char="${card.char}">
+                    <span>${card.char}</span>
+                    <span class="letter-roman">${card.roman}</span>
+                    <span class="letter-hint">${card.hint}</span>
+                </div>`;
             }).join('');
+
+            grid.querySelectorAll('.letter-cell').forEach(cell => {
+                cell.addEventListener('click', () => {
+                    cell.classList.toggle('revealed');
+                });
+            });
         }
 
         function renderCard() {
