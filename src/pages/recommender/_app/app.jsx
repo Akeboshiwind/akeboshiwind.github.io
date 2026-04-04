@@ -157,6 +157,47 @@ const App = () => {
     );
   };
 
+  const handleUpdateName = (recId, text) => {
+    setLists(prev =>
+      prev.map(list => {
+        if (list.id !== activeListId) return list;
+        return {
+          ...list,
+          recommendations: list.recommendations.map(r =>
+            r.id === recId ? { ...r, text } : r,
+          ),
+        };
+      }),
+    );
+  };
+
+  const handleDeleteRecommendation = recId => {
+    setLists(prev =>
+      prev.map(list => {
+        if (list.id !== activeListId) return list;
+        return {
+          ...list,
+          recommendations: list.recommendations.filter(r => r.id !== recId),
+        };
+      }),
+    );
+  };
+
+  const handleReviewFromHistory = (recId, note) => {
+    setLists(prev =>
+      prev.map(list => {
+        if (list.id !== activeListId) return list;
+        return {
+          ...list,
+          recommendations: list.recommendations.map(r => {
+            if (r.id !== recId) return r;
+            return { ...r, status: 'seen', note: note || '', reviewedAt: Date.now() };
+          }),
+        };
+      }),
+    );
+  };
+
   const handleSaveSettings = updates => {
     setLists(prev => prev.map(l => (l.id === activeListId ? { ...l, ...updates } : l)));
     setShowSettings(false);
@@ -239,7 +280,15 @@ const App = () => {
       )}
 
       {showHistory && activeList && (
-        <HistoryModal list={activeList} onClose={() => setShowHistory(false)} onUpdateNote={handleUpdateNote} onAddCustom={handleAddCustom} />
+        <HistoryModal
+          list={activeList}
+          onClose={() => setShowHistory(false)}
+          onUpdateNote={handleUpdateNote}
+          onUpdateName={handleUpdateName}
+          onDelete={handleDeleteRecommendation}
+          onReview={handleReviewFromHistory}
+          onAddCustom={handleAddCustom}
+        />
       )}
 
       {showImportExport && (

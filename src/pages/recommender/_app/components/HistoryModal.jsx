@@ -16,6 +16,46 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+const NameEditor = ({ text, onSave, onCancel }) => {
+  const [value, setValue] = useState(text);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    ref.current?.focus();
+    ref.current?.select();
+  }, []);
+
+  const handleKeyDown = e => {
+    if (e.key === 'Enter') { e.preventDefault(); onSave(value.trim()); }
+    if (e.key === 'Escape') onCancel();
+  };
+
+  return (
+    <div className="flex-1 flex items-center gap-1.5">
+      <input
+        ref={ref}
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        className="flex-1 px-2 py-1 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <button
+        onClick={onCancel}
+        className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+      >
+        Cancel
+      </button>
+      <button
+        onClick={() => onSave(value.trim())}
+        disabled={!value.trim()}
+        className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-40"
+      >
+        Save
+      </button>
+    </div>
+  );
+};
+
 const NoteEditor = ({ note, onSave, onCancel }) => {
   const [value, setValue] = useState(note);
   const ref = useRef(null);
@@ -53,6 +93,46 @@ const NoteEditor = ({ note, onSave, onCancel }) => {
           className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700 dark:hover:text-blue-300"
         >
           Save
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const ReviewForm = ({ onConfirm, onCancel }) => {
+  const [note, setNote] = useState('');
+  const ref = useRef(null);
+
+  useEffect(() => { ref.current?.focus(); }, []);
+
+  const handleKeyDown = e => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) onConfirm(note.trim());
+    if (e.key === 'Escape') onCancel();
+  };
+
+  return (
+    <div className="mt-1.5 space-y-1.5">
+      <textarea
+        ref={ref}
+        value={note}
+        onChange={e => setNote(e.target.value)}
+        onKeyDown={handleKeyDown}
+        rows={2}
+        className="w-full px-2.5 py-1.5 border border-green-300 dark:border-green-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 text-xs resize-none"
+        placeholder="Add a note (optional)..."
+      />
+      <div className="flex gap-2">
+        <button
+          onClick={onCancel}
+          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => onConfirm(note.trim())}
+          className="text-xs text-green-600 dark:text-green-400 font-medium hover:text-green-700 dark:hover:text-green-300"
+        >
+          Mark as seen
         </button>
       </div>
     </div>
@@ -108,8 +188,79 @@ const AddItemForm = ({ onSave, onCancel }) => {
   );
 };
 
-export const HistoryModal = ({ list, onClose, onUpdateNote, onAddCustom }) => {
-  const [editingId, setEditingId] = useState(null);
+const ItemActions = ({ rec, onEditName, onEditNote, onReview, onDelete }) => {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  if (confirmingDelete) {
+    return (
+      <div className="mt-1.5 flex items-center gap-2 text-xs">
+        <span className="text-red-500 dark:text-red-400">Delete this item?</span>
+        <button
+          onClick={() => { onDelete(rec.id); setConfirmingDelete(false); }}
+          className="text-red-600 dark:text-red-400 font-medium hover:text-red-700 dark:hover:text-red-300"
+        >
+          Yes, delete
+        </button>
+        <button
+          onClick={() => setConfirmingDelete(false)}
+          className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <button
+        onClick={() => onEditName(rec.id)}
+        className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+        title="Edit name"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        </svg>
+      </button>
+      {rec.status === 'seen' && (
+        <button
+          onClick={() => onEditNote(rec.id)}
+          className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+          title="Edit note"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+          </svg>
+        </button>
+      )}
+      {rec.status === 'pending' && (
+        <button
+          onClick={() => onReview(rec.id)}
+          className="text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400"
+          title="Mark as seen"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </button>
+      )}
+      <button
+        onClick={() => setConfirmingDelete(true)}
+        className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400"
+        title="Delete"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </button>
+    </div>
+  );
+};
+
+export const HistoryModal = ({ list, onClose, onUpdateNote, onUpdateName, onDelete, onReview, onAddCustom }) => {
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingNameId, setEditingNameId] = useState(null);
+  const [reviewingId, setReviewingId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
 
@@ -125,8 +276,70 @@ export const HistoryModal = ({ list, onClose, onUpdateNote, onAddCustom }) => {
 
   const handleSaveNote = (recId, note) => {
     onUpdateNote(recId, note);
-    setEditingId(null);
+    setEditingNoteId(null);
   };
+
+  const handleSaveName = (recId, text) => {
+    if (text) onUpdateName(recId, text);
+    setEditingNameId(null);
+  };
+
+  const handleReview = (recId, note) => {
+    onReview(recId, note);
+    setReviewingId(null);
+  };
+
+  const clearEditing = () => {
+    setEditingNoteId(null);
+    setEditingNameId(null);
+    setReviewingId(null);
+  };
+
+  const renderItem = r => (
+    <div key={r.id} className="py-2 border-b border-gray-100 dark:border-gray-700 group">
+      <div className="flex items-start justify-between gap-2">
+        {editingNameId === r.id ? (
+          <NameEditor
+            text={r.text}
+            onSave={text => handleSaveName(r.id, text)}
+            onCancel={() => setEditingNameId(null)}
+          />
+        ) : (
+          <span className="text-sm text-gray-700 dark:text-gray-300">{r.text}</span>
+        )}
+        <StatusBadge status={r.status} />
+      </div>
+
+      {reviewingId === r.id && (
+        <ReviewForm
+          onConfirm={note => handleReview(r.id, note)}
+          onCancel={() => setReviewingId(null)}
+        />
+      )}
+
+      {editingNoteId === r.id ? (
+        <NoteEditor
+          note={r.note || ''}
+          onSave={note => handleSaveNote(r.id, note)}
+          onCancel={() => setEditingNoteId(null)}
+        />
+      ) : r.note ? (
+        <p className="text-xs text-gray-400 dark:text-gray-500 italic mt-1">
+          "{r.note}"
+        </p>
+      ) : null}
+
+      {editingNameId !== r.id && editingNoteId !== r.id && reviewingId !== r.id && (
+        <ItemActions
+          rec={r}
+          onEditName={id => { clearEditing(); setEditingNameId(id); }}
+          onEditNote={id => { clearEditing(); setEditingNoteId(id); }}
+          onReview={id => { clearEditing(); setReviewingId(id); }}
+          onDelete={onDelete}
+        />
+      )}
+    </div>
+  );
 
   return (
     <div
@@ -160,15 +373,7 @@ export const HistoryModal = ({ list, onClose, onUpdateNote, onAddCustom }) => {
                     Current ({pending.length})
                   </h3>
                   <div className="space-y-2">
-                    {pending.map(r => (
-                      <div
-                        key={r.id}
-                        className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700"
-                      >
-                        <span className="text-sm text-gray-700 dark:text-gray-300">{r.text}</span>
-                        <StatusBadge status={r.status} />
-                      </div>
-                    ))}
+                    {pending.map(renderItem)}
                   </div>
                 </div>
               )}
@@ -179,46 +384,7 @@ export const HistoryModal = ({ list, onClose, onUpdateNote, onAddCustom }) => {
                     Reviewed ({reviewed.length})
                   </h3>
                   <div className="space-y-2">
-                    {reviewed.map(r => (
-                      <div
-                        key={r.id}
-                        className="py-2 border-b border-gray-100 dark:border-gray-700"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{r.text}</span>
-                          <StatusBadge status={r.status} />
-                        </div>
-
-                        {editingId === r.id ? (
-                          <NoteEditor
-                            note={r.note || ''}
-                            onSave={note => handleSaveNote(r.id, note)}
-                            onCancel={() => setEditingId(null)}
-                          />
-                        ) : (
-                          <div className="flex items-center gap-1.5 mt-1 group">
-                            {r.note ? (
-                              <p className="text-xs text-gray-400 dark:text-gray-500 italic flex-1">
-                                "{r.note}"
-                              </p>
-                            ) : (
-                              <p className="text-xs text-gray-300 dark:text-gray-600 flex-1 invisible group-hover:visible">
-                                Add a note...
-                              </p>
-                            )}
-                            <button
-                              onClick={() => setEditingId(r.id)}
-                              className="text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                              title="Edit note"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                              </svg>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    {reviewed.map(renderItem)}
                   </div>
                 </div>
               )}
