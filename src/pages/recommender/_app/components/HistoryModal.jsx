@@ -16,30 +16,42 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const NoteEditor = ({ note, onSave, onCancel }) => {
-  const [value, setValue] = useState(note);
-  const ref = useRef(null);
+const ItemEditor = ({ rec, onSave, onCancel }) => {
+  const [name, setName] = useState(rec.text);
+  const [note, setNote] = useState(rec.note || '');
+  const nameRef = useRef(null);
 
   useEffect(() => {
-    ref.current?.focus();
-    ref.current?.select();
+    nameRef.current?.focus();
+    nameRef.current?.select();
   }, []);
 
   const handleKeyDown = e => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) onSave(value.trim());
     if (e.key === 'Escape') onCancel();
   };
 
+  const handleSave = () => {
+    if (!name.trim()) return;
+    onSave(name.trim(), note.trim());
+  };
+
   return (
-    <div className="mt-1.5 space-y-1.5">
+    <div className="py-2 border-b border-gray-100 dark:border-gray-700 space-y-2">
+      <input
+        ref={nameRef}
+        value={name}
+        onChange={e => setName(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Item name"
+        className="w-full px-2.5 py-1.5 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
       <textarea
-        ref={ref}
-        value={value}
-        onChange={e => setValue(e.target.value)}
+        value={note}
+        onChange={e => setNote(e.target.value)}
         onKeyDown={handleKeyDown}
         rows={2}
-        className="w-full px-2.5 py-1.5 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs resize-none"
         placeholder="Add a note..."
+        className="w-full px-2.5 py-1.5 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs resize-none"
       />
       <div className="flex gap-2">
         <button
@@ -49,10 +61,51 @@ const NoteEditor = ({ note, onSave, onCancel }) => {
           Cancel
         </button>
         <button
-          onClick={() => onSave(value.trim())}
-          className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700 dark:hover:text-blue-300"
+          onClick={handleSave}
+          disabled={!name.trim()}
+          className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-40"
         >
           Save
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const ReviewForm = ({ onConfirm, onCancel }) => {
+  const [note, setNote] = useState('');
+  const ref = useRef(null);
+
+  useEffect(() => { ref.current?.focus(); }, []);
+
+  const handleKeyDown = e => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) onConfirm(note.trim());
+    if (e.key === 'Escape') onCancel();
+  };
+
+  return (
+    <div className="mt-1.5 space-y-1.5">
+      <textarea
+        ref={ref}
+        value={note}
+        onChange={e => setNote(e.target.value)}
+        onKeyDown={handleKeyDown}
+        rows={2}
+        className="w-full px-2.5 py-1.5 border border-green-300 dark:border-green-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 text-xs resize-none"
+        placeholder="Add a note (optional)..."
+      />
+      <div className="flex gap-2">
+        <button
+          onClick={onCancel}
+          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => onConfirm(note.trim())}
+          className="text-xs text-green-600 dark:text-green-400 font-medium hover:text-green-700 dark:hover:text-green-300"
+        >
+          Mark as seen
         </button>
       </div>
     </div>
@@ -108,8 +161,47 @@ const AddItemForm = ({ onSave, onCancel }) => {
   );
 };
 
-export const HistoryModal = ({ list, onClose, onUpdateNote, onAddCustom }) => {
+const ItemActions = ({ rec, onEdit, onReview, onDelete }) => {
+  return (
+    <div className="flex items-center gap-2 mt-1">
+      <button
+        onClick={() => onEdit(rec.id)}
+        className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+        title="Edit"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        </svg>
+      </button>
+      {rec.status === 'pending' && (
+        <button
+          onClick={() => onReview(rec.id)}
+          className="text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400"
+          title="Mark as seen"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </button>
+      )}
+      <button
+        onClick={() => {
+          if (window.confirm(`Delete "${rec.text}"?`)) onDelete(rec.id);
+        }}
+        className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400"
+        title="Delete"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </button>
+    </div>
+  );
+};
+
+export const HistoryModal = ({ list, onClose, onUpdateNote, onUpdateName, onDelete, onReview, onAddCustom }) => {
   const [editingId, setEditingId] = useState(null);
+  const [reviewingId, setReviewingId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
 
@@ -123,9 +215,59 @@ export const HistoryModal = ({ list, onClose, onUpdateNote, onAddCustom }) => {
     if (e.target === e.currentTarget) onClose();
   };
 
-  const handleSaveNote = (recId, note) => {
+  const handleSaveEdit = (recId, name, note) => {
+    onUpdateName(recId, name);
     onUpdateNote(recId, note);
     setEditingId(null);
+  };
+
+  const handleReview = (recId, note) => {
+    onReview(recId, note);
+    setReviewingId(null);
+  };
+
+  const renderItem = r => {
+    if (editingId === r.id) {
+      return (
+        <ItemEditor
+          key={r.id}
+          rec={r}
+          onSave={(name, note) => handleSaveEdit(r.id, name, note)}
+          onCancel={() => setEditingId(null)}
+        />
+      );
+    }
+
+    return (
+      <div key={r.id} className="py-2 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-sm text-gray-700 dark:text-gray-300">{r.text}</span>
+          <StatusBadge status={r.status} />
+        </div>
+
+        {reviewingId === r.id && (
+          <ReviewForm
+            onConfirm={note => handleReview(r.id, note)}
+            onCancel={() => setReviewingId(null)}
+          />
+        )}
+
+        {r.note && reviewingId !== r.id && (
+          <p className="text-xs text-gray-400 dark:text-gray-500 italic mt-1">
+            "{r.note}"
+          </p>
+        )}
+
+        {reviewingId !== r.id && (
+          <ItemActions
+            rec={r}
+            onEdit={id => { setEditingId(id); setReviewingId(null); }}
+            onReview={id => { setReviewingId(id); setEditingId(null); }}
+            onDelete={onDelete}
+          />
+        )}
+      </div>
+    );
   };
 
   return (
@@ -160,15 +302,7 @@ export const HistoryModal = ({ list, onClose, onUpdateNote, onAddCustom }) => {
                     Current ({pending.length})
                   </h3>
                   <div className="space-y-2">
-                    {pending.map(r => (
-                      <div
-                        key={r.id}
-                        className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700"
-                      >
-                        <span className="text-sm text-gray-700 dark:text-gray-300">{r.text}</span>
-                        <StatusBadge status={r.status} />
-                      </div>
-                    ))}
+                    {pending.map(renderItem)}
                   </div>
                 </div>
               )}
@@ -179,46 +313,7 @@ export const HistoryModal = ({ list, onClose, onUpdateNote, onAddCustom }) => {
                     Reviewed ({reviewed.length})
                   </h3>
                   <div className="space-y-2">
-                    {reviewed.map(r => (
-                      <div
-                        key={r.id}
-                        className="py-2 border-b border-gray-100 dark:border-gray-700"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{r.text}</span>
-                          <StatusBadge status={r.status} />
-                        </div>
-
-                        {editingId === r.id ? (
-                          <NoteEditor
-                            note={r.note || ''}
-                            onSave={note => handleSaveNote(r.id, note)}
-                            onCancel={() => setEditingId(null)}
-                          />
-                        ) : (
-                          <div className="flex items-center gap-1.5 mt-1 group">
-                            {r.note ? (
-                              <p className="text-xs text-gray-400 dark:text-gray-500 italic flex-1">
-                                "{r.note}"
-                              </p>
-                            ) : (
-                              <p className="text-xs text-gray-300 dark:text-gray-600 flex-1 invisible group-hover:visible">
-                                Add a note...
-                              </p>
-                            )}
-                            <button
-                              onClick={() => setEditingId(r.id)}
-                              className="text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                              title="Edit note"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                              </svg>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    {reviewed.map(renderItem)}
                   </div>
                 </div>
               )}
