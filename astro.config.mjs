@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react';
 import squint from './plugins/vite-plugin-squint.js';
 
 export default defineConfig({
-  site: 'https://blog.bythe.rocks',
+  site: 'https://bythe.rocks',
   trailingSlash: 'always',
   integrations: [mdx()],
   markdown: {

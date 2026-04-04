@@ -52,7 +52,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           keep_files: true
-          cname: blog.bythe.rocks
+          cname: bythe.rocks
 
       - name: Deploy PR preview
         if: github.event_name == 'pull_request'
@@ -60,4 +60,4 @@ jobs:
         with:
           source-dir: ./dist/
           umbrella-dir: pr-preview
-          pages-base-url: blog.bythe.rocks
+          pages-base-url: bythe.rocks
