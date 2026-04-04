@@ -413,7 +413,6 @@
         .letter-cell {
             aspect-ratio: 1;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             font-family: 'Noto Sans Devanagari', sans-serif;
@@ -426,33 +425,74 @@
             transition: all 0.2s;
         }
 
-        .letter-cell.revealed {
-            aspect-ratio: auto;
-            padding: 8px 4px;
+        .letter-cell:hover {
             border-color: var(--accent);
             background: var(--accent-glow);
         }
 
-        .letter-cell .letter-roman {
-            display: none;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.75rem;
-            color: var(--accent);
-            margin-top: 2px;
+        .letter-preview-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
         }
 
-        .letter-cell .letter-hint {
-            display: none;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.6rem;
-            color: var(--text-dim);
+        .letter-preview-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .letter-preview-card {
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: var(--radius);
             text-align: center;
-            line-height: 1.2;
+            position: relative;
+            cursor: pointer;
+            aspect-ratio: 4 / 3;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            gap: 12px;
         }
 
-        .letter-cell.revealed .letter-roman,
-        .letter-cell.revealed .letter-hint {
-            display: block;
+        .letter-preview-card:active {
+            transform: scale(0.98);
+        }
+
+        .letter-preview-card .card-front,
+        .letter-preview-card .card-back {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .letter-preview-card .card-back {
+            display: none;
+        }
+
+        .letter-preview-card.flipped .card-front {
+            display: none;
+        }
+
+        .letter-preview-card.flipped .card-back {
+            display: flex;
         }
 
         .letter-cell.new {
@@ -946,18 +986,42 @@
                 let cls = 'new';
                 if (card.state === 'learning') cls = 'learning';
                 else if (card.state === 'review') cls = 'mastered';
-                return `<div class="letter-cell ${cls}" data-char="${card.char}">
-                    <span>${card.char}</span>
-                    <span class="letter-roman">${card.roman}</span>
-                    <span class="letter-hint">${card.hint}</span>
-                </div>`;
+                return `<div class="letter-cell ${cls}" data-char="${card.char}">${card.char}</div>`;
             }).join('');
 
             grid.querySelectorAll('.letter-cell').forEach(cell => {
                 cell.addEventListener('click', () => {
-                    cell.classList.toggle('revealed');
+                    const char = cell.getAttribute('data-char');
+                    const card = cards.find(c => c.char === char);
+                    if (card) showLetterPreview(card);
                 });
             });
+        }
+
+        function showLetterPreview(card) {
+            const overlay = document.getElementById('letterPreviewOverlay');
+            const previewCard = document.getElementById('letterPreviewCard');
+            document.getElementById('previewChar').textContent = card.char;
+            document.getElementById('previewCharBack').textContent = card.char;
+            document.getElementById('previewRoman').textContent = card.roman;
+            document.getElementById('previewHint').textContent = card.hint;
+            previewCard.classList.remove('flipped');
+            overlay.classList.add('visible');
+
+            function flipPreview() {
+                previewCard.classList.toggle('flipped');
+            }
+
+            function closePreview(e) {
+                if (e.target === overlay) {
+                    overlay.classList.remove('visible');
+                    previewCard.removeEventListener('click', flipPreview);
+                    overlay.removeEventListener('click', closePreview);
+                }
+            }
+
+            previewCard.addEventListener('click', flipPreview);
+            overlay.addEventListener('click', closePreview);
         }
 
         function renderCard() {
@@ -1152,4 +1216,4 @@
         // Init
         updateStats();
         renderCard();
-    </script> </body> </html>
+    </script> <div class="letter-preview-overlay" id="letterPreviewOverlay"> <div class="letter-preview-card" id="letterPreviewCard"> <div class="card-front"> <div class="devanagari" id="previewChar"></div> <div class="card-hint">tap to reveal</div> </div> <div class="card-back"> <div class="devanagari" id="previewCharBack"></div> <div class="romanization" id="previewRoman"></div> <div class="pronunciation" id="previewHint"></div> </div> </div> </div> </body></html>
