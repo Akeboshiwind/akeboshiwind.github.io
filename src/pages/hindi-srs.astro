@@ -439,6 +439,59 @@
             border: 1px solid var(--card-border);
             background: rgba(255, 255, 255, 0.02);
             position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .letter-cell:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .letter-preview-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .letter-preview-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .letter-preview-card {
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: var(--radius);
+            text-align: center;
+            aspect-ratio: 4 / 3;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            gap: 12px;
+        }
+
+        .letter-preview-card .card-back {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
         }
 
         .letter-cell.new {
@@ -1042,8 +1095,33 @@
                 let cls = 'new';
                 if (card.state === 'learning') cls = 'learning';
                 else if (card.state === 'review') cls = 'mastered';
-                return `<div class="letter-cell ${cls}" title="${card.roman}">${card.char}</div>`;
+                return `<div class="letter-cell ${cls}" data-char="${card.char}">${card.char}</div>`;
             }).join('');
+
+            grid.querySelectorAll('.letter-cell').forEach(cell => {
+                cell.addEventListener('click', () => {
+                    const char = cell.getAttribute('data-char');
+                    const card = cards.find(c => c.char === char);
+                    if (card) showLetterPreview(card);
+                });
+            });
+        }
+
+        function showLetterPreview(card) {
+            const overlay = document.getElementById('letterPreviewOverlay');
+            document.getElementById('previewChar').textContent = card.char;
+            document.getElementById('previewRoman').textContent = card.roman;
+            document.getElementById('previewHint').textContent = card.hint;
+            overlay.classList.add('visible');
+
+            function closePreview(e) {
+                if (e.target === overlay) {
+                    overlay.classList.remove('visible');
+                    overlay.removeEventListener('click', closePreview);
+                }
+            }
+
+            overlay.addEventListener('click', closePreview);
         }
 
         function renderCard() {
@@ -1239,5 +1317,14 @@
         updateStats();
         renderCard();
     </script>
+    <div class="letter-preview-overlay" id="letterPreviewOverlay">
+        <div class="letter-preview-card" id="letterPreviewCard">
+            <div class="card-back">
+                <div class="devanagari" id="previewChar"></div>
+                <div class="romanization" id="previewRoman"></div>
+                <div class="pronunciation" id="previewHint"></div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
