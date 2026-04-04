@@ -457,8 +457,6 @@
             border: 2px solid var(--card-border);
             border-radius: var(--radius);
             text-align: center;
-            position: relative;
-            cursor: pointer;
             aspect-ratio: 4 / 3;
             width: 100%;
             max-width: 380px;
@@ -471,28 +469,11 @@
             gap: 12px;
         }
 
-        .letter-preview-card:active {
-            transform: scale(0.98);
-        }
-
-        .letter-preview-card .card-front,
         .letter-preview-card .card-back {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 12px;
-        }
-
-        .letter-preview-card .card-back {
-            display: none;
-        }
-
-        .letter-preview-card.flipped .card-front {
-            display: none;
-        }
-
-        .letter-preview-card.flipped .card-back {
-            display: flex;
         }
 
         .letter-cell.new {
@@ -1000,27 +981,18 @@
 
         function showLetterPreview(card) {
             const overlay = document.getElementById('letterPreviewOverlay');
-            const previewCard = document.getElementById('letterPreviewCard');
             document.getElementById('previewChar').textContent = card.char;
-            document.getElementById('previewCharBack').textContent = card.char;
             document.getElementById('previewRoman').textContent = card.roman;
             document.getElementById('previewHint').textContent = card.hint;
-            previewCard.classList.remove('flipped');
             overlay.classList.add('visible');
-
-            function flipPreview() {
-                previewCard.classList.toggle('flipped');
-            }
 
             function closePreview(e) {
                 if (e.target === overlay) {
                     overlay.classList.remove('visible');
-                    previewCard.removeEventListener('click', flipPreview);
                     overlay.removeEventListener('click', closePreview);
                 }
             }
 
-            previewCard.addEventListener('click', flipPreview);
             overlay.addEventListener('click', closePreview);
         }
 
@@ -1216,4 +1188,4 @@
         // Init
         updateStats();
         renderCard();
-    </script> <div class="letter-preview-overlay" id="letterPreviewOverlay"> <div class="letter-preview-card" id="letterPreviewCard"> <div class="card-front"> <div class="devanagari" id="previewChar"></div> <div class="card-hint">tap to reveal</div> </div> <div class="card-back"> <div class="devanagari" id="previewCharBack"></div> <div class="romanization" id="previewRoman"></div> <div class="pronunciation" id="previewHint"></div> </div> </div> </div> </body></html>
+    </script> <div class="letter-preview-overlay" id="letterPreviewOverlay"> <div class="letter-preview-card" id="letterPreviewCard"> <div class="card-back"> <div class="devanagari" id="previewChar"></div> <div class="romanization" id="previewRoman"></div> <div class="pronunciation" id="previewHint"></div> </div> </div> </div> </body></html>
