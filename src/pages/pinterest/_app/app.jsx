@@ -2,239 +2,282 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import './app.css';
 
+const STORAGE_KEY = 'pinterest-api-token';
+const API_BASE = 'https://api.pinterest.com/v5';
+
 const CORS_PROXIES = [
   (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
   (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
   (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
 ];
 
-async function fetchViaProxy(url) {
+// --- API helpers ---
+
+async function apiFetch(path, token) {
+  const url = `${API_BASE}${path}`;
+  // Try direct fetch first (in case CORS is allowed)
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) return res.json();
+    if (res.status === 401) throw new Error('Invalid or expired API token. Please update your token.');
+    if (res.status === 403) throw new Error('Access denied. Your token may not have the required permissions.');
+  } catch (err) {
+    if (err.message.includes('token') || err.message.includes('Access denied')) throw err;
+    // CORS error — fall through to proxy
+  }
+
+  // Try CORS proxies
+  // We need to pass the auth header, but proxies don't forward custom headers.
+  // Instead, encode the token in the URL as a query param workaround won't work.
+  // We'll use allorigins /get endpoint which returns JSON with the response body.
   let lastError;
   for (const makeProxy of CORS_PROXIES) {
-    const proxyUrl = makeProxy(url);
     try {
-      const response = await fetch(proxyUrl);
-      if (response.ok) {
-        return await response.text();
+      // Build URL with auth as query param — Pinterest API doesn't support this,
+      // so we use a different approach: fetch through proxy with headers in URL
+      const separator = url.includes('?') ? '&' : '?';
+      const authedUrl = `${url}${separator}access_token=${token}`;
+      const proxyUrl = makeProxy(authedUrl);
+      const res = await fetch(proxyUrl);
+      if (!res.ok) {
+        lastError = new Error(`Proxy returned ${res.status}`);
+        continue;
       }
-      lastError = new Error(`Proxy returned ${response.status}`);
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch {
+        lastError = new Error('Invalid JSON response from proxy');
+      }
     } catch (err) {
       lastError = err;
     }
   }
-  throw lastError || new Error('All proxies failed');
+  throw lastError || new Error('Failed to reach Pinterest API');
 }
+
+async function fetchUserBoards(token) {
+  const data = await apiFetch('/boards?page_size=100', token);
+  return data.items || [];
+}
+
+async function lookupBoard(token, username, boardSlug) {
+  // Pinterest API uses "username/boardname" as the board ID for some endpoints,
+  // but the boards/{board_id}/pins endpoint needs the numeric ID.
+  // Try fetching the board directly by "username/board-slug".
+  try {
+    const board = await apiFetch(`/boards/${username}%2F${boardSlug}`, token);
+    return board;
+  } catch {
+    // Fall through
+  }
+  // Fallback: list user's boards and match by name
+  try {
+    const boards = await fetchUserBoards(token);
+    const match = boards.find(
+      (b) =>
+        b.name?.toLowerCase().replace(/\s+/g, '-') === boardSlug.toLowerCase() ||
+        b.id === boardSlug
+    );
+    if (match) return match;
+  } catch {
+    // Fall through
+  }
+  throw new Error(
+    `Could not find board "${username}/${boardSlug}". Make sure the board exists and your token has access to it.`
+  );
+}
+
+async function fetchAllPins(token, boardId) {
+  const pins = [];
+  let bookmark = null;
+  do {
+    const params = new URLSearchParams({ page_size: '100' });
+    if (bookmark) params.set('bookmark', bookmark);
+    const data = await apiFetch(`/boards/${boardId}/pins?${params}`, token);
+    if (data.items) pins.push(...data.items);
+    bookmark = data.bookmark || null;
+  } while (bookmark);
+  return pins;
+}
+
+function pinToImage(pin) {
+  const media = pin.media || {};
+  const images = pin.image || {};
+  // Get the best available image URL
+  const origUrl =
+    media.images?.originals?.url ||
+    media.images?.['1200x']?.url ||
+    images.original?.url ||
+    null;
+  const largeUrl =
+    media.images?.['600x']?.url ||
+    media.images?.['400x300']?.url ||
+    images['400x300']?.url ||
+    origUrl;
+  const thumbUrl =
+    media.images?.['236x']?.url ||
+    images['150x150']?.url ||
+    largeUrl;
+
+  if (!origUrl && !largeUrl && !thumbUrl) return null;
+
+  return {
+    title: pin.title || pin.description || '',
+    link: pin.link || `https://www.pinterest.com/pin/${pin.id}/`,
+    image: largeUrl || origUrl || thumbUrl,
+    origImage: origUrl || largeUrl || thumbUrl,
+    thumbnail: thumbUrl || largeUrl,
+  };
+}
+
+// --- URL parsing ---
 
 function isShortUrl(input) {
   return /^https?:\/\/pin\.it\//i.test(input.trim());
 }
 
 async function resolveShortUrl(shortUrl) {
-  // Try the JSON endpoint first (returns { contents, status: { url } })
   for (const makeProxy of CORS_PROXIES) {
     try {
-      // Use the allorigins JSON endpoint to get redirect info
-      const jsonUrl = makeProxy(shortUrl).replace('/raw?', '/get?');
-      const response = await fetch(jsonUrl);
-      if (!response.ok) continue;
-      const data = await response.json();
-      const finalUrl = data.status?.url || '';
-      if (/pinterest\.[a-z.]+/.test(finalUrl)) return finalUrl;
-      // Search the HTML content for Pinterest URLs
-      const found = extractPinterestUrl(data.contents || '');
-      if (found) return found;
-    } catch { /* try next proxy */ }
+      const proxyUrl = makeProxy(shortUrl.trim());
+      const res = await fetch(proxyUrl);
+      if (!res.ok) continue;
+      const html = await res.text();
+      const match = html.match(
+        /pinterest\.[a-z.]+\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_-]+)/
+      );
+      if (match && !/\/pin\//.test(match[0])) {
+        return `https://www.pinterest.com/${match[1]}/${match[2]}`;
+      }
+    } catch { /* try next */ }
   }
-  // Fallback: fetch the HTML directly and search for pinterest URLs
-  try {
-    const html = await fetchViaProxy(shortUrl);
-    const found = extractPinterestUrl(html);
-    if (found) return found;
-  } catch { /* fall through */ }
-  throw new Error('Could not resolve short URL. Try pasting the full Pinterest board URL instead.');
-}
-
-function extractPinterestUrl(html) {
-  // Look for og:url, canonical, or any pinterest board URL in the HTML
-  const patterns = [
-    /property="og:url"\s+content="([^"]*pinterest\.[^"]+)"/,
-    /content="([^"]*pinterest\.[^"]+)"\s+property="og:url"/,
-    /rel="canonical"\s+href="([^"]*pinterest\.[^"]+)"/,
-    /href="([^"]*pinterest\.[^"]+)"\s+rel="canonical"/,
-    /"board":\{[^}]*"url":"(\/[^"]+)"/,
-    /https?:\/\/(?:www\.)?pinterest\.[a-z.]+\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\/?/,
-  ];
-  for (const pattern of patterns) {
-    const match = html.match(pattern);
-    if (match) {
-      const url = match[1] || match[0];
-      // Make sure it looks like a board URL (user/board), not a pin URL
-      if (/\/pin\//.test(url)) continue;
-      return url.startsWith('http') ? url : `https://www.pinterest.com${url}`;
-    }
-  }
-  return null;
+  throw new Error(
+    'Could not resolve short URL. Try pasting the full board URL instead (pinterest.com/username/boardname).'
+  );
 }
 
 function parseBoardUrl(input) {
   const trimmed = input.trim().replace(/\/+$/, '');
-  // Match pinterest.com/username/boardname or pinterest.co.uk/username/boardname etc.
-  const urlMatch = trimmed.match(
-    /pinterest\.[a-z.]+\/([^/]+)\/([^/]+)/
-  );
-  if (urlMatch) {
-    return { username: urlMatch[1], board: urlMatch[2] };
-  }
-  // Match "username/boardname" directly
+  const urlMatch = trimmed.match(/pinterest\.[a-z.]+\/([^/]+)\/([^/]+)/);
+  if (urlMatch) return { username: urlMatch[1], board: urlMatch[2] };
   const pathMatch = trimmed.match(/^([^/]+)\/([^/]+)$/);
-  if (pathMatch) {
-    return { username: pathMatch[1], board: pathMatch[2] };
-  }
+  if (pathMatch) return { username: pathMatch[1], board: pathMatch[2] };
   return null;
 }
 
-function parseRssXml(xmlText) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xmlText, 'text/xml');
-  const items = doc.querySelectorAll('item');
-  const pins = [];
-  for (const item of items) {
-    const title = item.querySelector('title')?.textContent || '';
-    const link = item.querySelector('link')?.textContent || '';
-    const description = item.querySelector('description')?.textContent || '';
-    const imgMatch = description.match(/src="([^"]+)"/);
-    const image = imgMatch ? imgMatch[1] : null;
-    const largeImage = image?.replace('/236x/', '/736x/') || null;
-    const origImage = image?.replace('/236x/', '/originals/') || null;
-    if (image) {
-      pins.push({ title, link, image: largeImage, origImage, thumbnail: image });
-    }
-  }
-  return pins;
-}
+// --- Components ---
 
-function parseBoardHtml(html) {
-  const pins = [];
-  // Pinterest embeds pin data as JSON in script tags
-  // Look for __PWS_DATA__ or initial Redux state or Next.js data
-  const dataPatterns = [
-    /window\.__PWS_DATA__\s*=\s*(\{.+?\});\s*<\/script/s,
-    /<script[^>]*id="__PWS_DATA__"[^>]*>(\{.+?\})<\/script/s,
-    /<script[^>]*>window\.__NEXT_DATA__\s*=\s*(\{.+?\})<\/script/s,
-  ];
+function TokenSetup({ onSave }) {
+  const [token, setToken] = useState('');
+  const inputRef = useRef(null);
+  useEffect(() => inputRef.current?.focus(), []);
 
-  for (const pattern of dataPatterns) {
-    const match = html.match(pattern);
-    if (match) {
-      try {
-        const data = JSON.parse(match[1]);
-        const extracted = extractPinsFromData(data);
-        if (extracted.length > 0) return extracted;
-      } catch { /* try next pattern */ }
-    }
-  }
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <h2 className="text-xl font-semibold mb-4">Connect to Pinterest</h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">
+          This tool uses the Pinterest API to load board images. You'll need an access token.
+        </p>
 
-  // Fallback: extract image URLs directly from the HTML
-  const imgRegex = /https:\/\/i\.pinimg\.com\/[^\s"']+/g;
-  const seen = new Set();
-  let imgMatch;
-  while ((imgMatch = imgRegex.exec(html)) !== null) {
-    let url = imgMatch[0];
-    // Normalize to 736x size and deduplicate
-    const normalized = url.replace(/\/\d+x\d*\//, '/736x/').replace(/\/originals\//, '/736x/');
-    if (seen.has(normalized)) continue;
-    seen.add(normalized);
-    // Skip tiny thumbnails and non-pin images (avatars, etc.)
-    if (/\/30x30\/|\/50x50\/|\/75x75\/|user_|avatar/i.test(url)) continue;
-    const origUrl = normalized.replace('/736x/', '/originals/');
-    pins.push({
-      title: '',
-      link: '',
-      image: normalized,
-      origImage: origUrl,
-      thumbnail: normalized.replace('/736x/', '/236x/'),
-    });
-  }
-  return pins;
-}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
+          <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-2">
+            How to get your token
+          </h3>
+          <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-2 list-decimal list-inside">
+            <li>
+              Go to{' '}
+              <a
+                href="https://developers.pinterest.com/apps/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-medium"
+              >
+                developers.pinterest.com/apps
+              </a>
+            </li>
+            <li>Log in with your Pinterest account</li>
+            <li>
+              Click <strong>"Create app"</strong> (or select an existing app)
+            </li>
+            <li>Fill in an app name and description (anything works)</li>
+            <li>
+              Once created, go to the app and find the{' '}
+              <strong>"Generate token"</strong> section
+            </li>
+            <li>
+              Select the <strong>boards:read</strong> and{' '}
+              <strong>pins:read</strong> permissions
+            </li>
+            <li>Click generate and copy the token</li>
+          </ol>
+          <p className="text-xs text-blue-600 dark:text-blue-400 mt-3">
+            Tokens expire after 30 days. Your token is stored locally in your
+            browser and never sent to any server other than Pinterest.
+          </p>
+        </div>
 
-function extractPinsFromData(data, depth = 0) {
-  if (depth > 10) return [];
-  const pins = [];
-
-  if (Array.isArray(data)) {
-    for (const item of data) {
-      pins.push(...extractPinsFromData(item, depth + 1));
-    }
-    return pins;
-  }
-  if (data && typeof data === 'object') {
-    // Look for pin-like objects with images
-    if (data.images && data.images.orig) {
-      pins.push({
-        title: data.description || data.title || data.grid_title || '',
-        link: data.link || (data.id ? `https://www.pinterest.com/pin/${data.id}/` : ''),
-        image: data.images['736x']?.url || data.images.orig.url,
-        origImage: data.images.orig.url,
-        thumbnail: data.images['236x']?.url || data.images.orig.url,
-      });
-      return pins;
-    }
-    // Recurse into object values
-    for (const value of Object.values(data)) {
-      if (value && typeof value === 'object') {
-        pins.push(...extractPinsFromData(value, depth + 1));
-      }
-    }
-  }
-  return pins;
-}
-
-async function fetchBoard(username, board) {
-  const errors = [];
-
-  // Strategy 1: Try RSS feed
-  const rssUrl = `https://www.pinterest.com/${username}/${board}.rss`;
-  try {
-    const text = await fetchViaProxy(rssUrl);
-    if (text.includes('<rss') || text.includes('<channel')) {
-      const pins = parseRssXml(text);
-      if (pins.length > 0) return pins;
-    }
-  } catch (err) {
-    errors.push(`RSS: ${err.message}`);
-  }
-
-  // Strategy 2: Scrape the board HTML page
-  const boardUrl = `https://www.pinterest.com/${username}/${board}/`;
-  try {
-    const html = await fetchViaProxy(boardUrl);
-    const pins = parseBoardHtml(html);
-    if (pins.length > 0) return pins;
-    errors.push('HTML: No images found in page');
-  } catch (err) {
-    errors.push(`HTML: ${err.message}`);
-  }
-
-  throw new Error(
-    `Could not load board. Make sure it's public and the URL is correct.\n(${errors.join('; ')})`
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (token.trim()) onSave(token.trim());
+          }}
+        >
+          <label className="block text-sm font-medium mb-1.5">
+            Access Token
+          </label>
+          <input
+            ref={inputRef}
+            type="password"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="pina_..."
+            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4 font-mono text-sm"
+          />
+          <button
+            type="submit"
+            disabled={!token.trim()}
+            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-xl transition-colors cursor-pointer disabled:cursor-not-allowed"
+          >
+            Save &amp; Continue
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
 
-function Lightbox({ pin, onClose }) {
+function Lightbox({ pin, onClose, onPrev, onNext }) {
   useEffect(() => {
     function onKey(e) {
       if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') onPrev();
+      if (e.key === 'ArrowRight') onNext();
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, onPrev, onNext]);
 
   return (
     <div
       className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
       onClick={onClose}
     >
+      <button
+        onClick={(e) => { e.stopPropagation(); onPrev(); }}
+        className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-4xl cursor-pointer z-10"
+      >
+        &#8249;
+      </button>
+      <button
+        onClick={(e) => { e.stopPropagation(); onNext(); }}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-4xl cursor-pointer z-10"
+      >
+        &#8250;
+      </button>
       <div
         className="relative max-w-4xl max-h-[90vh] flex flex-col items-center"
         onClick={(e) => e.stopPropagation()}
@@ -251,7 +294,9 @@ function Lightbox({ pin, onClose }) {
           className="max-h-[80vh] max-w-full object-contain rounded-lg"
         />
         {pin.title && (
-          <p className="text-white mt-3 text-center text-sm max-w-lg">{pin.title}</p>
+          <p className="text-white mt-3 text-center text-sm max-w-lg">
+            {pin.title}
+          </p>
         )}
         {pin.link && (
           <a
@@ -303,17 +348,31 @@ function ImageCard({ pin, onClick }) {
 }
 
 function App() {
+  const [token, setToken] = useState(() => localStorage.getItem(STORAGE_KEY) || '');
   const [input, setInput] = useState('');
   const [pins, setPins] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState('');
   const [error, setError] = useState(null);
-  const [lightboxPin, setLightboxPin] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [boardInfo, setBoardInfo] = useState(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (token) inputRef.current?.focus();
+  }, [token]);
+
+  function saveToken(t) {
+    localStorage.setItem(STORAGE_KEY, t);
+    setToken(t);
+  }
+
+  function clearToken() {
+    localStorage.removeItem(STORAGE_KEY);
+    setToken('');
+    setPins([]);
+    setBoardInfo(null);
+  }
 
   const handleSubmit = useCallback(
     async (e) => {
@@ -321,6 +380,7 @@ function App() {
       setLoading(true);
       setError(null);
       setPins([]);
+      setLoadingMsg('Resolving URL...');
       try {
         let url = input;
         if (isShortUrl(input)) {
@@ -329,25 +389,58 @@ function App() {
         const parsed = parseBoardUrl(url);
         if (!parsed) {
           setError(
-            'Could not find a board in that URL. Please enter a Pinterest board URL like pinterest.com/username/boardname'
+            'Could not find a board in that URL. Enter a URL like pinterest.com/username/boardname'
           );
           setLoading(false);
           return;
         }
         setBoardInfo(parsed);
-        const results = await fetchBoard(parsed.username, parsed.board);
-        if (results.length === 0) {
-          setError('No images found. The board may be empty or private.');
+
+        setLoadingMsg('Looking up board...');
+        const board = await lookupBoard(token, parsed.username, parsed.board);
+
+        setLoadingMsg('Loading pins...');
+        const rawPins = await fetchAllPins(token, board.id);
+        const images = rawPins.map(pinToImage).filter(Boolean);
+        if (images.length === 0) {
+          setError('No images found. The board may be empty.');
         }
-        setPins(results);
+        setPins(images);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
+        setLoadingMsg('');
       }
     },
-    [input]
+    [input, token]
   );
+
+  const showLightbox = lightboxIndex >= 0 && lightboxIndex < pins.length;
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <header className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <a
+                href="../"
+                className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              >
+                &larr; Back to home
+              </a>
+            </div>
+            <h1 className="text-3xl font-bold mb-2">Pinterest Board Viewer</h1>
+            <p className="text-gray-500 dark:text-gray-400">
+              View all images from a Pinterest board
+            </p>
+          </header>
+          <TokenSetup onSave={saveToken} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -360,6 +453,12 @@ function App() {
             >
               &larr; Back to home
             </a>
+            <button
+              onClick={clearToken}
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
+            >
+              Change token
+            </button>
           </div>
           <h1 className="text-3xl font-bold mb-2">Pinterest Board Viewer</h1>
           <p className="text-gray-500 dark:text-gray-400">
@@ -394,8 +493,13 @@ function App() {
         )}
 
         {loading && (
-          <div className="flex justify-center py-16">
+          <div className="flex flex-col items-center py-16 gap-3">
             <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            {loadingMsg && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {loadingMsg}
+              </p>
+            )}
           </div>
         )}
 
@@ -409,14 +513,27 @@ function App() {
             </p>
             <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-4">
               {pins.map((pin, i) => (
-                <ImageCard key={i} pin={pin} onClick={setLightboxPin} />
+                <ImageCard
+                  key={i}
+                  pin={pin}
+                  onClick={() => setLightboxIndex(i)}
+                />
               ))}
             </div>
           </>
         )}
 
-        {lightboxPin && (
-          <Lightbox pin={lightboxPin} onClose={() => setLightboxPin(null)} />
+        {showLightbox && (
+          <Lightbox
+            pin={pins[lightboxIndex]}
+            onClose={() => setLightboxIndex(-1)}
+            onPrev={() =>
+              setLightboxIndex((lightboxIndex - 1 + pins.length) % pins.length)
+            }
+            onNext={() =>
+              setLightboxIndex((lightboxIndex + 1) % pins.length)
+            }
+          />
         )}
       </div>
     </div>
