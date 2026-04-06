@@ -2,30 +2,78 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import './app.css';
 
+const CORS_PROXIES = [
+  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+];
+
+async function fetchViaProxy(url) {
+  let lastError;
+  for (const makeProxy of CORS_PROXIES) {
+    const proxyUrl = makeProxy(url);
+    try {
+      const response = await fetch(proxyUrl);
+      if (response.ok) {
+        return await response.text();
+      }
+      lastError = new Error(`Proxy returned ${response.status}`);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError || new Error('All proxies failed');
+}
+
 function isShortUrl(input) {
   return /^https?:\/\/pin\.it\//i.test(input.trim());
 }
 
 async function resolveShortUrl(shortUrl) {
-  // Fetch the short URL through the CORS proxy — allorigins follows redirects
-  // and returns the final page, whose URL we can extract from the content.
-  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(shortUrl.trim())}`;
-  const response = await fetch(proxyUrl);
-  if (!response.ok) {
-    throw new Error('Failed to resolve short URL.');
+  // Try the JSON endpoint first (returns { contents, status: { url } })
+  for (const makeProxy of CORS_PROXIES) {
+    try {
+      // Use the allorigins JSON endpoint to get redirect info
+      const jsonUrl = makeProxy(shortUrl).replace('/raw?', '/get?');
+      const response = await fetch(jsonUrl);
+      if (!response.ok) continue;
+      const data = await response.json();
+      const finalUrl = data.status?.url || '';
+      if (/pinterest\.[a-z.]+/.test(finalUrl)) return finalUrl;
+      // Search the HTML content for Pinterest URLs
+      const found = extractPinterestUrl(data.contents || '');
+      if (found) return found;
+    } catch { /* try next proxy */ }
   }
-  const data = await response.json();
-  // allorigins /get returns { contents, status: { url } } where url is the final URL
-  const finalUrl = data.status?.url || '';
-  if (finalUrl && /pinterest\.[a-z.]+/.test(finalUrl)) {
-    return finalUrl;
+  // Fallback: fetch the HTML directly and search for pinterest URLs
+  try {
+    const html = await fetchViaProxy(shortUrl);
+    const found = extractPinterestUrl(html);
+    if (found) return found;
+  } catch { /* fall through */ }
+  throw new Error('Could not resolve short URL. Try pasting the full Pinterest board URL instead.');
+}
+
+function extractPinterestUrl(html) {
+  // Look for og:url, canonical, or any pinterest board URL in the HTML
+  const patterns = [
+    /property="og:url"\s+content="([^"]*pinterest\.[^"]+)"/,
+    /content="([^"]*pinterest\.[^"]+)"\s+property="og:url"/,
+    /rel="canonical"\s+href="([^"]*pinterest\.[^"]+)"/,
+    /href="([^"]*pinterest\.[^"]+)"\s+rel="canonical"/,
+    /"board":\{[^}]*"url":"(\/[^"]+)"/,
+    /https?:\/\/(?:www\.)?pinterest\.[a-z.]+\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\/?/,
+  ];
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match) {
+      const url = match[1] || match[0];
+      // Make sure it looks like a board URL (user/board), not a pin URL
+      if (/\/pin\//.test(url)) continue;
+      return url.startsWith('http') ? url : `https://www.pinterest.com${url}`;
+    }
   }
-  // Fallback: try to find a canonical or og:url in the returned HTML
-  const ogMatch = data.contents?.match(/property="og:url"\s+content="([^"]+)"/);
-  if (ogMatch) return ogMatch[1];
-  const canonMatch = data.contents?.match(/rel="canonical"\s+href="([^"]+)"/);
-  if (canonMatch) return canonMatch[1];
-  throw new Error('Could not resolve short URL to a Pinterest board.');
+  return null;
 }
 
 function parseBoardUrl(input) {
@@ -54,10 +102,8 @@ function parseRssXml(xmlText) {
     const title = item.querySelector('title')?.textContent || '';
     const link = item.querySelector('link')?.textContent || '';
     const description = item.querySelector('description')?.textContent || '';
-    // Extract image URL from description HTML
     const imgMatch = description.match(/src="([^"]+)"/);
     const image = imgMatch ? imgMatch[1] : null;
-    // Pinterest RSS images use /236x/ for thumbnails, upgrade to /736x/ for larger
     const largeImage = image?.replace('/236x/', '/736x/') || null;
     const origImage = image?.replace('/236x/', '/originals/') || null;
     if (image) {
@@ -67,19 +113,112 @@ function parseRssXml(xmlText) {
   return pins;
 }
 
+function parseBoardHtml(html) {
+  const pins = [];
+  // Pinterest embeds pin data as JSON in script tags
+  // Look for __PWS_DATA__ or initial Redux state or Next.js data
+  const dataPatterns = [
+    /window\.__PWS_DATA__\s*=\s*(\{.+?\});\s*<\/script/s,
+    /<script[^>]*id="__PWS_DATA__"[^>]*>(\{.+?\})<\/script/s,
+    /<script[^>]*>window\.__NEXT_DATA__\s*=\s*(\{.+?\})<\/script/s,
+  ];
+
+  for (const pattern of dataPatterns) {
+    const match = html.match(pattern);
+    if (match) {
+      try {
+        const data = JSON.parse(match[1]);
+        const extracted = extractPinsFromData(data);
+        if (extracted.length > 0) return extracted;
+      } catch { /* try next pattern */ }
+    }
+  }
+
+  // Fallback: extract image URLs directly from the HTML
+  const imgRegex = /https:\/\/i\.pinimg\.com\/[^\s"']+/g;
+  const seen = new Set();
+  let imgMatch;
+  while ((imgMatch = imgRegex.exec(html)) !== null) {
+    let url = imgMatch[0];
+    // Normalize to 736x size and deduplicate
+    const normalized = url.replace(/\/\d+x\d*\//, '/736x/').replace(/\/originals\//, '/736x/');
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    // Skip tiny thumbnails and non-pin images (avatars, etc.)
+    if (/\/30x30\/|\/50x50\/|\/75x75\/|user_|avatar/i.test(url)) continue;
+    const origUrl = normalized.replace('/736x/', '/originals/');
+    pins.push({
+      title: '',
+      link: '',
+      image: normalized,
+      origImage: origUrl,
+      thumbnail: normalized.replace('/736x/', '/236x/'),
+    });
+  }
+  return pins;
+}
+
+function extractPinsFromData(data, depth = 0) {
+  if (depth > 10) return [];
+  const pins = [];
+
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      pins.push(...extractPinsFromData(item, depth + 1));
+    }
+    return pins;
+  }
+  if (data && typeof data === 'object') {
+    // Look for pin-like objects with images
+    if (data.images && data.images.orig) {
+      pins.push({
+        title: data.description || data.title || data.grid_title || '',
+        link: data.link || (data.id ? `https://www.pinterest.com/pin/${data.id}/` : ''),
+        image: data.images['736x']?.url || data.images.orig.url,
+        origImage: data.images.orig.url,
+        thumbnail: data.images['236x']?.url || data.images.orig.url,
+      });
+      return pins;
+    }
+    // Recurse into object values
+    for (const value of Object.values(data)) {
+      if (value && typeof value === 'object') {
+        pins.push(...extractPinsFromData(value, depth + 1));
+      }
+    }
+  }
+  return pins;
+}
+
 async function fetchBoard(username, board) {
+  const errors = [];
+
+  // Strategy 1: Try RSS feed
   const rssUrl = `https://www.pinterest.com/${username}/${board}.rss`;
-  // Use allorigins as a CORS proxy
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rssUrl)}`;
-  const response = await fetch(proxyUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch board (${response.status}). Make sure the board is public.`);
+  try {
+    const text = await fetchViaProxy(rssUrl);
+    if (text.includes('<rss') || text.includes('<channel')) {
+      const pins = parseRssXml(text);
+      if (pins.length > 0) return pins;
+    }
+  } catch (err) {
+    errors.push(`RSS: ${err.message}`);
   }
-  const text = await response.text();
-  if (text.includes('<html') || !text.includes('<rss')) {
-    throw new Error('Could not load RSS feed. The board may be private or the URL may be incorrect.');
+
+  // Strategy 2: Scrape the board HTML page
+  const boardUrl = `https://www.pinterest.com/${username}/${board}/`;
+  try {
+    const html = await fetchViaProxy(boardUrl);
+    const pins = parseBoardHtml(html);
+    if (pins.length > 0) return pins;
+    errors.push('HTML: No images found in page');
+  } catch (err) {
+    errors.push(`HTML: ${err.message}`);
   }
-  return parseRssXml(text);
+
+  throw new Error(
+    `Could not load board. Make sure it's public and the URL is correct.\n(${errors.join('; ')})`
+  );
 }
 
 function Lightbox({ pin, onClose }) {
@@ -114,14 +253,16 @@ function Lightbox({ pin, onClose }) {
         {pin.title && (
           <p className="text-white mt-3 text-center text-sm max-w-lg">{pin.title}</p>
         )}
-        <a
-          href={pin.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-300 hover:text-blue-200 text-xs mt-1"
-        >
-          View on Pinterest
-        </a>
+        {pin.link && (
+          <a
+            href={pin.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-300 hover:text-blue-200 text-xs mt-1"
+          >
+            View on Pinterest
+          </a>
+        )}
       </div>
     </div>
   );
@@ -129,6 +270,9 @@ function Lightbox({ pin, onClose }) {
 
 function ImageCard({ pin, onClick }) {
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  if (error) return null;
 
   return (
     <div
@@ -146,6 +290,7 @@ function ImageCard({ pin, onClick }) {
             loaded ? 'block' : 'hidden'
           }`}
           onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
         />
       </div>
       {pin.title && (
@@ -177,14 +322,15 @@ function App() {
       setError(null);
       setPins([]);
       try {
-        // Resolve pin.it short URLs first
         let url = input;
         if (isShortUrl(input)) {
           url = await resolveShortUrl(input);
         }
         const parsed = parseBoardUrl(url);
         if (!parsed) {
-          setError('Please enter a valid Pinterest board URL (e.g. pinterest.com/username/boardname or pin.it/...)');
+          setError(
+            'Could not find a board in that URL. Please enter a Pinterest board URL like pinterest.com/username/boardname'
+          );
           setLoading(false);
           return;
         }
@@ -242,7 +388,7 @@ function App() {
         </form>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-300 text-sm">
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-300 text-sm whitespace-pre-line">
             {error}
           </div>
         )}
