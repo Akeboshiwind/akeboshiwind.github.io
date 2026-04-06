@@ -2,6 +2,32 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import './app.css';
 
+function isShortUrl(input) {
+  return /^https?:\/\/pin\.it\//i.test(input.trim());
+}
+
+async function resolveShortUrl(shortUrl) {
+  // Fetch the short URL through the CORS proxy — allorigins follows redirects
+  // and returns the final page, whose URL we can extract from the content.
+  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(shortUrl.trim())}`;
+  const response = await fetch(proxyUrl);
+  if (!response.ok) {
+    throw new Error('Failed to resolve short URL.');
+  }
+  const data = await response.json();
+  // allorigins /get returns { contents, status: { url } } where url is the final URL
+  const finalUrl = data.status?.url || '';
+  if (finalUrl && /pinterest\.[a-z.]+/.test(finalUrl)) {
+    return finalUrl;
+  }
+  // Fallback: try to find a canonical or og:url in the returned HTML
+  const ogMatch = data.contents?.match(/property="og:url"\s+content="([^"]+)"/);
+  if (ogMatch) return ogMatch[1];
+  const canonMatch = data.contents?.match(/rel="canonical"\s+href="([^"]+)"/);
+  if (canonMatch) return canonMatch[1];
+  throw new Error('Could not resolve short URL to a Pinterest board.');
+}
+
 function parseBoardUrl(input) {
   const trimmed = input.trim().replace(/\/+$/, '');
   // Match pinterest.com/username/boardname or pinterest.co.uk/username/boardname etc.
@@ -147,16 +173,22 @@ function App() {
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
-      const parsed = parseBoardUrl(input);
-      if (!parsed) {
-        setError('Please enter a valid Pinterest board URL (e.g. pinterest.com/username/boardname)');
-        return;
-      }
       setLoading(true);
       setError(null);
       setPins([]);
-      setBoardInfo(parsed);
       try {
+        // Resolve pin.it short URLs first
+        let url = input;
+        if (isShortUrl(input)) {
+          url = await resolveShortUrl(input);
+        }
+        const parsed = parseBoardUrl(url);
+        if (!parsed) {
+          setError('Please enter a valid Pinterest board URL (e.g. pinterest.com/username/boardname or pin.it/...)');
+          setLoading(false);
+          return;
+        }
+        setBoardInfo(parsed);
         const results = await fetchBoard(parsed.username, parsed.board);
         if (results.length === 0) {
           setError('No images found. The board may be empty or private.');
@@ -196,7 +228,7 @@ function App() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="https://pinterest.com/username/boardname"
+              placeholder="https://pinterest.com/username/boardname or https://pin.it/..."
               className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <button
