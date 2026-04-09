@@ -18,68 +18,68 @@ const PM_ROUTINES = {
     'Haruharu toner',
     'Anua (niacinamide + TX)',
     'Argireline (crows feet, forehead, neck)',
-    'HA \u2192 Retinol \u2192 Eye cream',
+    'HA → Retinol → Eye cream',
     'Almond oil lymph massage',
     'Cicaplast B5',
   ],
   Tuesday: [
     'Double cleanse (makeup days)',
     'Haruharu toner',
-    '\ud83d\udea8 LED Mask \u2014 Red + NIR (20 min)',
-    'Anua \u2192 Argireline \u2192 HA',
-    'Retinol \u2192 Eye cream',
+    '🚨 LED Mask — Red + NIR (20 min)',
+    'Anua → Argireline → HA',
+    'Retinol → Eye cream',
     'Almond oil lymph massage',
     'Cicaplast B5',
   ],
   Wednesday: [
     'Double cleanse (makeup days)',
     'Haruharu toner',
-    '\ud83e\uddca Cryo Jelly Sheet Mask (15\u201320 min)',
-    'Anua \u2192 Argireline \u2192 HA',
-    'Retinol \u2192 Eye cream',
+    '🧊 Cryo Jelly Sheet Mask (15–20 min)',
+    'Anua → Argireline → HA',
+    'Retinol → Eye cream',
     'Almond oil lymph massage',
     'Cicaplast B5',
   ],
   Thursday: [
     'Double cleanse (makeup days)',
     'Haruharu toner',
-    'Anua \u2192 Argireline \u2192 HA',
-    'Retinol \u2192 Eye cream',
+    'Anua → Argireline → HA',
+    'Retinol → Eye cream',
     'Almond oil lymph massage',
     'Cicaplast B5',
   ],
   Friday: [
     'Double cleanse (makeup days)',
     'Haruharu toner',
-    '\ud83d\udea8 LED Mask \u2014 Blue + NIR (20 min)',
-    'Anua \u2192 Argireline \u2192 HA',
+    '🚨 LED Mask — Blue + NIR (20 min)',
+    'Anua → Argireline → HA',
     'Lactic Acid 5% (skip retinol tonight)',
-    'Eye cream \u2192 Almond oil massage',
+    'Eye cream → Almond oil massage',
     'Cicaplast B5',
   ],
   Saturday: [
     'Double cleanse',
-    '\ud83d\udc8e Qure Micro-Infusion (every 2 wks) OR LED Full Spectrum (non-Qure Sat)',
-    'HA \u2192 Cicaplast B5 only after Qure',
-    '\u26a0\ufe0f NO retinol, NO Anua, NO Argireline after Qure',
+    '💎 Qure Micro-Infusion (every 2 wks) OR LED Full Spectrum (non-Qure Sat)',
+    'HA → Cicaplast B5 only after Qure',
+    '⚠️ NO retinol, NO Anua, NO Argireline after Qure',
   ],
   Sunday: [
     'Gentle cleanse',
     'Haruharu toner',
-    'HA \u2192 Cicaplast B5',
-    '\u26a0\ufe0f Barrier repair only \u2014 NO actives',
+    'HA → Cicaplast B5',
+    '⚠️ Barrier repair only — NO actives',
     '(Especially after Qure Saturday)',
   ],
 };
 
 const WEEKLY_TREATMENTS = {
-  Monday: { label: 'Enzyme Mask', detail: 'Ordinary Pumpkin', icon: '\ud83e\uddea' },
-  Tuesday: { label: 'Gua Sha + Lymph Massage', detail: '10 min', icon: '\ud83e\uddd8' },
-  Wednesday: { label: "L'Or\u00e9al Cryo Jelly", detail: 'Sheet Mask', icon: '\ud83e\uddca' },
-  Thursday: { label: 'Rest Day', detail: 'Regular PM routine only', icon: '\ud83c\udf19' },
-  Friday: { label: 'Lactic Acid Night', detail: 'Ordinary 5% \u2014 NO retinol', icon: '\ud83e\uddea' },
-  Saturday: { label: 'Qure Micro-Infusion', detail: 'Every 2 wks / LED mask other Sats', icon: '\ud83d\udc8e' },
-  Sunday: { label: 'Skin Rest Day', detail: 'Barrier repair only', icon: '\ud83c\udf3f' },
+  Monday: { label: 'Enzyme Mask', detail: 'Ordinary Pumpkin', icon: '🧪' },
+  Tuesday: { label: 'Gua Sha + Lymph Massage', detail: '10 min', icon: '🧘' },
+  Wednesday: { label: "L'Oréal Cryo Jelly", detail: 'Sheet Mask', icon: '🧊' },
+  Thursday: { label: 'Rest Day', detail: 'Regular PM routine only', icon: '🌙' },
+  Friday: { label: 'Lactic Acid Night', detail: 'Ordinary 5% — NO retinol', icon: '🧪' },
+  Saturday: { label: 'Qure Micro-Infusion', detail: 'Every 2 wks / LED mask other Sats', icon: '💎' },
+  Sunday: { label: 'Skin Rest Day', detail: 'Barrier repair only', icon: '🌿' },
 };
 
 const LED_MASK = {
@@ -93,13 +93,13 @@ const LED_MASK = {
 };
 
 const REMINDERS = [
-  'Never skip SPF 50 \u2014 UV is the #1 driver of perioral pigmentation',
+  'Never skip SPF 50 — UV is the #1 driver of perioral pigmentation',
   'LED Mask: always on cleansed dry skin, before serums',
-  'Qure Micro-Infusion: every 2 weeks on Saturday \u2014 last session at Week 9 (3 weeks before wedding)',
-  'After Qure Saturday: Sunday is barrier repair only \u2014 no actives',
+  'Qure Micro-Infusion: every 2 weeks on Saturday — last session at Week 9 (3 weeks before wedding)',
+  'After Qure Saturday: Sunday is barrier repair only — no actives',
   'Do not introduce new products in the final 2 weeks before the wedding',
-  'Face yoga: 10 min daily \u2014 V shape, smile smoother, puffer fish, forehead resistance, jawline/neck, gua sha',
-  'LED mask tip: 1\u20132cm from face, clean lens after each use, no photosensitising actives (retinol/AHA) immediately after',
+  'Face yoga: 10 min daily — V shape, smile smoother, puffer fish, forehead resistance, jawline/neck, gua sha',
+  'LED mask tip: 1–2cm from face, clean lens after each use, no photosensitising actives (retinol/AHA) immediately after',
 ];
 
 function Section({ title, icon, children }) {
@@ -178,12 +178,12 @@ function App() {
           href="../"
           className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
-          \u2190 Home
+          ← Home
         </a>
 
-        <h1 className="text-2xl font-bold mt-4 mb-1">\ud83c\udf38 Bridal Skincare Routine</h1>
+        <h1 className="text-2xl font-bold mt-4 mb-1">🌸 Bridal Skincare Routine</h1>
         <p className="text-xs text-gray-400 dark:text-gray-500 mb-5">
-          3-Month Pre-Wedding Plan &mdash; Stop Qure &amp; all new products 2&ndash;3 weeks before wedding day
+          3-Month Pre-Wedding Plan — Stop Qure &amp; all new products 2–3 weeks before wedding day
         </p>
 
         {/* Day selector */}
@@ -248,27 +248,27 @@ function App() {
                 LED Mask: {led.color}
               </div>
               <div className={`text-xs mt-1 ${led.text} opacity-75`}>
-                Cleansed dry skin, before serums &middot; 20 min &middot; 1&ndash;2cm from face
+                Cleansed dry skin, before serums · 20 min · 1–2cm from face
               </div>
             </div>
           )}
 
           {/* AM Routine */}
-          <Section title="AM Routine" icon="\u2600\ufe0f">
+          <Section title="AM Routine" icon="☀️">
             <StepList steps={AM_ROUTINE} done={amDone} onToggle={toggleAm} />
           </Section>
 
           {/* PM Routine */}
-          <Section title="PM Routine" icon="\ud83c\udf19">
+          <Section title="PM Routine" icon="🌙">
             <StepList steps={pm} done={pmDone} onToggle={togglePm} />
           </Section>
 
           {/* Reminders */}
-          <Section title="Key Reminders" icon="\u26a0\ufe0f">
+          <Section title="Key Reminders" icon="⚠️">
             <ul className="space-y-2">
               {REMINDERS.map((r, i) => (
                 <li key={i} className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed flex gap-2">
-                  <span className="text-gray-300 dark:text-gray-600 select-none">&bull;</span>
+                  <span className="text-gray-300 dark:text-gray-600 select-none">•</span>
                   {r}
                 </li>
               ))}
