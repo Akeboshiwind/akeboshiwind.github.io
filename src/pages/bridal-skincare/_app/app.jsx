@@ -1,8 +1,84 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import './app.css';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const LS_PREFIX = 'skincare';
+const LS_WEDDING_DATE = `${LS_PREFIX}-wedding-date`;
+const LS_QURE_LAST = `${LS_PREFIX}-qure-last-date`;
+
+function lsGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function lsSet(key, val) {
+  try { localStorage.setItem(key, val); } catch { /* noop */ }
+}
+function lsRemove(key) {
+  try { localStorage.removeItem(key); } catch { /* noop */ }
+}
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function loadChecks(date, period) {
+  const raw = lsGet(`${LS_PREFIX}-checks-${date}-${period}`);
+  if (!raw) return new Set();
+  try { return new Set(JSON.parse(raw)); } catch { return new Set(); }
+}
+
+function saveChecks(date, period, set) {
+  lsSet(`${LS_PREFIX}-checks-${date}-${period}`, JSON.stringify([...set]));
+}
+
+function daysBetween(a, b) {
+  return Math.round((b - a) / (1000 * 60 * 60 * 24));
+}
+
+function isQureSaturday(qureLastDate, viewDate) {
+  if (!qureLastDate) return true; // default to Qure if no history
+  const last = new Date(qureLastDate + 'T00:00:00');
+  const view = new Date(viewDate + 'T00:00:00');
+  const weeksSince = Math.round(daysBetween(last, view) / 7);
+  return weeksSince >= 2;
+}
+
+function wasQureLastSaturday(qureLastDate) {
+  const today = new Date();
+  const lastSat = new Date(today);
+  lastSat.setDate(today.getDate() - ((today.getDay() + 7) % 7)); // most recent Sunday's Saturday = yesterday if Sunday
+  // Actually, find the most recent Saturday
+  const dayOfWeek = today.getDay(); // 0=Sun
+  const daysSinceSat = dayOfWeek === 0 ? 1 : dayOfWeek === 6 ? 0 : dayOfWeek + 1;
+  // Hmm, let's simplify: for Sunday, was yesterday (Saturday) a Qure day?
+  if (!qureLastDate) return false;
+  const lastSaturday = new Date(today);
+  lastSaturday.setDate(today.getDate() - (dayOfWeek === 0 ? 1 : dayOfWeek + 1));
+  const satStr = `${lastSaturday.getFullYear()}-${String(lastSaturday.getMonth() + 1).padStart(2, '0')}-${String(lastSaturday.getDate()).padStart(2, '0')}`;
+  return qureLastDate === satStr;
+}
+
+function dateForDayIndex(dayIndex) {
+  const today = new Date();
+  const todayIndex = today.getDay();
+  const diff = dayIndex - todayIndex;
+  const target = new Date(today);
+  target.setDate(today.getDate() + diff);
+  return `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(target.getDate()).padStart(2, '0')}`;
+}
+
+function weeksUntilWedding(weddingDate) {
+  if (!weddingDate) return null;
+  const now = new Date();
+  const wedding = new Date(weddingDate + 'T00:00:00');
+  const days = daysBetween(now, wedding);
+  if (days < 0) return null;
+  return Math.floor(days / 7);
+}
+
+// --- Routine Data ---
 
 const AM_ROUTINE = [
   'Wash',
@@ -57,40 +133,50 @@ const PM_ROUTINES = {
     'Eye cream → Almond oil massage',
     'Cicaplast B5',
   ],
-  Saturday: [
+  SaturdayQure: [
     'Double cleanse',
-    '💎 Qure Micro-Infusion (every 2 wks) OR LED Full Spectrum (non-Qure Sat)',
-    'HA → Cicaplast B5 only after Qure',
+    '💎 Qure Micro-Infusion',
+    'HA → Cicaplast B5 only',
     '⚠️ NO retinol, NO Anua, NO Argireline after Qure',
   ],
-  Sunday: [
+  SaturdayLed: [
+    'Double cleanse',
+    'Haruharu toner',
+    '🚨 LED Full Spectrum (20 min)',
+    'Anua → Argireline → HA',
+    'Retinol → Eye cream',
+    'Almond oil lymph massage',
+    'Cicaplast B5',
+  ],
+  SundayAfterQure: [
     'Gentle cleanse',
     'Haruharu toner',
     'HA → Cicaplast B5',
     '⚠️ Barrier repair only — NO actives',
-    '(Especially after Qure Saturday)',
+  ],
+  SundayNormal: [
+    'Gentle cleanse',
+    'Haruharu toner',
+    'HA → Cicaplast B5',
+    'Barrier repair only — light routine',
   ],
 };
 
-const WEEKLY_TREATMENTS = {
+const WEEKLY_TREATMENTS_BASE = {
   Monday: { label: 'Enzyme Mask', detail: 'Ordinary Pumpkin', icon: '🧪' },
   Tuesday: { label: 'Gua Sha + Lymph Massage', detail: '10 min', icon: '🧘' },
   Wednesday: { label: "L'Oréal Cryo Jelly", detail: 'Sheet Mask', icon: '🧊' },
   Thursday: { label: 'Rest Day', detail: 'Regular PM routine only', icon: '🌙' },
   Friday: { label: 'Lactic Acid Night', detail: 'Ordinary 5% — NO retinol', icon: '🧪' },
-  Saturday: { label: 'Qure Micro-Infusion', detail: 'Every 2 wks / LED mask other Sats', icon: '💎' },
   Sunday: { label: 'Skin Rest Day', detail: 'Barrier repair only', icon: '🌿' },
 };
 
-const LED_MASK = {
-  Monday: null,
+const LED_MASK_BASE = {
   Tuesday: { color: 'Red + NIR', bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300', dot: 'bg-red-500' },
-  Wednesday: null,
-  Thursday: null,
   Friday: { color: 'Blue + NIR', bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300', dot: 'bg-blue-500' },
-  Saturday: { color: 'Full Spectrum (non-Qure)', bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300', dot: 'bg-purple-500' },
-  Sunday: null,
 };
+
+const LED_FULL_SPECTRUM = { color: 'Full Spectrum', bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300', dot: 'bg-purple-500' };
 
 const REMINDERS = [
   'Never skip SPF 50 — UV is the #1 driver of perioral pigmentation',
@@ -101,6 +187,8 @@ const REMINDERS = [
   'Face yoga: 10 min daily — V shape, smile smoother, puffer fish, forehead resistance, jawline/neck, gua sha',
   'LED mask tip: 1–2cm from face, clean lens after each use, no photosensitising actives (retinol/AHA) immediately after',
 ];
+
+// --- Components ---
 
 function Section({ title, icon, children }) {
   return (
@@ -141,35 +229,134 @@ function StepList({ steps, done, onToggle }) {
   );
 }
 
+function WeddingDateInput({ weddingDate, onChange }) {
+  const [editing, setEditing] = useState(!weddingDate);
+  const [value, setValue] = useState(weddingDate || '');
+
+  if (!editing && weddingDate) {
+    const weeks = weeksUntilWedding(weddingDate);
+    return (
+      <div className="flex items-center justify-between bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-xl p-4">
+        <div>
+          <div className="text-sm font-semibold text-pink-800 dark:text-pink-200">
+            {weeks !== null && weeks >= 0
+              ? `${weeks} weeks to go`
+              : 'Wedding day!'}
+          </div>
+          <div className="text-xs text-pink-600 dark:text-pink-400 mt-0.5">
+            {new Date(weddingDate + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </div>
+          {weeks !== null && weeks <= 2 && weeks >= 0 && (
+            <div className="text-xs font-medium text-red-600 dark:text-red-400 mt-1">
+              ⚠️ No new products — final stretch!
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => setEditing(true)}
+          className="text-xs text-pink-400 hover:text-pink-600 dark:hover:text-pink-300"
+        >
+          Edit
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 rounded-xl p-4">
+      <label className="block text-sm font-medium text-pink-800 dark:text-pink-200 mb-2">
+        When's the wedding?
+      </label>
+      <div className="flex gap-2">
+        <input
+          type="date"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="flex-1 px-3 py-2 rounded-lg border border-pink-300 dark:border-pink-700 bg-white dark:bg-gray-800 text-sm"
+        />
+        <button
+          onClick={() => { onChange(value); setEditing(false); }}
+          disabled={!value}
+          className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-pink-500 hover:bg-pink-600 disabled:opacity-40 transition-colors"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const today = new Date().getDay();
   const [selectedDay, setSelectedDay] = useState(today);
-  const [amDone, setAmDone] = useState(new Set());
-  const [pmDone, setPmDone] = useState(new Set());
+  const [weddingDate, setWeddingDate] = useState(() => lsGet(LS_WEDDING_DATE) || '');
+  const [qureLastDate, setQureLastDate] = useState(() => lsGet(LS_QURE_LAST) || '');
+
+  const viewDate = dateForDayIndex(selectedDay);
+  const [amDone, setAmDone] = useState(() => loadChecks(viewDate, 'am'));
+  const [pmDone, setPmDone] = useState(() => loadChecks(viewDate, 'pm'));
+
+  // Reload checks when day changes
+  useEffect(() => {
+    const d = dateForDayIndex(selectedDay);
+    setAmDone(loadChecks(d, 'am'));
+    setPmDone(loadChecks(d, 'pm'));
+  }, [selectedDay]);
 
   const dayName = DAYS[selectedDay];
   const isToday = selectedDay === today;
-  const pm = PM_ROUTINES[dayName];
-  const treatment = WEEKLY_TREATMENTS[dayName];
-  const led = LED_MASK[dayName];
 
-  const toggleAm = (i) => setAmDone((prev) => {
-    const next = new Set(prev);
-    next.has(i) ? next.delete(i) : next.add(i);
-    return next;
-  });
+  // Determine Saturday/Sunday variants
+  const isSaturday = dayName === 'Saturday';
+  const isSunday = dayName === 'Sunday';
+  const qureSat = isSaturday && isQureSaturday(qureLastDate, viewDate);
+  const qurePastWeek9 = weddingDate && weeksUntilWedding(weddingDate) !== null && weeksUntilWedding(weddingDate) < 3;
+  const showQure = qureSat && !qurePastWeek9;
+  const afterQureSunday = isSunday && wasQureLastSaturday(qureLastDate);
 
-  const togglePm = (i) => setPmDone((prev) => {
-    const next = new Set(prev);
-    next.has(i) ? next.delete(i) : next.add(i);
-    return next;
-  });
+  let pmKey = dayName;
+  if (isSaturday) pmKey = showQure ? 'SaturdayQure' : 'SaturdayLed';
+  if (isSunday) pmKey = afterQureSunday ? 'SundayAfterQure' : 'SundayNormal';
+  const pm = PM_ROUTINES[pmKey];
 
-  const changeDay = (delta) => {
-    setSelectedDay((d) => (d + delta + 7) % 7);
-    setAmDone(new Set());
-    setPmDone(new Set());
+  // Treatment card
+  let treatment = WEEKLY_TREATMENTS_BASE[dayName] || null;
+  if (isSaturday) {
+    treatment = showQure
+      ? { label: 'Qure Micro-Infusion', detail: 'Bi-weekly session', icon: '💎' }
+      : { label: 'LED Full Spectrum', detail: 'Non-Qure Saturday', icon: '🚨' };
+  }
+  if (isSunday && afterQureSunday) {
+    treatment = { label: 'Skin Rest Day', detail: 'After Qure — barrier repair only, no actives', icon: '🌿' };
+  }
+
+  // LED mask
+  let led = LED_MASK_BASE[dayName] || null;
+  if (isSaturday && !showQure) led = LED_FULL_SPECTRUM;
+
+  const saveAndToggle = (period, i) => {
+    const setter = period === 'am' ? setAmDone : setPmDone;
+    setter((prev) => {
+      const next = new Set(prev);
+      next.has(i) ? next.delete(i) : next.add(i);
+      saveChecks(viewDate, period, next);
+
+      // If checking off the Qure step on Saturday, record the date
+      if (period === 'pm' && isSaturday && showQure && i === 1 && next.has(i)) {
+        setQureLastDate(viewDate);
+        lsSet(LS_QURE_LAST, viewDate);
+      }
+      return next;
+    });
   };
+
+  const handleWeddingDate = (date) => {
+    setWeddingDate(date);
+    if (date) lsSet(LS_WEDDING_DATE, date);
+    else lsRemove(LS_WEDDING_DATE);
+  };
+
+  const weeks = weeksUntilWedding(weddingDate);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -186,10 +373,15 @@ function App() {
           3-Month Pre-Wedding Plan — Stop Qure &amp; all new products 2–3 weeks before wedding day
         </p>
 
+        {/* Wedding date */}
+        <div className="mb-6">
+          <WeddingDateInput weddingDate={weddingDate} onChange={handleWeddingDate} />
+        </div>
+
         {/* Day selector */}
         <div className="flex items-center justify-between mb-6">
           <button
-            onClick={() => changeDay(-1)}
+            onClick={() => setSelectedDay((d) => (d - 1 + 7) % 7)}
             className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -201,7 +393,7 @@ function App() {
             {isToday && <div className="text-xs text-green-500 font-medium">Today</div>}
           </div>
           <button
-            onClick={() => changeDay(1)}
+            onClick={() => setSelectedDay((d) => (d + 1) % 7)}
             className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -215,7 +407,7 @@ function App() {
           {DAYS.map((d, i) => (
             <button
               key={d}
-              onClick={() => { setSelectedDay(i); setAmDone(new Set()); setPmDone(new Set()); }}
+              onClick={() => setSelectedDay(i)}
               className={`w-9 h-9 rounded-full text-xs font-medium transition-colors ${
                 i === selectedDay
                   ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
@@ -230,6 +422,18 @@ function App() {
         </div>
 
         <div className="space-y-4">
+          {/* Qure past week 9 warning */}
+          {isSaturday && qureSat && qurePastWeek9 && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+              <div className="text-sm font-semibold text-red-800 dark:text-red-200">
+                ⚠️ No more Qure sessions
+              </div>
+              <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                Less than 3 weeks to wedding — LED Full Spectrum only
+              </div>
+            </div>
+          )}
+
           {/* Weekly treatment highlight */}
           {treatment && (
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
@@ -255,12 +459,12 @@ function App() {
 
           {/* AM Routine */}
           <Section title="AM Routine" icon="☀️">
-            <StepList steps={AM_ROUTINE} done={amDone} onToggle={toggleAm} />
+            <StepList steps={AM_ROUTINE} done={amDone} onToggle={(i) => saveAndToggle('am', i)} />
           </Section>
 
           {/* PM Routine */}
           <Section title="PM Routine" icon="🌙">
-            <StepList steps={pm} done={pmDone} onToggle={togglePm} />
+            <StepList steps={pm} done={pmDone} onToggle={(i) => saveAndToggle('pm', i)} />
           </Section>
 
           {/* Reminders */}
