@@ -39,31 +39,28 @@ function daysBetween(a, b) {
 
 function isQureSaturday(qureLastDate, viewDate) {
   if (!qureLastDate) return true; // default to Qure if no history
+  if (qureLastDate === viewDate) return true; // already recorded for this day, keep showing Qure
   const last = new Date(qureLastDate + 'T00:00:00');
   const view = new Date(viewDate + 'T00:00:00');
   const weeksSince = Math.round(daysBetween(last, view) / 7);
   return weeksSince >= 2;
 }
 
-function wasQureLastSaturday(qureLastDate) {
-  const today = new Date();
-  const lastSat = new Date(today);
-  lastSat.setDate(today.getDate() - ((today.getDay() + 7) % 7)); // most recent Sunday's Saturday = yesterday if Sunday
-  // Actually, find the most recent Saturday
-  const dayOfWeek = today.getDay(); // 0=Sun
-  const daysSinceSat = dayOfWeek === 0 ? 1 : dayOfWeek === 6 ? 0 : dayOfWeek + 1;
-  // Hmm, let's simplify: for Sunday, was yesterday (Saturday) a Qure day?
+function wasQureLastSaturday(qureLastDate, sundayDate) {
   if (!qureLastDate) return false;
-  const lastSaturday = new Date(today);
-  lastSaturday.setDate(today.getDate() - (dayOfWeek === 0 ? 1 : dayOfWeek + 1));
-  const satStr = `${lastSaturday.getFullYear()}-${String(lastSaturday.getMonth() + 1).padStart(2, '0')}-${String(lastSaturday.getDate()).padStart(2, '0')}`;
+  const sun = new Date(sundayDate + 'T00:00:00');
+  const sat = new Date(sun);
+  sat.setDate(sun.getDate() - 1);
+  const satStr = `${sat.getFullYear()}-${String(sat.getMonth() + 1).padStart(2, '0')}-${String(sat.getDate()).padStart(2, '0')}`;
   return qureLastDate === satStr;
 }
 
 function dateForDayIndex(dayIndex) {
+  // Week runs Mon–Sun so Sunday always follows Saturday
   const today = new Date();
-  const todayIndex = today.getDay();
-  const diff = dayIndex - todayIndex;
+  const todayMB = today.getDay() === 0 ? 7 : today.getDay(); // Mon=1..Sun=7
+  const targetMB = dayIndex === 0 ? 7 : dayIndex;
+  const diff = targetMB - todayMB;
   const target = new Date(today);
   target.setDate(today.getDate() + diff);
   return `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(target.getDate()).padStart(2, '0')}`;
@@ -312,7 +309,7 @@ function App() {
   const qureSat = isSaturday && isQureSaturday(qureLastDate, viewDate);
   const qurePastWeek9 = weddingDate && weeksUntilWedding(weddingDate) !== null && weeksUntilWedding(weddingDate) < 3;
   const showQure = qureSat && !qurePastWeek9;
-  const afterQureSunday = isSunday && wasQureLastSaturday(qureLastDate);
+  const afterQureSunday = isSunday && wasQureLastSaturday(qureLastDate, viewDate);
 
   let pmKey = dayName;
   if (isSaturday) pmKey = showQure ? 'SaturdayQure' : 'SaturdayLed';
