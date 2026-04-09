@@ -237,7 +237,7 @@ function WeddingDateInput({ weddingDate, onChange }) {
         <div>
           <div className="text-sm font-semibold text-pink-800 dark:text-pink-200">
             {weeks !== null && weeks >= 0
-              ? `${weeks} weeks to go`
+              ? `${weeks} ${weeks === 1 ? 'week' : 'weeks'} to go`
               : 'Wedding day!'}
           </div>
           <div className="text-xs text-pink-600 dark:text-pink-400 mt-0.5">
