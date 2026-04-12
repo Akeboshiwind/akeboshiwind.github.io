@@ -94,6 +94,7 @@ const PM_ROUTINES = {
     'HA → Retinol → Eye cream',
     'Almond oil lymph massage',
     'Cicaplast B5',
+    '🩹 Qure Micro-Infusion Patches (target areas — overnight)',
   ],
   Tuesday: [
     'Double cleanse (makeup days)',
@@ -120,6 +121,7 @@ const PM_ROUTINES = {
     'Retinol → Eye cream',
     'Almond oil lymph massage',
     'Cicaplast B5',
+    '🩹 Qure Micro-Infusion Patches (target areas — overnight)',
   ],
   Friday: [
     'Double cleanse (makeup days)',
@@ -160,10 +162,10 @@ const PM_ROUTINES = {
 };
 
 const WEEKLY_TREATMENTS_BASE = {
-  Monday: { label: 'Enzyme Mask', detail: 'Ordinary Pumpkin', icon: '🧪' },
+  Monday: { label: 'Micro-Infusion Patches', detail: 'Target areas — leave overnight', icon: '🩹' },
   Tuesday: { label: 'Gua Sha + Lymph Massage', detail: '10 min', icon: '🧘' },
   Wednesday: { label: "L'Oréal Cryo Jelly", detail: 'Sheet Mask', icon: '🧊' },
-  Thursday: { label: 'Rest Day', detail: 'Regular PM routine only', icon: '🌙' },
+  Thursday: { label: 'Micro-Infusion Patches', detail: 'Target areas — leave overnight', icon: '🩹' },
   Friday: { label: 'Lactic Acid Night', detail: 'Ordinary 5% — NO retinol', icon: '🧪' },
   Sunday: { label: 'Skin Rest Day', detail: 'Barrier repair only', icon: '🌿' },
 };
@@ -183,6 +185,7 @@ const REMINDERS = [
   'Do not introduce new products in the final 2 weeks before the wedding',
   'Face yoga: 10 min daily — V shape, smile smoother, puffer fish, forehead resistance, jawline/neck, gua sha',
   'LED mask tip: 1–2cm from face, clean lens after each use, no photosensitising actives (retinol/AHA) immediately after',
+  'Micro-Infusion Patches: Mon + Thu nights, apply after moisturiser to target areas (under-eye, smile lines, crow\'s feet), leave overnight',
 ];
 
 // --- Components ---
