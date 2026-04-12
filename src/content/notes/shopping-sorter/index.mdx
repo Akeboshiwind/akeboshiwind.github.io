@@ -1,0 +1,62 @@
+---
+title: "Shopping Sorter"
+stage: draft
+date: 2026-04-10
+updated: 2026-04-12
+tags: ["drafts", "automation"]
+---
+import { Code } from 'astro-expressive-code/components';
+import shoppingSorterRaw from './shopping-sorter.js?raw';
+import shoppingSorterTestRaw from './shopping-sorter.node-test.cjs?raw';
+
+I like to keep my shopping list ordered by how I walk through the shop (I walk
+in the same order each time more or less). Usually I would do this manually on
+the walk to the shop, but after a year that got tedious. So I asked Claude to
+build a script for [Drafts](https://getdrafts.com/) that will do this for me automatically!
+
+The way it works is:
+1. In a new draft I'll make a list of things I want to add: `milk, bread, tomatoes`
+2. I trigger the script
+3. For unknown items I select the aisle they belong in or create a new aisle
+4. If an aisle is created I select which aisle it goes before/after
+
+That produces two notes:
+1. An archived json file with the list of aisles and learned item -> aisle mappings
+    ```json
+    {"aisleOrder": ["Veg", "Bakery", "Dairy"],
+     "items": {
+       "milk": "Dairy",
+       "bread": "Bakery",
+       "ginger": "Veg"
+     }}
+    ```
+2. A shopping list
+    ```md
+    # Veg
+    - [ ] ginger
+
+    # Bakery
+    - [ ] bread
+
+    # Dairy
+    - [ ] milk
+    ```
+
+Some additional features:
+- It supports bullet point or comma separated input drafts
+- Capitals, amounts (`<item> x2`) etc get mapped to the correct aisle
+- Completed (`- [x] <item>`) items are deleted
+- Input drafts are archived
+- You can re-sort the shopping list by running it on it directly
+
+<details>
+    <summary>Show code</summary>
+    <Code code={shoppingSorterRaw} lang="js" />
+</details>
+
+It even comes with tests!
+
+<details>
+    <summary>Show tests</summary>
+    <Code code={shoppingSorterTestRaw} lang="js" />
+</details>
