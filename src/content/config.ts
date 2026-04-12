@@ -8,7 +8,7 @@ const notes = defineCollection({
     title: z.string(),
     stage: stage,
     date: z.date(),
-    updated: z.date().optional(),
+    updated: z.date(),
     tags: z.array(z.string()).optional(),
     pinned: z.boolean().optional().default(false),
   }),

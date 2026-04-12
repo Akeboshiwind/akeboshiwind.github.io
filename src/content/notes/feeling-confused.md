@@ -2,6 +2,7 @@
 title: "Feeling Confused"
 stage: scribble
 date: 2026-04-12
+updated: 2026-04-12
 tags: ["personal", "llms"]
 ---
 

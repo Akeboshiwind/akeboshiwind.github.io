@@ -2,6 +2,7 @@
 title: "Clojure function spotlight: bound-fn"
 stage: tale
 date: 2023-11-23
+updated: 2023-11-23
 tags: ["clojure", "learning"]
 ---
 
