@@ -10,6 +10,7 @@
     "test": "vitest run && node --test src/content/notes/*/*.node-test.cjs",
     "test:vitest": "vitest run",
     "test:node": "node --test src/content/notes/*/*.node-test.cjs",
+    "new-tool": "node scripts/new-tool.js",
     "prepare": "husky"
   },
   "dependencies": {

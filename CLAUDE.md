@@ -23,9 +23,9 @@ src/
     sorting-comparator/
     christmas/
     ...              # All SPAs at top level
-  layouts/           # Layout components
+  layouts/           # Layout components (Layout.astro for notes, AppLayout.astro for SPAs)
   components/        # Reusable components
-  styles/            # Global CSS
+  styles/            # Global CSS (global.css for notes, app.css for SPAs)
 public/              # Static assets (favicons, logos, images)
 plugins/             # Vite plugins (squint compiler)
 ```
@@ -49,8 +49,24 @@ Two collections, rendered together on the front page:
 
 All apps are built through Astro's Vite pipeline — no separate build step needed.
 
-- **Squint apps** (.cljs) are compiled on-the-fly by `plugins/vite-plugin-squint.js`
-- **React apps** (.jsx) use `@vitejs/plugin-react`
+- **React apps** (.jsx) use `@vitejs/plugin-react` and `AppLayout` — **strongly recommended for new apps**
+- **Squint apps** (.cljs) are compiled by `plugins/vite-plugin-squint.js` — deprecated, new apps should use React
+- **Standalone apps** (bitemporal, christmas, chat-wrapped) have bespoke structures and don't use `AppLayout`
+
+### Building a new React app
+
+1. Run `npm run new-tool <slug> "<Title>"` — scaffolds index.astro, app.jsx, hooks.js, and works entry
+2. Study 2-3 existing React apps for patterns (NOT bitemporal/christmas/chat-wrapped — those are bespoke)
+3. Add a screenshot at `src/assets/works/<slug>.png` for the front page card
+4. Fill in the description in the generated works JSON
+
+Key conventions the scaffold already sets up:
+- `AppLayout` provides Tailwind, HTML shell, and `<div id="app">` mount point
+- "← Home" link top-left via `<a href="../">`
+- `useLocalStorage` hook in hooks.js for persisting state
+- Dark mode via Tailwind `dark:` variants
+- Apps must work on both mobile and desktop — use responsive Tailwind classes
+- `AppLayout` has a `<slot name="head" />` for extra `<head>` content if needed
 
 ## Code Style
 
