@@ -7,7 +7,9 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "vitest run"
+    "test": "vitest run && node --test src/content/notes/*/*.node-test.cjs",
+    "test:vitest": "vitest run",
+    "test:node": "node --test src/content/notes/*/*.node-test.cjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.13",
@@ -16,6 +18,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "ably": "^2.17.1",
     "astro": "^5.16.15",
+    "astro-expressive-code": "^0.41.7",
     "dompurify": "^3.3.2",
     "marked": "^17.0.4",
     "mermaid": "^11.13.0",

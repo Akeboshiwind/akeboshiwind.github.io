@@ -53,17 +53,6 @@
   --tw-prose-bullets: var(--text);
 }
 
-/* Preserve Shiki syntax highlighting — no element modifier can target pre>code>span */
-.prose :where(pre code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  color: inherit;
-  background: none;
-  padding: 0;
-}
-
-.prose :where(pre code span):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  color: inherit;
-}
-
 /* Details/Summary */
 .prose details {
   border: 1px solid var(--border);
@@ -106,7 +95,8 @@
   margin: 0;
 }
 
-.prose details :where(pre) {
-  border-radius: 0 0 0.375rem 0.375rem !important;
-  margin: 0 !important;
+.prose details :where(.expressive-code) {
+  border-radius: 0 0 0.375rem 0.375rem;
+  margin: 0;
+  overflow: hidden;
 }
