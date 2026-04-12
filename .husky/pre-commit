@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# Auto-update the `updated` frontmatter date for any staged note files
+TODAY=$(date +%Y-%m-%d)
+
+STAGED_NOTES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^src/content/notes/.*\.(md|mdx)$' || true)
+
+for file in $STAGED_NOTES; do
+  if grep -q '^updated:' "$file"; then
+    sed -i '' "s/^updated:.*$/updated: $TODAY/" "$file"
+    git add "$file"
+  fi
+done
