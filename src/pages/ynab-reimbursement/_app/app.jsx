@@ -8,7 +8,6 @@ import { TokenInputView } from './components/TokenInputView.jsx';
 import { BudgetSelectionView } from './components/BudgetSelectionView.jsx';
 import { ConfigMenu } from './components/ConfigMenu.jsx';
 import { MainView } from './components/MainView.jsx';
-import './app.css';
 
 const CONFIG_PREFIX = 'ynabReimbursement_';
 

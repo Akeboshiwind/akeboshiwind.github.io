@@ -4,7 +4,7 @@ import { marked } from 'marked';
 import mermaid from 'mermaid';
 import DOMPurify from 'dompurify';
 import { useLocalStorage } from './hooks.js';
-import './app.css';
+import './typography.css';
 
 marked.use({
   gfm: true,

@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-import './app.css';
 
 const MAX_DIM_DEFAULT = 2000;
 const QUALITY_DEFAULT = 85;

@@ -1,7 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { useState } from 'react';
 import transit from 'transit-js';
-import './app.css';
 
 const reader = transit.reader('json');
 

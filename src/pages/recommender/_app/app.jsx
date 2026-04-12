@@ -11,7 +11,6 @@ import { SeenModal } from './components/SeenModal.jsx';
 import { SettingsModal } from './components/SettingsModal.jsx';
 import { HistoryModal } from './components/HistoryModal.jsx';
 import { ImportExportModal } from './components/ImportExportModal.jsx';
-import './app.css';
 
 const App = () => {
   const [apiKey, setApiKey] = useLocalStorage('anthropic_apiKey', '');
