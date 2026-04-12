@@ -2,7 +2,7 @@
 title: "Stages"
 stage: scribble
 date: 2026-03-23
-updated: 2026-03-23
+updated: 2026-04-12
 tags: ["personal"]
 ---
 
@@ -34,3 +34,4 @@ More thought than just the initial idea has gone into it, but I'm still not conf
 
 I've put a fair bit of thought and effort into this so it's a tale I'm happy enough with to tell.
 But like all good tales, it may evolve over time as it's told and re-told.
+
