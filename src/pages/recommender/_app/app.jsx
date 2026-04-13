@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-import { useLocalStorage } from './hooks.js';
+import { useLocalStorage } from '../../../lib/useLocalStorage.js';
 import { generateRecommendations } from './api.js';
 import { generateId, getPendingCount } from './utils.js';
 import { ApiKeyView } from './components/ApiKeyView.jsx';

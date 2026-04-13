@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { marked } from 'marked';
 import mermaid from 'mermaid';
 import DOMPurify from 'dompurify';
-import { useLocalStorage } from './hooks.js';
+import { useLocalStorage } from '../../../lib/useLocalStorage.js';
 import './typography.css';
 
 marked.use({

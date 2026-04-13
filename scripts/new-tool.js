@@ -31,32 +31,13 @@ import AppLayout from '../../layouts/AppLayout.astro';
 </AppLayout>
 `);
 
-// hooks.js — generic useLocalStorage
-writeFileSync(join(appDir, 'hooks.js'), `import { useState, useEffect } from 'react';
-
-export const useLocalStorage = (key, initialValue, { prefix = '' } = {}) => {
-  const fullKey = prefix + key;
-  const [value, setValue] = useState(() => {
-    try {
-      const item = localStorage.getItem(fullKey);
-      return item !== null ? JSON.parse(item) : initialValue;
-    } catch { return initialValue; }
-  });
-  useEffect(() => {
-    try { localStorage.setItem(fullKey, JSON.stringify(value)); }
-    catch { /* quota exceeded */ }
-  }, [value, fullKey]);
-  return [value, setValue];
-};
-`);
-
 // app.jsx
 writeFileSync(join(appDir, 'app.jsx'), `import { createRoot } from 'react-dom/client';
-import { useLocalStorage } from './hooks.js';
+import { useLocalStorage } from '../../../lib/useLocalStorage.js';
 
 const PREFIX = '${slug}_';
 
-function App() {
+export function App() {
   const [count, setCount] = useLocalStorage('count', 0, { prefix: PREFIX });
 
   return (
@@ -71,7 +52,31 @@ function App() {
   );
 }
 
-createRoot(document.getElementById('app')).render(<App />);
+const mount = document.getElementById('app');
+if (mount) createRoot(mount).render(<App />);
+`);
+
+// app.test.jsx — smoke test
+writeFileSync(join(appDir, 'app.test.jsx'), `import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
+import { App } from './app.jsx';
+
+afterEach(cleanup);
+
+describe('${title}', () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  test('renders without crashing', () => {
+    render(<App />);
+    expect(screen.getByText('${title}')).toBeTruthy();
+  });
+
+  test('has a home link', () => {
+    render(<App />);
+    const home = screen.getByText('← Home').closest('a');
+    expect(home.getAttribute('href')).toBe('../');
+  });
+});
 `);
 
 // works entry
@@ -87,7 +92,7 @@ writeFileSync(worksFile, JSON.stringify({
 console.log(`Created:`);
 console.log(`  ${join(pageDir, 'index.astro')}`);
 console.log(`  ${join(appDir, 'app.jsx')}`);
-console.log(`  ${join(appDir, 'hooks.js')}`);
+console.log(`  ${join(appDir, 'app.test.jsx')}`);
 console.log(`  ${worksFile}`);
 console.log();
 console.log(`Don't forget:`);
