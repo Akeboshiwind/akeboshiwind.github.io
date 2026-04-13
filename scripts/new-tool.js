@@ -31,23 +31,21 @@ import AppLayout from '../../layouts/AppLayout.astro';
 </AppLayout>
 `);
 
-// hooks.js — useLocalStorage with app prefix
+// hooks.js — generic useLocalStorage
 writeFileSync(join(appDir, 'hooks.js'), `import { useState, useEffect } from 'react';
 
-const PREFIX = '${slug}_';
-
-export const useLocalStorage = (key, initialValue) => {
-  const prefixedKey = PREFIX + key;
+export const useLocalStorage = (key, initialValue, { prefix = '' } = {}) => {
+  const fullKey = prefix + key;
   const [value, setValue] = useState(() => {
     try {
-      const item = localStorage.getItem(prefixedKey);
+      const item = localStorage.getItem(fullKey);
       return item !== null ? JSON.parse(item) : initialValue;
     } catch { return initialValue; }
   });
   useEffect(() => {
-    try { localStorage.setItem(prefixedKey, JSON.stringify(value)); }
+    try { localStorage.setItem(fullKey, JSON.stringify(value)); }
     catch { /* quota exceeded */ }
-  }, [value, prefixedKey]);
+  }, [value, fullKey]);
   return [value, setValue];
 };
 `);
@@ -56,8 +54,10 @@ export const useLocalStorage = (key, initialValue) => {
 writeFileSync(join(appDir, 'app.jsx'), `import { createRoot } from 'react-dom/client';
 import { useLocalStorage } from './hooks.js';
 
+const PREFIX = '${slug}_';
+
 function App() {
-  const [count, setCount] = useLocalStorage('count', 0);
+  const [count, setCount] = useLocalStorage('count', 0, { prefix: PREFIX });
 
   return (
     <div className="flex flex-col h-screen p-4 gap-3 text-gray-900 dark:text-gray-100">
