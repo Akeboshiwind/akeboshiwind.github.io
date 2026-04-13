@@ -31,20 +31,23 @@ import AppLayout from '../../layouts/AppLayout.astro';
 </AppLayout>
 `);
 
-// hooks.js — useLocalStorage
+// hooks.js — useLocalStorage with app prefix
 writeFileSync(join(appDir, 'hooks.js'), `import { useState, useEffect } from 'react';
 
+const PREFIX = '${slug}_';
+
 export const useLocalStorage = (key, initialValue) => {
+  const prefixedKey = PREFIX + key;
   const [value, setValue] = useState(() => {
     try {
-      const item = localStorage.getItem(key);
+      const item = localStorage.getItem(prefixedKey);
       return item !== null ? JSON.parse(item) : initialValue;
     } catch { return initialValue; }
   });
   useEffect(() => {
-    try { localStorage.setItem(key, JSON.stringify(value)); }
+    try { localStorage.setItem(prefixedKey, JSON.stringify(value)); }
     catch { /* quota exceeded */ }
-  }, [value, key]);
+  }, [value, prefixedKey]);
   return [value, setValue];
 };
 `);
@@ -54,7 +57,7 @@ writeFileSync(join(appDir, 'app.jsx'), `import { createRoot } from 'react-dom/cl
 import { useLocalStorage } from './hooks.js';
 
 function App() {
-  const [count, setCount] = useLocalStorage('${slug}_count', 0);
+  const [count, setCount] = useLocalStorage('count', 0);
 
   return (
     <div className="flex flex-col h-screen p-4 gap-3 text-gray-900 dark:text-gray-100">
