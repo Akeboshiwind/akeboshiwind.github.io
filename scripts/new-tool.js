@@ -46,6 +46,7 @@ export function App() {
         ← Home
       </a>
       <h1 className="text-xl font-semibold">${title}</h1>
+      {/* Replace this placeholder with your app */}
       <p>Count: {count}</p>
       <button onClick={() => setCount(c => c + 1)} className="px-3 py-1 rounded bg-blue-500 text-white w-fit">+1</button>
     </div>
@@ -99,3 +100,4 @@ console.log(`Don't forget:`);
 console.log(`  - Add a screenshot at src/assets/works/${slug}.png`);
 console.log(`  - Fill in the description in ${worksFile}`);
 console.log(`  - Study 2-3 existing React apps for patterns (NOT bitemporal/christmas/chat-wrapped)`);
+console.log(`  - Run \`npm test\` to verify everything still passes`);

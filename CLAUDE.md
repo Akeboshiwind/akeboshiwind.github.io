@@ -8,6 +8,7 @@ Personal digital garden built with Astro, with interactive works and presentatio
 npm run dev           # Dev server (all content visible)
 npm run build         # Build for production
 npm run preview       # Preview production build
+npm test              # Run all tests
 ```
 
 ## Structure
