@@ -515,7 +515,7 @@ const ResultsScreen = ({ algoKey, sorted, comparisons, onTryAnother, onSortAgain
 
 const DEFAULT_ITEMS = ['23', '7', '45', '12', '89', '34', '56', '1', '78', '90'];
 
-const App = () => {
+const App = ({ historyUrl }) => {
   const [screen, setScreen] = useState('select'); // 'select' | 'sorting' | 'results'
   const [items, setItems] = useState(DEFAULT_ITEMS);
   const [configText, setConfigText] = useState(DEFAULT_ITEMS.join('\n'));
@@ -565,12 +565,24 @@ const App = () => {
 
         {/* Back link */}
         {screen === 'select' && (
-          <a
-            href="../"
-            className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            ← Home
-          </a>
+          <nav className="flex items-center gap-3 text-sm text-gray-400">
+            <a
+              href="../"
+              className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              ← Home
+            </a>
+            {historyUrl && (
+              <a
+                href={historyUrl}
+                target="_blank"
+                rel="noopener"
+                className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                history
+              </a>
+            )}
+          </nav>
         )}
 
         {screen === 'select' && (
@@ -607,4 +619,4 @@ const App = () => {
 
 const container = document.getElementById('app');
 const root = createRoot(container);
-root.render(<App />);
+root.render(<App historyUrl={container.dataset.historyUrl} />);

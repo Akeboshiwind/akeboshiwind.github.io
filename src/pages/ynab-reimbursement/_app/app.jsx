@@ -11,7 +11,7 @@ import { MainView } from './components/MainView.jsx';
 
 const CONFIG_PREFIX = 'ynabReimbursement_';
 
-const App = () => {
+const App = ({ historyUrl }) => {
   const [accessToken, setAccessToken] = useLocalStorage('accessToken', '', { prefix: CONFIG_PREFIX });
   const [selectedBudgetId, setSelectedBudgetId] = useLocalStorage('selectedBudgetId', '', { prefix: CONFIG_PREFIX });
   const [budgets, setBudgets] = useLocalStorage('budgets', [], { prefix: CONFIG_PREFIX });
@@ -251,6 +251,25 @@ const App = () => {
 
   return (
     <div className="p-2 sm:p-4 text-gray-900 dark:text-gray-100">
+      <nav className="flex items-center gap-3 text-sm text-gray-400 mb-2">
+        <a
+          href="../"
+          className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        >
+          ← Home
+        </a>
+        {historyUrl && (
+          <a
+            href={historyUrl}
+            target="_blank"
+            rel="noopener"
+            className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            history
+          </a>
+        )}
+      </nav>
+
       {isLoading && (
         <div className="fixed top-0 inset-x-0 bg-blue-500 text-white text-center py-1 text-sm">
           Loading data from YNAB...
@@ -334,4 +353,4 @@ const App = () => {
 
 const container = document.getElementById('app');
 const root = createRoot(container);
-root.render(<App />);
+root.render(<App historyUrl={container.dataset.historyUrl} />);

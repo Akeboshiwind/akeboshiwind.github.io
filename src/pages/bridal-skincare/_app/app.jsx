@@ -285,7 +285,7 @@ function WeddingDateInput({ weddingDate, onChange }) {
   );
 }
 
-function App() {
+function App({ historyUrl }) {
   const today = new Date().getDay();
   const [selectedDay, setSelectedDay] = useState(today);
   const [weddingDate, setWeddingDate] = useState(() => lsGet(LS_WEDDING_DATE) || '');
@@ -360,12 +360,24 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <div className="max-w-lg mx-auto px-4 py-6">
-        <a
-          href="../"
-          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
-          ← Home
-        </a>
+        <nav className="flex items-center gap-3 text-sm text-gray-400">
+          <a
+            href="../"
+            className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            ← Home
+          </a>
+          {historyUrl && (
+            <a
+              href={historyUrl}
+              target="_blank"
+              rel="noopener"
+              className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              history
+            </a>
+          )}
+        </nav>
 
         <h1 className="text-2xl font-bold mt-4 mb-1">🌸 Bridal Skincare Routine</h1>
         <p className="text-xs text-gray-400 dark:text-gray-500 mb-5">
@@ -487,4 +499,5 @@ function App() {
   );
 }
 
-createRoot(document.getElementById('app')).render(<App />);
+const mount = document.getElementById('app');
+createRoot(mount).render(<App historyUrl={mount.dataset.historyUrl} />);

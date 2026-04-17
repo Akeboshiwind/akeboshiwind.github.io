@@ -1,6 +1,9 @@
 ---
-const { title } = Astro.props;
 import '../styles/app.css';
+import { historyFromPagePath } from '../lib/history.js';
+
+const { title } = Astro.props;
+const historyUrl = historyFromPagePath(Astro.url.pathname);
 ---
 <html lang="en">
 <head>
@@ -10,7 +13,7 @@ import '../styles/app.css';
   <slot name="head" />
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
-  <div id="app"></div>
+  <div id="app" data-history-url={historyUrl}></div>
   <slot />
 </body>
 </html>

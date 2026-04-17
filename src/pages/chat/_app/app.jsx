@@ -4,7 +4,7 @@ import { useLocalStorage } from '../../../lib/useLocalStorage.js';
 
 const PREFIX = 'chat_';
 
-export function App() {
+export function App({ historyUrl }) {
   const [messages, setMessages] = useLocalStorage('messages', [], { prefix: PREFIX });
   const [draft, setDraft] = useState('');
   const listRef = useRef(null);
@@ -36,9 +36,16 @@ export function App() {
   return (
     <div className="flex flex-col h-dvh text-gray-900 dark:text-gray-100">
       <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-        <a href="../" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-          ← Home
-        </a>
+        <nav className="flex items-center gap-3 text-sm text-gray-400">
+          <a href="../" className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+            ← Home
+          </a>
+          {historyUrl && (
+            <a href={historyUrl} target="_blank" rel="noopener" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+              history
+            </a>
+          )}
+        </nav>
         <h1 className="text-base font-semibold">Chat</h1>
         <button
           onClick={clear}
@@ -93,4 +100,4 @@ export function App() {
 }
 
 const mount = document.getElementById('app');
-if (mount) createRoot(mount).render(<App />);
+if (mount) createRoot(mount).render(<App historyUrl={mount.dataset.historyUrl} />);

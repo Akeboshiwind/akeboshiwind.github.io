@@ -37,14 +37,21 @@ import { useLocalStorage } from '../../../lib/useLocalStorage.js';
 
 const PREFIX = '${slug}_';
 
-export function App() {
+export function App({ historyUrl }) {
   const [count, setCount] = useLocalStorage('count', 0, { prefix: PREFIX });
 
   return (
     <div className="flex flex-col h-screen p-4 gap-3 text-gray-900 dark:text-gray-100">
-      <a href="../" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-        ← Home
-      </a>
+      <nav className="flex items-center gap-3 text-sm text-gray-400">
+        <a href="../" className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+          ← Home
+        </a>
+        {historyUrl && (
+          <a href={historyUrl} target="_blank" rel="noopener" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+            history
+          </a>
+        )}
+      </nav>
       <h1 className="text-xl font-semibold">${title}</h1>
       {/* Replace this placeholder with your app */}
       <p>Count: {count}</p>
@@ -54,7 +61,7 @@ export function App() {
 }
 
 const mount = document.getElementById('app');
-if (mount) createRoot(mount).render(<App />);
+if (mount) createRoot(mount).render(<App historyUrl={mount.dataset.historyUrl} />);
 `);
 
 // app.test.jsx — smoke test

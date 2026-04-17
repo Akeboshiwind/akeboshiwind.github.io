@@ -24,7 +24,7 @@ function toJson(value) {
   return value;
 }
 
-function App() {
+function App({ historyUrl }) {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState(null);
   const [error, setError] = useState(null);
@@ -42,12 +42,24 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen p-4 gap-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <a
-        href="../"
-        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-      >
-        ← Home
-      </a>
+      <nav className="flex items-center gap-3 text-sm text-gray-400">
+        <a
+          href="../"
+          className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        >
+          ← Home
+        </a>
+        {historyUrl && (
+          <a
+            href={historyUrl}
+            target="_blank"
+            rel="noopener"
+            className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            history
+          </a>
+        )}
+      </nav>
 
       <h1 className="text-xl font-semibold">Transit → JSON</h1>
 
@@ -88,5 +100,6 @@ function App() {
   );
 }
 
-const root = createRoot(document.getElementById('app'));
-root.render(<App />);
+const mount = document.getElementById('app');
+const root = createRoot(mount);
+root.render(<App historyUrl={mount.dataset.historyUrl} />);

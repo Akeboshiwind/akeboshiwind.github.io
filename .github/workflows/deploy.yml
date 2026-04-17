@@ -47,6 +47,8 @@ jobs:
 
       - name: Build Astro (PR preview)
         if: github.event.action != 'closed' && github.event_name == 'pull_request'
+        env:
+          HISTORY_BRANCH: ${{ github.head_ref }}
         run: npx astro build --base /pr-preview/pr-${{ github.event.number }}/
 
       - name: Deploy
