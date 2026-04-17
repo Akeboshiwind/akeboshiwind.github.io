@@ -6,6 +6,9 @@ export function historyFromPath(repoPath) {
 }
 
 export function historyFromPagePath(pathname) {
-  const slug = pathname.replace(/^\/+|\/+$/g, '');
+  const base = import.meta.env.BASE_URL;
+  let rest = pathname;
+  if (base && rest.startsWith(base)) rest = rest.slice(base.length);
+  const slug = rest.replace(/^\/+|\/+$/g, '');
   return historyFromPath(`src/pages/${slug}`);
 }
