@@ -97,16 +97,28 @@ const SettingsMenu = ({ onChangeApiKey, onOpenImportExport }) => {
   );
 };
 
-export const ListsView = ({ lists, onSelectList, onCreateList, onChangeApiKey, onOpenImportExport }) => {
+export const ListsView = ({ lists, onSelectList, onCreateList, onChangeApiKey, onOpenImportExport, historyUrl }) => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <a
-          href="../"
-          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4 transition-colors"
-        >
-          ← Home
-        </a>
+        <nav className="flex items-center gap-3 text-sm text-gray-400 mb-4">
+          <a
+            href="../"
+            className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            ← Home
+          </a>
+          {historyUrl && (
+            <a
+              href={historyUrl}
+              target="_blank"
+              rel="noopener"
+              className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              history
+            </a>
+          )}
+        </nav>
 
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Recommender</h1>

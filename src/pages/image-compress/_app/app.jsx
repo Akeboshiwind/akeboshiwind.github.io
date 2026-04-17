@@ -45,7 +45,7 @@ function formatSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
 }
 
-function App() {
+function App({ historyUrl }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
@@ -85,12 +85,24 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <a
-          href="../"
-          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
-          ← Home
-        </a>
+        <nav className="flex items-center gap-3 text-sm text-gray-400">
+          <a
+            href="../"
+            className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            ← Home
+          </a>
+          {historyUrl && (
+            <a
+              href={historyUrl}
+              target="_blank"
+              rel="noopener"
+              className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              history
+            </a>
+          )}
+        </nav>
 
         <h1 className="text-2xl font-bold mt-4 mb-6">Image Compress</h1>
 
@@ -197,4 +209,5 @@ function App() {
   );
 }
 
-createRoot(document.getElementById('app')).render(<App />);
+const mount = document.getElementById('app');
+createRoot(mount).render(<App historyUrl={mount.dataset.historyUrl} />);

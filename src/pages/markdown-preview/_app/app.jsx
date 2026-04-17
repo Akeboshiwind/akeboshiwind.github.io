@@ -24,7 +24,7 @@ marked.use({
 
 mermaid.initialize({ startOnLoad: false });
 
-function App() {
+function App({ historyUrl }) {
   const [text, setText] = useLocalStorage('markdown-preview:text', '');
   const [view, setView] = useState('editor');
   const previewRef = useRef(null);
@@ -40,12 +40,24 @@ function App() {
   if (view === 'editor') {
     return (
       <div className="flex flex-col h-screen p-4 gap-3 bg-white dark:bg-gray-900">
-        <a
-          href="../"
-          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
-          ← Home
-        </a>
+        <nav className="flex items-center gap-3 text-sm text-gray-400">
+          <a
+            href="../"
+            className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            ← Home
+          </a>
+          {historyUrl && (
+            <a
+              href={historyUrl}
+              target="_blank"
+              rel="noopener"
+              className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              history
+            </a>
+          )}
+        </nav>
         <textarea
           className="flex-1 w-full resize-none rounded-lg p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
           value={text}
@@ -79,5 +91,6 @@ function App() {
   );
 }
 
-const root = createRoot(document.getElementById('app'));
-root.render(<App />);
+const mount = document.getElementById('app');
+const root = createRoot(mount);
+root.render(<App historyUrl={mount.dataset.historyUrl} />);
