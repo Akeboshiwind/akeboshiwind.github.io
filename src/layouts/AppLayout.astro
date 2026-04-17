@@ -13,17 +13,7 @@ const historyUrl = historyFromPagePath(Astro.url.pathname);
   <slot name="head" />
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
-  <div id="app"></div>
+  <div id="app" data-history-url={historyUrl}></div>
   <slot />
-  {historyUrl && (
-    <a
-      href={historyUrl}
-      target="_blank"
-      rel="noopener"
-      class="fixed top-2 right-2 z-50 text-xs text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-    >
-      history
-    </a>
-  )}
 </body>
 </html>
