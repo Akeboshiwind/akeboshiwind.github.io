@@ -1,0 +1,9 @@
+{
+  "title": "Chat",
+  "stage": "scribble",
+  "date": "2026-04-17",
+  "description": "A chat interface emulator. Type in the box at the bottom and watch messages stack above.",
+  "tags": [
+    "tool"
+  ]
+}
