@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import Header from '../components/Header.astro';
+import ThemeInit from '../components/ThemeInit.astro';
 
 interface Props {
   title?: string;
@@ -24,6 +25,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 <!DOCTYPE html>
 <html lang="en" class="font-sans text-base leading-relaxed text-text bg-bg">
 <head>
+  <ThemeInit />
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta http-equiv="X-Clacks-Overhead" content="GNU Terry Pratchett" />

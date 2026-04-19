@@ -1,0 +1,27 @@
+---
+// Runs before paint to set data-theme on <html>, preventing FOUC.
+// Shared by Layout.astro (notes) and AppLayout.astro (SPAs) so a single
+// localStorage pref drives both surfaces.
+---
+<script is:inline>
+  (() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const resolve = (pref) =>
+      pref === 'light' || pref === 'dark' ? pref : (mq.matches ? 'dark' : 'light');
+    const apply = (pref) => {
+      const root = document.documentElement;
+      root.dataset.themePref = pref;
+      root.dataset.theme = resolve(pref);
+    };
+    const read = () => {
+      try { return localStorage.getItem('theme') ?? 'auto'; } catch { return 'auto'; }
+    };
+    apply(read());
+    mq.addEventListener('change', () => { if (read() === 'auto') apply('auto'); });
+    window.addEventListener('storage', (e) => { if (e.key === 'theme') apply(read()); });
+    window.__setTheme = (pref) => {
+      try { localStorage.setItem('theme', pref); } catch {}
+      apply(pref);
+    };
+  })();
+</script>
