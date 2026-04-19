@@ -1,10 +1,11 @@
 ---
 // Single-button tri-state toggle: cycles auto → light → dark → auto.
-// Icon reflects the current preference.
+// Icon reflects the current preference. Pass `class` to position it.
+const { class: className = '' } = Astro.props;
 ---
 <button
   type="button"
-  class="theme-toggle inline-flex items-center justify-center w-8 h-8 rounded-full text-text opacity-60 hover:opacity-100 cursor-pointer"
+  class:list={['theme-toggle inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 cursor-pointer', className]}
   aria-label="Theme: auto"
   title="Theme: auto"
 >
