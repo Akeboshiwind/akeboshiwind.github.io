@@ -89,6 +89,7 @@ const PM_ROUTINES = {
   Monday: [
     { text: 'Double cleanse (makeup days)', wait: '1 min' },
     { text: 'Haruharu toner', wait: '2–3 min' },
+    { text: '🍋 Enzyme Mask (Ordinary Pumpkin) — rinse after' },
     { text: 'Alpha Arbutin (damp skin)', wait: '2–3 min' },
     { text: 'Anua (niacinamide + TX)', wait: '2–3 min' },
     { text: 'Argireline (crow\'s feet, forehead, neck)', wait: '2–3 min' },
@@ -181,7 +182,10 @@ const PM_ROUTINES = {
 };
 
 const WEEKLY_TREATMENTS_BASE = {
-  Monday: { label: 'Micro-Infusion Patches', detail: 'Target areas — leave overnight', icon: '🩹' },
+  Monday: [
+    { label: 'Enzyme Mask', detail: 'Ordinary Pumpkin — after toner, rinse, continue PM', icon: '🍋' },
+    { label: 'Micro-Infusion Patches', detail: 'Target areas — leave overnight', icon: '🩹' },
+  ],
   Tuesday: { label: 'Gua Sha + Lymph Massage', detail: '10 min', icon: '🧘' },
   Wednesday: { label: "L'Oréal Cryo Jelly", detail: 'Sheet Mask — pat in residue, don\'t rinse', icon: '🧊' },
   Thursday: { label: 'Micro-Infusion Patches', detail: 'Target areas — leave overnight', icon: '🩹' },
@@ -208,6 +212,12 @@ const REMINDERS = [
   'Sunday = barrier repair only. Skin rest is essential for dry skin tolerating a full week of actives',
   'Face yoga 10 min daily: smile smoother + puffer fish (laugh lines + perioral), V-shape (crow\'s feet + dark circles)',
   'Stop Qure device at Week 9 · Stop patches at Week 11 · No new products from Week 10 · Glow-only last 2 weeks',
+];
+
+const DAILY_EXTRAS = [
+  { text: 'Face yoga — smile smoother + puffer fish + V-shape', wait: '10 min' },
+  { text: 'Scalp massage + rosemary oil' },
+  { text: 'Multi-Peptide hair density serum (from Month 2)' },
 ];
 
 const PROBLEM_AREAS = [
@@ -372,12 +382,14 @@ function App({ historyUrl }) {
   const viewDate = dateForDayIndex(selectedDay);
   const [amDone, setAmDone] = useState(() => loadChecks(viewDate, 'am'));
   const [pmDone, setPmDone] = useState(() => loadChecks(viewDate, 'pm'));
+  const [extrasDone, setExtrasDone] = useState(() => loadChecks(viewDate, 'extras'));
 
   // Reload checks when day changes
   useEffect(() => {
     const d = dateForDayIndex(selectedDay);
     setAmDone(loadChecks(d, 'am'));
     setPmDone(loadChecks(d, 'pm'));
+    setExtrasDone(loadChecks(d, 'extras'));
   }, [selectedDay]);
 
   const dayName = DAYS[selectedDay];
@@ -412,7 +424,7 @@ function App({ historyUrl }) {
   if (isSaturday && !showQure) led = LED_FULL_SPECTRUM;
 
   const saveAndToggle = (period, i) => {
-    const setter = period === 'am' ? setAmDone : setPmDone;
+    const setter = period === 'am' ? setAmDone : period === 'pm' ? setPmDone : setExtrasDone;
     setter((prev) => {
       const next = new Set(prev);
       next.has(i) ? next.delete(i) : next.add(i);
@@ -525,11 +537,15 @@ function App({ historyUrl }) {
 
           {/* Weekly treatment highlight */}
           {treatment && (
-            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-              <div className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                {treatment.icon} {treatment.label}
-              </div>
-              <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">{treatment.detail}</div>
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-3">
+              {(Array.isArray(treatment) ? treatment : [treatment]).map((t, i) => (
+                <div key={i}>
+                  <div className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                    {t.icon} {t.label}
+                  </div>
+                  <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">{t.detail}</div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -554,6 +570,11 @@ function App({ historyUrl }) {
           {/* PM Routine */}
           <Section title="PM Routine" icon="🌙">
             <StepList steps={pm} done={pmDone} onToggle={(i) => saveAndToggle('pm', i)} />
+          </Section>
+
+          {/* Daily Extras — face yoga + hair */}
+          <Section title="Daily Extras" icon="💆">
+            <StepList steps={DAILY_EXTRAS} done={extrasDone} onToggle={(i) => saveAndToggle('extras', i)} />
           </Section>
 
           {/* Golden Rules */}
@@ -606,9 +627,6 @@ function App({ historyUrl }) {
           </Section>
         </div>
 
-        <div className="text-center text-xs text-gray-300 dark:text-gray-600 mt-8 mb-4">
-          Face yoga: 10 min daily
-        </div>
       </div>
     </div>
   );
