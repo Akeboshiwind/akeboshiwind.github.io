@@ -77,93 +77,117 @@ function weeksUntilWedding(weddingDate) {
 // --- Routine Data ---
 
 const AM_ROUTINE = [
-  'Wash',
-  'Alpha Arbutin',
-  'Vitamin C',
-  'Cicaplast B5',
-  'SPF 50',
+  { text: 'Face wash', wait: '1–2 min' },
+  { text: 'Alpha Arbutin (damp skin)', wait: '2–3 min' },
+  { text: 'Vitamin C', wait: '3–5 min (critical)' },
+  { text: 'Tosowoong Arbutin+TX cream', wait: '1–2 min' },
+  { text: 'Cicaplast B5', wait: '1–2 min' },
+  { text: 'SPF 50' },
 ];
 
 const PM_ROUTINES = {
   Monday: [
-    'Double cleanse (makeup days)',
-    'Haruharu toner',
-    'Anua (niacinamide + TX)',
-    'Argireline (crows feet, forehead, neck)',
-    'HA → Retinol → Eye cream',
-    'Almond oil lymph massage',
-    'Cicaplast B5',
-    '🩹 Qure Micro-Infusion Patches (target areas — overnight)',
+    { text: 'Double cleanse (makeup days)', wait: '1 min' },
+    { text: 'Haruharu toner', wait: '2–3 min' },
+    { text: '🍋 Enzyme Mask (Ordinary Pumpkin) — rinse after' },
+    { text: 'Alpha Arbutin (damp skin)', wait: '2–3 min' },
+    { text: 'Anua (niacinamide + TX)', wait: '2–3 min' },
+    { text: 'Argireline (crow\'s feet, forehead, neck)', wait: '2–3 min' },
+    { text: 'HA serum', wait: '1–2 min' },
+    { text: 'Retinol', wait: '5 min on DRY skin' },
+    { text: 'Beauty of Joseon Eye cream → almond oil lymph massage' },
+    { text: 'Cicaplast B5' },
+    { text: '🩹 Qure Micro-Infusion Patches (target areas — overnight)' },
   ],
   Tuesday: [
-    'Double cleanse (makeup days)',
-    'Haruharu toner',
-    '🚨 LED Mask — Red + NIR (20 min)',
-    'Anua → Argireline → HA',
-    'Retinol → Eye cream',
-    'Almond oil lymph massage',
-    'Cicaplast B5',
+    { text: 'Double cleanse (makeup days)', wait: '1 min' },
+    { text: 'Haruharu toner', wait: '2–3 min' },
+    { text: 'Alpha Arbutin (damp skin)', wait: '2–3 min' },
+    { text: '🚨 LED Mask — Red + NIR (20 min)' },
+    { text: 'Anua (niacinamide + TX)', wait: '2–3 min' },
+    { text: 'Argireline', wait: '2–3 min' },
+    { text: 'HA serum', wait: '1–2 min' },
+    { text: 'Retinol', wait: '5 min on DRY skin' },
+    { text: 'Beauty of Joseon Eye cream → almond oil lymph massage' },
+    { text: 'Cicaplast B5' },
   ],
   Wednesday: [
-    'Double cleanse (makeup days)',
-    'Haruharu toner',
-    '🧊 Cryo Jelly Sheet Mask (15–20 min)',
-    'Anua → Argireline → HA',
-    'Retinol → Eye cream',
-    'Almond oil lymph massage',
-    'Cicaplast B5',
+    { text: 'Double cleanse (makeup days)', wait: '1 min' },
+    { text: 'Haruharu toner', wait: '2–3 min' },
+    { text: 'Alpha Arbutin (damp skin)', wait: '2–3 min' },
+    { text: '🧊 Cryo Jelly Sheet Mask (15–20 min) — pat in residue, don\'t rinse' },
+    { text: 'Anua (niacinamide + TX)', wait: '2–3 min' },
+    { text: 'Argireline', wait: '2–3 min' },
+    { text: 'HA serum', wait: '1–2 min' },
+    { text: 'Retinol', wait: '5 min on DRY skin' },
+    { text: 'Beauty of Joseon Eye cream → almond oil lymph massage' },
+    { text: 'Cicaplast B5' },
   ],
   Thursday: [
-    'Double cleanse (makeup days)',
-    'Haruharu toner',
-    'Anua → Argireline → HA',
-    'Retinol → Eye cream',
-    'Almond oil lymph massage',
-    'Cicaplast B5',
-    '🩹 Qure Micro-Infusion Patches (target areas — overnight)',
+    { text: 'Double cleanse (makeup days)', wait: '1 min' },
+    { text: 'Haruharu toner', wait: '2–3 min' },
+    { text: 'Alpha Arbutin (damp skin)', wait: '2–3 min' },
+    { text: 'Anua (niacinamide + TX)', wait: '2–3 min' },
+    { text: 'Argireline (crow\'s feet, forehead, neck)', wait: '2–3 min' },
+    { text: 'HA serum', wait: '1–2 min' },
+    { text: 'Retinol', wait: '5 min on DRY skin' },
+    { text: 'Beauty of Joseon Eye cream → almond oil lymph massage' },
+    { text: 'Cicaplast B5' },
+    { text: '🩹 Qure Micro-Infusion Patches (target areas — overnight)' },
   ],
   Friday: [
-    'Double cleanse (makeup days)',
-    'Haruharu toner',
-    '🚨 LED Mask — Blue + NIR (20 min)',
-    'Anua → Argireline → HA',
-    'Lactic Acid 5% (skip retinol tonight)',
-    'Eye cream → Almond oil massage',
-    'Cicaplast B5',
+    { text: 'Double cleanse (makeup days)', wait: '1 min' },
+    { text: 'Haruharu toner', wait: '2–3 min' },
+    { text: 'Alpha Arbutin (damp skin)', wait: '2–3 min' },
+    { text: '🚨 LED Mask — Blue + NIR (20 min)' },
+    { text: 'Anua (niacinamide + TX)', wait: '2–3 min' },
+    { text: 'Argireline', wait: '2–3 min' },
+    { text: 'HA serum', wait: '1–2 min' },
+    { text: 'Lactic Acid 5% — NO retinol tonight', wait: '5 min' },
+    { text: 'Beauty of Joseon Eye cream → almond oil lymph massage' },
+    { text: 'Cicaplast B5' },
   ],
   SaturdayQure: [
-    'Double cleanse',
-    '💎 Qure Micro-Infusion',
-    'HA → Cicaplast B5 only',
-    '⚠️ NO retinol, NO Anua, NO Argireline after Qure',
+    { text: 'Double cleanse', wait: '1 min' },
+    { text: '💎 Qure Micro-Infusion' },
+    { text: 'HA serum → Cicaplast B5 only' },
+    { text: '⚠️ NO retinol, NO Anua, NO Argireline after Qure' },
   ],
   SaturdayLed: [
-    'Double cleanse',
-    'Haruharu toner',
-    '🚨 LED Full Spectrum (20 min)',
-    'Anua → Argireline → HA',
-    'Retinol → Eye cream',
-    'Almond oil lymph massage',
-    'Cicaplast B5',
+    { text: 'Double cleanse', wait: '1 min' },
+    { text: 'Haruharu toner', wait: '2–3 min' },
+    { text: 'Alpha Arbutin (damp skin)', wait: '2–3 min' },
+    { text: '🚨 LED Full Spectrum (20 min)' },
+    { text: 'Anua (niacinamide + TX)', wait: '2–3 min' },
+    { text: 'Argireline', wait: '2–3 min' },
+    { text: 'HA serum', wait: '1–2 min' },
+    { text: 'Retinol', wait: '5 min on DRY skin' },
+    { text: 'Beauty of Joseon Eye cream → almond oil lymph massage' },
+    { text: 'Cicaplast B5' },
   ],
   SundayAfterQure: [
-    'Gentle cleanse',
-    'Haruharu toner',
-    'HA → Cicaplast B5',
-    '⚠️ Barrier repair only — NO actives',
+    { text: 'Gentle cleanse', wait: '1 min' },
+    { text: 'Haruharu toner', wait: '2–3 min' },
+    { text: 'HA serum', wait: '1–2 min' },
+    { text: 'Cicaplast B5' },
+    { text: '⚠️ Barrier repair only — NO actives' },
   ],
   SundayNormal: [
-    'Gentle cleanse',
-    'Haruharu toner',
-    'HA → Cicaplast B5',
-    'Barrier repair only — light routine',
+    { text: 'Gentle cleanse', wait: '1 min' },
+    { text: 'Haruharu toner', wait: '2–3 min' },
+    { text: 'HA serum', wait: '1–2 min' },
+    { text: 'Cicaplast B5' },
+    { text: 'Barrier repair only — NO actives' },
   ],
 };
 
 const WEEKLY_TREATMENTS_BASE = {
-  Monday: { label: 'Micro-Infusion Patches', detail: 'Target areas — leave overnight', icon: '🩹' },
+  Monday: [
+    { label: 'Enzyme Mask', detail: 'Ordinary Pumpkin — after toner, rinse, continue PM', icon: '🍋' },
+    { label: 'Micro-Infusion Patches', detail: 'Target areas — leave overnight', icon: '🩹' },
+  ],
   Tuesday: { label: 'Gua Sha + Lymph Massage', detail: '10 min', icon: '🧘' },
-  Wednesday: { label: "L'Oréal Cryo Jelly", detail: 'Sheet Mask', icon: '🧊' },
+  Wednesday: { label: "L'Oréal Cryo Jelly", detail: 'Sheet Mask — pat in residue, don\'t rinse', icon: '🧊' },
   Thursday: { label: 'Micro-Infusion Patches', detail: 'Target areas — leave overnight', icon: '🩹' },
   Friday: { label: 'Lactic Acid Night', detail: 'Ordinary 5% — NO retinol', icon: '🧪' },
   Sunday: { label: 'Skin Rest Day', detail: 'Barrier repair only', icon: '🌿' },
@@ -177,25 +201,80 @@ const LED_MASK_BASE = {
 const LED_FULL_SPECTRUM = { color: 'Full Spectrum', bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300', dot: 'bg-purple-500' };
 
 const REMINDERS = [
-  'Never skip SPF 50 — UV is the #1 driver of perioral pigmentation',
-  'LED Mask: always on cleansed dry skin, before serums',
-  'Qure Micro-Infusion: every 2 weeks on Saturday — last session at Week 9 (3 weeks before wedding)',
-  'After Qure Saturday: Sunday is barrier repair only — no actives',
-  'Do not introduce new products in the final 2 weeks before the wedding',
-  'Face yoga: 10 min daily — V shape, smile smoother, puffer fish, forehead resistance, jawline/neck, gua sha',
-  'LED mask tip: 1–2cm from face, clean lens after each use, no photosensitising actives (retinol/AHA) immediately after',
-  'Micro-Infusion Patches: Mon + Thu nights, apply after moisturiser to target areas (under-eye, smile lines, crow\'s feet), leave overnight',
+  'AM: Alpha arbutin on damp skin — this is when it absorbs best. Spot-apply to pigmented areas',
+  'AM: Vitamin C must fully absorb (3–5 min) before Tosowoong cream goes on top',
+  'PM: Alpha arbutin goes first after toner every single night — damp skin, 2–3 min, then continue',
+  'Retinol: 5 min wait on FULLY DRY skin — damp skin increases irritation on dry skin',
+  'Never skip SPF 50 — every brightening active is cancelled by unprotected UV',
+  'LED Mask: always on cleansed dry skin, before serums — 1–2cm from face, clean lens after use',
+  'Qure Micro-Infusion device: every 2 weeks on Saturday — last session at Week 9. HA + Cicaplast ONLY that night AND Sunday',
+  'Qure Patches: Mon + Thu nights, apply after moisturiser to target areas (under-eye, smile lines, crow\'s feet), leave overnight',
+  'Sunday = barrier repair only. Skin rest is essential for dry skin tolerating a full week of actives',
+  'Face yoga 10 min daily: smile smoother + puffer fish (laugh lines + perioral), V-shape (crow\'s feet + dark circles)',
+  'Stop Qure device at Week 9 · Stop patches at Week 11 · No new products from Week 10 · Glow-only last 2 weeks',
+];
+
+const DAILY_EXTRAS = [
+  { text: 'Face yoga — smile smoother + puffer fish + V-shape', wait: '10 min' },
+  { text: 'Scalp massage + rosemary oil' },
+  { text: 'Multi-Peptide hair density serum (from Month 2)' },
+];
+
+const PROBLEM_AREAS = [
+  {
+    icon: '🔴',
+    title: 'Perioral Hyperpigmentation',
+    products: 'Alpha Arbutin AM+PM · Tosowoong TX cream AM · Anua TX/Niacinamide PM · Qure patches Mon/Thu · Lactic Acid Fri · Blue+NIR LED Fri',
+    protocol: 'Spot-apply alpha arbutin directly to pigmented areas morning and night. Patches deliver actives deepest into laugh lines + mouth area. NEVER skip SPF — UV drives this pigmentation.',
+  },
+  {
+    icon: '🟣',
+    title: 'Under Eye Dark Circles',
+    products: 'Beauty of Joseon Eye cream nightly · Qure patches Mon/Thu · Red+NIR LED Tuesday · Argireline crow\'s feet nightly · Alpha Arbutin AM+PM',
+    protocol: 'Apply eye cream with ring finger only — tap, don\'t rub. Red+NIR LED stimulates microcirculation under eyes. Patches deliver brightening actives directly to the under-eye zone.',
+  },
+  {
+    icon: '🟠',
+    title: 'Laugh Lines',
+    products: 'Argireline nightly · Qure patches Mon/Thu · Retinol nightly · Qure Micro-Infusion device fortnightly · Face yoga daily (smile smoother + puffer fish)',
+    protocol: 'Argireline relaxes expression muscles. Retinol builds collagen long term. Qure device drives actives deepest. Face yoga firms the orbicularis oris muscle.',
+  },
+];
+
+const TIMELINE = [
+  {
+    label: 'Month 1',
+    detail: 'Establish full routine. Introduce Anua and Tosowoong cream. Begin Qure patches Mon/Thu. LED mask Tue/Fri. Daily face yoga 10 min. Scalp massage + rosemary oil for hair volume.',
+  },
+  {
+    label: 'Month 2',
+    detail: 'Qure Micro-Infusion device fortnightly Saturdays. Hair density serum begins (The Ordinary Multi-Peptide). Book hair trial and bridal facial. Skin should show visible brightening by Week 6.',
+  },
+  {
+    label: 'Month 3 (Final)',
+    detail: 'Last Qure device session at Week 9. Patches can continue to Week 11. From Week 10 shift to hydration focus — reduce lactic acid to fortnightly. NO new products from Week 10. Final 2 weeks: glow routine only — HA, Cicaplast, SPF.',
+  },
 ];
 
 // --- Components ---
 
-function Section({ title, icon, children }) {
+function Section({ title, icon, children, collapsible = false, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const isOpen = !collapsible || open;
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">
-        {icon} {title}
+      <h2
+        onClick={collapsible ? () => setOpen((o) => !o) : undefined}
+        className={`text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 ${isOpen ? 'mb-3' : ''} ${collapsible ? 'cursor-pointer flex items-center justify-between select-none' : ''}`}
+      >
+        <span>{icon} {title}</span>
+        {collapsible && (
+          <span className="text-gray-300 dark:text-gray-600 text-xs">
+            {open ? '−' : '+'}
+          </span>
+        )}
       </h2>
-      {children}
+      {isOpen && children}
     </div>
   );
 }
@@ -203,27 +282,36 @@ function Section({ title, icon, children }) {
 function StepList({ steps, done, onToggle }) {
   return (
     <ul className="space-y-2">
-      {steps.map((step, i) => (
-        <li key={i} className="flex items-start gap-3">
-          <button
-            onClick={() => onToggle(i)}
-            className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-              done.has(i)
-                ? 'bg-green-500 border-green-500 text-white'
-                : 'border-gray-300 dark:border-gray-600 hover:border-green-400'
-            }`}
-          >
-            {done.has(i) && (
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            )}
-          </button>
-          <span className={`text-sm leading-relaxed ${done.has(i) ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>
-            {step}
-          </span>
-        </li>
-      ))}
+      {steps.map((step, i) => {
+        const text = typeof step === 'string' ? step : step.text;
+        const wait = typeof step === 'string' ? null : step.wait;
+        return (
+          <li key={i} className="flex items-start gap-3">
+            <button
+              onClick={() => onToggle(i)}
+              className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+                done.has(i)
+                  ? 'bg-green-500 border-green-500 text-white'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-green-400'
+              }`}
+            >
+              {done.has(i) && (
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </button>
+            <div className="flex-1 min-w-0">
+              <span className={`text-sm leading-relaxed ${done.has(i) ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>
+                {text}
+              </span>
+              {wait && (
+                <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">↓ wait {wait}</div>
+              )}
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -294,12 +382,14 @@ function App({ historyUrl }) {
   const viewDate = dateForDayIndex(selectedDay);
   const [amDone, setAmDone] = useState(() => loadChecks(viewDate, 'am'));
   const [pmDone, setPmDone] = useState(() => loadChecks(viewDate, 'pm'));
+  const [extrasDone, setExtrasDone] = useState(() => loadChecks(viewDate, 'extras'));
 
   // Reload checks when day changes
   useEffect(() => {
     const d = dateForDayIndex(selectedDay);
     setAmDone(loadChecks(d, 'am'));
     setPmDone(loadChecks(d, 'pm'));
+    setExtrasDone(loadChecks(d, 'extras'));
   }, [selectedDay]);
 
   const dayName = DAYS[selectedDay];
@@ -334,7 +424,7 @@ function App({ historyUrl }) {
   if (isSaturday && !showQure) led = LED_FULL_SPECTRUM;
 
   const saveAndToggle = (period, i) => {
-    const setter = period === 'am' ? setAmDone : setPmDone;
+    const setter = period === 'am' ? setAmDone : period === 'pm' ? setPmDone : setExtrasDone;
     setter((prev) => {
       const next = new Set(prev);
       next.has(i) ? next.delete(i) : next.add(i);
@@ -447,11 +537,15 @@ function App({ historyUrl }) {
 
           {/* Weekly treatment highlight */}
           {treatment && (
-            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-              <div className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                {treatment.icon} {treatment.label}
-              </div>
-              <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">{treatment.detail}</div>
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-3">
+              {(Array.isArray(treatment) ? treatment : [treatment]).map((t, i) => (
+                <div key={i}>
+                  <div className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                    {t.icon} {t.label}
+                  </div>
+                  <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">{t.detail}</div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -478,8 +572,13 @@ function App({ historyUrl }) {
             <StepList steps={pm} done={pmDone} onToggle={(i) => saveAndToggle('pm', i)} />
           </Section>
 
-          {/* Reminders */}
-          <Section title="Key Reminders" icon="⚠️">
+          {/* Daily Extras — face yoga + hair */}
+          <Section title="Daily Extras" icon="💆">
+            <StepList steps={DAILY_EXTRAS} done={extrasDone} onToggle={(i) => saveAndToggle('extras', i)} />
+          </Section>
+
+          {/* Golden Rules */}
+          <Section title="Golden Rules" icon="⚠️">
             <ul className="space-y-2">
               {REMINDERS.map((r, i) => (
                 <li key={i} className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed flex gap-2">
@@ -489,11 +588,45 @@ function App({ historyUrl }) {
               ))}
             </ul>
           </Section>
+
+          {/* Problem Areas */}
+          <Section title="Problem Areas" icon="🎯" collapsible defaultOpen={false}>
+            <div className="space-y-4">
+              {PROBLEM_AREAS.map((area, i) => (
+                <div key={i}>
+                  <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                    {area.icon} {area.title}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mt-1">
+                    <span className="font-medium text-gray-600 dark:text-gray-300">Products: </span>
+                    {area.products}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mt-1">
+                    <span className="font-medium text-gray-600 dark:text-gray-300">Protocol: </span>
+                    {area.protocol}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          {/* 3-Month Timeline */}
+          <Section title="3-Month Timeline" icon="📅" collapsible defaultOpen={false}>
+            <div className="space-y-3">
+              {TIMELINE.map((t, i) => (
+                <div key={i}>
+                  <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                    {t.label}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mt-1">
+                    {t.detail}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
         </div>
 
-        <div className="text-center text-xs text-gray-300 dark:text-gray-600 mt-8 mb-4">
-          Face yoga: 10 min daily
-        </div>
       </div>
     </div>
   );
