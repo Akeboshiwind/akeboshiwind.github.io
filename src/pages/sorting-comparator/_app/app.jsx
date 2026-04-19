@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import ALGORITHMS from './algorithms/index.js';
+import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
 
 function shuffle(arr) {
   const a = [...arr];
@@ -582,6 +583,7 @@ const App = ({ historyUrl }) => {
                 history
               </a>
             )}
+            <ThemeToggle className="ml-auto" />
           </nav>
         )}
 

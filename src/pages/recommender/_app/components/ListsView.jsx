@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { getPhase, getPhaseLabel, getPendingCount, getReviewedCount } from '../utils.js';
+import { ThemeToggle } from '../../../../components/ThemeToggle.jsx';
 
 const PHASE_COLORS = {
   exploring: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
@@ -118,6 +119,7 @@ export const ListsView = ({ lists, onSelectList, onCreateList, onChangeApiKey, o
               history
             </a>
           )}
+          <ThemeToggle className="ml-auto" />
         </nav>
 
         <div className="flex items-center justify-between mb-6">

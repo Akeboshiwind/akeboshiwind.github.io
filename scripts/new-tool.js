@@ -34,6 +34,7 @@ import AppLayout from '../../layouts/AppLayout.astro';
 // app.jsx
 writeFileSync(join(appDir, 'app.jsx'), `import { createRoot } from 'react-dom/client';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
+import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
 
 const PREFIX = '${slug}_';
 
@@ -51,6 +52,7 @@ export function App({ historyUrl }) {
             history
           </a>
         )}
+        <ThemeToggle className="ml-auto" />
       </nav>
       <h1 className="text-xl font-semibold">${title}</h1>
       {/* Replace this placeholder with your app */}
