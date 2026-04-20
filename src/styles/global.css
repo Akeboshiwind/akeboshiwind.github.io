@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
   --color-border: var(--border);
@@ -25,17 +26,15 @@
   --border: #ddd;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #01242e;
-    --text: #ddd;
-    --heading: #eee;
-    --link: #8cc2dd;
-    --link-visited: #8b6fcb;
-    --code-bg: #000;
-    --code-text: #ddd;
-    --border: #444;
-  }
+[data-theme="dark"] {
+  --bg: #01242e;
+  --text: #ddd;
+  --heading: #eee;
+  --link: #8cc2dd;
+  --link-visited: #8b6fcb;
+  --code-bg: #000;
+  --code-text: #ddd;
+  --border: #444;
 }
 
 /* Map theme colours to prose — these are variable assignments, not element styles */

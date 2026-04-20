@@ -4,6 +4,7 @@ import { marked } from 'marked';
 import mermaid from 'mermaid';
 import DOMPurify from 'dompurify';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
+import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
 import './typography.css';
 
 marked.use({
@@ -57,6 +58,7 @@ function App({ historyUrl }) {
               history
             </a>
           )}
+          <ThemeToggle className="ml-auto" />
         </nav>
         <textarea
           className="flex-1 w-full resize-none rounded-lg p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700"

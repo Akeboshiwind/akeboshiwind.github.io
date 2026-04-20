@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
+import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
 
 const MAX_DIM_DEFAULT = 2000;
 const QUALITY_DEFAULT = 85;
@@ -102,6 +103,7 @@ function App({ historyUrl }) {
               history
             </a>
           )}
+          <ThemeToggle className="ml-auto" />
         </nav>
 
         <h1 className="text-2xl font-bold mt-4 mb-6">Image Compress</h1>

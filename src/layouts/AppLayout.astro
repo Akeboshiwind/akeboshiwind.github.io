@@ -1,5 +1,6 @@
 ---
 import '../styles/app.css';
+import ThemeInit from '../components/ThemeInit.astro';
 import { historyFromPagePath } from '../lib/history.js';
 
 const { title } = Astro.props;
@@ -7,6 +8,7 @@ const historyUrl = historyFromPagePath(Astro.url.pathname);
 ---
 <html lang="en">
 <head>
+  <ThemeInit />
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>

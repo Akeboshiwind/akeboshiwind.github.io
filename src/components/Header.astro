@@ -1,7 +1,9 @@
 ---
+import ThemeToggle from './ThemeToggle.astro';
 const base = import.meta.env.BASE_URL;
 ---
 
-<header class="mt-4 mb-8">
+<header class="mt-4 mb-8 flex items-center justify-between gap-4">
   <a href={base} class="text-xl font-bold text-heading no-underline hover:no-underline">{`By the Rocks`}</a>
+  <ThemeToggle />
 </header>

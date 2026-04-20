@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { useState } from 'react';
 import transit from 'transit-js';
+import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
 
 const reader = transit.reader('json');
 
@@ -59,6 +60,7 @@ function App({ historyUrl }) {
             history
           </a>
         )}
+        <ThemeToggle className="ml-auto" />
       </nav>
 
       <h1 className="text-xl font-semibold">Transit → JSON</h1>

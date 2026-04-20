@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { useEffect, useRef, useState } from 'react';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
+import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
 
 const PREFIX = 'chat_';
 
@@ -47,13 +48,16 @@ export function App({ historyUrl }) {
           )}
         </nav>
         <h1 className="text-base font-semibold">Chat</h1>
-        <button
-          onClick={clear}
-          disabled={messages.length === 0}
-          className="text-sm text-gray-400 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          Clear
-        </button>
+        <div className="flex items-center gap-3">
+          <ThemeToggle className="text-gray-400" />
+          <button
+            onClick={clear}
+            disabled={messages.length === 0}
+            className="text-sm text-gray-400 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Clear
+          </button>
+        </div>
       </header>
 
       <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-4">

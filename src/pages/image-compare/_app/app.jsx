@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
 
 const MAX_DIM = 2000;
 const QUALITY = 0.85;
@@ -153,6 +154,7 @@ function UploadScreen({ image1, image2, onImage, onSwap, onCompare }) {
               history
             </a>
           )}
+          <ThemeToggle className="ml-auto" />
         </nav>
 
         <h1 className="text-2xl font-bold mt-4 mb-6">Image Compare</h1>
