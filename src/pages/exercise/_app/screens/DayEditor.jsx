@@ -12,16 +12,20 @@ import {
   DAY_NAMES,
   setRestDay, setFocus, addSection, addExercise,
   reorderItems, removeItem, updateItem, swapExercise, updateSection,
+  addCircuit, addCircuitChild,
 } from '../store.js';
 import { BottomSheet } from '../components/BottomSheet.jsx';
 import { ExerciseActionsSheet } from '../components/ExerciseActionsSheet.jsx';
+import { CircuitEditSheet } from '../components/CircuitEditSheet.jsx';
 
 export function DayEditor({ state, setState, dayKey, navigate }) {
   const day = state.template.days[dayKey];
   const [actionsItemId, setActionsItemId] = useState(null);
   const [editingSection, setEditingSection] = useState(null);
+  const [editingCircuitId, setEditingCircuitId] = useState(null);
   const [showAddPicker, setShowAddPicker] = useState(false);
   const [addSectionOpen, setAddSectionOpen] = useState(false);
+  const [addChildToCircuitId, setAddChildToCircuitId] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -38,6 +42,7 @@ export function DayEditor({ state, setState, dayKey, navigate }) {
     return null;
   };
   const actionsItem = actionsItemId ? findItem(actionsItemId) : null;
+  const editingCircuit = editingCircuitId ? findItem(editingCircuitId) : null;
 
   const onDragEnd = e => {
     const { active, over } = e;
@@ -103,39 +108,62 @@ export function DayEditor({ state, setState, dayKey, navigate }) {
             <SortableContext items={day.items.map(i => i.id)} strategy={verticalListSortingStrategy}>
               <ul className="space-y-2">
                 {day.items.map(item => (
-                  <SortableRow
-                    key={item.id}
-                    item={item}
-                    pool={state.pool}
-                    onEdit={() => {
-                      if (item.kind === 'section') setEditingSection(item);
-                      else setActionsItemId(item.id);
-                    }}
-                    onRemove={() => {
-                      if (confirm('Remove this item?')) {
-                        setState(s => removeItem(s, dayKey, item.id));
-                      }
-                    }}
-                  />
+                  item.kind === 'circuit'
+                    ? <CircuitRow
+                        key={item.id}
+                        item={item}
+                        pool={state.pool}
+                        onEditCircuit={() => setEditingCircuitId(item.id)}
+                        onEditChild={id => setActionsItemId(id)}
+                        onRemoveChild={id => {
+                          if (confirm('Remove this exercise from the circuit?')) {
+                            setState(s => removeItem(s, dayKey, id));
+                          }
+                        }}
+                        onAddChild={() => setAddChildToCircuitId(item.id)}
+                      />
+                    : <SortableRow
+                        key={item.id}
+                        item={item}
+                        pool={state.pool}
+                        onEdit={() => {
+                          if (item.kind === 'section') setEditingSection(item);
+                          else setActionsItemId(item.id);
+                        }}
+                        onRemove={() => {
+                          if (confirm('Remove this item?')) {
+                            setState(s => removeItem(s, dayKey, item.id));
+                          }
+                        }}
+                      />
                 ))}
               </ul>
             </SortableContext>
           </DndContext>
 
-          <div className="mt-6 flex flex-col sm:flex-row gap-2">
+          <div className="mt-6 grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => setShowAddPicker(true)}
-              className="flex-1 py-3 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-medium"
+              className="py-3 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-medium"
             >
               + Add exercise
             </button>
             <button
               type="button"
               onClick={() => setAddSectionOpen(true)}
-              className="flex-1 py-3 rounded-md border border-gray-300 dark:border-gray-600 font-medium"
+              className="py-3 rounded-md border border-gray-300 dark:border-gray-600 font-medium"
             >
               + Add section
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setState(s => addCircuit(s, dayKey));
+              }}
+              className="col-span-2 py-3 rounded-md border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-medium"
+            >
+              + Add circuit
             </button>
           </div>
         </>
@@ -150,6 +178,20 @@ export function DayEditor({ state, setState, dayKey, navigate }) {
         onUpdate={patch => setState(s => updateItem(s, dayKey, actionsItemId, patch))}
         onSwap={newId => setState(s => swapExercise(s, dayKey, actionsItemId, newId))}
         onRemove={() => setState(s => removeItem(s, dayKey, actionsItemId))}
+      />
+
+      <CircuitEditSheet
+        open={!!editingCircuit}
+        circuit={editingCircuit}
+        onClose={() => setEditingCircuitId(null)}
+        onSave={patch => {
+          setState(s => updateItem(s, dayKey, editingCircuitId, patch));
+          setEditingCircuitId(null);
+        }}
+        onRemove={() => {
+          setState(s => removeItem(s, dayKey, editingCircuitId));
+          setEditingCircuitId(null);
+        }}
       />
 
       <BottomSheet
@@ -195,6 +237,21 @@ export function DayEditor({ state, setState, dayKey, navigate }) {
           }}
         />
       </BottomSheet>
+
+      <BottomSheet
+        open={!!addChildToCircuitId}
+        onClose={() => setAddChildToCircuitId(null)}
+        title="Add to circuit"
+      >
+        <PoolPicker
+          pool={state.pool}
+          filterKind="continuous"
+          onPick={id => {
+            setState(s => addCircuitChild(s, dayKey, addChildToCircuitId, id));
+            setAddChildToCircuitId(null);
+          }}
+        />
+      </BottomSheet>
     </>
   );
 }
@@ -210,45 +267,126 @@ function SortableRow({ item, pool, onEdit, onRemove }) {
   return (
     <li ref={setNodeRef} style={style}>
       <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          aria-label="Drag to reorder"
-          className="p-1 rounded text-gray-400 cursor-grab active:cursor-grabbing touch-none"
-        >
-          <svg viewBox="0 0 16 16" className="w-5 h-5">
-            <circle cx="6" cy="4" r="1.2" fill="currentColor"/>
-            <circle cx="10" cy="4" r="1.2" fill="currentColor"/>
-            <circle cx="6" cy="8" r="1.2" fill="currentColor"/>
-            <circle cx="10" cy="8" r="1.2" fill="currentColor"/>
-            <circle cx="6" cy="12" r="1.2" fill="currentColor"/>
-            <circle cx="10" cy="12" r="1.2" fill="currentColor"/>
-          </svg>
-        </button>
-
+        <DragHandle attributes={attributes} listeners={listeners} />
         <div className="flex-1 min-w-0">
           <RowSummary item={item} pool={pool} />
         </div>
-
-        <button
-          type="button"
-          onClick={onEdit}
-          aria-label="Edit"
-          className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          <svg viewBox="0 0 16 16" className="w-4 h-4"><path fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M11 2l3 3-8 8H3v-3z"/></svg>
-        </button>
-        <button
-          type="button"
-          onClick={onRemove}
-          aria-label="Remove"
-          className="p-2 rounded-md text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400"
-        >
-          <svg viewBox="0 0 16 16" className="w-4 h-4"><path fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" d="M3 4h10M5 4V2.5h6V4M5 4l1 9.5h4L11 4"/></svg>
-        </button>
+        <EditButton onClick={onEdit} />
+        <RemoveButton onClick={onRemove} />
       </div>
     </li>
+  );
+}
+
+function CircuitRow({ item, pool, onEditCircuit, onEditChild, onRemoveChild, onAddChild }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  };
+
+  return (
+    <li ref={setNodeRef} style={style}>
+      <div className="relative rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 pl-4">
+        <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-emerald-500/70" aria-hidden="true" />
+
+        <div className="flex items-center gap-2">
+          <DragHandle attributes={attributes} listeners={listeners} />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1">
+              <LoopIcon />Circuit
+            </p>
+            <p className="font-medium text-sm truncate">{item.name}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {item.rounds} rounds · {item.children.length} exercises
+            </p>
+          </div>
+          <EditButton onClick={onEditCircuit} />
+        </div>
+
+        <ul className="mt-3 space-y-1 pl-7">
+          {item.children.map(child => {
+            const ex = pool[child.exerciseId];
+            return (
+              <li key={child.id} className="flex items-center gap-2 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{ex?.name ?? child.exerciseId}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{child.durationSec}s</p>
+                </div>
+                <EditButton onClick={() => onEditChild(child.id)} />
+                <RemoveButton onClick={() => onRemoveChild(child.id)} />
+              </li>
+            );
+          })}
+          <li>
+            <button
+              type="button"
+              onClick={onAddChild}
+              className="w-full text-left text-xs px-2 py-1.5 rounded-md border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              + Add exercise
+            </button>
+          </li>
+        </ul>
+      </div>
+    </li>
+  );
+}
+
+function DragHandle({ attributes, listeners }) {
+  return (
+    <button
+      type="button"
+      {...attributes}
+      {...listeners}
+      aria-label="Drag to reorder"
+      className="p-1 rounded text-gray-400 cursor-grab active:cursor-grabbing touch-none"
+    >
+      <svg viewBox="0 0 16 16" className="w-5 h-5">
+        <circle cx="6" cy="4" r="1.2" fill="currentColor"/>
+        <circle cx="10" cy="4" r="1.2" fill="currentColor"/>
+        <circle cx="6" cy="8" r="1.2" fill="currentColor"/>
+        <circle cx="10" cy="8" r="1.2" fill="currentColor"/>
+        <circle cx="6" cy="12" r="1.2" fill="currentColor"/>
+        <circle cx="10" cy="12" r="1.2" fill="currentColor"/>
+      </svg>
+    </button>
+  );
+}
+
+function EditButton({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Edit"
+      className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+    >
+      <svg viewBox="0 0 16 16" className="w-4 h-4"><path fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M11 2l3 3-8 8H3v-3z"/></svg>
+    </button>
+  );
+}
+
+function RemoveButton({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Remove"
+      className="p-2 rounded-md text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400"
+    >
+      <svg viewBox="0 0 16 16" className="w-4 h-4"><path fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" d="M3 4h10M5 4V2.5h6V4M5 4l1 9.5h4L11 4"/></svg>
+    </button>
+  );
+}
+
+function LoopIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="w-3 h-3" aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+        d="M3 8a5 5 0 0 1 9-3M13 8a5 5 0 0 1-9 3M11 4l1.5 1L13 3.5M5 12l-1.5-1L3 12.5"/>
+    </svg>
   );
 }
 
@@ -258,14 +396,6 @@ function RowSummary({ item, pool }) {
       <>
         <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Section</p>
         <p className="font-medium text-sm truncate">{item.name || '(unnamed section)'}</p>
-      </>
-    );
-  }
-  if (item.kind === 'circuit') {
-    return (
-      <>
-        <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Circuit · {item.rounds} rounds</p>
-        <p className="font-medium text-sm truncate">{item.name}</p>
       </>
     );
   }
@@ -325,9 +455,9 @@ function SectionForm({ section, onSave }) {
   );
 }
 
-function PoolPicker({ pool, onPick }) {
+function PoolPicker({ pool, onPick, filterKind }) {
   const [q, setQ] = useState('');
-  const all = Object.values(pool);
+  const all = Object.values(pool).filter(p => filterKind ? p.kind === filterKind : true);
   const filtered = q
     ? all.filter(p =>
         p.name.toLowerCase().includes(q.toLowerCase())

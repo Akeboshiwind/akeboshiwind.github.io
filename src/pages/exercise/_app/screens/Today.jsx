@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
   DAY_NAMES,
   toggleSet, finishWorkout, resetWorkout,
-  totalUnits, completedUnits, circuitPhases,
+  totalUnits, completedUnits,
+  toggleCircuitChild, completeCircuitRound,
   updateItem, removeItem, swapExercise,
 } from '../store.js';
 import { primeAudio } from '../audio.js';
@@ -12,11 +13,13 @@ import { CircuitBlock } from '../components/CircuitBlock.jsx';
 import { DayJumper } from '../components/DayJumper.jsx';
 import { TimerBar } from '../components/TimerBar.jsx';
 import { ExerciseActionsSheet } from '../components/ExerciseActionsSheet.jsx';
+import { CircuitEditSheet } from '../components/CircuitEditSheet.jsx';
 
 export function Today({ state, setState, today }) {
   const [viewDay, setViewDay] = useState(today);
   const [activeTimerPhases, setActiveTimerPhases] = useState(null);
   const [actionsItemId, setActionsItemId] = useState(null);
+  const [editingCircuitId, setEditingCircuitId] = useState(null);
 
   const day = state.template.days[viewDay];
 
@@ -25,6 +28,7 @@ export function Today({ state, setState, today }) {
   const noActive = inProgressDay === null;
   const interactive = !day.rest && (isViewingActive || noActive);
   const completed = isViewingActive ? state.inProgress.completedSets : {};
+  const circuitProgress = isViewingActive ? (state.inProgress.circuitProgress ?? {}) : {};
 
   const total = totalUnits(day);
   const done = completedUnits(day, completed);
@@ -55,6 +59,7 @@ export function Today({ state, setState, today }) {
     return null;
   };
   const actionsItem = actionsItemId ? findItem(actionsItemId) : null;
+  const editingCircuit = editingCircuitId ? findItem(editingCircuitId) : null;
 
   return (
     <>
@@ -69,6 +74,15 @@ export function Today({ state, setState, today }) {
             {done} / {total} done
             {viewDay !== today && ` · viewing ${DAY_NAMES[viewDay]}`}
           </p>
+        )}
+        {viewDay !== today && (
+          <button
+            type="button"
+            onClick={() => setViewDay(today)}
+            className="mt-2 text-xs text-emerald-700 dark:text-emerald-300 underline-offset-2 hover:underline"
+          >
+            ← Back to today ({DAY_NAMES[today]})
+          </button>
         )}
       </header>
 
@@ -104,8 +118,12 @@ export function Today({ state, setState, today }) {
                     item={item}
                     pool={state.pool}
                     completed={completed[item.id] || []}
-                    onToggle={i => handleToggle(item.id, i)}
-                    onStartTimer={() => startTimer(circuitPhases(item, state.pool))}
+                    childProgress={circuitProgress[item.id] || []}
+                    onToggleChild={i => setState(s => toggleCircuitChild(s, viewDay, item.id, i))}
+                    onCompleteRound={() => setState(s => completeCircuitRound(s, viewDay, item.id))}
+                    onStartTimer={startTimer}
+                    onOpenActions={childId => setActionsItemId(childId)}
+                    onEditCircuit={() => setEditingCircuitId(item.id)}
                     disabled={!interactive}
                   />
                 )}
@@ -149,6 +167,20 @@ export function Today({ state, setState, today }) {
         onUpdate={patch => setState(s => updateItem(s, viewDay, actionsItemId, patch))}
         onSwap={newId => setState(s => swapExercise(s, viewDay, actionsItemId, newId))}
         onRemove={() => setState(s => removeItem(s, viewDay, actionsItemId))}
+      />
+
+      <CircuitEditSheet
+        open={!!editingCircuit}
+        circuit={editingCircuit}
+        onClose={() => setEditingCircuitId(null)}
+        onSave={patch => {
+          setState(s => updateItem(s, viewDay, editingCircuitId, patch));
+          setEditingCircuitId(null);
+        }}
+        onRemove={() => {
+          setState(s => removeItem(s, viewDay, editingCircuitId));
+          setEditingCircuitId(null);
+        }}
       />
     </>
   );

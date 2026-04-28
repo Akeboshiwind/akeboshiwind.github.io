@@ -74,6 +74,7 @@ const ensureInProgress = (state, dayKey) => {
       day: dayKey,
       startedAt: Date.now(),
       completedSets: {},
+      circuitProgress: {},
     },
   };
 };
@@ -215,6 +216,94 @@ export const finishWorkout = state => {
 };
 
 export const resetWorkout = state => ({ ...state, inProgress: null });
+
+// ── Circuit per-child progress ───────────────────────────────────────
+// Circuits track two things during a workout:
+//   completedSets[circuitId]    = bool[rounds] — round-level progress
+//   circuitProgress[circuitId]  = bool[children.length] — per-child
+//                                  ticks within the CURRENT round
+// "Complete round" advances completedSets and resets circuitProgress.
+
+export const toggleCircuitChild = (state, dayKey, circuitId, childIndex) => {
+  const next = ensureInProgress(state, dayKey);
+  const day = next.template.days[dayKey];
+  const circuit = findItem(day, circuitId);
+  if (!circuit || circuit.kind !== 'circuit') return state;
+  const len = circuit.children.length;
+  const arr = next.inProgress.circuitProgress?.[circuitId]
+    ? [...next.inProgress.circuitProgress[circuitId]]
+    : Array(len).fill(false);
+  arr[childIndex] = !arr[childIndex];
+  return {
+    ...next,
+    inProgress: {
+      ...next.inProgress,
+      circuitProgress: {
+        ...(next.inProgress.circuitProgress ?? {}),
+        [circuitId]: arr,
+      },
+    },
+  };
+};
+
+export const completeCircuitRound = (state, dayKey, circuitId) => {
+  const next = ensureInProgress(state, dayKey);
+  const day = next.template.days[dayKey];
+  const circuit = findItem(day, circuitId);
+  if (!circuit || circuit.kind !== 'circuit') return state;
+  // Tick the next unticked round.
+  const rounds = next.inProgress.completedSets[circuitId]
+    ? [...next.inProgress.completedSets[circuitId]]
+    : Array(circuit.rounds).fill(false);
+  const idx = rounds.indexOf(false);
+  if (idx === -1) return state; // already complete
+  rounds[idx] = true;
+  return {
+    ...next,
+    inProgress: {
+      ...next.inProgress,
+      completedSets: { ...next.inProgress.completedSets, [circuitId]: rounds },
+      circuitProgress: { ...(next.inProgress.circuitProgress ?? {}), [circuitId]: Array(circuit.children.length).fill(false) },
+    },
+  };
+};
+
+// ── Circuit editing ──────────────────────────────────────────────────
+
+export const addCircuitChild = (state, dayKey, circuitId, exerciseId) => {
+  const pool = state.pool[exerciseId];
+  if (!pool || pool.kind !== 'continuous') return state;
+  const child = {
+    kind: 'continuous-exercise',
+    id: newId(),
+    exerciseId,
+    durationSec: pool.defaultDurationSec ?? 30,
+  };
+  return withDay(state, dayKey, day => mapItem(day, circuitId, item =>
+    item.kind === 'circuit' ? { ...item, children: [...item.children, child] } : item));
+};
+
+export const reorderCircuitChildren = (state, dayKey, circuitId, childIds) =>
+  withDay(state, dayKey, day => mapItem(day, circuitId, item => {
+    if (item.kind !== 'circuit') return item;
+    const byId = new Map(item.children.map(c => [c.id, c]));
+    const next = childIds.map(id => byId.get(id)).filter(Boolean);
+    for (const c of item.children) if (!childIds.includes(c.id)) next.push(c);
+    return { ...item, children: next };
+  }));
+
+export const addCircuit = (state, dayKey) => {
+  const circuit = {
+    kind: 'circuit',
+    id: newId(),
+    name: 'New circuit',
+    rounds: 3,
+    betweenChildSec: 15,
+    betweenRoundSec: 60,
+    children: [],
+  };
+  return withDay(state, dayKey, day => ({ ...day, items: [...day.items, circuit] }));
+};
 
 // ── Template editing ─────────────────────────────────────────────────
 

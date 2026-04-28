@@ -1,5 +1,9 @@
 import { describe, test, expect } from 'vitest';
-import { parseImportedRoutine, applyImportedRoutine, DAYS } from './store.js';
+import {
+  parseImportedRoutine, applyImportedRoutine, DAYS,
+  toggleCircuitChild, completeCircuitRound,
+  addCircuit, addCircuitChild,
+} from './store.js';
 import { seedPool, seedTemplate } from './seed.js';
 
 const baseState = {
@@ -256,6 +260,61 @@ describe('parseImportedRoutine — item validation', () => {
     }));
     expect(r.ok).toBe(false);
     expect(r.error).toMatch(/unknown/);
+  });
+});
+
+describe('circuit progress', () => {
+  // Find the Mon circuit in seed (Elliptical Intervals).
+  const monCircuit = baseState.template.days.mon.items.find(i => i.kind === 'circuit');
+
+  test('toggleCircuitChild flips per-child state for the current round', () => {
+    const s1 = toggleCircuitChild(baseState, 'mon', monCircuit.id, 0);
+    expect(s1.inProgress.circuitProgress[monCircuit.id][0]).toBe(true);
+    expect(s1.inProgress.circuitProgress[monCircuit.id][1]).toBe(false);
+    const s2 = toggleCircuitChild(s1, 'mon', monCircuit.id, 0);
+    expect(s2.inProgress.circuitProgress[monCircuit.id][0]).toBe(false);
+  });
+
+  test('completeCircuitRound ticks next round and resets children', () => {
+    let s = toggleCircuitChild(baseState, 'mon', monCircuit.id, 0);
+    s = toggleCircuitChild(s, 'mon', monCircuit.id, 1);
+    s = completeCircuitRound(s, 'mon', monCircuit.id);
+    expect(s.inProgress.completedSets[monCircuit.id][0]).toBe(true);
+    expect(s.inProgress.circuitProgress[monCircuit.id]).toEqual([false, false]);
+  });
+
+  test('completeCircuitRound is a no-op once all rounds are done', () => {
+    let s = baseState;
+    for (let i = 0; i < monCircuit.rounds; i++) {
+      s = completeCircuitRound(s, 'mon', monCircuit.id);
+    }
+    const before = s.inProgress.completedSets[monCircuit.id].slice();
+    s = completeCircuitRound(s, 'mon', monCircuit.id);
+    expect(s.inProgress.completedSets[monCircuit.id]).toEqual(before);
+  });
+});
+
+describe('circuit editing', () => {
+  test('addCircuit appends a default circuit to the day', () => {
+    const next = addCircuit(baseState, 'mon');
+    const items = next.template.days.mon.items;
+    const last = items[items.length - 1];
+    expect(last.kind).toBe('circuit');
+    expect(last.children).toEqual([]);
+    expect(last.rounds).toBeGreaterThan(0);
+  });
+
+  test('addCircuitChild only accepts continuous pool entries', () => {
+    const withCircuit = addCircuit(baseState, 'mon');
+    const circuit = withCircuit.template.days.mon.items.at(-1);
+    // Try adding a reps-kind exercise — should be a no-op.
+    const noChange = addCircuitChild(withCircuit, 'mon', circuit.id, 'bw-squat');
+    expect(noChange).toBe(withCircuit);
+    // Adding a continuous one works.
+    const added = addCircuitChild(withCircuit, 'mon', circuit.id, 'jump-squat');
+    const updated = added.template.days.mon.items.find(i => i.id === circuit.id);
+    expect(updated.children).toHaveLength(1);
+    expect(updated.children[0].exerciseId).toBe('jump-squat');
   });
 });
 
