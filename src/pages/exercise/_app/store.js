@@ -369,6 +369,35 @@ export const reorderItems = (state, dayKey, ids) =>
     return { ...day, items: next };
   });
 
+// Move a single item (top-level or circuit child) up or down one position.
+// `direction` is -1 for up, +1 for down. No-op at the boundary.
+export const moveItem = (state, dayKey, itemId, direction) =>
+  withDay(state, dayKey, day => {
+    const topIdx = day.items.findIndex(i => i.id === itemId);
+    if (topIdx >= 0) {
+      const target = topIdx + direction;
+      if (target < 0 || target >= day.items.length) return day;
+      return { ...day, items: swap(day.items, topIdx, target) };
+    }
+    return {
+      ...day,
+      items: day.items.map(item => {
+        if (item.kind !== 'circuit') return item;
+        const ci = item.children.findIndex(c => c.id === itemId);
+        if (ci < 0) return item;
+        const target = ci + direction;
+        if (target < 0 || target >= item.children.length) return item;
+        return { ...item, children: swap(item.children, ci, target) };
+      }),
+    };
+  });
+
+const swap = (arr, i, j) => {
+  const out = [...arr];
+  [out[i], out[j]] = [out[j], out[i]];
+  return out;
+};
+
 // ── Imported-routine parsing ─────────────────────────────────────────
 
 const KNOWN_EQUIPMENT = new Set(['none', 'dumbbell', 'band', 'elliptical', 'other']);

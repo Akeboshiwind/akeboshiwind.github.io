@@ -1,17 +1,8 @@
 import { useState } from 'react';
 import {
-  DndContext, closestCenter, PointerSensor, KeyboardSensor,
-  useSensor, useSensors,
-} from '@dnd-kit/core';
-import {
-  SortableContext, sortableKeyboardCoordinates,
-  useSortable, verticalListSortingStrategy, arrayMove,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import {
   DAY_NAMES,
   setRestDay, setFocus, addSection, addExercise,
-  reorderItems, removeItem, updateItem, swapExercise, updateSection,
+  moveItem, removeItem, updateItem, swapExercise, updateSection,
   addCircuit, addCircuitChild,
 } from '../store.js';
 import { BottomSheet } from '../components/BottomSheet.jsx';
@@ -27,11 +18,6 @@ export function DayEditor({ state, setState, dayKey, navigate }) {
   const [addSectionOpen, setAddSectionOpen] = useState(false);
   const [addChildToCircuitId, setAddChildToCircuitId] = useState(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
-
   const findItem = id => {
     for (const it of day.items) {
       if (it.id === id) return it;
@@ -44,15 +30,8 @@ export function DayEditor({ state, setState, dayKey, navigate }) {
   const actionsItem = actionsItemId ? findItem(actionsItemId) : null;
   const editingCircuit = editingCircuitId ? findItem(editingCircuitId) : null;
 
-  const onDragEnd = e => {
-    const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const ids = day.items.map(i => i.id);
-    const oldIdx = ids.indexOf(active.id);
-    const newIdx = ids.indexOf(over.id);
-    if (oldIdx < 0 || newIdx < 0) return;
-    setState(s => reorderItems(s, dayKey, arrayMove(ids, oldIdx, newIdx)));
-  };
+  const moveUp = id => setState(s => moveItem(s, dayKey, id, -1));
+  const moveDown = id => setState(s => moveItem(s, dayKey, id, +1));
 
   return (
     <>
@@ -104,42 +83,54 @@ export function DayEditor({ state, setState, dayKey, navigate }) {
               No exercises yet. Add one below.
             </p>
           )}
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <SortableContext items={day.items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-              <ul className="space-y-2">
-                {day.items.map(item => (
-                  item.kind === 'circuit'
-                    ? <CircuitRow
-                        key={item.id}
-                        item={item}
-                        pool={state.pool}
-                        onEditCircuit={() => setEditingCircuitId(item.id)}
-                        onEditChild={id => setActionsItemId(id)}
-                        onRemoveChild={id => {
-                          if (confirm('Remove this exercise from the circuit?')) {
-                            setState(s => removeItem(s, dayKey, id));
-                          }
-                        }}
-                        onAddChild={() => setAddChildToCircuitId(item.id)}
-                      />
-                    : <SortableRow
-                        key={item.id}
-                        item={item}
-                        pool={state.pool}
-                        onEdit={() => {
-                          if (item.kind === 'section') setEditingSection(item);
-                          else setActionsItemId(item.id);
-                        }}
-                        onRemove={() => {
-                          if (confirm('Remove this item?')) {
-                            setState(s => removeItem(s, dayKey, item.id));
-                          }
-                        }}
-                      />
-                ))}
-              </ul>
-            </SortableContext>
-          </DndContext>
+          <ul className="space-y-2">
+            {day.items.map((item, i) => {
+              const canUp = i > 0;
+              const canDown = i < day.items.length - 1;
+              if (item.kind === 'circuit') {
+                return (
+                  <CircuitRow
+                    key={item.id}
+                    item={item}
+                    pool={state.pool}
+                    canUp={canUp}
+                    canDown={canDown}
+                    onMoveUp={() => moveUp(item.id)}
+                    onMoveDown={() => moveDown(item.id)}
+                    onEditCircuit={() => setEditingCircuitId(item.id)}
+                    onEditChild={id => setActionsItemId(id)}
+                    onRemoveChild={id => {
+                      if (confirm('Remove this exercise from the circuit?')) {
+                        setState(s => removeItem(s, dayKey, id));
+                      }
+                    }}
+                    onMoveChild={(id, dir) => setState(s => moveItem(s, dayKey, id, dir))}
+                    onAddChild={() => setAddChildToCircuitId(item.id)}
+                  />
+                );
+              }
+              return (
+                <Row
+                  key={item.id}
+                  item={item}
+                  pool={state.pool}
+                  canUp={canUp}
+                  canDown={canDown}
+                  onMoveUp={() => moveUp(item.id)}
+                  onMoveDown={() => moveDown(item.id)}
+                  onEdit={() => {
+                    if (item.kind === 'section') setEditingSection(item);
+                    else setActionsItemId(item.id);
+                  }}
+                  onRemove={() => {
+                    if (confirm('Remove this item?')) {
+                      setState(s => removeItem(s, dayKey, item.id));
+                    }
+                  }}
+                />
+              );
+            })}
+          </ul>
 
           <div className="mt-6 grid grid-cols-2 gap-2">
             <button
@@ -158,9 +149,7 @@ export function DayEditor({ state, setState, dayKey, navigate }) {
             </button>
             <button
               type="button"
-              onClick={() => {
-                setState(s => addCircuit(s, dayKey));
-              }}
+              onClick={() => setState(s => addCircuit(s, dayKey))}
               className="col-span-2 py-3 rounded-md border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-medium"
             >
               + Add circuit
@@ -256,18 +245,11 @@ export function DayEditor({ state, setState, dayKey, navigate }) {
   );
 }
 
-function SortableRow({ item, pool, onEdit, onRemove }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.6 : 1,
-  };
-
+function Row({ item, pool, canUp, canDown, onMoveUp, onMoveDown, onEdit, onRemove }) {
   return (
-    <li ref={setNodeRef} style={style}>
+    <li>
       <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
-        <DragHandle attributes={attributes} listeners={listeners} />
+        <MoveArrows canUp={canUp} canDown={canDown} onUp={onMoveUp} onDown={onMoveDown} />
         <div className="flex-1 min-w-0">
           <RowSummary item={item} pool={pool} />
         </div>
@@ -278,21 +260,14 @@ function SortableRow({ item, pool, onEdit, onRemove }) {
   );
 }
 
-function CircuitRow({ item, pool, onEditCircuit, onEditChild, onRemoveChild, onAddChild }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.6 : 1,
-  };
-
+function CircuitRow({ item, pool, canUp, canDown, onMoveUp, onMoveDown, onEditCircuit, onEditChild, onRemoveChild, onMoveChild, onAddChild }) {
   return (
-    <li ref={setNodeRef} style={style}>
+    <li>
       <div className="relative rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 pl-4">
         <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-emerald-500/70" aria-hidden="true" />
 
         <div className="flex items-center gap-2">
-          <DragHandle attributes={attributes} listeners={listeners} />
+          <MoveArrows canUp={canUp} canDown={canDown} onUp={onMoveUp} onDown={onMoveDown} />
           <div className="flex-1 min-w-0">
             <p className="text-[10px] uppercase tracking-wider font-semibold text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1">
               <LoopIcon />Circuit
@@ -306,10 +281,19 @@ function CircuitRow({ item, pool, onEditCircuit, onEditChild, onRemoveChild, onA
         </div>
 
         <ul className="mt-3 space-y-1 pl-7">
-          {item.children.map(child => {
+          {item.children.map((child, i) => {
             const ex = pool[child.exerciseId];
+            const childCanUp = i > 0;
+            const childCanDown = i < item.children.length - 1;
             return (
               <li key={child.id} className="flex items-center gap-2 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-2">
+                <MoveArrows
+                  canUp={childCanUp}
+                  canDown={childCanDown}
+                  onUp={() => onMoveChild(child.id, -1)}
+                  onDown={() => onMoveChild(child.id, +1)}
+                  small
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{ex?.name ?? child.exerciseId}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{child.durationSec}s</p>
@@ -334,24 +318,29 @@ function CircuitRow({ item, pool, onEditCircuit, onEditChild, onRemoveChild, onA
   );
 }
 
-function DragHandle({ attributes, listeners }) {
+function MoveArrows({ canUp, canDown, onUp, onDown, small }) {
+  const sizeClass = small ? 'w-6 h-5' : 'w-7 h-6';
   return (
-    <button
-      type="button"
-      {...attributes}
-      {...listeners}
-      aria-label="Drag to reorder"
-      className="p-1 rounded text-gray-400 cursor-grab active:cursor-grabbing touch-none"
-    >
-      <svg viewBox="0 0 16 16" className="w-5 h-5">
-        <circle cx="6" cy="4" r="1.2" fill="currentColor"/>
-        <circle cx="10" cy="4" r="1.2" fill="currentColor"/>
-        <circle cx="6" cy="8" r="1.2" fill="currentColor"/>
-        <circle cx="10" cy="8" r="1.2" fill="currentColor"/>
-        <circle cx="6" cy="12" r="1.2" fill="currentColor"/>
-        <circle cx="10" cy="12" r="1.2" fill="currentColor"/>
-      </svg>
-    </button>
+    <div className="flex flex-col gap-0.5 flex-shrink-0">
+      <button
+        type="button"
+        onClick={onUp}
+        disabled={!canUp}
+        aria-label="Move up"
+        className={`${sizeClass} flex items-center justify-center rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed`}
+      >
+        <svg viewBox="0 0 16 16" className="w-3.5 h-3.5"><path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 10l4-4 4 4"/></svg>
+      </button>
+      <button
+        type="button"
+        onClick={onDown}
+        disabled={!canDown}
+        aria-label="Move down"
+        className={`${sizeClass} flex items-center justify-center rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed`}
+      >
+        <svg viewBox="0 0 16 16" className="w-3.5 h-3.5"><path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 6l4 4 4-4"/></svg>
+      </button>
+    </div>
   );
 }
 
