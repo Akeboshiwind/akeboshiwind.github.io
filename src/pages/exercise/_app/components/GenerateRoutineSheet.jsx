@@ -1,18 +1,21 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { BottomSheet } from './BottomSheet.jsx';
-import { ROUTINE_PROMPT } from '../prompt.js';
+import { buildPrompt } from '../prompt.js';
 import { DAY_NAMES, parseImportedRoutine, applyImportedRoutine } from '../store.js';
 
 export function GenerateRoutineSheet({ open, onClose, state, setState }) {
   const [stage, setStage] = useState('input');     // 'input' | 'preview'
+  const [brief, setBrief] = useState('');
   const [raw, setRaw] = useState('');
   const [error, setError] = useState('');
   const [parsed, setParsed] = useState(null);
   const [summary, setSummary] = useState(null);
   const [copied, setCopied] = useState(false);
 
+  const promptText = useMemo(() => buildPrompt(state, brief), [state, brief]);
+
   const reset = () => {
-    setStage('input'); setRaw(''); setError('');
+    setStage('input'); setBrief(''); setRaw(''); setError('');
     setParsed(null); setSummary(null); setCopied(false);
   };
 
@@ -20,11 +23,11 @@ export function GenerateRoutineSheet({ open, onClose, state, setState }) {
 
   const onCopy = async () => {
     try {
-      await navigator.clipboard.writeText(ROUTINE_PROMPT);
+      await navigator.clipboard.writeText(promptText);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch (e) {
-      setError('Could not copy to clipboard. Select the text and copy manually.');
+      setError('Could not copy to clipboard. Open the prompt below and copy manually.');
     }
   };
 
@@ -46,7 +49,9 @@ export function GenerateRoutineSheet({ open, onClose, state, setState }) {
     <BottomSheet open={open} onClose={close} title={stage === 'input' ? 'Generate routine with Claude' : 'Confirm import'}>
       {stage === 'input' && (
         <Input
+          brief={brief} setBrief={setBrief}
           raw={raw} setRaw={setRaw}
+          promptText={promptText}
           onCopy={onCopy} copied={copied}
           onPreview={onPreview}
           error={error}
@@ -63,13 +68,26 @@ export function GenerateRoutineSheet({ open, onClose, state, setState }) {
   );
 }
 
-function Input({ raw, setRaw, onCopy, copied, onPreview, error }) {
+function Input({ brief, setBrief, raw, setRaw, promptText, onCopy, copied, onPreview, error }) {
   return (
     <div className="flex flex-col gap-4">
       <section className="text-sm">
         <p className="text-gray-700 dark:text-gray-300 mb-2">
-          1. Copy the prompt and paste it into <a href="https://claude.ai" target="_blank" rel="noopener" className="text-emerald-700 dark:text-emerald-300 underline">claude.ai</a>.
-          Edit the brief at the bottom to describe your goals, equipment, and constraints.
+          1. (Optional) Tell Claude what you want — goals, equipment changes, intensity, time available.
+          The current pool, plan, and last 4 weeks of history are included automatically.
+        </p>
+        <textarea
+          value={brief}
+          onChange={e => setBrief(e.target.value)}
+          rows={3}
+          placeholder="e.g. Drop one strength day, add a 20-min run on Saturday. Keep weights light."
+          className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm resize-y"
+        />
+      </section>
+
+      <section className="text-sm">
+        <p className="text-gray-700 dark:text-gray-300 mb-2">
+          2. Copy the prompt and paste it into <a href="https://claude.ai" target="_blank" rel="noopener" className="text-emerald-700 dark:text-emerald-300 underline">claude.ai</a>.
         </p>
         <button
           type="button"
@@ -79,26 +97,28 @@ function Input({ raw, setRaw, onCopy, copied, onPreview, error }) {
           {copied ? '✓ Copied' : 'Copy prompt'}
         </button>
         <details className="mt-3">
-          <summary className="text-xs text-gray-500 cursor-pointer">Show prompt</summary>
-          <pre className="mt-2 max-h-48 overflow-auto bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 text-xs whitespace-pre-wrap font-mono rounded">{ROUTINE_PROMPT}</pre>
+          <summary className="text-xs text-gray-500 cursor-pointer">Show prompt ({promptText.length.toLocaleString()} chars)</summary>
+          <pre className="mt-2 max-h-48 overflow-auto bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 text-xs whitespace-pre-wrap font-mono rounded">{promptText}</pre>
         </details>
       </section>
 
       <section className="text-sm">
         <p className="text-gray-700 dark:text-gray-300 mb-2">
-          2. Paste Claude's JSON response below.
+          3. Paste Claude's JSON reply below.
         </p>
         <textarea
           value={raw}
           onChange={e => setRaw(e.target.value)}
           rows={8}
-          placeholder='{"pool": [...], "days": {...}}'
+          placeholder='```json
+{ "pool": [...], "days": {...} }
+```'
           className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm font-mono resize-y"
         />
       </section>
 
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-sm text-red-600 dark:text-red-400 break-words">{error}</p>
       )}
 
       <button

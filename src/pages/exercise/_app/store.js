@@ -283,11 +283,6 @@ export const reorderItems = (state, dayKey, ids) =>
 // ── Imported-routine parsing ─────────────────────────────────────────
 
 const KNOWN_EQUIPMENT = new Set(['none', 'dumbbell', 'band', 'elliptical', 'other']);
-const POOL_KIND_FOR_ITEM = {
-  'reps-exercise': 'reps',
-  'timed-exercise': 'timed',
-  'continuous-exercise': 'continuous',
-};
 
 // Strip markdown fences and any prose around the JSON.
 const extractJsonBlock = raw => {
@@ -304,15 +299,24 @@ const extractJsonBlock = raw => {
 // Validate and normalise an imported routine. Returns
 //   { ok: true, parsed, summary } or { ok: false, error }
 // `parsed` is a plain object with `pool` (array) and `days` (object) ready
-// to merge with the existing state.
+// to merge with the existing state. Validation is strict: every required
+// field must be present with the right type, otherwise we reject and surface
+// a single error message naming the offending path.
 export const parseImportedRoutine = (state, raw) => {
   const block = extractJsonBlock(raw);
   if (!block) return { ok: false, error: 'No JSON found in input.' };
   let data;
   try { data = JSON.parse(block); } catch (e) { return { ok: false, error: 'Invalid JSON: ' + e.message }; }
-  if (!data || typeof data !== 'object') return { ok: false, error: 'Top-level must be an object.' };
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return { ok: false, error: 'Top-level must be a JSON object.' };
+  }
   if (!Array.isArray(data.pool)) return { ok: false, error: 'pool must be an array.' };
-  if (!data.days || typeof data.days !== 'object') return { ok: false, error: 'days must be an object.' };
+  if (!data.days || typeof data.days !== 'object' || Array.isArray(data.days)) {
+    return { ok: false, error: 'days must be an object.' };
+  }
+  for (const k of DAYS) {
+    if (!(k in data.days)) return { ok: false, error: `days.${k} is missing — all seven days must be present.` };
+  }
 
   // Index existing pool by lowercased name → id
   const nameToId = new Map();
@@ -320,65 +324,49 @@ export const parseImportedRoutine = (state, raw) => {
     nameToId.set(p.name.trim().toLowerCase(), p.id);
   }
 
-  // Pool — produce a normalised list with resolved ids.
+  // Pool entries.
   const newPool = [];
   const updatedPool = [];
   const poolByName = new Map();
   for (const [i, p] of data.pool.entries()) {
     const where = `pool[${i}]`;
-    if (!p || typeof p !== 'object') return { ok: false, error: `${where} is not an object.` };
-    if (typeof p.name !== 'string' || !p.name.trim()) return { ok: false, error: `${where} missing name.` };
-    if (!['reps', 'timed', 'continuous'].includes(p.kind)) return { ok: false, error: `${where} kind must be 'reps' | 'timed' | 'continuous'.` };
-    const equipment = KNOWN_EQUIPMENT.has(p.equipment) ? p.equipment : 'other';
-    const tags = Array.isArray(p.tags) ? p.tags.filter(t => typeof t === 'string') : [];
-    const lower = p.name.trim().toLowerCase();
-    const existingId = nameToId.get(lower);
-    const id = existingId ?? (slugify(p.name) + '-' + Math.random().toString(36).slice(2, 5));
-    const entry = {
-      id, kind: p.kind,
-      name: p.name.trim(),
-      description: typeof p.description === 'string' ? p.description.trim() : '',
-      tip: typeof p.tip === 'string' ? p.tip.trim() : '',
-      equipment, tags,
-    };
-    if (p.kind === 'reps') {
-      entry.defaultSets = clampInt(p.defaultSets, 1, 50, 3);
-      entry.defaultReps = clampInt(p.defaultReps, 1, 999, 12);
-      entry.defaultRestSec = clampInt(p.defaultRestSec, 0, 999, 60);
-    } else if (p.kind === 'timed') {
-      entry.defaultSets = clampInt(p.defaultSets, 1, 50, 3);
-      entry.defaultDurationSec = clampInt(p.defaultDurationSec, 1, 7200, 30);
-      entry.defaultRestSec = clampInt(p.defaultRestSec, 0, 999, 30);
-    } else {
-      entry.defaultDurationSec = clampInt(p.defaultDurationSec, 1, 7200, 300);
-    }
+    const result = normalisePoolEntry(p, where, nameToId);
+    if (result.error) return { ok: false, error: result.error };
+    const entry = result.value;
+    const lower = entry.name.toLowerCase();
+    if (poolByName.has(lower)) return { ok: false, error: `${where} duplicates name "${entry.name}".` };
     poolByName.set(lower, entry);
-    if (existingId) updatedPool.push(entry); else newPool.push(entry);
+    if (nameToId.has(lower)) updatedPool.push(entry); else newPool.push(entry);
   }
 
-  // Days — validate each item.
+  // Days.
   const days = {};
-  const dayChanges = []; // [{ day, summary }]
+  const dayChanges = [];
   for (const k of DAYS) {
     const incoming = data.days[k];
-    if (!incoming) {
-      // Day omitted — keep existing day untouched
-      days[k] = state.template.days[k];
-      continue;
+    const where = `days.${k}`;
+    if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
+      return { ok: false, error: `${where} must be an object.` };
     }
-    if (typeof incoming !== 'object') return { ok: false, error: `days.${k} must be an object.` };
-    const rest = !!incoming.rest;
-    const focus = typeof incoming.focus === 'string' ? incoming.focus.trim() : '';
-    const itemsIn = Array.isArray(incoming.items) ? incoming.items : [];
+    if (typeof incoming.rest !== 'boolean') {
+      return { ok: false, error: `${where}.rest must be a boolean.` };
+    }
+    if (typeof incoming.focus !== 'string') {
+      return { ok: false, error: `${where}.focus must be a string.` };
+    }
+    if (!Array.isArray(incoming.items)) {
+      return { ok: false, error: `${where}.items must be an array.` };
+    }
     const items = [];
-    for (const [i, raw] of itemsIn.entries()) {
-      const where = `days.${k}.items[${i}]`;
-      const item = await_normaliseItem(raw, where, poolByName);
-      if (item.error) return { ok: false, error: item.error };
-      items.push(item.value);
+    if (!incoming.rest) {
+      for (const [i, item] of incoming.items.entries()) {
+        const r = normaliseItem(item, `${where}.items[${i}]`, poolByName);
+        if (r.error) return { ok: false, error: r.error };
+        items.push(r.value);
+      }
     }
-    days[k] = { rest, focus, items: rest ? [] : items };
-    dayChanges.push({ day: k, exercises: countCheckable(days[k]) });
+    days[k] = { rest: incoming.rest, focus: incoming.focus.trim(), items };
+    dayChanges.push({ day: k, exercises: items.filter(it => it.kind !== 'section').length });
   }
 
   return {
@@ -392,82 +380,136 @@ export const parseImportedRoutine = (state, raw) => {
   };
 };
 
-// Inline (no async — name is a leftover joke). Returns { value } or { error }.
-const await_normaliseItem = (raw, where, poolByName) => {
-  if (!raw || typeof raw !== 'object') return { error: `${where} is not an object.` };
-  if (raw.kind === 'section') {
-    return { value: {
-      kind: 'section', id: newId(),
-      name: typeof raw.name === 'string' ? raw.name.trim() : '',
-      description: typeof raw.description === 'string' ? raw.description.trim() : '',
-    } };
+const normalisePoolEntry = (p, where, nameToId) => {
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return { error: `${where} must be an object.` };
+  if (typeof p.name !== 'string' || !p.name.trim()) return { error: `${where}.name must be a non-empty string.` };
+  if (!['reps', 'timed', 'continuous'].includes(p.kind)) {
+    return { error: `${where}.kind must be 'reps' | 'timed' | 'continuous'.` };
   }
-  if (raw.kind === 'reps-exercise' || raw.kind === 'timed-exercise' || raw.kind === 'continuous-exercise') {
-    if (typeof raw.name !== 'string' || !raw.name.trim()) {
-      return { error: `${where} missing exercise name.` };
-    }
-    const lower = raw.name.trim().toLowerCase();
-    const pool = poolByName.get(lower);
-    if (!pool) return { error: `${where} references "${raw.name}" which isn't in pool.` };
-    const expected = POOL_KIND_FOR_ITEM[raw.kind];
-    if (pool.kind !== expected) {
-      return { error: `${where} kind '${raw.kind}' but pool has '${pool.kind}' for "${raw.name}".` };
-    }
-    if (raw.kind === 'reps-exercise') {
-      return { value: {
-        kind: 'reps-exercise', id: newId(), exerciseId: pool.id,
-        sets: clampInt(raw.sets, 1, 50, pool.defaultSets ?? 3),
-        reps: clampInt(raw.reps, 1, 999, pool.defaultReps ?? 12),
-        restSec: clampInt(raw.restSec, 0, 999, pool.defaultRestSec ?? 60),
-        weightNote: typeof raw.weightNote === 'string' ? raw.weightNote : '',
-      } };
-    }
-    if (raw.kind === 'timed-exercise') {
-      return { value: {
-        kind: 'timed-exercise', id: newId(), exerciseId: pool.id,
-        sets: clampInt(raw.sets, 1, 50, pool.defaultSets ?? 3),
-        durationSec: clampInt(raw.durationSec, 1, 7200, pool.defaultDurationSec ?? 30),
-        restSec: clampInt(raw.restSec, 0, 999, pool.defaultRestSec ?? 30),
-        weightNote: typeof raw.weightNote === 'string' ? raw.weightNote : '',
-      } };
-    }
-    return { value: {
-      kind: 'continuous-exercise', id: newId(), exerciseId: pool.id,
-      durationSec: clampInt(raw.durationSec, 1, 7200, pool.defaultDurationSec ?? 60),
-    } };
+  if (typeof p.equipment !== 'string' || !KNOWN_EQUIPMENT.has(p.equipment)) {
+    return { error: `${where}.equipment must be one of: ${[...KNOWN_EQUIPMENT].join(', ')}.` };
   }
-  if (raw.kind === 'circuit') {
-    const childrenIn = Array.isArray(raw.children) ? raw.children : [];
-    const children = [];
-    for (const [i, c] of childrenIn.entries()) {
-      if (c?.kind !== 'continuous-exercise') {
-        return { error: `${where}.children[${i}] must be continuous-exercise.` };
-      }
-      const result = await_normaliseItem(c, `${where}.children[${i}]`, poolByName);
-      if (result.error) return result;
-      children.push(result.value);
-    }
-    return { value: {
-      kind: 'circuit', id: newId(),
-      name: typeof raw.name === 'string' ? raw.name.trim() : 'Circuit',
-      rounds: clampInt(raw.rounds, 1, 99, 3),
-      betweenChildSec: clampInt(raw.betweenChildSec, 0, 600, 0),
-      betweenRoundSec: clampInt(raw.betweenRoundSec, 0, 600, 0),
-      children,
-    } };
+  if (!Array.isArray(p.tags) || p.tags.some(t => typeof t !== 'string')) {
+    return { error: `${where}.tags must be an array of strings.` };
   }
-  return { error: `${where} unknown kind: ${raw.kind}.` };
+  if (typeof p.description !== 'string') return { error: `${where}.description must be a string.` };
+  if (typeof p.tip !== 'string') return { error: `${where}.tip must be a string.` };
+
+  const lower = p.name.trim().toLowerCase();
+  const existingId = nameToId.get(lower);
+  const id = existingId ?? (slugify(p.name) + '-' + Math.random().toString(36).slice(2, 5));
+
+  let kindFields;
+  if (p.kind === 'reps') {
+    kindFields = mustInts(p, { defaultSets: [1, 50], defaultReps: [1, 999], defaultRestSec: [0, 999] }, where);
+  } else if (p.kind === 'timed') {
+    kindFields = mustInts(p, { defaultSets: [1, 50], defaultDurationSec: [1, 7200], defaultRestSec: [0, 999] }, where);
+  } else {
+    kindFields = mustInts(p, { defaultDurationSec: [1, 7200] }, where);
+  }
+  if (kindFields.error) return { error: kindFields.error };
+
+  return { value: {
+    id, kind: p.kind,
+    name: p.name.trim(),
+    description: p.description.trim(),
+    tip: p.tip.trim(),
+    equipment: p.equipment,
+    tags: p.tags,
+    ...kindFields.value,
+  } };
 };
 
-const clampInt = (v, lo, hi, fallback) => {
-  const n = parseInt(v, 10);
-  if (Number.isNaN(n)) return fallback;
-  return Math.min(hi, Math.max(lo, n));
+const normaliseItem = (raw, where, poolByName) => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { error: `${where} must be an object.` };
+  }
+  switch (raw.kind) {
+    case 'section':
+      if (typeof raw.name !== 'string') return { error: `${where}.name must be a string.` };
+      if (typeof raw.description !== 'string') return { error: `${where}.description must be a string.` };
+      return { value: { kind: 'section', id: newId(), name: raw.name.trim(), description: raw.description.trim() } };
+
+    case 'reps-exercise': {
+      const poolR = lookupPool(raw, where, poolByName, 'reps');
+      if (poolR.error) return { error: poolR.error };
+      if (typeof raw.weightNote !== 'string') return { error: `${where}.weightNote must be a string (use "" if none).` };
+      const ints = mustInts(raw, { sets: [1, 50], reps: [1, 999], restSec: [0, 999] }, where);
+      if (ints.error) return { error: ints.error };
+      return { value: { kind: 'reps-exercise', id: newId(), exerciseId: poolR.value.id, ...ints.value, weightNote: raw.weightNote } };
+    }
+
+    case 'timed-exercise': {
+      const poolR = lookupPool(raw, where, poolByName, 'timed');
+      if (poolR.error) return { error: poolR.error };
+      if (typeof raw.weightNote !== 'string') return { error: `${where}.weightNote must be a string (use "" if none).` };
+      const ints = mustInts(raw, { sets: [1, 50], durationSec: [1, 7200], restSec: [0, 999] }, where);
+      if (ints.error) return { error: ints.error };
+      return { value: { kind: 'timed-exercise', id: newId(), exerciseId: poolR.value.id, ...ints.value, weightNote: raw.weightNote } };
+    }
+
+    case 'continuous-exercise': {
+      const poolR = lookupPool(raw, where, poolByName, 'continuous');
+      if (poolR.error) return { error: poolR.error };
+      const ints = mustInts(raw, { durationSec: [1, 7200] }, where);
+      if (ints.error) return { error: ints.error };
+      return { value: { kind: 'continuous-exercise', id: newId(), exerciseId: poolR.value.id, ...ints.value } };
+    }
+
+    case 'circuit': {
+      if (typeof raw.name !== 'string' || !raw.name.trim()) return { error: `${where}.name must be a non-empty string.` };
+      const ints = mustInts(raw, { rounds: [1, 99], betweenChildSec: [0, 600], betweenRoundSec: [0, 600] }, where);
+      if (ints.error) return { error: ints.error };
+      if (!Array.isArray(raw.children) || raw.children.length === 0) {
+        return { error: `${where}.children must be a non-empty array.` };
+      }
+      const children = [];
+      for (const [i, c] of raw.children.entries()) {
+        if (c?.kind !== 'continuous-exercise') {
+          return { error: `${where}.children[${i}].kind must be "continuous-exercise".` };
+        }
+        const r = normaliseItem(c, `${where}.children[${i}]`, poolByName);
+        if (r.error) return { error: r.error };
+        children.push(r.value);
+      }
+      return { value: { kind: 'circuit', id: newId(), name: raw.name.trim(), ...ints.value, children } };
+    }
+
+    default:
+      return { error: `${where}.kind unknown: ${JSON.stringify(raw.kind)}.` };
+  }
+};
+
+const lookupPool = (raw, where, poolByName, expectedPoolKind) => {
+  if (typeof raw.name !== 'string' || !raw.name.trim()) {
+    return { error: `${where}.name must be a non-empty string.` };
+  }
+  const pool = poolByName.get(raw.name.trim().toLowerCase());
+  if (!pool) return { error: `${where} references "${raw.name}" which isn't in pool.` };
+  if (pool.kind !== expectedPoolKind) {
+    return { error: `${where} item kind '${raw.kind}' but pool entry "${pool.name}" is of kind '${pool.kind}'.` };
+  }
+  return { value: pool };
+};
+
+// Strict integer extractor for multiple fields with [min, max] bounds.
+const mustInts = (raw, schema, where) => {
+  const out = {};
+  for (const [key, [lo, hi]] of Object.entries(schema)) {
+    if (raw[key] === undefined || raw[key] === null) {
+      return { error: `${where}.${key} is missing.` };
+    }
+    if (typeof raw[key] !== 'number' || !Number.isFinite(raw[key])) {
+      return { error: `${where}.${key} must be a number.` };
+    }
+    const n = Math.trunc(raw[key]);
+    if (n < lo || n > hi) return { error: `${where}.${key} must be between ${lo} and ${hi}.` };
+    out[key] = n;
+  }
+  return { value: out };
 };
 
 const slugify = s => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'exercise';
-
-const countCheckable = day => day.items.filter(i => i.kind !== 'section').length;
 
 // Apply a parsed routine: upsert pool entries, replace days.
 export const applyImportedRoutine = (state, parsed) => {
