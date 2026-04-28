@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { DAYS, DAY_NAMES, totalUnits } from '../store.js';
+import { GenerateRoutineSheet } from '../components/GenerateRoutineSheet.jsx';
 
-export function Planner({ state, navigate }) {
+export function Planner({ state, setState, navigate }) {
+  const [generateOpen, setGenerateOpen] = useState(false);
+
   return (
     <>
       <div className="flex items-center gap-2 mb-4">
@@ -14,6 +18,14 @@ export function Planner({ state, navigate }) {
         <h1 className="text-2xl font-semibold flex-1 text-center">Week template</h1>
         <span className="w-12" />
       </div>
+
+      <button
+        type="button"
+        onClick={() => setGenerateOpen(true)}
+        className="w-full mb-4 py-2.5 rounded-md border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-medium text-sm hover:bg-emerald-500/10"
+      >
+        Generate routine with Claude
+      </button>
 
       <ul className="space-y-2">
         {DAYS.map(d => {
@@ -63,6 +75,13 @@ export function Planner({ state, navigate }) {
           Settings →
         </a>
       </div>
+
+      <GenerateRoutineSheet
+        open={generateOpen}
+        onClose={() => setGenerateOpen(false)}
+        state={state}
+        setState={setState}
+      />
     </>
   );
 }
