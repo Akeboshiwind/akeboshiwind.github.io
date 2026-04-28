@@ -138,15 +138,44 @@ describe('parseImportedRoutine — pool validation', () => {
 });
 
 describe('parseImportedRoutine — item validation', () => {
-  test('rejects items referencing unknown pool entries', () => {
+  test('items can reference existing pool entries without re-listing them', () => {
+    // "Bodyweight Squats" is in seedPool and not re-listed in the import.
+    const r = parseImportedRoutine(baseState, JSON.stringify({
+      pool: [],
+      days: routine({ mon: { rest: false, focus: 'Test', items: [
+        { kind: 'reps-exercise', name: 'Bodyweight Squats', sets: 3, reps: 15, restSec: 45, weightNote: '' },
+      ] } }).days,
+    }));
+    expect(r.ok).toBe(true);
+    // No new or updated pool entries — item resolves to existing id.
+    expect(r.parsed.newPool).toEqual([]);
+    expect(r.parsed.updatedPool).toEqual([]);
+    expect(r.parsed.days.mon.items[0].exerciseId).toBe('bw-squat');
+  });
+
+  test('imported pool takes precedence over existing for same name', () => {
+    const r = parseImportedRoutine(baseState, JSON.stringify({
+      pool: [
+        { kind: 'reps', name: 'Bodyweight Squats', description: 'updated', tip: '', equipment: 'none', tags: [], defaultSets: 5, defaultReps: 20, defaultRestSec: 30 },
+      ],
+      days: routine({ mon: { rest: false, focus: 'Test', items: [
+        { kind: 'reps-exercise', name: 'Bodyweight Squats', sets: 5, reps: 20, restSec: 30, weightNote: '' },
+      ] } }).days,
+    }));
+    expect(r.ok).toBe(true);
+    expect(r.summary.updatedExercises).toEqual(['Bodyweight Squats']);
+    expect(r.parsed.updatedPool[0].defaultSets).toBe(5);
+  });
+
+  test('rejects items referencing names absent from both pools', () => {
     const r = parseImportedRoutine(baseState, JSON.stringify({
       pool: [],
       days: routine({ mon: { rest: false, focus: '', items: [
-        { kind: 'reps-exercise', name: 'Mystery', sets: 3, reps: 10, restSec: 60, weightNote: '' },
+        { kind: 'reps-exercise', name: 'Mystery Move', sets: 3, reps: 10, restSec: 60, weightNote: '' },
       ] } }).days,
     }));
     expect(r.ok).toBe(false);
-    expect(r.error).toMatch(/Mystery/);
+    expect(r.error).toMatch(/Mystery Move/);
   });
 
   test('rejects pool/item kind mismatch', () => {

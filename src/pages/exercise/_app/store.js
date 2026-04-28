@@ -324,7 +324,9 @@ export const parseImportedRoutine = (state, raw) => {
     nameToId.set(p.name.trim().toLowerCase(), p.id);
   }
 
-  // Pool entries.
+  // Pool entries from the import. These are additions or edits — existing
+  // pool entries that aren't re-listed here are still resolvable from
+  // state.pool when items reference them by name.
   const newPool = [];
   const updatedPool = [];
   const poolByName = new Map();
@@ -338,6 +340,14 @@ export const parseImportedRoutine = (state, raw) => {
     poolByName.set(lower, entry);
     if (nameToId.has(lower)) updatedPool.push(entry); else newPool.push(entry);
   }
+  // Layer existing pool entries underneath, so items can reference them
+  // by name without the model having to re-list them. The imported pool
+  // takes precedence (these are the entries the model wants to change).
+  const resolvableByName = new Map();
+  for (const p of Object.values(state.pool)) {
+    resolvableByName.set(p.name.trim().toLowerCase(), p);
+  }
+  for (const [k, v] of poolByName) resolvableByName.set(k, v);
 
   // Days.
   const days = {};
@@ -360,7 +370,7 @@ export const parseImportedRoutine = (state, raw) => {
     const items = [];
     if (!incoming.rest) {
       for (const [i, item] of incoming.items.entries()) {
-        const r = normaliseItem(item, `${where}.items[${i}]`, poolByName);
+        const r = normaliseItem(item, `${where}.items[${i}]`, resolvableByName);
         if (r.error) return { ok: false, error: r.error };
         items.push(r.value);
       }
@@ -485,7 +495,7 @@ const lookupPool = (raw, where, poolByName, expectedPoolKind) => {
     return { error: `${where}.name must be a non-empty string.` };
   }
   const pool = poolByName.get(raw.name.trim().toLowerCase());
-  if (!pool) return { error: `${where} references "${raw.name}" which isn't in pool.` };
+  if (!pool) return { error: `${where} references "${raw.name}" which isn't in the imported pool or the current pool.` };
   if (pool.kind !== expectedPoolKind) {
     return { error: `${where} item kind '${raw.kind}' but pool entry "${pool.name}" is of kind '${pool.kind}'.` };
   }

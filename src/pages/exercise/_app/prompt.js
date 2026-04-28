@@ -12,7 +12,7 @@ no follow-up questions. The whole response is consumed by a parser.
 JSON shape:
 
 {
-  "pool": [ /* every exercise referenced anywhere in days.items appears once */ ],
+  "pool": [ /* ONLY new exercises and ones you want to change */ ],
   "days": {
     "mon": { "rest": false, "focus": "string", "items": [ /* item objects */ ] },
     "tue": { ... },
@@ -46,34 +46,43 @@ Item objects (used inside days.items). ALL listed fields are REQUIRED:
       { "kind": "continuous-exercise", "name": "Mountain Climbers","durationSec": 45 }
     ] }
 
-Strict rules — failing any of these will cause the parse to reject your reply:
+Pool rules — IMPORTANT, this is the part most replies get wrong:
+- The "pool" array is for ADDITIONS and EDITS only. Do NOT re-list exercises that already exist in the CURRENT POOL with acceptable defaults.
+- Include in pool ONLY when:
+    a) you're introducing a brand-new exercise that isn't in the current pool, OR
+    b) you specifically want to change an existing one's description, tip, defaults, equipment, or tags.
+- Items in days.items can reference any exercise from the CURRENT POOL by name; if the name isn't in your "pool" array, the parser will look it up in the current pool. If it's in neither, the import is rejected.
+- Do NOT include unused entries in pool (entries you don't actually reference in any day).
+
+General rules:
 - Output ONE \`\`\`json block. No commentary.
-- Every "name" referenced in items MUST exist in pool.
 - Pool kind ↔ item kind must match: "reps" ↔ "reps-exercise", "timed" ↔ "timed-exercise", "continuous" ↔ "continuous-exercise".
 - Circuit children MUST be continuous-exercise.
 - All numeric fields are integers (no quotes, no decimals).
 - All seven days MUST be present (mon/tue/wed/thu/fri/sat/sun).
-- Reuse names from the CURRENT POOL exactly so existing exercises are updated rather than duplicated. Pick new names only for genuinely new exercises.
+- For names that already exist, copy the spelling EXACTLY from CURRENT POOL.
 
-Minimal example (one workout day, rest of week omitted for brevity — your reply MUST include all seven):
+Minimal example (one workout day, rest of week omitted for brevity — your reply MUST include all seven). The pool array here adds one new exercise and references existing ones implicitly:
 
 \`\`\`json
 {
   "pool": [
-    { "kind": "reps", "name": "Bodyweight Squats", "description": "Feet shoulder-width, drop to parallel.", "tip": "Pause 1s at the bottom.", "equipment": "none", "tags": ["legs"], "defaultSets": 3, "defaultReps": 15, "defaultRestSec": 45 },
-    { "kind": "continuous", "name": "Easy Elliptical", "description": "Comfortable pace, resistance 1-2.", "tip": "", "equipment": "elliptical", "tags": ["warm-up"], "defaultDurationSec": 300 }
+    { "kind": "continuous", "name": "High Knees", "description": "Run in place driving knees to hip height.", "tip": "Stay on balls of feet, fast turnover.", "equipment": "none", "tags": ["cardio", "hiit"], "defaultDurationSec": 45 }
   ],
   "days": {
     "mon": { "rest": false, "focus": "Activation",
       "items": [
         { "kind": "section", "name": "Warm-Up", "description": "" },
         { "kind": "continuous-exercise", "name": "Easy Elliptical", "durationSec": 300 },
-        { "kind": "reps-exercise", "name": "Bodyweight Squats", "sets": 3, "reps": 15, "restSec": 45, "weightNote": "" }
+        { "kind": "reps-exercise", "name": "Bodyweight Squats", "sets": 3, "reps": 15, "restSec": 45, "weightNote": "" },
+        { "kind": "continuous-exercise", "name": "High Knees", "durationSec": 45 }
       ]
     }
   }
 }
-\`\`\``;
+\`\`\`
+
+Notice "Easy Elliptical" and "Bodyweight Squats" appear in items but NOT in pool — the parser resolves them against the current pool automatically.`;
 
 export function buildPrompt(state, brief = '') {
   const pool = compactPool(state.pool);
