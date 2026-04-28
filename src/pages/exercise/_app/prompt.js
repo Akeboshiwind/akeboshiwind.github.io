@@ -46,6 +46,12 @@ Item objects (used inside days.items). ALL listed fields are REQUIRED:
       { "kind": "continuous-exercise", "name": "Mountain Climbers","durationSec": 45 }
     ] }
 
+When to use a circuit:
+- HIIT (e.g. 5 exercises × 45s on / 15s off × 3 rounds — set betweenRoundSec for inter-round rest).
+- Alternating-pace cardio intervals (e.g. 2 min moderate / 1 min push × 7 rounds — set betweenChildSec to 0).
+- Any pattern where you DO the same sequence of exercises N times.
+Do NOT wrap a regular strength superset in a circuit — just list the exercises in sequence; users handle rest manually between sets.
+
 Pool rules — IMPORTANT, this is the part most replies get wrong:
 - The "pool" array is for ADDITIONS and EDITS only. Do NOT re-list exercises that already exist in the CURRENT POOL with acceptable defaults.
 - Include in pool ONLY when:
@@ -70,19 +76,24 @@ Minimal example (one workout day, rest of week omitted for brevity — your repl
     { "kind": "continuous", "name": "High Knees", "description": "Run in place driving knees to hip height.", "tip": "Stay on balls of feet, fast turnover.", "equipment": "none", "tags": ["cardio", "hiit"], "defaultDurationSec": 45 }
   ],
   "days": {
-    "mon": { "rest": false, "focus": "Activation",
+    "mon": { "rest": false, "focus": "Activation + HIIT",
       "items": [
         { "kind": "section", "name": "Warm-Up", "description": "" },
         { "kind": "continuous-exercise", "name": "Easy Elliptical", "durationSec": 300 },
         { "kind": "reps-exercise", "name": "Bodyweight Squats", "sets": 3, "reps": 15, "restSec": 45, "weightNote": "" },
-        { "kind": "continuous-exercise", "name": "High Knees", "durationSec": 45 }
+        { "kind": "section", "name": "HIIT Finisher", "description": "" },
+        { "kind": "circuit", "name": "Quick HIIT", "rounds": 3, "betweenChildSec": 15, "betweenRoundSec": 60,
+          "children": [
+            { "kind": "continuous-exercise", "name": "High Knees",        "durationSec": 45 },
+            { "kind": "continuous-exercise", "name": "Mountain Climbers", "durationSec": 45 }
+          ] }
       ]
     }
   }
 }
 \`\`\`
 
-Notice "Easy Elliptical" and "Bodyweight Squats" appear in items but NOT in pool — the parser resolves them against the current pool automatically.`;
+Notice "Easy Elliptical", "Bodyweight Squats" and "Mountain Climbers" appear in items but NOT in pool — the parser resolves them against the current pool automatically. Only "High Knees" is in the pool array because it's new.`;
 
 export function buildPrompt(state, brief = '') {
   const pool = compactPool(state.pool);
