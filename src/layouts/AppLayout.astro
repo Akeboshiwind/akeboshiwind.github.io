@@ -5,10 +5,25 @@ import { historyFromPagePath } from '../lib/history.js';
 
 const { title } = Astro.props;
 const historyUrl = historyFromPagePath(Astro.url.pathname);
+
+// React Fast Refresh requires this preamble in dev mode. We use
+// `@vitejs/plugin-react` directly (no `@astrojs/react` integration), so
+// nothing injects it automatically — without it, JSX modules throw
+// "@vitejs/plugin-react can't detect preamble" at runtime. Stripped at
+// build time via `import.meta.env.DEV`.
+const isDev = import.meta.env.DEV;
+const reactRefreshPreamble = `
+import RefreshRuntime from "/@react-refresh";
+RefreshRuntime.injectIntoGlobalHook(window);
+window.$RefreshReg$ = () => {};
+window.$RefreshSig$ = () => (type) => type;
+window.__vite_plugin_react_preamble_installed__ = true;
+`;
 ---
 <html lang="en">
 <head>
   <ThemeInit />
+  {isDev && <script type="module" is:inline set:html={reactRefreshPreamble} />}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
