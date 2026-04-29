@@ -41,7 +41,7 @@ export function HistoryDetail({ state, entryId, navigate }) {
       <header className="mb-4 text-center">
         <p className="text-sm text-gray-500 dark:text-gray-400">{entry.focus}</p>
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-          {prettyDate(entry.date)} · {done}/{total} done
+          {[prettyDate(entry.date), `${done}/${total} done`, formatDuration(entry)].filter(Boolean).join(' · ')}
         </p>
       </header>
 
@@ -77,4 +77,14 @@ export function HistoryDetail({ state, entryId, navigate }) {
 function prettyDate(iso) {
   const d = new Date(iso + 'T12:00:00');
   return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function formatDuration(entry) {
+  if (!entry.startedAt || !entry.finishedAt) return '';
+  const totalMin = Math.round((entry.finishedAt - entry.startedAt) / 60000);
+  if (totalMin < 1) return '<1m';
+  if (totalMin < 60) return `${totalMin}m`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return `${h}h ${String(m).padStart(2, '0')}m`;
 }

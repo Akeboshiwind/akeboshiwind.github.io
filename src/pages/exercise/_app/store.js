@@ -65,9 +65,16 @@ export const completedUnits = (day, completedSets) =>
 
 // ── State transformations (pure) ─────────────────────────────────────
 
-// Ensure inProgress exists for the given day. Returns updated state.
-const ensureInProgress = (state, dayKey) => {
-  if (state.inProgress && state.inProgress.day === dayKey) return state;
+// Returns the active in-progress session if it matches `dayKey`, else null.
+// Returning null tells callers to no-op: set toggling is gated on the user
+// having pressed "Start workout" first.
+const activeFor = (state, dayKey) =>
+  state.inProgress && state.inProgress.day === dayKey ? state.inProgress : null;
+
+// Begin a session for `dayKey`. No-op if a session is already in progress
+// (the UI surfaces a banner offering to resume or discard the existing one).
+export const startWorkout = (state, dayKey) => {
+  if (state.inProgress) return state;
   return {
     ...state,
     inProgress: {
@@ -79,22 +86,25 @@ const ensureInProgress = (state, dayKey) => {
   };
 };
 
+// Discard the in-progress session without writing to history.
+export const cancelWorkout = state => ({ ...state, inProgress: null });
+
 export const toggleSet = (state, dayKey, itemId, index) => {
-  const next = ensureInProgress(state, dayKey);
-  const day = next.template.days[dayKey];
+  if (!activeFor(state, dayKey)) return state;
+  const day = state.template.days[dayKey];
   const item = findItem(day, itemId);
   if (!item) return state;
   const max = unitCount(item);
-  const arr = next.inProgress.completedSets[itemId]
-    ? [...next.inProgress.completedSets[itemId]]
+  const arr = state.inProgress.completedSets[itemId]
+    ? [...state.inProgress.completedSets[itemId]]
     : Array(max).fill(false);
   arr[index] = !arr[index];
   return {
-    ...next,
+    ...state,
     inProgress: {
-      ...next.inProgress,
+      ...state.inProgress,
       completedSets: {
-        ...next.inProgress.completedSets,
+        ...state.inProgress.completedSets,
         [itemId]: arr,
       },
     },
@@ -200,9 +210,15 @@ export const finishWorkout = state => {
   if (!state.inProgress) return state;
   const dayKey = state.inProgress.day;
   const day = state.template.days[dayKey];
+  const startedAt = state.inProgress.startedAt;
+  const finishedAt = Date.now();
   const entry = {
-    id: `h_${Date.now()}`,
-    date: new Date().toISOString().slice(0, 10),
+    id: `h_${finishedAt}`,
+    // Date follows session start, so a session that crosses midnight is
+    // still attributed to the day it began on.
+    date: new Date(startedAt).toISOString().slice(0, 10),
+    startedAt,
+    finishedAt,
     day: dayKey,
     focus: day.focus,
     snapshot: day,
@@ -215,7 +231,9 @@ export const finishWorkout = state => {
   };
 };
 
-export const resetWorkout = state => ({ ...state, inProgress: null });
+// Kept as an alias for code paths (e.g. importing a routine) that need to
+// drop any active session without going through the user-facing cancel flow.
+export const resetWorkout = cancelWorkout;
 
 // ── Circuit per-child progress ───────────────────────────────────────
 // Circuits track two things during a workout:
@@ -225,21 +243,21 @@ export const resetWorkout = state => ({ ...state, inProgress: null });
 // "Complete round" advances completedSets and resets circuitProgress.
 
 export const toggleCircuitChild = (state, dayKey, circuitId, childIndex) => {
-  const next = ensureInProgress(state, dayKey);
-  const day = next.template.days[dayKey];
+  if (!activeFor(state, dayKey)) return state;
+  const day = state.template.days[dayKey];
   const circuit = findItem(day, circuitId);
   if (!circuit || circuit.kind !== 'circuit') return state;
   const len = circuit.children.length;
-  const arr = next.inProgress.circuitProgress?.[circuitId]
-    ? [...next.inProgress.circuitProgress[circuitId]]
+  const arr = state.inProgress.circuitProgress?.[circuitId]
+    ? [...state.inProgress.circuitProgress[circuitId]]
     : Array(len).fill(false);
   arr[childIndex] = !arr[childIndex];
   return {
-    ...next,
+    ...state,
     inProgress: {
-      ...next.inProgress,
+      ...state.inProgress,
       circuitProgress: {
-        ...(next.inProgress.circuitProgress ?? {}),
+        ...(state.inProgress.circuitProgress ?? {}),
         [circuitId]: arr,
       },
     },
@@ -247,23 +265,23 @@ export const toggleCircuitChild = (state, dayKey, circuitId, childIndex) => {
 };
 
 export const completeCircuitRound = (state, dayKey, circuitId) => {
-  const next = ensureInProgress(state, dayKey);
-  const day = next.template.days[dayKey];
+  if (!activeFor(state, dayKey)) return state;
+  const day = state.template.days[dayKey];
   const circuit = findItem(day, circuitId);
   if (!circuit || circuit.kind !== 'circuit') return state;
   // Tick the next unticked round.
-  const rounds = next.inProgress.completedSets[circuitId]
-    ? [...next.inProgress.completedSets[circuitId]]
+  const rounds = state.inProgress.completedSets[circuitId]
+    ? [...state.inProgress.completedSets[circuitId]]
     : Array(circuit.rounds).fill(false);
   const idx = rounds.indexOf(false);
   if (idx === -1) return state; // already complete
   rounds[idx] = true;
   return {
-    ...next,
+    ...state,
     inProgress: {
-      ...next.inProgress,
-      completedSets: { ...next.inProgress.completedSets, [circuitId]: rounds },
-      circuitProgress: { ...(next.inProgress.circuitProgress ?? {}), [circuitId]: Array(circuit.children.length).fill(false) },
+      ...state.inProgress,
+      completedSets: { ...state.inProgress.completedSets, [circuitId]: rounds },
+      circuitProgress: { ...(state.inProgress.circuitProgress ?? {}), [circuitId]: Array(circuit.children.length).fill(false) },
     },
   };
 };

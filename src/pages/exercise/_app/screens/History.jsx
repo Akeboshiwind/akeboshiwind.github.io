@@ -47,11 +47,9 @@ export function History({ state, navigate }) {
                         {done}/{total}
                       </p>
                     </div>
-                    {entry.focus && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                        {entry.focus}
-                      </p>
-                    )}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                      {[entry.focus, formatDuration(entry)].filter(Boolean).join(' · ')}
+                    </p>
                   </button>
                 </li>
               );
@@ -67,6 +65,18 @@ function prettyDate(iso) {
   // iso like "2026-04-28"
   const d = new Date(iso + 'T12:00:00');
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+// Compact duration label, e.g. "12m" or "1h 05m". Returns "" for entries
+// logged before timestamps were tracked so the caller can omit the segment.
+function formatDuration(entry) {
+  if (!entry.startedAt || !entry.finishedAt) return '';
+  const totalMin = Math.round((entry.finishedAt - entry.startedAt) / 60000);
+  if (totalMin < 1) return '<1m';
+  if (totalMin < 60) return `${totalMin}m`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return `${h}h ${String(m).padStart(2, '0')}m`;
 }
 
 // Group history entries into weeks (Monday-start). Returns [[label, entries[]], ...].

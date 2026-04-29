@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   DAY_NAMES,
-  toggleSet, finishWorkout, resetWorkout,
+  toggleSet, startWorkout, finishWorkout, cancelWorkout,
   totalUnits, completedUnits,
   toggleCircuitChild, completeCircuitRound,
   updateItem, removeItem, swapExercise,
@@ -25,8 +25,7 @@ export function Today({ state, setState, today }) {
 
   const inProgressDay = state.inProgress?.day ?? null;
   const isViewingActive = inProgressDay === viewDay;
-  const noActive = inProgressDay === null;
-  const interactive = !day.rest && (isViewingActive || noActive);
+  const interactive = !day.rest && isViewingActive;
   const completed = isViewingActive ? state.inProgress.completedSets : {};
   const circuitProgress = isViewingActive ? (state.inProgress.circuitProgress ?? {}) : {};
 
@@ -39,14 +38,19 @@ export function Today({ state, setState, today }) {
   const handleToggle = (itemId, index) =>
     setState(s => toggleSet(s, viewDay, itemId, index));
 
+  const handleStart = () => {
+    primeAudio();
+    setState(s => startWorkout(s, viewDay));
+  };
+
   const handleFinish = () => {
     if (done === 0 && !confirm('Finish workout with nothing checked off?')) return;
     setState(finishWorkout);
   };
 
-  const handleReset = () => {
-    if (!confirm('Clear all checkmarks for this workout?')) return;
-    setState(resetWorkout);
+  const handleCancel = () => {
+    if (!confirm('Cancel this workout? It won’t be added to your history.')) return;
+    setState(cancelWorkout);
   };
 
   const findItem = id => {
@@ -90,8 +94,16 @@ export function Today({ state, setState, today }) {
         <ActiveBanner
           activeDay={inProgressDay}
           onResume={() => setViewDay(inProgressDay)}
-          onDiscard={() => setState(resetWorkout)}
+          onDiscard={() => setState(cancelWorkout)}
         />
+      )}
+
+      {!day.rest && !inProgressDay && (
+        <StartBanner viewDay={viewDay} today={today} onStart={handleStart} />
+      )}
+
+      {isViewingActive && (
+        <SessionBanner startedAt={state.inProgress.startedAt} onCancel={handleCancel} />
       )}
 
       {day.rest ? (
@@ -132,7 +144,7 @@ export function Today({ state, setState, today }) {
           </ul>
 
           {interactive && (
-            <div className="mt-8 flex flex-col gap-3">
+            <div className="mt-8">
               <button
                 type="button"
                 onClick={handleFinish}
@@ -140,15 +152,6 @@ export function Today({ state, setState, today }) {
               >
                 Finish workout
               </button>
-              {isViewingActive && done > 0 && (
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="text-sm text-gray-500 dark:text-gray-400 underline-offset-2 hover:underline"
-                >
-                  Clear checkmarks
-                </button>
-              )}
             </div>
           )}
         </>
@@ -202,6 +205,60 @@ function ActiveBanner({ activeDay, onResume, onDiscard }) {
       </div>
     </div>
   );
+}
+
+function StartBanner({ viewDay, today, onStart }) {
+  const label = viewDay === today ? 'Start workout' : `Start ${DAY_NAMES[viewDay]}'s workout`;
+  return (
+    <div className="mb-4">
+      <button
+        type="button"
+        onClick={onStart}
+        className="w-full py-3 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors"
+      >
+        {label}
+      </button>
+      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+        Sets unlock once a session is running.
+      </p>
+    </div>
+  );
+}
+
+function SessionBanner({ startedAt, onCancel }) {
+  const seconds = useElapsedSeconds(startedAt);
+  return (
+    <div className="rounded-lg border border-emerald-300/60 bg-emerald-50 dark:bg-emerald-500/10 dark:border-emerald-500/30 p-3 mb-4 flex items-center justify-between gap-3">
+      <div className="text-sm text-emerald-900 dark:text-emerald-200">
+        <span className="font-medium">Session in progress</span>
+        <span className="ml-2 tabular-nums">{formatElapsed(seconds)}</span>
+      </div>
+      <button
+        type="button"
+        onClick={onCancel}
+        className="text-sm underline text-emerald-900 dark:text-emerald-200 underline-offset-2 hover:no-underline"
+      >
+        Cancel
+      </button>
+    </div>
+  );
+}
+
+function useElapsedSeconds(startedAt) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return Math.max(0, Math.floor((now - startedAt) / 1000));
+}
+
+function formatElapsed(totalSec) {
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = n => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
 function RestDay() {
