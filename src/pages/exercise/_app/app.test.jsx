@@ -20,31 +20,63 @@ describe('Exercise app', () => {
     expect(home.getAttribute('href')).toBe('../');
   });
 
-  test('toggling a set persists to localStorage', () => {
+  test('sets are inert until the user starts a session', () => {
     render(<App />);
-    // Find any "Set 1" button (rest days won't have one — Wed/Sun)
+    const startBtn = screen.queryByRole('button', { name: /^start (workout|.*'s workout)/i });
+    if (!startBtn) return; // rest day, skip
+    // Sets exist but clicking does nothing while no session is running.
     const set1 = screen.queryAllByRole('button', { name: /set 1|done/i })[0];
-    if (!set1) return; // rest day, skip
-    expect(set1.getAttribute('aria-pressed')).toBe('false');
-    fireEvent.click(set1);
-    expect(set1.getAttribute('aria-pressed')).toBe('true');
+    if (set1) {
+      fireEvent.click(set1);
+      const beforeStart = JSON.parse(localStorage.getItem('exercise_state') || '{}');
+      expect(beforeStart.inProgress ?? null).toBeNull();
+    }
+    fireEvent.click(startBtn);
     const stored = JSON.parse(localStorage.getItem('exercise_state'));
     expect(stored.inProgress).not.toBeNull();
-    expect(stored.inProgress.completedSets).toBeTruthy();
+    expect(stored.inProgress.startedAt).toBeTypeOf('number');
+    // After starting, toggling a set should record it.
+    const setNow = screen.queryAllByRole('button', { name: /set 1|done/i })[0];
+    if (setNow) {
+      fireEvent.click(setNow);
+      const after = JSON.parse(localStorage.getItem('exercise_state'));
+      expect(after.inProgress.completedSets).toBeTruthy();
+    }
   });
 
   test('finishing an empty workout warns and does nothing', () => {
     const original = window.confirm;
     window.confirm = vi.fn(() => false);
     render(<App />);
-    const finish = screen.queryByRole('button', { name: /finish workout/i });
-    if (!finish) {
+    const startBtn = screen.queryByRole('button', { name: /^start (workout|.*'s workout)/i });
+    if (!startBtn) {
       window.confirm = original;
-      return;
+      return; // rest day
     }
+    fireEvent.click(startBtn);
+    const finish = screen.getByRole('button', { name: /finish workout/i });
     fireEvent.click(finish);
     expect(window.confirm).toHaveBeenCalled();
     const stored = JSON.parse(localStorage.getItem('exercise_state') || '{}');
+    expect(stored.history?.length ?? 0).toBe(0);
+    window.confirm = original;
+  });
+
+  test('cancel button discards an in-progress session after confirmation', () => {
+    const original = window.confirm;
+    window.confirm = vi.fn(() => true);
+    render(<App />);
+    const startBtn = screen.queryByRole('button', { name: /^start (workout|.*'s workout)/i });
+    if (!startBtn) {
+      window.confirm = original;
+      return;
+    }
+    fireEvent.click(startBtn);
+    const cancel = screen.getByRole('button', { name: /^cancel$/i });
+    fireEvent.click(cancel);
+    expect(window.confirm).toHaveBeenCalled();
+    const stored = JSON.parse(localStorage.getItem('exercise_state'));
+    expect(stored.inProgress).toBeNull();
     expect(stored.history?.length ?? 0).toBe(0);
     window.confirm = original;
   });

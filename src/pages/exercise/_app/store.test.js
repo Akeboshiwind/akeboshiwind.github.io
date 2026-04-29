@@ -1,8 +1,9 @@
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, vi, afterEach } from 'vitest';
 import {
   parseImportedRoutine, applyImportedRoutine, DAYS,
   toggleCircuitChild, completeCircuitRound,
   addCircuit, addCircuitChild,
+  startWorkout, cancelWorkout, finishWorkout, toggleSet,
 } from './store.js';
 import { seedPool, seedTemplate } from './seed.js';
 
@@ -266,9 +267,10 @@ describe('parseImportedRoutine — item validation', () => {
 describe('circuit progress', () => {
   // Find the Mon circuit in seed (Elliptical Intervals).
   const monCircuit = baseState.template.days.mon.items.find(i => i.kind === 'circuit');
+  const startedMon = () => startWorkout(baseState, 'mon');
 
   test('toggleCircuitChild flips per-child state for the current round', () => {
-    const s1 = toggleCircuitChild(baseState, 'mon', monCircuit.id, 0);
+    const s1 = toggleCircuitChild(startedMon(), 'mon', monCircuit.id, 0);
     expect(s1.inProgress.circuitProgress[monCircuit.id][0]).toBe(true);
     expect(s1.inProgress.circuitProgress[monCircuit.id][1]).toBe(false);
     const s2 = toggleCircuitChild(s1, 'mon', monCircuit.id, 0);
@@ -276,7 +278,7 @@ describe('circuit progress', () => {
   });
 
   test('completeCircuitRound ticks next round and resets children', () => {
-    let s = toggleCircuitChild(baseState, 'mon', monCircuit.id, 0);
+    let s = toggleCircuitChild(startedMon(), 'mon', monCircuit.id, 0);
     s = toggleCircuitChild(s, 'mon', monCircuit.id, 1);
     s = completeCircuitRound(s, 'mon', monCircuit.id);
     expect(s.inProgress.completedSets[monCircuit.id][0]).toBe(true);
@@ -284,13 +286,67 @@ describe('circuit progress', () => {
   });
 
   test('completeCircuitRound is a no-op once all rounds are done', () => {
-    let s = baseState;
+    let s = startedMon();
     for (let i = 0; i < monCircuit.rounds; i++) {
       s = completeCircuitRound(s, 'mon', monCircuit.id);
     }
     const before = s.inProgress.completedSets[monCircuit.id].slice();
     s = completeCircuitRound(s, 'mon', monCircuit.id);
     expect(s.inProgress.completedSets[monCircuit.id]).toEqual(before);
+  });
+
+  test('toggleCircuitChild is a no-op without an active session', () => {
+    const s = toggleCircuitChild(baseState, 'mon', monCircuit.id, 0);
+    expect(s).toBe(baseState);
+  });
+});
+
+describe('session lifecycle', () => {
+  afterEach(() => vi.useRealTimers());
+
+  test('toggleSet does nothing until startWorkout is called', () => {
+    // Pick the first reps/timed item on Monday.
+    const item = baseState.template.days.mon.items.find(i => i.kind === 'reps-exercise' || i.kind === 'timed-exercise');
+    const before = toggleSet(baseState, 'mon', item.id, 0);
+    expect(before).toBe(baseState);
+    const after = toggleSet(startWorkout(baseState, 'mon'), 'mon', item.id, 0);
+    expect(after.inProgress.completedSets[item.id][0]).toBe(true);
+  });
+
+  test('startWorkout is a no-op when a session is already running', () => {
+    const s1 = startWorkout(baseState, 'mon');
+    const s2 = startWorkout(s1, 'tue');
+    expect(s2).toBe(s1);
+  });
+
+  test('cancelWorkout drops in-progress without writing to history', () => {
+    const s = cancelWorkout(startWorkout(baseState, 'mon'));
+    expect(s.inProgress).toBeNull();
+    expect(s.history).toEqual([]);
+  });
+
+  test('finishWorkout records duration and dates from startedAt', () => {
+    // Start at a fixed instant, finish 25 minutes later.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-29T22:30:00Z'));
+    const started = startWorkout(baseState, 'mon');
+    vi.setSystemTime(new Date('2026-04-29T22:55:00Z'));
+    const finished = finishWorkout(started);
+    const entry = finished.history[0];
+    expect(entry.date).toBe('2026-04-29');
+    expect(entry.startedAt).toBe(Date.parse('2026-04-29T22:30:00Z'));
+    expect(entry.finishedAt).toBe(Date.parse('2026-04-29T22:55:00Z'));
+    expect(entry.day).toBe('mon');
+    expect(finished.inProgress).toBeNull();
+  });
+
+  test('finishWorkout uses the start date when a session crosses midnight (UTC)', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-29T23:50:00Z'));
+    const started = startWorkout(baseState, 'mon');
+    vi.setSystemTime(new Date('2026-04-30T00:15:00Z'));
+    const entry = finishWorkout(started).history[0];
+    expect(entry.date).toBe('2026-04-29');
   });
 });
 
