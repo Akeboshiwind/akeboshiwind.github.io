@@ -64,11 +64,13 @@ function createDrink(x, y, tier, vx = 0, vy = 0) {
   body.isDrink = true;
   body.spawnTime = performance.now();
   body.popScale = 1;
+  if (tier > maxTier) maxTier = tier;
   if (vx || vy) Body.setVelocity(body, { x: vx, y: vy });
   return body;
 }
 
 let score = 0;
+let maxTier = 0;
 let currentTier = pickStarter();
 let nextTier = pickStarter();
 let aiming = false;
@@ -101,9 +103,9 @@ function loadLastName() {
 function saveLastName(name) {
   localStorage.setItem(NAME_KEY, name);
 }
-function pushScore(name, points) {
+function pushScore(name, points, tier) {
   const entries = loadLeaderboard();
-  entries.push({ name, score: points, date: Date.now() });
+  entries.push({ name, score: points, tier, date: Date.now() });
   entries.sort((a, b) => b.score - a.score);
   saveLeaderboard(entries);
 }
@@ -130,7 +132,15 @@ function renderLeaderboard() {
     const sc = document.createElement('span');
     sc.className = 'score';
     sc.textContent = entry.score;
-    li.append(rank, name, sc);
+    li.append(rank, name);
+    if (typeof entry.tier === 'number' && TIERS[entry.tier]) {
+      const drink = document.createElement('img');
+      drink.className = 'drink';
+      drink.src = TIERS[entry.tier].img.src;
+      drink.alt = '';
+      li.append(drink);
+    }
+    li.append(sc);
     list.appendChild(li);
   });
 }
@@ -147,6 +157,7 @@ function startGame() {
     if (body.isDrink) World.remove(engine.world, body);
   }
   score = 0;
+  maxTier = 0;
   document.getElementById('scoreVal').textContent = 0;
   particles = [];
   merges = [];
@@ -174,7 +185,7 @@ function submitScore() {
   const raw = document.getElementById('nameInput').value || '';
   const name = raw.trim().slice(0, 20) || 'Anonymous';
   saveLastName(name);
-  pushScore(name, score);
+  pushScore(name, score, maxTier);
   showLeaderboard();
 }
 
