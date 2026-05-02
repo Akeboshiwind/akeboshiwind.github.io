@@ -126,6 +126,10 @@ body.menu #stage { display: none; }
   flex: 1; font-size: 15px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+#leaderboardList li .drink {
+  width: 28px; height: 28px; object-fit: contain;
+  flex-shrink: 0;
+}
 #leaderboardList li .score {
   font-size: 16px; font-weight: 700; color: #ffd89b;
 }
