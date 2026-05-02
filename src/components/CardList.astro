@@ -23,12 +23,12 @@ const { items, showImages = true } = Astro.props;
   {items.map(item => (
     <div class="flex flex-row items-stretch overflow-hidden">
       {showImages && (
-        <a href={item.url} class="w-[72px] min-w-[72px] max-sm:w-[56px] max-sm:min-w-[56px] mr-3 block">
+        <a href={item.url} class="w-[72px] h-[80px] min-w-[72px] max-sm:w-[56px] max-sm:h-[64px] max-sm:min-w-[56px] mr-3 block">
           {item.image && (
             <Image
               src={item.image}
               alt={`Screenshot of ${item.title}`}
-              class="w-full h-full object-cover object-left-top rounded"
+              class="w-full h-full object-cover object-center rounded"
               loading="lazy"
               widths={[200, 360]}
               sizes="100px"
