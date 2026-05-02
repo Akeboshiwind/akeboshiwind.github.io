@@ -1,0 +1,9 @@
+{
+  "title": "QR Code Generator",
+  "stage": "scribble",
+  "date": "2026-05-02",
+  "description": "Generate a QR code from text or a URL and download it as a PNG.",
+  "tags": [
+    "tool"
+  ]
+}
