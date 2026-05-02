@@ -1,0 +1,10 @@
+{
+  "title": "Coffee Merge",
+  "stage": "tale",
+  "date": "2026-05-02",
+  "description": "A Suika-style merge game with drinks — combine matching cups to climb the tier ladder.",
+  "tags": [
+    "game",
+    "javascript"
+  ]
+}
