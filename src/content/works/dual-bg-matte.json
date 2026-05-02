@@ -1,0 +1,10 @@
+{
+  "title": "Dual-Background Matte",
+  "stage": "scribble",
+  "date": "2026-05-02",
+  "description": "Combine two AI images of the same scene (one on white, one on black) into a transparent PNG that keeps soft edges and partial transparency.",
+  "tags": [
+    "tool",
+    "images"
+  ]
+}
