@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="en" class="font-sans text-base leading-relaxed text-text bg-bg"> <head><script>
+  (() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const resolve = (pref) =>
+      pref === 'light' || pref === 'dark' ? pref : (mq.matches ? 'dark' : 'light');
+    const apply = (pref) => {
+      const root = document.documentElement;
+      root.dataset.themePref = pref;
+      root.dataset.theme = resolve(pref);
+    };
+    const read = () => {
+      try { return localStorage.getItem('theme') ?? 'auto'; } catch { return 'auto'; }
+    };
+    apply(read());
+    mq.addEventListener('change', () => { if (read() === 'auto') apply('auto'); });
+    window.addEventListener('storage', (e) => { if (e.key === 'theme') apply(read()); });
+    window.__setTheme = (pref) => {
+      try { localStorage.setItem('theme', pref); } catch {}
+      apply(pref);
+    };
+  })();
+</script><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="X-Clacks-Overhead" content="GNU Terry Pratchett"><!-- Favicon --><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="shortcut icon" href="/favicon.ico"><link rel="manifest" href="/site.webmanifest"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><meta name="msapplication-TileColor" content="#da532c"><meta name="theme-color" content="#ffffff"><!-- SEO --><title>A scribble: Stages | By the Rocks</title><meta name="description" content="Stages"><link rel="canonical" href="https://bythe.rocks/pr-preview/pr-52/stages/"><!-- Open Graph --><meta property="og:type" content="article"><meta property="og:url" content="https://bythe.rocks/pr-preview/pr-52/stages/"><meta property="og:title" content="A scribble: Stages | By the Rocks"><meta property="og:description" content="Stages"><meta property="og:site_name" content="By the Rocks"><meta property="article:published_time" content="2026-03-23T00:00:00.000Z"><!-- Twitter --><meta name="twitter:card" content="summary"><meta name="twitter:title" content="A scribble: Stages | By the Rocks"><meta name="twitter:description" content="Stages"><link rel="stylesheet" href="/pr-preview/pr-52/_astro/_slug_.BlRTvtUW.css"></head> <body class="mx-auto px-5 max-w-[720px]"> <header class="mt-4 mb-8 flex items-center justify-between gap-4"> <a href="/pr-preview/pr-52/" class="text-xl font-bold text-heading no-underline hover:no-underline">By the Rocks</a> <button type="button" class="theme-toggle inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 cursor-pointer" aria-label="Theme: auto" title="Theme: auto"> <svg class="icon-auto" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <rect x="3" y="4" width="18" height="13" rx="2"></rect> <path d="M8 21h8M12 17v4"></path> </svg> <svg class="icon-light hidden" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <circle cx="12" cy="12" r="4"></circle> <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path> </svg> <svg class="icon-dark hidden" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path> </svg> </button> <script type="module">const n=["auto","light","dark"],e=document.querySelector(".theme-toggle"),s={auto:e.querySelector(".icon-auto"),light:e.querySelector(".icon-light"),dark:e.querySelector(".icon-dark")},r=()=>{const t=document.documentElement.dataset.themePref??"auto";for(const c of n)s[c]?.classList.toggle("hidden",c!==t);const o=`Theme: ${t}`;e.setAttribute("aria-label",o),e.setAttribute("title",o)};e.addEventListener("click",()=>{const t=document.documentElement.dataset.themePref??"auto",o=n[(n.indexOf(t)+1)%n.length];window.__setTheme?.(o),r()});r();</script> </header> <main>  <article class="prose prose-sm font-sans max-w-none leading-relaxed
+    prose-a:text-link prose-a:no-underline hover:prose-a:underline prose-a:visited:text-link-visited
+    prose-code:font-mono prose-code:bg-code-bg prose-code:text-code-text prose-code:px-1 prose-code:rounded-sm prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
+    prose-pre:font-mono"> <h1> <a href="/stages/" class="italic opacity-60 font-normal no-underline hover:underline">A scribble:</a> Stages </h1> <p class="font-mono text-[0.9rem]"> <time datetime="2026-03-23"> 2026-03-23 </time> <span class="opacity-60">  · updated  <time datetime="2026-03-23"> 2026-03-23 </time> </span> <span class="opacity-60">  ·  <a href="https://github.com/akeboshiwind/akeboshiwind.github.io/commits/claude/add-qr-code-generator-XPgUt/src/content/notes/stages.md" target="_blank" rel="noopener">history</a> </span> </p> <p>Like most others who have tried to keep a “blog”, I find myself with an itch to write
+something more than I do, and when I do with more drafts than posts.</p>
+<p>With the advent of <a href="https://claude.com/product/claude-code">Claude Code</a> and inspired by <a href="https://simonwillison.net/">Simon Willison</a> I started building more tools.</p>
+<p>Given the above I decided to have a go at a <a href="https://maggieappleton.com/garden-history">Digital Garden</a>.</p>
+<p>Every Digital Garden needs some indication of the following for its items:</p>
+<ul>
+<li>How “done” they are</li>
+<li>How much effort you put in</li>
+<li>How much you still identify/agree with it</li>
+</ul>
+<p>I conflate all of these into three stages: <a href="#a-scribble">scribble</a>, <a href="#a-draft">draft</a> and <a href="#a-tale">tale</a>. The idea being that if I put enough effort in to take it to <code>tale</code> then I probably still agree with it. I can see that changing with time though.</p>
+<h2 id="a-scribble">A scribble</h2>
+<p>A note quickly jotted down on the back of a napkin. Unpolished.</p>
+<p>If it’s a tool beware of bugs (and let me know about them!)</p>
+<h2 id="a-draft">A draft</h2>
+<p>More thought than just the initial idea has gone into it, but I’m still not confident enough to call it done or show it around.</p>
+<h2 id="a-tale">A tale</h2>
+<p>I’ve put a fair bit of thought and effort into this so it’s a tale I’m happy enough with to tell.
+But like all good tales, it may evolve over time as it’s told and re-told.</p> <p>
+Tags: <span> 
+#personal </span> </p> </article>  </main> <footer class="mt-12 py-4 text-center text-sm text-text opacity-70"> <p>&copy; 2026 By the Rocks</p> </footer> </body></html>
