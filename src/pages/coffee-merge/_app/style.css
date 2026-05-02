@@ -12,12 +12,21 @@ html, body {
 }
 #stage {
   position: fixed; inset: 0;
-  display: flex; align-items: center; justify-content: center;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 28px;
+  padding: 20px;
+}
+#hud-top {
+  width: min(100%, calc((100vh - 170px) * 0.66));
+  max-width: 460px;
+  display: flex; align-items: stretch; justify-content: space-between;
+  gap: 24px;
 }
 #wrap {
   position: relative;
-  width: min(100vw, calc(100vh * 0.66));
-  height: min(100vh, calc(100vw * 1.52));
+  width: min(100%, calc((100vh - 170px) * 0.66));
+  height: min(100vh - 170px, calc(100vw * 1.52));
   max-width: 460px;
   max-height: 700px;
   border-radius: 22px;
@@ -36,28 +45,30 @@ canvas {
   text-shadow: 0 2px 4px rgba(60, 20, 0, 0.6);
 }
 #score {
-  top: 14px; left: 14px;
-  font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase;
-  background: rgba(40, 20, 8, 0.45);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  padding: 8px 14px; border-radius: 999px;
-  border: 1px solid rgba(255, 240, 200, 0.25);
+  flex: 1;
+  display: flex; align-items: center; justify-content: space-between;
+  color: #fff8e7; font-weight: 700;
+  text-shadow: 0 2px 4px rgba(60, 20, 0, 0.6);
+  font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase;
+  background: linear-gradient(180deg, #b8895a, #8d6238);
+  padding: 12px 22px; border-radius: 16px;
+  box-shadow: 0 0 0 4px #4a2c14, 0 0 0 7px #c98a52, 0 6px 14px rgba(0,0,0,0.25);
 }
-#score b { font-size: 20px; margin-left: 6px; }
+#score b { font-size: 28px; letter-spacing: 0; color: #ffd89b; }
 #next {
-  top: 14px; right: 14px;
-  width: 64px; height: 64px;
-  background: rgba(40, 20, 8, 0.45);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  width: 78px; height: 78px;
+  color: #fff8e7; font-weight: 700;
+  text-shadow: 0 2px 4px rgba(60, 20, 0, 0.6);
+  background: linear-gradient(180deg, #b8895a, #8d6238);
   border-radius: 16px; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  border: 1px solid rgba(255, 240, 200, 0.25);
+  box-shadow: 0 0 0 4px #4a2c14, 0 0 0 7px #c98a52, 0 6px 14px rgba(0,0,0,0.25);
 }
 #next .label {
   font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
-  opacity: 0.85; margin-top: -2px;
+  opacity: 0.85; margin-top: 2px;
 }
-#next .emoji { font-size: 28px; line-height: 1; }
+#next img { width: 52px; height: 52px; object-fit: contain; }
 #hint {
   bottom: 14px; left: 50%; transform: translateX(-50%);
   font-family: 'Caveat', cursive;

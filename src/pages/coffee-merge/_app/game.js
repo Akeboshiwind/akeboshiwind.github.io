@@ -9,18 +9,29 @@ canvas.width = W * dpr;
 canvas.height = H * dpr;
 ctx.scale(dpr, dpr);
 
-const TIERS = [
-  { emoji: '🥃', radius: 22 },
-  { emoji: '🧋', radius: 28 },
-  { emoji: '🥛', radius: 35 },
-  { emoji: '☕', radius: 43 },
-  { emoji: '🍵', radius: 52 },
-  { emoji: '🍷', radius: 62 },
-  { emoji: '🍹', radius: 74 },
-  { emoji: '🍸', radius: 88 },
-  { emoji: '🍺', radius: 104 },
-  { emoji: '🥂', radius: 122 },
+const TIER_FILES = [
+  '01-espresso.png',
+  '05-affogato.png',
+  '07-latte.png',
+  '13-iced-latte.png',
+  '14-mocha.png',
+  '17-raspberry-mocha.png',
+  '16-orange-zest-coffee.png',
+  '21-spiced-rum-coffee.png',
+  '22-iced-coffee.png',
+  '23-berry-infused-coffee.png',
+  '24-coffee-punch.png',
 ];
+
+const TIER_MIN_R = 22;
+const TIER_MAX_R = 158;
+const TIERS = TIER_FILES.map((file, i) => {
+  const t = i / (TIER_FILES.length - 1);
+  const radius = Math.round(TIER_MIN_R * Math.pow(TIER_MAX_R / TIER_MIN_R, t));
+  const img = new Image();
+  img.src = `/coffee-merge/${file}`;
+  return { file, radius, img };
+});
 
 const AIR_DRAG = 0.046;
 const LAUNCH_SPEED = 26;
@@ -105,7 +116,7 @@ function tryLaunch() {
     if (gameOver) return;
     currentTier = nextTier;
     nextTier = pickStarter();
-    document.getElementById('nextEmoji').textContent = TIERS[nextTier].emoji;
+    document.getElementById('nextImg').src = TIERS[nextTier].img.src;
     aiming = true;
   }, 380);
 }
@@ -255,17 +266,22 @@ function drawLaunchLine() {
 
 function drawDrink(x, y, tier, scale = 1) {
   const t = TIERS[tier];
-  const size = t.radius * 2.35 * scale;
+  const size = t.radius * 2.1 * scale;
   ctx.save();
   ctx.translate(x, y);
-  ctx.fillStyle = 'rgba(40, 20, 5, 0.25)';
-  ctx.beginPath();
-  ctx.ellipse(0, t.radius * 0.55 * scale, t.radius * 0.85 * scale, t.radius * 0.28 * scale, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.font = `${size}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(t.emoji, 0, 0);
+  if (t.img.complete && t.img.naturalWidth > 0) {
+    const iw = t.img.naturalWidth;
+    const ih = t.img.naturalHeight;
+    const fit = size / Math.max(iw, ih);
+    const w = iw * fit;
+    const h = ih * fit;
+    ctx.drawImage(t.img, -w / 2, -h / 2, w, h);
+  } else {
+    ctx.fillStyle = 'rgba(255, 248, 220, 0.5)';
+    ctx.beginPath();
+    ctx.arc(0, 0, t.radius * scale, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -342,11 +358,11 @@ document.getElementById('restart').addEventListener('click', () => {
   gameOver = false;
   currentTier = pickStarter();
   nextTier = pickStarter();
-  document.getElementById('nextEmoji').textContent = TIERS[nextTier].emoji;
+  document.getElementById('nextImg').src = TIERS[nextTier].img.src;
   aiming = true;
   document.getElementById('hint').style.opacity = '';
   document.getElementById('gameover').classList.remove('show');
 });
 
-document.getElementById('nextEmoji').textContent = TIERS[nextTier].emoji;
+document.getElementById('nextImg').src = TIERS[nextTier].img.src;
 loop();

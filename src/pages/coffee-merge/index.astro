@@ -12,13 +12,15 @@
 </head>
 <body>
   <div id="stage">
-    <div id="wrap">
-      <canvas id="game"></canvas>
-      <div id="score" class="hud">Score<b id="scoreVal">0</b></div>
-      <div id="next" class="hud">
-        <span class="emoji" id="nextEmoji">🥃</span>
+    <div id="hud-top">
+      <div id="score">Score<b id="scoreVal">0</b></div>
+      <div id="next">
+        <img id="nextImg" alt="" />
         <span class="label">next</span>
       </div>
+    </div>
+    <div id="wrap">
+      <canvas id="game"></canvas>
       <div id="hint" class="hud">tap to launch ↑</div>
       <div id="gameover">
         <h2>Last Call!</h2>
