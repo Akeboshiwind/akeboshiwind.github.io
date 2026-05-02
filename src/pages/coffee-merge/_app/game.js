@@ -84,6 +84,8 @@ const overTimers = new Map();
 
 const STORAGE_KEY = 'coffee-merge:leaderboard';
 const NAME_KEY = 'coffee-merge:lastName';
+const STATE_KEY = 'coffee-merge:gameState';
+const SAVE_INTERVAL_MS = 1000;
 const MAX_ENTRIES = 10;
 
 function loadLeaderboard() {
@@ -103,6 +105,48 @@ function loadLastName() {
 function saveLastName(name) {
   localStorage.setItem(NAME_KEY, name);
 }
+function serializeState() {
+  const drinks = Composite.allBodies(engine.world)
+    .filter(b => b.isDrink && !b.merging)
+    .map(b => ({
+      tier: b.tier,
+      x: b.position.x,
+      y: b.position.y,
+      vx: b.velocity.x,
+      vy: b.velocity.y,
+      angle: b.angle,
+      av: b.angularVelocity,
+    }));
+  return { score, maxTier, currentTier, nextTier, drinks };
+}
+function saveState() {
+  if (gameOver) return;
+  try {
+    localStorage.setItem(STATE_KEY, JSON.stringify(serializeState()));
+  } catch {}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STATE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+function clearState() {
+  localStorage.removeItem(STATE_KEY);
+}
+
+let saveTimer = null;
+function startSaveTimer() {
+  if (saveTimer) return;
+  saveTimer = setInterval(saveState, SAVE_INTERVAL_MS);
+}
+function stopSaveTimer() {
+  if (saveTimer) clearInterval(saveTimer);
+  saveTimer = null;
+}
+
 function pushScore(name, points, tier) {
   const entries = loadLeaderboard();
   entries.push({ name, score: points, tier, date: Date.now() });
@@ -170,10 +214,42 @@ function startGame() {
   document.getElementById('hint').style.opacity = '';
   document.body.classList.remove('menu');
   document.getElementById('gameover').classList.remove('show');
+  clearState();
+  startSaveTimer();
+}
+
+function resumeGame(state) {
+  const bodies = Composite.allBodies(engine.world);
+  for (const body of bodies) {
+    if (body.isDrink) World.remove(engine.world, body);
+  }
+  particles = [];
+  merges = [];
+  overTimers.clear();
+  score = state.score || 0;
+  maxTier = state.maxTier || 0;
+  currentTier = state.currentTier ?? pickStarter();
+  nextTier = state.nextTier ?? pickStarter();
+  for (const d of state.drinks || []) {
+    const drink = createDrink(d.x, d.y, d.tier, d.vx || 0, d.vy || 0);
+    Body.setAngle(drink, d.angle || 0);
+    Body.setAngularVelocity(drink, d.av || 0);
+    World.add(engine.world, drink);
+  }
+  document.getElementById('scoreVal').textContent = score;
+  document.getElementById('nextImg').src = TIERS[nextTier].img.src;
+  gameOver = false;
+  aiming = true;
+  document.getElementById('hint').style.opacity = '0';
+  document.body.classList.remove('menu');
+  document.getElementById('gameover').classList.remove('show');
+  startSaveTimer();
 }
 
 function endGame() {
   gameOver = true;
+  stopSaveTimer();
+  clearState();
   document.getElementById('finalScore').textContent = score;
   const input = document.getElementById('nameInput');
   input.value = loadLastName();
@@ -459,5 +535,16 @@ document.getElementById('nameInput').addEventListener('keydown', (e) => {
 });
 
 document.getElementById('nextImg').src = TIERS[nextTier].img.src;
-showLeaderboard();
+
+window.addEventListener('pagehide', () => { if (!gameOver) saveState(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && !gameOver) saveState();
+});
+
+const savedState = loadState();
+if (savedState && Array.isArray(savedState.drinks) && savedState.drinks.length > 0) {
+  resumeGame(savedState);
+} else {
+  showLeaderboard();
+}
 loop();
