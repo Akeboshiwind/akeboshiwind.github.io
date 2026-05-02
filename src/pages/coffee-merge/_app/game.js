@@ -4,6 +4,15 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
 const W = 420, H = 640;
+// Playfield is inset by the rim so glasses can render onto the table edge
+// (drawn inside the canvas) instead of being clipped at the wood-grain.
+const RIM = 14;
+const PF_LEFT = RIM;
+const PF_RIGHT = W - RIM;
+const PF_TOP = RIM;
+const PF_BOTTOM = H - RIM;
+const PF_W = PF_RIGHT - PF_LEFT;
+const PF_H = PF_BOTTOM - PF_TOP;
 const dpr = Math.min(window.devicePixelRatio || 1, 2);
 canvas.width = W * dpr;
 canvas.height = H * dpr;
@@ -25,12 +34,17 @@ const TIER_FILES = [
 
 const TIER_MIN_R = 22;
 const TIER_MAX_R = 158;
+// Collision is the glass base; image is the whole glass with rim/foam.
+// Shrinking the body lets rendered glasses overlap when they settle —
+// reads as a crowded bar and packs a few more drinks below the line.
+const COLLISION_RATIO = 0.82;
 const TIERS = TIER_FILES.map((file, i) => {
   const t = i / (TIER_FILES.length - 1);
   const radius = Math.round(TIER_MIN_R * Math.pow(TIER_MAX_R / TIER_MIN_R, t));
+  const collisionRadius = Math.round(radius * COLLISION_RATIO);
   const img = new Image();
   img.src = `/coffee-merge/${file}`;
-  return { file, radius, img };
+  return { file, radius, collisionRadius, img };
 });
 
 const AIR_DRAG = 0.046;
@@ -44,15 +58,15 @@ engine.velocityIterations = 8;
 
 const wallT = 200;
 World.add(engine.world, [
-  Bodies.rectangle(W/2, -wallT/2, W*2, wallT, { isStatic: true, restitution: 0.4 }),
-  Bodies.rectangle(W/2, H + wallT/2, W*2, wallT, { isStatic: true, restitution: 0.4 }),
-  Bodies.rectangle(-wallT/2, H/2, wallT, H*2, { isStatic: true, restitution: 0.4 }),
-  Bodies.rectangle(W + wallT/2, H/2, wallT, H*2, { isStatic: true, restitution: 0.4 }),
+  Bodies.rectangle(W/2, PF_TOP - wallT/2, W*2, wallT, { isStatic: true, restitution: 0.4 }),
+  Bodies.rectangle(W/2, PF_BOTTOM + wallT/2, W*2, wallT, { isStatic: true, restitution: 0.4 }),
+  Bodies.rectangle(PF_LEFT - wallT/2, H/2, wallT, H*2, { isStatic: true, restitution: 0.4 }),
+  Bodies.rectangle(PF_RIGHT + wallT/2, H/2, wallT, H*2, { isStatic: true, restitution: 0.4 }),
 ]);
 
 function createDrink(x, y, tier, vx = 0, vy = 0) {
   const t = TIERS[tier];
-  const body = Bodies.circle(x, y, t.radius, {
+  const body = Bodies.circle(x, y, t.collisionRadius, {
     friction: 0.05,
     frictionAir: AIR_DRAG,
     restitution: 0.35,
@@ -310,7 +324,7 @@ function pointerX(clientX) {
   const rect = canvas.getBoundingClientRect();
   const x = (clientX - rect.left) * (W / rect.width);
   const r = TIERS[currentTier].radius;
-  return Math.max(r + 4, Math.min(W - r - 4, x));
+  return Math.max(PF_LEFT + r + 4, Math.min(PF_RIGHT - r - 4, x));
 }
 canvas.addEventListener('mousemove', (e) => { launcherX = pointerX(e.clientX); });
 canvas.addEventListener('mousedown', (e) => { launcherX = pointerX(e.clientX); tryLaunch(); });
@@ -435,36 +449,61 @@ function loop() {
 }
 
 function drawTable() {
-  const g = ctx.createLinearGradient(0, 0, 0, H);
+  // Outer rim — darker stained wood that frames the playfield.
+  ctx.fillStyle = '#4a2c14';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#6a4220';
+  ctx.fillRect(2, 2, W - 4, H - 4);
+
+  // Wood top, clipped to the playfield so grain/planks don't leak onto the rim.
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(PF_LEFT, PF_TOP, PF_W, PF_H);
+  ctx.clip();
+
+  const g = ctx.createLinearGradient(0, PF_TOP, 0, PF_BOTTOM);
   g.addColorStop(0, '#b8895a');
   g.addColorStop(0.5, '#a07248');
   g.addColorStop(1, '#7e5634');
   ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(PF_LEFT, PF_TOP, PF_W, PF_H);
 
   ctx.strokeStyle = 'rgba(50, 28, 12, 0.55)';
   ctx.lineWidth = 2;
   const plankCount = 4;
   for (let i = 1; i < plankCount; i++) {
-    const x = (W * i) / plankCount + Math.sin(i * 1.7) * 4;
+    const x = PF_LEFT + (PF_W * i) / plankCount + Math.sin(i * 1.7) * 4;
     ctx.beginPath();
-    ctx.moveTo(x, 0); ctx.lineTo(x, H);
+    ctx.moveTo(x, PF_TOP); ctx.lineTo(x, PF_BOTTOM);
     ctx.stroke();
   }
   ctx.strokeStyle = 'rgba(60, 30, 10, 0.08)';
   ctx.lineWidth = 1;
   for (let i = 0; i < 60; i++) {
-    const y = (i * 11.3) % H;
+    const y = PF_TOP + (i * 11.3) % PF_H;
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.bezierCurveTo(W*0.3, y + Math.sin(i)*3, W*0.7, y + Math.cos(i)*3, W, y);
+    ctx.moveTo(PF_LEFT, y);
+    ctx.bezierCurveTo(
+      PF_LEFT + PF_W * 0.3, y + Math.sin(i) * 3,
+      PF_LEFT + PF_W * 0.7, y + Math.cos(i) * 3,
+      PF_RIGHT, y
+    );
     ctx.stroke();
   }
-  const vg = ctx.createRadialGradient(W/2, H/2, W*0.3, W/2, H/2, W*0.85);
+  const cx = (PF_LEFT + PF_RIGHT) / 2;
+  const cy = (PF_TOP + PF_BOTTOM) / 2;
+  const vg = ctx.createRadialGradient(cx, cy, PF_W * 0.3, cx, cy, PF_W * 0.85);
   vg.addColorStop(0, 'rgba(0,0,0,0)');
   vg.addColorStop(1, 'rgba(0,0,0,0.35)');
   ctx.fillStyle = vg;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(PF_LEFT, PF_TOP, PF_W, PF_H);
+
+  ctx.restore();
+
+  // Inset shadow at the playfield edge — gives the rim a sense of depth.
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(PF_LEFT - 0.5, PF_TOP - 0.5, PF_W + 1, PF_H + 1);
 }
 
 function drawLaunchLine() {
@@ -474,8 +513,8 @@ function drawLaunchLine() {
   ctx.lineCap = 'round';
   ctx.setLineDash([14, 10]);
   ctx.beginPath();
-  ctx.moveTo(12, LAUNCH_LINE_Y);
-  ctx.lineTo(W - 12, LAUNCH_LINE_Y);
+  ctx.moveTo(PF_LEFT + 12, LAUNCH_LINE_Y);
+  ctx.lineTo(PF_RIGHT - 12, LAUNCH_LINE_Y);
   ctx.stroke();
   ctx.restore();
 }
@@ -535,7 +574,7 @@ function drawAimer() {
   ctx.setLineDash([6, 8]);
   ctx.beginPath();
   ctx.moveTo(launcherX, LAUNCHER_Y - t.radius);
-  ctx.lineTo(launcherX, 28);
+  ctx.lineTo(launcherX, PF_TOP + 14);
   ctx.stroke();
   ctx.restore();
 
