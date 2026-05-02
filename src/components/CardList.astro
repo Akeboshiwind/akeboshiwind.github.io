@@ -22,21 +22,7 @@ const { items, showImages = true } = Astro.props;
 <div class="flex flex-col gap-1.5 mt-6">
   {items.map(item => (
     <div class="flex flex-row items-stretch overflow-hidden">
-      {showImages && (
-        <a href={item.url} class="w-[72px] h-[80px] min-w-[72px] max-sm:w-[56px] max-sm:h-[64px] max-sm:min-w-[56px] mr-3 block">
-          {item.image && (
-            <Image
-              src={item.image}
-              alt={`Screenshot of ${item.title}`}
-              class="w-full h-full object-cover object-center rounded"
-              loading="lazy"
-              widths={[200, 360]}
-              sizes="100px"
-            />
-          )}
-        </a>
-      )}
-      <div class="flex flex-col justify-center py-1 min-w-0">
+      <div class="flex flex-col justify-center py-1 min-w-0 flex-1">
         <div class="flex items-baseline gap-2 flex-wrap">
           {item.stage && <a href="/stages/" class="text-xs italic opacity-60 capitalize no-underline hover:underline">A {item.stage}:</a>}
           <h2 class="text-xs font-semibold m-0 whitespace-nowrap"><a href={item.url} class="text-link visited:text-link-visited no-underline hover:underline">{item.title}</a></h2>
@@ -50,6 +36,18 @@ const { items, showImages = true } = Astro.props;
           <p class="text-xs m-0 mt-0.5 text-text leading-snug opacity-80">{item.description}</p>
         )}
       </div>
+      {showImages && item.image && (
+        <a href={item.url} class="w-[72px] h-[80px] min-w-[72px] max-sm:w-[56px] max-sm:h-[64px] max-sm:min-w-[56px] ml-3 block">
+          <Image
+            src={item.image}
+            alt={`Screenshot of ${item.title}`}
+            class="w-full h-full object-cover object-center rounded"
+            loading="lazy"
+            widths={[200, 360]}
+            sizes="100px"
+          />
+        </a>
+      )}
     </div>
   ))}
 </div>
