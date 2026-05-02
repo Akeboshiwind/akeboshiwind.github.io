@@ -82,22 +82,20 @@ let particles = [];
 let merges = [];
 const overTimers = new Map();
 
-const STORAGE_KEY = 'coffee-merge:leaderboard';
 const NAME_KEY = 'coffee-merge:lastName';
 const STATE_KEY = 'coffee-merge:gameState';
 const SAVE_INTERVAL_MS = 1000;
 const MAX_ENTRIES = 10;
+const PB_URL = 'https://pb.bythe.rocks';
+const GAME_ID = 'coffee-merge';
 
-function loadLeaderboard() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-function saveLeaderboard(entries) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, MAX_ENTRIES)));
+async function fetchLeaderboard() {
+  const filter = encodeURIComponent(`game="${GAME_ID}"`);
+  const url = `${PB_URL}/api/collections/scores/records?filter=${filter}&sort=-score&perPage=${MAX_ENTRIES}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Leaderboard fetch failed: ${res.status}`);
+  const data = await res.json();
+  return data.items || [];
 }
 function loadLastName() {
   return localStorage.getItem(NAME_KEY) || '';
@@ -147,17 +145,35 @@ function stopSaveTimer() {
   saveTimer = null;
 }
 
-function pushScore(name, points, tier) {
-  const entries = loadLeaderboard();
-  entries.push({ name, score: points, tier, date: Date.now() });
-  entries.sort((a, b) => b.score - a.score);
-  saveLeaderboard(entries);
+async function pushScore(name, points, tier) {
+  const res = await fetch(`${PB_URL}/api/collections/scores/records`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ game: GAME_ID, name, score: points, tier }),
+  });
+  if (!res.ok) throw new Error(`Score submit failed: ${res.status}`);
 }
 
-function renderLeaderboard() {
+function setLeaderboardMessage(text) {
   const list = document.getElementById('leaderboardList');
   list.innerHTML = '';
-  const entries = loadLeaderboard();
+  const li = document.createElement('li');
+  li.className = 'empty';
+  li.textContent = text;
+  list.appendChild(li);
+}
+
+async function renderLeaderboard() {
+  const list = document.getElementById('leaderboardList');
+  setLeaderboardMessage('loading…');
+  let entries;
+  try {
+    entries = await fetchLeaderboard();
+  } catch {
+    setLeaderboardMessage('leaderboard unavailable');
+    return;
+  }
+  list.innerHTML = '';
   if (entries.length === 0) {
     const li = document.createElement('li');
     li.className = 'empty';
@@ -190,9 +206,9 @@ function renderLeaderboard() {
 }
 
 function showLeaderboard() {
-  renderLeaderboard();
   document.body.classList.add('menu');
   document.getElementById('gameover').classList.remove('show');
+  return renderLeaderboard();
 }
 
 function startGame() {
@@ -257,11 +273,28 @@ function endGame() {
   setTimeout(() => input.focus(), 100);
 }
 
-function submitScore() {
+let submitting = false;
+async function submitScore() {
+  if (submitting) return;
   const raw = document.getElementById('nameInput').value || '';
   const name = raw.trim().slice(0, 20) || 'Anonymous';
   saveLastName(name);
-  pushScore(name, score, maxTier);
+  const btn = document.getElementById('submit');
+  submitting = true;
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Submitting…';
+  try {
+    await pushScore(name, score, maxTier);
+  } catch {
+    btn.textContent = 'Retry';
+    btn.disabled = false;
+    submitting = false;
+    return;
+  }
+  btn.disabled = false;
+  btn.textContent = original;
+  submitting = false;
   showLeaderboard();
 }
 
