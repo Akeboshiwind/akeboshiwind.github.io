@@ -71,14 +71,112 @@ function createDrink(x, y, tier, vx = 0, vy = 0) {
 let score = 0;
 let currentTier = pickStarter();
 let nextTier = pickStarter();
-let aiming = true;
+let aiming = false;
 let launcherX = W / 2;
 const LAUNCHER_Y = H - 48;
 const LAUNCH_LINE_Y = H - 92;
-let gameOver = false;
+let gameOver = true;
 let particles = [];
 let merges = [];
 const overTimers = new Map();
+
+const STORAGE_KEY = 'coffee-merge:leaderboard';
+const NAME_KEY = 'coffee-merge:lastName';
+const MAX_ENTRIES = 10;
+
+function loadLeaderboard() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+function saveLeaderboard(entries) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, MAX_ENTRIES)));
+}
+function loadLastName() {
+  return localStorage.getItem(NAME_KEY) || '';
+}
+function saveLastName(name) {
+  localStorage.setItem(NAME_KEY, name);
+}
+function pushScore(name, points) {
+  const entries = loadLeaderboard();
+  entries.push({ name, score: points, date: Date.now() });
+  entries.sort((a, b) => b.score - a.score);
+  saveLeaderboard(entries);
+}
+
+function renderLeaderboard() {
+  const list = document.getElementById('leaderboardList');
+  list.innerHTML = '';
+  const entries = loadLeaderboard();
+  if (entries.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'empty';
+    li.textContent = 'be the first to score';
+    list.appendChild(li);
+    return;
+  }
+  entries.forEach((entry, i) => {
+    const li = document.createElement('li');
+    const rank = document.createElement('span');
+    rank.className = 'rank';
+    rank.textContent = i === 0 ? '👑' : `#${i + 1}`;
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = entry.name;
+    const sc = document.createElement('span');
+    sc.className = 'score';
+    sc.textContent = entry.score;
+    li.append(rank, name, sc);
+    list.appendChild(li);
+  });
+}
+
+function showLeaderboard() {
+  renderLeaderboard();
+  document.body.classList.add('menu');
+  document.getElementById('gameover').classList.remove('show');
+}
+
+function startGame() {
+  const bodies = Composite.allBodies(engine.world);
+  for (const body of bodies) {
+    if (body.isDrink) World.remove(engine.world, body);
+  }
+  score = 0;
+  document.getElementById('scoreVal').textContent = 0;
+  particles = [];
+  merges = [];
+  overTimers.clear();
+  gameOver = false;
+  currentTier = pickStarter();
+  nextTier = pickStarter();
+  document.getElementById('nextImg').src = TIERS[nextTier].img.src;
+  aiming = true;
+  document.getElementById('hint').style.opacity = '';
+  document.body.classList.remove('menu');
+  document.getElementById('gameover').classList.remove('show');
+}
+
+function endGame() {
+  gameOver = true;
+  document.getElementById('finalScore').textContent = score;
+  const input = document.getElementById('nameInput');
+  input.value = loadLastName();
+  document.getElementById('gameover').classList.add('show');
+  setTimeout(() => input.focus(), 100);
+}
+
+function submitScore() {
+  const raw = document.getElementById('nameInput').value || '';
+  const name = raw.trim().slice(0, 20) || 'Anonymous';
+  saveLastName(name);
+  pushScore(name, score);
+  showLeaderboard();
+}
 
 function pickStarter() {
   const r = Math.random();
@@ -179,9 +277,7 @@ function checkGameOver() {
       const t = (overTimers.get(body.id) || 0) + 1;
       overTimers.set(body.id, t);
       if (t > 80) {
-        gameOver = true;
-        document.getElementById('finalScore').textContent = score;
-        document.getElementById('gameover').classList.add('show');
+        endGame();
         return;
       }
     } else {
@@ -345,24 +441,12 @@ function draw() {
   drawAimer();
 }
 
-document.getElementById('restart').addEventListener('click', () => {
-  const bodies = Composite.allBodies(engine.world);
-  for (const body of bodies) {
-    if (body.isDrink) World.remove(engine.world, body);
-  }
-  score = 0;
-  document.getElementById('scoreVal').textContent = 0;
-  particles = [];
-  merges = [];
-  overTimers.clear();
-  gameOver = false;
-  currentTier = pickStarter();
-  nextTier = pickStarter();
-  document.getElementById('nextImg').src = TIERS[nextTier].img.src;
-  aiming = true;
-  document.getElementById('hint').style.opacity = '';
-  document.getElementById('gameover').classList.remove('show');
+document.getElementById('play').addEventListener('click', startGame);
+document.getElementById('submit').addEventListener('click', submitScore);
+document.getElementById('nameInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') submitScore();
 });
 
 document.getElementById('nextImg').src = TIERS[nextTier].img.src;
+showLeaderboard();
 loop();

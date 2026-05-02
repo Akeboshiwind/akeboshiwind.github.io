@@ -10,7 +10,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Caveat:wght@600&display=swap" rel="stylesheet" />
 </head>
-<body>
+<body class="menu">
+  <div id="leaderboard">
+    <h1>Coffee Merge</h1>
+    <ol id="leaderboardList"></ol>
+    <button id="play">Play</button>
+  </div>
   <div id="stage">
     <div id="hud-top">
       <div id="score">Score<b id="scoreVal">0</b></div>
@@ -25,7 +30,8 @@
       <div id="gameover">
         <h2>Last Call!</h2>
         <p class="final">final score <span id="finalScore">0</span></p>
-        <button id="restart">Pour Again</button>
+        <input id="nameInput" type="text" placeholder="Your name" maxlength="20" autocomplete="off" />
+        <button id="submit">Submit</button>
       </div>
     </div>
   </div>
