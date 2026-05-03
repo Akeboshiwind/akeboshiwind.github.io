@@ -43,6 +43,8 @@ const rest = allItems.filter(i => !i.pinned).sort((a, b) => b.date.getTime() - a
 ---
 
 <Layout>
+  <a href={`${base}tools/`} class="text-sm text-text opacity-60 hover:opacity-100 no-underline hover:underline">All tools →</a>
+
   {pinned.length > 0 && (
     <>
       <h2 class="text-sm font-semibold text-heading mt-6 mb-1 uppercase tracking-wide opacity-60">Pinned</h2>
