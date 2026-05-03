@@ -244,7 +244,7 @@ const grouped = CATEGORIES.map(cat => {
 
     function applyFilter(query: string) {
       const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-      let anyVisible = false;
+      let anyCategoryVisible = false;
 
       for (const section of categorySections) {
         const rows = Array.from(section.querySelectorAll<HTMLElement>('[data-tool]'));
@@ -256,23 +256,18 @@ const grouped = CATEGORIES.map(cat => {
           if (matches) visibleCount++;
         }
         section.classList.toggle('hidden', visibleCount === 0);
-        if (visibleCount > 0) anyVisible = true;
+        if (visibleCount > 0) anyCategoryVisible = true;
       }
 
       if (pinnedList && pinnedSection) {
         const pinnedRows = Array.from(pinnedList.querySelectorAll<HTMLElement>('[data-tool]'));
-        let pinnedVisible = 0;
         for (const row of pinnedRows) {
-          const hay = row.dataset.search ?? '';
-          const matches = terms.every(t => hay.includes(t));
-          row.classList.toggle('hidden', !matches);
-          if (matches) pinnedVisible++;
+          row.classList.remove('hidden');
         }
-        pinnedSection.classList.toggle('hidden', pinnedRows.length === 0 || pinnedVisible === 0);
-        if (pinnedVisible > 0) anyVisible = true;
+        pinnedSection.classList.toggle('hidden', pinnedRows.length === 0);
       }
 
-      empty?.classList.toggle('hidden', anyVisible);
+      empty?.classList.toggle('hidden', anyCategoryVisible);
     }
 
     applyFilter('');
