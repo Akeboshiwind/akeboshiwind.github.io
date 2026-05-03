@@ -252,10 +252,10 @@ const grouped = CATEGORIES.map(cat => {
         for (const row of rows) {
           const hay = row.dataset.search ?? '';
           const matches = terms.every(t => hay.includes(t));
-          row.style.display = matches ? '' : 'none';
+          row.classList.toggle('hidden', !matches);
           if (matches) visibleCount++;
         }
-        section.style.display = visibleCount === 0 ? 'none' : '';
+        section.classList.toggle('hidden', visibleCount === 0);
         if (visibleCount > 0) anyVisible = true;
       }
 
@@ -265,14 +265,14 @@ const grouped = CATEGORIES.map(cat => {
         for (const row of pinnedRows) {
           const hay = row.dataset.search ?? '';
           const matches = terms.every(t => hay.includes(t));
-          row.style.display = matches ? '' : 'none';
+          row.classList.toggle('hidden', !matches);
           if (matches) pinnedVisible++;
         }
-        pinnedSection.style.display = pinnedRows.length > 0 && pinnedVisible > 0 ? '' : 'none';
+        pinnedSection.classList.toggle('hidden', pinnedRows.length === 0 || pinnedVisible === 0);
         if (pinnedVisible > 0) anyVisible = true;
       }
 
-      if (empty) empty.style.display = anyVisible ? 'none' : '';
+      empty?.classList.toggle('hidden', anyVisible);
     }
 
     applyFilter('');
