@@ -7,5 +7,7 @@
   "tags": [
     "tool",
     "finance"
-  ]
+  ],
+  "category": "finance",
+  "icon": "receipt"
 }

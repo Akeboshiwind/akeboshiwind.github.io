@@ -7,5 +7,7 @@
   "tags": [
     "tool",
     "ai"
-  ]
+  ],
+  "category": "ai",
+  "icon": "list-ordered"
 }

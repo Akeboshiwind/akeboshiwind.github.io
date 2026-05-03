@@ -5,5 +5,7 @@
   "description": "A chat interface emulator. Type in the box at the bottom and watch messages stack above.",
   "tags": [
     "tool"
-  ]
+  ],
+  "category": "fun",
+  "icon": "message-circle"
 }

@@ -7,5 +7,7 @@
     "tool",
     "ai",
     "images"
-  ]
+  ],
+  "category": "health",
+  "icon": "microscope"
 }

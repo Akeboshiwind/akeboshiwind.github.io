@@ -6,5 +6,7 @@
   "tags": [
     "presentation",
     "clojure"
-  ]
+  ],
+  "category": "talks",
+  "icon": "gift"
 }

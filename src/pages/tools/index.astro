@@ -1,0 +1,164 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import LucideIcon from '../../components/LucideIcon.astro';
+
+const base = import.meta.env.BASE_URL;
+
+const CATEGORIES = [
+  { id: 'finance', name: 'Finance', icon: 'wallet' },
+  { id: 'health', name: 'Health', icon: 'heart-pulse' },
+  { id: 'ai', name: 'AI', icon: 'sparkles' },
+  { id: 'images', name: 'Images', icon: 'images' },
+  { id: 'utilities', name: 'Utilities', icon: 'wrench' },
+  { id: 'fun', name: 'Fun', icon: 'gamepad-2' },
+  { id: 'learning', name: 'Learning', icon: 'graduation-cap' },
+  { id: 'talks', name: 'Talks', icon: 'presentation' },
+  { id: 'personal', name: 'Personal', icon: 'heart' },
+];
+
+const works = await getCollection('works');
+
+const screenshots = import.meta.glob<{ default: import('astro').ImageMetadata }>(
+  '../../assets/works/*.png',
+  { eager: true }
+);
+
+function workUrl(work: { id: string; data: { url?: string } }) {
+  return work.data.url || `${base}${work.id.replace('.json', '')}/`;
+}
+
+function screenshot(work: { id: string }) {
+  const key = `../../assets/works/${work.id.replace('.json', '')}.png`;
+  return screenshots[key]?.default;
+}
+
+const grouped = CATEGORIES.map(cat => {
+  const items = works
+    .filter(w => w.data.category === cat.id)
+    .sort((a, b) => {
+      const da = (a.data.updated ?? a.data.date).getTime();
+      const db = (b.data.updated ?? b.data.date).getTime();
+      return db - da;
+    });
+  return { ...cat, items };
+}).filter(c => c.items.length > 0);
+---
+
+<Layout title="Tools" description="A dashboard of all the tools, talks and toys on this site.">
+  <h1 class="text-2xl font-bold text-heading mt-4 mb-2">Tools</h1>
+  <p class="text-sm opacity-70 mt-0 mb-4">Search or scroll. {works.length} things across {grouped.length} categories.</p>
+
+  <label class="relative flex items-center gap-2 mb-6 border border-border rounded-md px-3 py-2 focus-within:border-link transition-colors">
+    <LucideIcon name="search" class="w-4 h-4 opacity-50" />
+    <input
+      id="tools-search"
+      type="search"
+      placeholder="Search tools…"
+      autocomplete="off"
+      class="flex-1 bg-transparent outline-none border-0 text-sm text-text placeholder:opacity-40"
+    />
+  </label>
+
+  <p id="tools-empty" class="hidden text-sm opacity-60 italic mt-8">No tools match that search.</p>
+
+  <div class="md:[column-count:2] md:gap-x-6">
+    {grouped.map(cat => (
+      <section
+        class="mb-8 break-inside-avoid"
+        data-category={cat.id}
+      >
+        <h2 class="flex items-center gap-2 text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-2 pb-1 border-b border-border">
+          <LucideIcon name={cat.icon} class="w-4 h-4" />
+          <span>{cat.name}</span>
+        </h2>
+
+        <ul class="flex flex-col gap-1 list-none p-0 m-0">
+          {cat.items.map(work => {
+            const img = screenshot(work);
+            const url = workUrl(work);
+            const haystack = [
+              work.data.title,
+              work.data.description,
+              cat.name,
+              cat.id,
+              ...(work.data.tags ?? []),
+            ].join(' ').toLowerCase();
+            return (
+              <li
+                class="tool-row flex items-stretch gap-3 py-1.5"
+                data-tool
+                data-search={haystack}
+              >
+                <a
+                  href={url}
+                  class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors"
+                  aria-label={work.data.title}
+                >
+                  {work.data.icon && <LucideIcon name={work.data.icon} class="w-5 h-5" />}
+                </a>
+
+                <div class="flex flex-col justify-center min-w-0 flex-1">
+                  <h3 class="text-sm font-semibold m-0 truncate">
+                    <a href={url} class="text-link visited:text-link-visited no-underline hover:underline">{work.data.title}</a>
+                  </h3>
+                  <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2">{work.data.description}</p>
+                </div>
+
+                {img && (
+                  <a href={url} class="block w-12 h-12 shrink-0 rounded overflow-hidden">
+                    <Image
+                      src={img}
+                      alt={`Screenshot of ${work.data.title}`}
+                      class="w-full h-full object-cover object-center"
+                      loading="lazy"
+                      widths={[96, 192]}
+                      sizes="48px"
+                    />
+                  </a>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    ))}
+  </div>
+
+  <script>
+    const input = document.getElementById('tools-search') as HTMLInputElement | null;
+    const empty = document.getElementById('tools-empty');
+    const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-category]'));
+
+    function applyFilter(query: string) {
+      const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      let anyVisible = false;
+
+      for (const section of sections) {
+        const rows = Array.from(section.querySelectorAll<HTMLElement>('[data-tool]'));
+        let visibleCount = 0;
+        for (const row of rows) {
+          const hay = row.dataset.search ?? '';
+          const matches = terms.every(t => hay.includes(t));
+          row.style.display = matches ? '' : 'none';
+          if (matches) visibleCount++;
+        }
+        section.style.display = visibleCount === 0 ? 'none' : '';
+        if (visibleCount > 0) anyVisible = true;
+      }
+
+      if (empty) empty.style.display = anyVisible ? 'none' : '';
+    }
+
+    input?.addEventListener('input', () => applyFilter(input.value));
+
+    // Keyboard shortcut: '/' focuses search
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement !== input && !(document.activeElement instanceof HTMLInputElement)) {
+        e.preventDefault();
+        input?.focus();
+      }
+    });
+  </script>
+</Layout>

@@ -22,6 +22,7 @@
     "astro": "^5.16.15",
     "astro-expressive-code": "^0.41.7",
     "dompurify": "^3.3.2",
+    "lucide-static": "^1.14.0",
     "marked": "^17.0.4",
     "matter-js": "^0.20.0",
     "mermaid": "^11.13.0",

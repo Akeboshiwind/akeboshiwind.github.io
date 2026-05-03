@@ -5,5 +5,7 @@
   "description": "Write and preview GitHub Flavoured Markdown with Mermaid diagram support. Text is saved to local storage.",
   "tags": [
     "tool"
-  ]
+  ],
+  "category": "utilities",
+  "icon": "file-code"
 }
