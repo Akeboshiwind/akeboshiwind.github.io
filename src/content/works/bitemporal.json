@@ -7,5 +7,7 @@
   "tags": [
     "visualization",
     "clojure"
-  ]
+  ],
+  "category": "learning",
+  "icon": "clock"
 }

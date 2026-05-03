@@ -1,0 +1,314 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import LucideIcon from '../../components/LucideIcon.astro';
+
+const base = import.meta.env.BASE_URL;
+
+const CATEGORIES = [
+  { id: 'finance', name: 'Finance', icon: 'wallet' },
+  { id: 'health', name: 'Health', icon: 'heart-pulse' },
+  { id: 'ai', name: 'AI', icon: 'sparkles' },
+  { id: 'images', name: 'Images', icon: 'images' },
+  { id: 'utilities', name: 'Utilities', icon: 'wrench' },
+  { id: 'fun', name: 'Fun', icon: 'gamepad-2' },
+  { id: 'learning', name: 'Learning', icon: 'graduation-cap' },
+  { id: 'talks', name: 'Talks', icon: 'presentation' },
+  { id: 'personal', name: 'Personal', icon: 'heart' },
+];
+
+const works = await getCollection('works');
+
+const screenshots = import.meta.glob<{ default: import('astro').ImageMetadata }>(
+  '../../assets/works/*.png',
+  { eager: true }
+);
+
+function workUrl(work: { id: string; data: { url?: string } }) {
+  return work.data.url || `${base}${work.id.replace('.json', '')}/`;
+}
+
+function workSlug(work: { id: string }) {
+  return work.id.replace('.json', '');
+}
+
+function screenshot(work: { id: string }) {
+  const key = `../../assets/works/${work.id.replace('.json', '')}.png`;
+  return screenshots[key]?.default;
+}
+
+const grouped = CATEGORIES.map(cat => {
+  const items = works
+    .filter(w => w.data.category === cat.id)
+    .sort((a, b) => {
+      const da = (a.data.updated ?? a.data.date).getTime();
+      const db = (b.data.updated ?? b.data.date).getTime();
+      return db - da;
+    });
+  return { ...cat, items };
+}).filter(c => c.items.length > 0);
+---
+
+<Layout title="Tools" description="A dashboard of all the tools, talks and toys on this site.">
+  <h1 class="text-2xl font-bold text-heading mt-4 mb-2">Tools</h1>
+  <p class="text-sm opacity-70 mt-0 mb-4">Search or scroll. {works.length} things across {grouped.length} categories.</p>
+
+  <label class="relative flex items-center gap-2 mb-6 border border-border rounded-md px-3 py-2 focus-within:border-link transition-colors">
+    <LucideIcon name="search" class="w-4 h-4 opacity-50" />
+    <input
+      id="tools-search"
+      type="search"
+      placeholder="Search tools…"
+      autocomplete="off"
+      class="flex-1 bg-transparent outline-none border-0 text-sm text-text placeholder:opacity-40"
+    />
+  </label>
+
+  <p id="tools-empty" class="hidden text-sm opacity-60 italic mt-8">No tools match that search.</p>
+
+  <section id="pinned-section" class="hidden mb-8" data-pinned-section>
+    <h2 class="flex items-center gap-2 text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-2 pb-1 border-b border-border">
+      <LucideIcon name="pin" class="w-4 h-4" />
+      <span>Pinned</span>
+    </h2>
+    <ul id="pinned-list" class="flex flex-col gap-1 list-none p-0 m-0"></ul>
+  </section>
+
+  <div class="md:[column-count:2] md:gap-x-6">
+    {grouped.map(cat => (
+      <section
+        class="mb-8 break-inside-avoid"
+        data-category={cat.id}
+      >
+        <h2 class="flex items-center gap-2 text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-2 pb-1 border-b border-border">
+          <LucideIcon name={cat.icon} class="w-4 h-4" />
+          <span>{cat.name}</span>
+        </h2>
+
+        <ul class="flex flex-col gap-1 list-none p-0 m-0">
+          {cat.items.map(work => {
+            const img = screenshot(work);
+            const url = workUrl(work);
+            const slug = workSlug(work);
+            const haystack = [
+              work.data.title,
+              work.data.description,
+              cat.name,
+              cat.id,
+              ...(work.data.tags ?? []),
+            ].join(' ').toLowerCase();
+            return (
+              <li
+                class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7"
+                data-tool
+                data-slug={slug}
+                data-pinned="false"
+                data-search={haystack}
+              >
+                <a
+                  href={url}
+                  class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors"
+                  aria-label={work.data.title}
+                >
+                  {work.data.icon && <LucideIcon name={work.data.icon} class="w-5 h-5" />}
+                </a>
+
+                <div class="flex flex-col justify-center min-w-0 flex-1">
+                  <h3 class="text-sm font-semibold m-0 truncate">
+                    <a href={url} class="text-link visited:text-link-visited no-underline hover:underline">{work.data.title}</a>
+                  </h3>
+                  <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2">{work.data.description}</p>
+                </div>
+
+                {img && (
+                  <a href={url} class="block w-12 h-12 shrink-0 rounded overflow-hidden">
+                    <Image
+                      src={img}
+                      alt={`Screenshot of ${work.data.title}`}
+                      class="w-full h-full object-cover object-center"
+                      loading="lazy"
+                      widths={[96, 192]}
+                      sizes="48px"
+                    />
+                  </a>
+                )}
+
+                <button
+                  type="button"
+                  data-pin
+                  aria-label={`Pin ${work.data.title}`}
+                  class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer"
+                >
+                  <LucideIcon name="pin" class="w-3.5 h-3.5" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    ))}
+  </div>
+
+  <style>
+    .pin-btn {
+      opacity: 0.25;
+      transition: opacity 0.15s, color 0.15s, transform 0.15s;
+    }
+    .pin-btn:hover,
+    .pin-btn:focus-visible {
+      opacity: 0.7;
+    }
+    .tool-row[data-pinned="true"] .pin-btn {
+      opacity: 1;
+      color: var(--color-link);
+      transform: rotate(45deg);
+    }
+    .tool-row[data-pinned="true"] .pin-btn:hover {
+      opacity: 0.85;
+    }
+  </style>
+
+  <script>
+    const STORAGE_KEY = 'tools.pins.v1';
+
+    const input = document.getElementById('tools-search') as HTMLInputElement | null;
+    const empty = document.getElementById('tools-empty');
+    const pinnedSection = document.getElementById('pinned-section') as HTMLElement | null;
+    const pinnedList = document.getElementById('pinned-list') as HTMLElement | null;
+    const categorySections = Array.from(document.querySelectorAll<HTMLElement>('[data-category]'));
+
+    function loadPins(): Set<string> {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return new Set();
+        const arr = JSON.parse(raw);
+        return new Set(Array.isArray(arr) ? arr.filter(s => typeof s === 'string') : []);
+      } catch {
+        return new Set();
+      }
+    }
+
+    function savePins(pins: Set<string>) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([...pins]));
+      } catch {}
+    }
+
+    const pins = loadPins();
+
+    function rowsForSlug(slug: string): HTMLElement[] {
+      return Array.from(document.querySelectorAll<HTMLElement>(`[data-tool][data-slug="${CSS.escape(slug)}"]`));
+    }
+
+    function originalRowForSlug(slug: string): HTMLElement | null {
+      return document.querySelector<HTMLElement>(`[data-category] [data-tool][data-slug="${CSS.escape(slug)}"]`);
+    }
+
+    function addPinnedClone(slug: string) {
+      if (!pinnedList) return;
+      if (pinnedList.querySelector(`[data-slug="${CSS.escape(slug)}"]`)) return;
+      const original = originalRowForSlug(slug);
+      if (!original) return;
+      const clone = original.cloneNode(true) as HTMLElement;
+      clone.dataset.pinned = 'true';
+      pinnedList.appendChild(clone);
+    }
+
+    function removePinnedClone(slug: string) {
+      pinnedList?.querySelector(`[data-slug="${CSS.escape(slug)}"]`)?.remove();
+    }
+
+    function setPinned(slug: string, pinned: boolean) {
+      if (pinned) pins.add(slug);
+      else pins.delete(slug);
+      savePins(pins);
+
+      for (const row of rowsForSlug(slug)) {
+        row.dataset.pinned = pinned ? 'true' : 'false';
+      }
+
+      if (pinned) addPinnedClone(slug);
+      else removePinnedClone(slug);
+
+      applyFilter(input?.value ?? '');
+    }
+
+    // Hydrate from localStorage: mark + clone any pinned rows
+    for (const slug of pins) {
+      for (const row of rowsForSlug(slug)) {
+        row.dataset.pinned = 'true';
+      }
+      addPinnedClone(slug);
+    }
+
+    function applyFilter(query: string) {
+      const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      let anyCategoryVisible = false;
+
+      for (const section of categorySections) {
+        const rows = Array.from(section.querySelectorAll<HTMLElement>('[data-tool]'));
+        let visibleCount = 0;
+        for (const row of rows) {
+          const hay = row.dataset.search ?? '';
+          const matches = terms.every(t => hay.includes(t));
+          row.classList.toggle('hidden', !matches);
+          if (matches) visibleCount++;
+        }
+        section.classList.toggle('hidden', visibleCount === 0);
+        if (visibleCount > 0) anyCategoryVisible = true;
+      }
+
+      if (pinnedList && pinnedSection) {
+        const pinnedRows = Array.from(pinnedList.querySelectorAll<HTMLElement>('[data-tool]'));
+        for (const row of pinnedRows) {
+          row.classList.remove('hidden');
+        }
+        const hasQuery = terms.length > 0;
+        pinnedSection.classList.toggle('hidden', hasQuery || pinnedRows.length === 0);
+      }
+
+      empty?.classList.toggle('hidden', anyCategoryVisible);
+    }
+
+    applyFilter('');
+
+    input?.addEventListener('input', () => applyFilter(input.value));
+
+    document.addEventListener('click', (e) => {
+      const target = e.target as Element | null;
+      const btn = target?.closest('[data-pin]') as HTMLElement | null;
+      if (!btn) return;
+      e.preventDefault();
+      const row = btn.closest('[data-tool]') as HTMLElement | null;
+      const slug = row?.dataset.slug;
+      if (!slug) return;
+      setPinned(slug, !pins.has(slug));
+    });
+
+    // Sync across tabs
+    window.addEventListener('storage', (e) => {
+      if (e.key !== STORAGE_KEY) return;
+      const next = loadPins();
+      const all = new Set([...pins, ...next]);
+      for (const slug of all) {
+        const wasPinned = pins.has(slug);
+        const isPinned = next.has(slug);
+        if (wasPinned === isPinned) continue;
+        if (isPinned) pins.add(slug); else pins.delete(slug);
+        for (const row of rowsForSlug(slug)) {
+          row.dataset.pinned = isPinned ? 'true' : 'false';
+        }
+        if (isPinned) addPinnedClone(slug); else removePinnedClone(slug);
+      }
+      applyFilter(input?.value ?? '');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement !== input && !(document.activeElement instanceof HTMLInputElement)) {
+        e.preventDefault();
+        input?.focus();
+      }
+    });
+  </script>
+</Layout>

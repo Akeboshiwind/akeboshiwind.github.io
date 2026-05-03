@@ -1,0 +1,85 @@
+---
+import receipt from 'lucide-static/icons/receipt.svg?raw';
+import wallet from 'lucide-static/icons/wallet.svg?raw';
+import clock from 'lucide-static/icons/clock.svg?raw';
+import sparkles from 'lucide-static/icons/sparkles.svg?raw';
+import gift from 'lucide-static/icons/gift.svg?raw';
+import messageCircle from 'lucide-static/icons/message-circle.svg?raw';
+import treePine from 'lucide-static/icons/tree-pine.svg?raw';
+import coffee from 'lucide-static/icons/coffee.svg?raw';
+import layers from 'lucide-static/icons/layers.svg?raw';
+import dumbbell from 'lucide-static/icons/dumbbell.svg?raw';
+import terminal from 'lucide-static/icons/terminal.svg?raw';
+import languages from 'lucide-static/icons/languages.svg?raw';
+import columns2 from 'lucide-static/icons/columns-2.svg?raw';
+import imageDown from 'lucide-static/icons/image-down.svg?raw';
+import fileCode from 'lucide-static/icons/file-code.svg?raw';
+import smile from 'lucide-static/icons/smile.svg?raw';
+import fileText from 'lucide-static/icons/file-text.svg?raw';
+import qrCode from 'lucide-static/icons/qr-code.svg?raw';
+import listOrdered from 'lucide-static/icons/list-ordered.svg?raw';
+import arrowUpDown from 'lucide-static/icons/arrow-up-down.svg?raw';
+import microscope from 'lucide-static/icons/microscope.svg?raw';
+import arrowRightLeft from 'lucide-static/icons/arrow-right-left.svg?raw';
+import volume2 from 'lucide-static/icons/volume-2.svg?raw';
+import heartHandshake from 'lucide-static/icons/heart-handshake.svg?raw';
+import fileSpreadsheet from 'lucide-static/icons/file-spreadsheet.svg?raw';
+import flower from 'lucide-static/icons/flower.svg?raw';
+import heartPulse from 'lucide-static/icons/heart-pulse.svg?raw';
+import images from 'lucide-static/icons/images.svg?raw';
+import wrench from 'lucide-static/icons/wrench.svg?raw';
+import gamepad2 from 'lucide-static/icons/gamepad-2.svg?raw';
+import graduationCap from 'lucide-static/icons/graduation-cap.svg?raw';
+import presentation from 'lucide-static/icons/presentation.svg?raw';
+import heart from 'lucide-static/icons/heart.svg?raw';
+import search from 'lucide-static/icons/search.svg?raw';
+import pin from 'lucide-static/icons/pin.svg?raw';
+
+const ICONS: Record<string, string> = {
+  'receipt': receipt,
+  'wallet': wallet,
+  'clock': clock,
+  'sparkles': sparkles,
+  'gift': gift,
+  'message-circle': messageCircle,
+  'tree-pine': treePine,
+  'coffee': coffee,
+  'layers': layers,
+  'dumbbell': dumbbell,
+  'terminal': terminal,
+  'languages': languages,
+  'columns-2': columns2,
+  'image-down': imageDown,
+  'file-code': fileCode,
+  'smile': smile,
+  'file-text': fileText,
+  'qr-code': qrCode,
+  'list-ordered': listOrdered,
+  'arrow-up-down': arrowUpDown,
+  'microscope': microscope,
+  'arrow-right-left': arrowRightLeft,
+  'volume-2': volume2,
+  'heart-handshake': heartHandshake,
+  'file-spreadsheet': fileSpreadsheet,
+  'flower': flower,
+  'heart-pulse': heartPulse,
+  'images': images,
+  'wrench': wrench,
+  'gamepad-2': gamepad2,
+  'graduation-cap': graduationCap,
+  'presentation': presentation,
+  'heart': heart,
+  'search': search,
+  'pin': pin,
+};
+
+interface Props {
+  name: string;
+  class?: string;
+}
+
+const { name, class: className = 'w-5 h-5' } = Astro.props;
+const svg = ICONS[name];
+---
+
+{svg && <span class={`inline-flex items-center justify-center ${className}`} set:html={svg} />}

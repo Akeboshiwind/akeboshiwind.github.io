@@ -5,5 +5,7 @@
   "description": "Generate a QR code from text or a URL and download it as a PNG.",
   "tags": [
     "tool"
-  ]
+  ],
+  "category": "utilities",
+  "icon": "qr-code"
 }

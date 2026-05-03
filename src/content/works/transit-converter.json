@@ -6,5 +6,7 @@
   "tags": [
     "tool",
     "clojure"
-  ]
+  ],
+  "category": "utilities",
+  "icon": "arrow-right-left"
 }

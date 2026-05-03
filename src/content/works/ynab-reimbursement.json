@@ -6,5 +6,7 @@
   "tags": [
     "tool",
     "finance"
-  ]
+  ],
+  "category": "finance",
+  "icon": "file-spreadsheet"
 }

@@ -6,5 +6,7 @@
   "tags": [
     "tool",
     "images"
-  ]
+  ],
+  "category": "images",
+  "icon": "columns-2"
 }

@@ -6,5 +6,7 @@
   "tags": [
     "tool",
     "pdf"
-  ]
+  ],
+  "category": "utilities",
+  "icon": "file-text"
 }

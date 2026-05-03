@@ -7,5 +7,7 @@
     "tool",
     "data",
     "visualization"
-  ]
+  ],
+  "category": "learning",
+  "icon": "arrow-up-down"
 }
