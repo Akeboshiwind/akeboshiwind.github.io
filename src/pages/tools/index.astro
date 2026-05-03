@@ -264,7 +264,8 @@ const grouped = CATEGORIES.map(cat => {
         for (const row of pinnedRows) {
           row.classList.remove('hidden');
         }
-        pinnedSection.classList.toggle('hidden', pinnedRows.length === 0);
+        const hasQuery = terms.length > 0;
+        pinnedSection.classList.toggle('hidden', hasQuery || pinnedRows.length === 0);
       }
 
       empty?.classList.toggle('hidden', anyCategoryVisible);
