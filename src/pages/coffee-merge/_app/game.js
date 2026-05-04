@@ -99,17 +99,362 @@ const overTimers = new Map();
 const NAME_KEY = 'coffee-merge:lastName';
 const STATE_KEY = 'coffee-merge:gameState';
 const SAVE_INTERVAL_MS = 1000;
-const MAX_ENTRIES = 10;
+const TOP_ENTRIES = 5;
+// Overfetch so client-side dedup-by-name still yields enough unique users
+// even when the top of the table is dominated by repeat submissions.
+const FETCH_SIZE = 200;
 const PB_URL = 'https://pb.bythe.rocks';
 const GAME_ID = 'coffee-merge';
 
+// Live ladder: each player upserts a row in `live_sessions` while playing,
+// subscribes to PocketBase realtime events for live_sessions and scores,
+// then fills two flanking slots around their score from the local cache.
+const LIVE_FRESH_MS = 30000;
+const LIVE_PATCH_INTERVAL_MS = 2000;
+const HEARTBEAT_INTERVAL_MS = 10000;
+const STALE_TICK_INTERVAL_MS = 5000;
+
+let sessionId = null;
+const liveSessionsMap = new Map();
+let topRecord = null;
+let prevWindowKeys = [];
+
+function liveUrl(suffix = '') {
+  return `${PB_URL}/api/collections/live_sessions/records${suffix}`;
+}
+
+async function createLiveSession() {
+  const playerName = loadLastName() || 'Player';
+  try {
+    const res = await fetch(liveUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ game: GAME_ID, name: playerName, score, tier: maxTier }),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    sessionId = data.id;
+  } catch {}
+}
+
+let lastPatchAt = 0;
+let pendingPatchTimer = null;
+function scheduleLivePatch() {
+  const wait = Math.max(0, LIVE_PATCH_INTERVAL_MS - (Date.now() - lastPatchAt));
+  if (wait === 0) {
+    sendLivePatch();
+  } else if (!pendingPatchTimer) {
+    pendingPatchTimer = setTimeout(() => {
+      pendingPatchTimer = null;
+      sendLivePatch();
+    }, wait);
+  }
+}
+
+async function sendLivePatch() {
+  if (!sessionId) return;
+  lastPatchAt = Date.now();
+  try {
+    await fetch(liveUrl(`/${sessionId}`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ score, tier: maxTier }),
+    });
+  } catch {}
+}
+
+async function deleteLiveSession() {
+  if (!sessionId) return;
+  const id = sessionId;
+  sessionId = null;
+  if (pendingPatchTimer) {
+    clearTimeout(pendingPatchTimer);
+    pendingPatchTimer = null;
+  }
+  try {
+    await fetch(liveUrl(`/${id}`), { method: 'DELETE' });
+  } catch {}
+}
+
+async function fetchTopOne() {
+  const f = encodeURIComponent(`game="${GAME_ID}"`);
+  try {
+    const res = await fetch(`${PB_URL}/api/collections/scores/records?filter=${f}&sort=-score&perPage=1`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.items?.[0] || null;
+  } catch { return null; }
+}
+
+async function bulkFetchLive() {
+  // PocketBase filter wants "YYYY-MM-DD HH:MM:SS.sssZ" (space, not T).
+  const cutoff = new Date(Date.now() - LIVE_FRESH_MS).toISOString().replace('T', ' ');
+  const f = encodeURIComponent(`game="${GAME_ID}" && updated>"${cutoff}"`);
+  try {
+    const res = await fetch(liveUrl(`?filter=${f}&sort=-updated&perPage=50`));
+    if (!res.ok) return;
+    const data = await res.json();
+    liveSessionsMap.clear();
+    for (const r of (data.items || [])) liveSessionsMap.set(r.id, r);
+  } catch {}
+}
+
+let realtimeES = null;
+let realtimeClientId = null;
+async function subscribeRealtime() {
+  if (!realtimeClientId) return;
+  try {
+    await fetch(`${PB_URL}/api/realtime`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientId: realtimeClientId,
+        subscriptions: ['live_sessions', 'scores'],
+      }),
+    });
+  } catch (err) {
+    console.warn('realtime subscribe failed', err);
+  }
+}
+
+function startRealtime() {
+  if (realtimeES) return;
+  realtimeES = new EventSource(`${PB_URL}/api/realtime`);
+  realtimeES.addEventListener('PB_CONNECT', async (e) => {
+    try {
+      realtimeClientId = JSON.parse(e.data).clientId;
+      // Bulk-fetch the starting state before subscribing — otherwise events
+      // arriving during the bulk fetch get wiped by its clear() call.
+      const [, top] = await Promise.all([bulkFetchLive(), fetchTopOne()]);
+      topRecord = top;
+      // Snap prevWindowKeys to the bulk state so the placeholder YOU-only
+      // ladder doesn't register as a "lineup change" on the first real
+      // render — otherwise the player's row pulses on every game start.
+      prevWindowKeys = computeLadderWindow().map(c => c.id);
+      renderLadder();
+      await subscribeRealtime();
+    } catch (err) {
+      console.warn('realtime connect handler failed', err);
+    }
+  });
+  realtimeES.addEventListener('live_sessions', (e) => {
+    try {
+      const { action, record } = JSON.parse(e.data);
+      if (record.game !== GAME_ID) return;
+      if (action === 'delete') liveSessionsMap.delete(record.id);
+      else liveSessionsMap.set(record.id, record);
+      renderLadder();
+    } catch {}
+  });
+  realtimeES.addEventListener('scores', (e) => {
+    try {
+      const { record } = JSON.parse(e.data);
+      if (record.game !== GAME_ID) return;
+      // A new submission may be a new top — refetch the single top row.
+      fetchTopOne().then(t => { topRecord = t; renderLadder(); });
+    } catch {}
+  });
+  realtimeES.onerror = () => {
+    // EventSource auto-reconnects; PB_CONNECT will fire again with a fresh clientId.
+    console.warn('realtime connection error, will retry');
+  };
+}
+
+function stopRealtime() {
+  if (realtimeES) {
+    realtimeES.close();
+    realtimeES = null;
+  }
+  realtimeClientId = null;
+  liveSessionsMap.clear();
+  topRecord = null;
+}
+
+let heartbeatTimer = null;
+function startHeartbeat() {
+  if (heartbeatTimer) return;
+  // Bump our `updated` field on a steady cadence so we don't go stale in
+  // others' staleness filter during long stretches with no merges.
+  heartbeatTimer = setInterval(() => scheduleLivePatch(), HEARTBEAT_INTERVAL_MS);
+}
+function stopHeartbeat() {
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  heartbeatTimer = null;
+}
+
+let staleTickTimer = null;
+function startStaleTick() {
+  if (staleTickTimer) return;
+  // Re-render periodically so rows that quietly went stale (e.g. a tab
+  // crashed without firing pagehide) drop out without waiting for an event.
+  staleTickTimer = setInterval(() => {
+    const pruneCutoff = Date.now() - LIVE_FRESH_MS * 2;
+    for (const [id, r] of liveSessionsMap) {
+      if (new Date(r.updated).getTime() < pruneCutoff) liveSessionsMap.delete(id);
+    }
+    renderLadder();
+  }, STALE_TICK_INTERVAL_MS);
+}
+function stopStaleTick() {
+  if (staleTickTimer) clearInterval(staleTickTimer);
+  staleTickTimer = null;
+}
+
+async function setupLiveLadder() {
+  await createLiveSession();
+  startRealtime();
+  startHeartbeat();
+  startStaleTick();
+}
+
+function teardownLiveLadder() {
+  stopHeartbeat();
+  stopStaleTick();
+  stopRealtime();
+  deleteLiveSession();
+}
+
+function computeLadderWindow() {
+  const you = { id: 'you', name: 'YOU', score, kind: 'you' };
+  const cutoff = Date.now() - LIVE_FRESH_MS;
+  let above = null, below = null;
+  for (const r of liveSessionsMap.values()) {
+    if (r.id === sessionId) continue;
+    if (new Date(r.updated).getTime() < cutoff) continue;
+    if (r.score > score) {
+      if (!above || r.score < above.score) above = r;
+    } else if (r.score < score) {
+      if (!below || r.score > below.score) below = r;
+    }
+  }
+  const aboveSlot = above
+    ? { id: `live:${above.id}`, name: above.name, score: above.score, kind: 'live' }
+    : null;
+  const belowSlot = below
+    ? { id: `live:${below.id}`, name: below.name, score: below.score, kind: 'live' }
+    : null;
+  const topShow = topRecord
+    ? { id: `top:${topRecord.id}`, name: topRecord.name, score: topRecord.score, kind: 'top' }
+    : null;
+  const candidates = [you];
+  if (topShow) candidates.push(topShow);
+  if (aboveSlot) candidates.push(aboveSlot);
+  if (belowSlot) candidates.push(belowSlot);
+  // On score ties, prefer top → live → you so the static TOP reference
+  // sits above the leader's matching live row when both are present.
+  const tieOrder = { top: 0, live: 1, you: 2 };
+  candidates.sort((a, b) => (b.score - a.score) || (tieOrder[a.kind] - tieOrder[b.kind]));
+  const yourIdx = candidates.findIndex(c => c.kind === 'you');
+  // Start one above you, but slide the window up if we'd otherwise truncate
+  // (e.g. you're at the bottom of 3 candidates — without the slide, TOP at
+  // index 0 would fall outside the 3-row window).
+  const start = Math.max(0, Math.min(yourIdx - 1, candidates.length - 3));
+  return candidates.slice(start, start + 3);
+}
+
+function renderLadder() {
+  const ladder = document.getElementById('ladder');
+  if (!ladder) return;
+  const slots = computeLadderWindow();
+  const newKeys = slots.map(c => c.id);
+
+  // FLIP: capture previous row positions by id so persistent rows can slide.
+  const oldTops = new Map();
+  for (const li of ladder.children) {
+    oldTops.set(li.dataset.id, li.getBoundingClientRect().top);
+  }
+
+  ladder.innerHTML = '';
+  for (const c of slots) {
+    const li = document.createElement('li');
+    li.className = `rung is-${c.kind}`;
+    li.dataset.id = c.id;
+    const left = document.createElement('span');
+    left.className = 'rung-name';
+    if (c.kind === 'live') {
+      const dot = document.createElement('span');
+      dot.className = 'rung-status live';
+      left.appendChild(dot);
+    } else if (c.kind === 'top') {
+      const crown = document.createElement('span');
+      crown.className = 'rung-crown';
+      crown.textContent = '👑';
+      left.appendChild(crown);
+    }
+    left.appendChild(document.createTextNode(c.name || ''));
+    const right = document.createElement('span');
+    right.className = 'rung-score';
+    right.textContent = c.score;
+    li.append(left, right);
+    ladder.appendChild(li);
+  }
+
+  // FLIP: invert + play for rows that moved.
+  for (const li of ladder.children) {
+    const oldTop = oldTops.get(li.dataset.id);
+    if (oldTop === undefined) continue;
+    const dy = oldTop - li.getBoundingClientRect().top;
+    if (!dy) continue;
+    li.style.transition = 'none';
+    li.style.transform = `translateY(${dy}px)`;
+    requestAnimationFrame(() => {
+      li.style.transition = '';
+      li.style.transform = '';
+    });
+  }
+
+  const lineupChanged =
+    newKeys.length !== prevWindowKeys.length ||
+    newKeys.some((k, i) => k !== prevWindowKeys[i]);
+  if (lineupChanged && prevWindowKeys.length > 0) {
+    const youRow = ladder.querySelector('.is-you');
+    if (youRow) {
+      youRow.classList.remove('pulse');
+      void youRow.offsetWidth;
+      youRow.classList.add('pulse');
+    }
+    const wasTop = prevWindowKeys[0] === 'you';
+    const isTop = newKeys[0] === 'you';
+    // Only celebrate when there's actually someone to overtake.
+    if (isTop && !wasTop && newKeys.length > 1) fireTopConfetti();
+  }
+  prevWindowKeys = newKeys;
+}
+
+function fireTopConfetti() {
+  const palette = ['#ffd700', '#ff6f3d', '#4ade80', '#60a5fa', '#f472b6', '#fff5c2'];
+  for (let i = 0; i < 70; i++) {
+    particles.push({
+      x: PF_LEFT + Math.random() * PF_W,
+      y: PF_TOP + 4,
+      vx: (Math.random() - 0.5) * 3,
+      vy: 1 + Math.random() * 2.5,
+      life: 90 + Math.random() * 50, max: 140,
+      color: palette[i % palette.length],
+      size: 3 + Math.random() * 2.5,
+      gravity: 0.16,
+    });
+  }
+}
+
+function dedupeByName(entries) {
+  const seen = new Set();
+  const out = [];
+  for (const e of entries) {
+    if (seen.has(e.name)) continue;
+    seen.add(e.name);
+    out.push(e);
+  }
+  return out;
+}
+
 async function fetchLeaderboard() {
   const filter = encodeURIComponent(`game="${GAME_ID}"`);
-  const url = `${PB_URL}/api/collections/scores/records?filter=${filter}&sort=-score&perPage=${MAX_ENTRIES}`;
+  const url = `${PB_URL}/api/collections/scores/records?filter=${filter}&sort=-score&perPage=${FETCH_SIZE}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Leaderboard fetch failed: ${res.status}`);
   const data = await res.json();
-  return data.items || [];
+  return dedupeByName(data.items || []);
 }
 function loadLastName() {
   return localStorage.getItem(NAME_KEY) || '';
@@ -177,9 +522,35 @@ function setLeaderboardMessage(text) {
   list.appendChild(li);
 }
 
+function appendLeaderboardRow(list, entry, rank, opts = {}) {
+  const li = document.createElement('li');
+  if (opts.isUser) li.classList.add('is-user');
+  if (opts.separated) li.classList.add('separated');
+  const rankEl = document.createElement('span');
+  rankEl.className = 'rank';
+  rankEl.textContent = rank === 1 ? '👑' : `#${rank}`;
+  const name = document.createElement('span');
+  name.className = 'name';
+  name.textContent = entry.name;
+  const sc = document.createElement('span');
+  sc.className = 'score';
+  sc.textContent = entry.score;
+  li.append(rankEl, name);
+  if (typeof entry.tier === 'number' && TIERS[entry.tier]) {
+    const drink = document.createElement('img');
+    drink.className = 'drink';
+    drink.src = TIERS[entry.tier].img.src;
+    drink.alt = '';
+    li.append(drink);
+  }
+  li.append(sc);
+  list.appendChild(li);
+}
+
 async function renderLeaderboard() {
   const list = document.getElementById('leaderboardList');
   setLeaderboardMessage('loading…');
+  const userName = loadLastName();
   let entries;
   try {
     entries = await fetchLeaderboard();
@@ -195,28 +566,18 @@ async function renderLeaderboard() {
     list.appendChild(li);
     return;
   }
-  entries.forEach((entry, i) => {
-    const li = document.createElement('li');
-    const rank = document.createElement('span');
-    rank.className = 'rank';
-    rank.textContent = i === 0 ? '👑' : `#${i + 1}`;
-    const name = document.createElement('span');
-    name.className = 'name';
-    name.textContent = entry.name;
-    const sc = document.createElement('span');
-    sc.className = 'score';
-    sc.textContent = entry.score;
-    li.append(rank, name);
-    if (typeof entry.tier === 'number' && TIERS[entry.tier]) {
-      const drink = document.createElement('img');
-      drink.className = 'drink';
-      drink.src = TIERS[entry.tier].img.src;
-      drink.alt = '';
-      li.append(drink);
-    }
-    li.append(sc);
-    list.appendChild(li);
+  const userIdx = userName ? entries.findIndex(e => e.name === userName) : -1;
+  const top = entries.slice(0, TOP_ENTRIES);
+  top.forEach((entry, i) => {
+    const isUser = i === userIdx;
+    appendLeaderboardRow(list, entry, i + 1, { isUser });
   });
+  if (userIdx >= TOP_ENTRIES) {
+    appendLeaderboardRow(list, entries[userIdx], userIdx + 1, {
+      isUser: true,
+      separated: true,
+    });
+  }
 }
 
 function showLeaderboard() {
@@ -232,7 +593,6 @@ function startGame() {
   }
   score = 0;
   maxTier = 0;
-  document.getElementById('scoreVal').textContent = 0;
   particles = [];
   merges = [];
   overTimers.clear();
@@ -246,6 +606,9 @@ function startGame() {
   document.getElementById('gameover').classList.remove('show');
   clearState();
   startSaveTimer();
+  prevWindowKeys = [];
+  renderLadder();
+  setupLiveLadder();
 }
 
 function resumeGame(state) {
@@ -266,7 +629,6 @@ function resumeGame(state) {
     Body.setAngularVelocity(drink, d.av || 0);
     World.add(engine.world, drink);
   }
-  document.getElementById('scoreVal').textContent = score;
   document.getElementById('nextImg').src = TIERS[nextTier].img.src;
   gameOver = false;
   aiming = true;
@@ -274,11 +636,15 @@ function resumeGame(state) {
   document.body.classList.remove('menu');
   document.getElementById('gameover').classList.remove('show');
   startSaveTimer();
+  prevWindowKeys = [];
+  renderLadder();
+  setupLiveLadder();
 }
 
 function endGame() {
   gameOver = true;
   stopSaveTimer();
+  teardownLiveLadder();
   clearState();
   document.getElementById('finalScore').textContent = score;
   const input = document.getElementById('nameInput');
@@ -393,7 +759,8 @@ Events.on(engine, 'collisionStart', (event) => {
     } else {
       score += 600;
     }
-    document.getElementById('scoreVal').textContent = score;
+    renderLadder();
+    scheduleLivePatch();
   }
 });
 
@@ -423,7 +790,12 @@ function checkGameOver() {
 function updateEffects() {
   particles = particles.filter(p => {
     p.x += p.vx; p.y += p.vy;
-    p.vx *= 0.93; p.vy *= 0.93;
+    if (p.gravity) {
+      p.vy += p.gravity;
+      p.vx *= 0.99;
+    } else {
+      p.vx *= 0.93; p.vy *= 0.93;
+    }
     p.life--;
     return p.life > 0;
   });
@@ -608,7 +980,13 @@ document.getElementById('nameInput').addEventListener('keydown', (e) => {
 
 document.getElementById('nextImg').src = TIERS[nextTier].img.src;
 
-window.addEventListener('pagehide', () => { if (!gameOver) saveState(); });
+window.addEventListener('pagehide', () => {
+  if (!gameOver) saveState();
+  if (sessionId) {
+    // keepalive lets the request survive the page going away
+    fetch(liveUrl(`/${sessionId}`), { method: 'DELETE', keepalive: true }).catch(() => {});
+  }
+});
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && !gameOver) saveState();
 });
