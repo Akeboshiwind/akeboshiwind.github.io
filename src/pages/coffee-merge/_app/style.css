@@ -81,8 +81,9 @@ canvas {
   box-shadow: 0 0 6px #4ade80;
   animation: liveDot 1.6s ease-in-out infinite;
 }
-.rung-status.top {
-  background: #ffd89b;
+.rung-crown {
+  font-size: 13px;
+  line-height: 1;
 }
 @keyframes liveDot {
   0%, 100% { box-shadow: 0 0 4px #4ade80; }

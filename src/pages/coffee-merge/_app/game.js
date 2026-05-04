@@ -107,15 +107,16 @@ const PB_URL = 'https://pb.bythe.rocks';
 const GAME_ID = 'coffee-merge';
 
 // Live ladder: each player upserts a row in `live_sessions` while playing,
-// and polls others' rows to fill the two flanking slots around their score.
+// subscribes to PocketBase realtime events for live_sessions and scores,
+// then fills two flanking slots around their score from the local cache.
 const LIVE_FRESH_MS = 30000;
 const LIVE_PATCH_INTERVAL_MS = 2000;
-const LIVE_POLL_INTERVAL_MS = 3000;
+const HEARTBEAT_INTERVAL_MS = 10000;
+const STALE_TICK_INTERVAL_MS = 5000;
 
 let sessionId = null;
-let liveTop = null;
-let liveAbove = null;
-let liveBelow = null;
+const liveSessionsMap = new Map();
+let topRecord = null;
 let prevWindowKeys = [];
 
 function liveUrl(suffix = '') {
@@ -175,19 +176,6 @@ async function deleteLiveSession() {
   } catch {}
 }
 
-async function fetchLiveRivals() {
-  // PocketBase filter wants "YYYY-MM-DD HH:MM:SS.sssZ" (space, not T).
-  const cutoff = new Date(Date.now() - LIVE_FRESH_MS).toISOString().replace('T', ' ');
-  let f = `game="${GAME_ID}" && updated>"${cutoff}"`;
-  if (sessionId) f += ` && id!="${sessionId}"`;
-  try {
-    const res = await fetch(liveUrl(`?filter=${encodeURIComponent(f)}&sort=-updated&perPage=20`));
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.items || [];
-  } catch { return []; }
-}
-
 async function fetchTopOne() {
   const f = encodeURIComponent(`game="${GAME_ID}"`);
   try {
@@ -198,52 +186,158 @@ async function fetchTopOne() {
   } catch { return null; }
 }
 
-let pollTimer = null;
-function startLivePolling() {
-  if (pollTimer) return;
-  pollLive();
-  pollTimer = setInterval(pollLive, LIVE_POLL_INTERVAL_MS);
-}
-function stopLivePolling() {
-  if (pollTimer) clearInterval(pollTimer);
-  pollTimer = null;
+async function bulkFetchLive() {
+  // PocketBase filter wants "YYYY-MM-DD HH:MM:SS.sssZ" (space, not T).
+  const cutoff = new Date(Date.now() - LIVE_FRESH_MS).toISOString().replace('T', ' ');
+  const f = encodeURIComponent(`game="${GAME_ID}" && updated>"${cutoff}"`);
+  try {
+    const res = await fetch(liveUrl(`?filter=${f}&sort=-updated&perPage=50`));
+    if (!res.ok) return;
+    const data = await res.json();
+    liveSessionsMap.clear();
+    for (const r of (data.items || [])) liveSessionsMap.set(r.id, r);
+  } catch {}
 }
 
-async function pollLive() {
-  // Heartbeat: bump our `updated` field even when no merge happened recently,
-  // so rivals don't see us go stale during long stretches of aiming.
-  scheduleLivePatch();
-  const [rivals, top] = await Promise.all([fetchLiveRivals(), fetchTopOne()]);
-  liveTop = top
-    ? { id: `top:${top.id}`, name: top.name, score: top.score, kind: 'top' }
-    : null;
-  liveAbove = null;
-  liveBelow = null;
-  for (const r of rivals) {
-    if (r.score > score) {
-      if (!liveAbove || r.score < liveAbove.score) {
-        liveAbove = { id: `live:${r.id}`, name: r.name, score: r.score, kind: 'live' };
-      }
-    } else if (r.score < score) {
-      if (!liveBelow || r.score > liveBelow.score) {
-        liveBelow = { id: `live:${r.id}`, name: r.name, score: r.score, kind: 'live' };
-      }
-    }
+let realtimeES = null;
+let realtimeClientId = null;
+async function subscribeRealtime() {
+  if (!realtimeClientId) return;
+  try {
+    await fetch(`${PB_URL}/api/realtime`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientId: realtimeClientId,
+        subscriptions: ['live_sessions', 'scores'],
+      }),
+    });
+  } catch (err) {
+    console.warn('realtime subscribe failed', err);
   }
-  renderLadder();
+}
+
+function startRealtime() {
+  if (realtimeES) return;
+  realtimeES = new EventSource(`${PB_URL}/api/realtime`);
+  realtimeES.addEventListener('PB_CONNECT', async (e) => {
+    try {
+      realtimeClientId = JSON.parse(e.data).clientId;
+      await subscribeRealtime();
+      const [, top] = await Promise.all([bulkFetchLive(), fetchTopOne()]);
+      topRecord = top;
+      renderLadder();
+    } catch (err) {
+      console.warn('realtime connect handler failed', err);
+    }
+  });
+  realtimeES.addEventListener('live_sessions', (e) => {
+    try {
+      const { action, record } = JSON.parse(e.data);
+      if (record.game !== GAME_ID) return;
+      if (action === 'delete') liveSessionsMap.delete(record.id);
+      else liveSessionsMap.set(record.id, record);
+      renderLadder();
+    } catch {}
+  });
+  realtimeES.addEventListener('scores', (e) => {
+    try {
+      const { record } = JSON.parse(e.data);
+      if (record.game !== GAME_ID) return;
+      // A new submission may be a new top — refetch the single top row.
+      fetchTopOne().then(t => { topRecord = t; renderLadder(); });
+    } catch {}
+  });
+  realtimeES.onerror = () => {
+    // EventSource auto-reconnects; PB_CONNECT will fire again with a fresh clientId.
+    console.warn('realtime connection error, will retry');
+  };
+}
+
+function stopRealtime() {
+  if (realtimeES) {
+    realtimeES.close();
+    realtimeES = null;
+  }
+  realtimeClientId = null;
+  liveSessionsMap.clear();
+  topRecord = null;
+}
+
+let heartbeatTimer = null;
+function startHeartbeat() {
+  if (heartbeatTimer) return;
+  // Bump our `updated` field on a steady cadence so we don't go stale in
+  // others' staleness filter during long stretches with no merges.
+  heartbeatTimer = setInterval(() => scheduleLivePatch(), HEARTBEAT_INTERVAL_MS);
+}
+function stopHeartbeat() {
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  heartbeatTimer = null;
+}
+
+let staleTickTimer = null;
+function startStaleTick() {
+  if (staleTickTimer) return;
+  // Re-render periodically so rows that quietly went stale (e.g. a tab
+  // crashed without firing pagehide) drop out without waiting for an event.
+  staleTickTimer = setInterval(() => {
+    const pruneCutoff = Date.now() - LIVE_FRESH_MS * 2;
+    for (const [id, r] of liveSessionsMap) {
+      if (new Date(r.updated).getTime() < pruneCutoff) liveSessionsMap.delete(id);
+    }
+    renderLadder();
+  }, STALE_TICK_INTERVAL_MS);
+}
+function stopStaleTick() {
+  if (staleTickTimer) clearInterval(staleTickTimer);
+  staleTickTimer = null;
+}
+
+async function setupLiveLadder() {
+  await createLiveSession();
+  startRealtime();
+  startHeartbeat();
+  startStaleTick();
+}
+
+function teardownLiveLadder() {
+  stopHeartbeat();
+  stopStaleTick();
+  stopRealtime();
+  deleteLiveSession();
 }
 
 function computeLadderWindow() {
   const you = { id: 'you', name: 'YOU', score, kind: 'you' };
-  const candidates = [you];
+  const cutoff = Date.now() - LIVE_FRESH_MS;
+  let above = null, below = null;
+  for (const r of liveSessionsMap.values()) {
+    if (r.id === sessionId) continue;
+    if (new Date(r.updated).getTime() < cutoff) continue;
+    if (r.score > score) {
+      if (!above || r.score < above.score) above = r;
+    } else if (r.score < score) {
+      if (!below || r.score > below.score) below = r;
+    }
+  }
+  const aboveSlot = above
+    ? { id: `live:${above.id}`, name: above.name, score: above.score, kind: 'live' }
+    : null;
+  const belowSlot = below
+    ? { id: `live:${below.id}`, name: below.name, score: below.score, kind: 'live' }
+    : null;
   // Drop the top fallback if a live rival has the same name — the live row is more meaningful.
-  let topShow = liveTop;
-  if (topShow && (liveAbove?.name === topShow.name || liveBelow?.name === topShow.name)) {
+  let topShow = topRecord
+    ? { id: `top:${topRecord.id}`, name: topRecord.name, score: topRecord.score, kind: 'top' }
+    : null;
+  if (topShow && (aboveSlot?.name === topShow.name || belowSlot?.name === topShow.name)) {
     topShow = null;
   }
+  const candidates = [you];
   if (topShow) candidates.push(topShow);
-  if (liveAbove) candidates.push(liveAbove);
-  if (liveBelow) candidates.push(liveBelow);
+  if (aboveSlot) candidates.push(aboveSlot);
+  if (belowSlot) candidates.push(belowSlot);
   candidates.sort((a, b) => b.score - a.score);
   const yourIdx = candidates.findIndex(c => c.kind === 'you');
   const start = Math.max(0, yourIdx - 1);
@@ -269,10 +363,15 @@ function renderLadder() {
     li.dataset.id = c.id;
     const left = document.createElement('span');
     left.className = 'rung-name';
-    if (c.kind === 'live' || c.kind === 'top') {
+    if (c.kind === 'live') {
       const dot = document.createElement('span');
-      dot.className = `rung-status ${c.kind}`;
+      dot.className = 'rung-status live';
       left.appendChild(dot);
+    } else if (c.kind === 'top') {
+      const crown = document.createElement('span');
+      crown.className = 'rung-crown';
+      crown.textContent = '👑';
+      left.appendChild(crown);
     }
     left.appendChild(document.createTextNode(c.name || ''));
     const right = document.createElement('span');
@@ -500,10 +599,8 @@ function startGame() {
   clearState();
   startSaveTimer();
   prevWindowKeys = [];
-  liveAbove = liveBelow = liveTop = null;
   renderLadder();
-  createLiveSession();
-  startLivePolling();
+  setupLiveLadder();
 }
 
 function resumeGame(state) {
@@ -532,17 +629,14 @@ function resumeGame(state) {
   document.getElementById('gameover').classList.remove('show');
   startSaveTimer();
   prevWindowKeys = [];
-  liveAbove = liveBelow = liveTop = null;
   renderLadder();
-  createLiveSession();
-  startLivePolling();
+  setupLiveLadder();
 }
 
 function endGame() {
   gameOver = true;
   stopSaveTimer();
-  stopLivePolling();
-  deleteLiveSession();
+  teardownLiveLadder();
   clearState();
   document.getElementById('finalScore').textContent = score;
   const input = document.getElementById('nameInput');
