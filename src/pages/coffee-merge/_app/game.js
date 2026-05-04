@@ -129,7 +129,7 @@ async function createLiveSession() {
     const res = await fetch(liveUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game: GAME_ID, name: playerName, score: 0, tier: 0 }),
+      body: JSON.stringify({ game: GAME_ID, name: playerName, score, tier: maxTier }),
     });
     if (!res.ok) return;
     const data = await res.json();
