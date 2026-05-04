@@ -327,20 +327,22 @@ function computeLadderWindow() {
   const belowSlot = below
     ? { id: `live:${below.id}`, name: below.name, score: below.score, kind: 'live' }
     : null;
-  // Drop the top fallback if a live rival has the same name — the live row is more meaningful.
-  let topShow = topRecord
+  const topShow = topRecord
     ? { id: `top:${topRecord.id}`, name: topRecord.name, score: topRecord.score, kind: 'top' }
     : null;
-  if (topShow && (aboveSlot?.name === topShow.name || belowSlot?.name === topShow.name)) {
-    topShow = null;
-  }
   const candidates = [you];
   if (topShow) candidates.push(topShow);
   if (aboveSlot) candidates.push(aboveSlot);
   if (belowSlot) candidates.push(belowSlot);
-  candidates.sort((a, b) => b.score - a.score);
+  // On score ties, prefer top → live → you so the static TOP reference
+  // sits above the leader's matching live row when both are present.
+  const tieOrder = { top: 0, live: 1, you: 2 };
+  candidates.sort((a, b) => (b.score - a.score) || (tieOrder[a.kind] - tieOrder[b.kind]));
   const yourIdx = candidates.findIndex(c => c.kind === 'you');
-  const start = Math.max(0, yourIdx - 1);
+  // Start one above you, but slide the window up if we'd otherwise truncate
+  // (e.g. you're at the bottom of 3 candidates — without the slide, TOP at
+  // index 0 would fall outside the 3-row window).
+  const start = Math.max(0, Math.min(yourIdx - 1, candidates.length - 3));
   return candidates.slice(start, start + 3);
 }
 
