@@ -106,6 +106,226 @@ const FETCH_SIZE = 200;
 const PB_URL = 'https://pb.bythe.rocks';
 const GAME_ID = 'coffee-merge';
 
+// Live ladder: each player upserts a row in `live_sessions` while playing,
+// and polls others' rows to fill the two flanking slots around their score.
+const LIVE_FRESH_MS = 15000;
+const LIVE_PATCH_INTERVAL_MS = 2000;
+const LIVE_POLL_INTERVAL_MS = 3000;
+
+let sessionId = null;
+let liveTop = null;
+let liveAbove = null;
+let liveBelow = null;
+let prevWindowKeys = [];
+
+function liveUrl(suffix = '') {
+  return `${PB_URL}/api/collections/live_sessions/records${suffix}`;
+}
+
+async function createLiveSession() {
+  const playerName = loadLastName() || 'Player';
+  try {
+    const res = await fetch(liveUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ game: GAME_ID, name: playerName, score: 0, tier: 0 }),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    sessionId = data.id;
+  } catch {}
+}
+
+let lastPatchAt = 0;
+let pendingPatchTimer = null;
+function scheduleLivePatch() {
+  const wait = Math.max(0, LIVE_PATCH_INTERVAL_MS - (Date.now() - lastPatchAt));
+  if (wait === 0) {
+    sendLivePatch();
+  } else if (!pendingPatchTimer) {
+    pendingPatchTimer = setTimeout(() => {
+      pendingPatchTimer = null;
+      sendLivePatch();
+    }, wait);
+  }
+}
+
+async function sendLivePatch() {
+  if (!sessionId) return;
+  lastPatchAt = Date.now();
+  try {
+    await fetch(liveUrl(`/${sessionId}`), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ score, tier: maxTier }),
+    });
+  } catch {}
+}
+
+async function deleteLiveSession() {
+  if (!sessionId) return;
+  const id = sessionId;
+  sessionId = null;
+  if (pendingPatchTimer) {
+    clearTimeout(pendingPatchTimer);
+    pendingPatchTimer = null;
+  }
+  try {
+    await fetch(liveUrl(`/${id}`), { method: 'DELETE' });
+  } catch {}
+}
+
+async function fetchLiveRivals() {
+  const cutoff = new Date(Date.now() - LIVE_FRESH_MS).toISOString();
+  let f = `game="${GAME_ID}" && updated>"${cutoff}"`;
+  if (sessionId) f += ` && id!="${sessionId}"`;
+  try {
+    const res = await fetch(liveUrl(`?filter=${encodeURIComponent(f)}&perPage=20`));
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.items || [];
+  } catch { return []; }
+}
+
+async function fetchTopOne() {
+  const f = encodeURIComponent(`game="${GAME_ID}"`);
+  try {
+    const res = await fetch(`${PB_URL}/api/collections/scores/records?filter=${f}&sort=-score&perPage=1`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.items?.[0] || null;
+  } catch { return null; }
+}
+
+let pollTimer = null;
+function startLivePolling() {
+  if (pollTimer) return;
+  pollLive();
+  pollTimer = setInterval(pollLive, LIVE_POLL_INTERVAL_MS);
+}
+function stopLivePolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = null;
+}
+
+async function pollLive() {
+  const [rivals, top] = await Promise.all([fetchLiveRivals(), fetchTopOne()]);
+  liveTop = top
+    ? { id: `top:${top.id}`, name: top.name, score: top.score, kind: 'top' }
+    : null;
+  liveAbove = null;
+  liveBelow = null;
+  for (const r of rivals) {
+    if (r.score > score) {
+      if (!liveAbove || r.score < liveAbove.score) {
+        liveAbove = { id: `live:${r.id}`, name: r.name, score: r.score, kind: 'live' };
+      }
+    } else if (r.score < score) {
+      if (!liveBelow || r.score > liveBelow.score) {
+        liveBelow = { id: `live:${r.id}`, name: r.name, score: r.score, kind: 'live' };
+      }
+    }
+  }
+  renderLadder();
+}
+
+function computeLadderWindow() {
+  const you = { id: 'you', name: 'YOU', score, kind: 'you' };
+  const candidates = [you];
+  // Drop the top fallback if a live rival has the same name — the live row is more meaningful.
+  let topShow = liveTop;
+  if (topShow && (liveAbove?.name === topShow.name || liveBelow?.name === topShow.name)) {
+    topShow = null;
+  }
+  if (topShow) candidates.push(topShow);
+  if (liveAbove) candidates.push(liveAbove);
+  if (liveBelow) candidates.push(liveBelow);
+  candidates.sort((a, b) => b.score - a.score);
+  const yourIdx = candidates.findIndex(c => c.kind === 'you');
+  const start = Math.max(0, yourIdx - 1);
+  return candidates.slice(start, start + 3);
+}
+
+function renderLadder() {
+  const ladder = document.getElementById('ladder');
+  if (!ladder) return;
+  const slots = computeLadderWindow();
+  const newKeys = slots.map(c => c.id);
+
+  // FLIP: capture previous row positions by id so persistent rows can slide.
+  const oldTops = new Map();
+  for (const li of ladder.children) {
+    oldTops.set(li.dataset.id, li.getBoundingClientRect().top);
+  }
+
+  ladder.innerHTML = '';
+  for (const c of slots) {
+    const li = document.createElement('li');
+    li.className = `rung is-${c.kind}`;
+    li.dataset.id = c.id;
+    const left = document.createElement('span');
+    left.className = 'rung-name';
+    if (c.kind === 'live' || c.kind === 'top') {
+      const dot = document.createElement('span');
+      dot.className = `rung-status ${c.kind}`;
+      left.appendChild(dot);
+    }
+    left.appendChild(document.createTextNode(c.name || ''));
+    const right = document.createElement('span');
+    right.className = 'rung-score';
+    right.textContent = c.score;
+    li.append(left, right);
+    ladder.appendChild(li);
+  }
+
+  // FLIP: invert + play for rows that moved.
+  for (const li of ladder.children) {
+    const oldTop = oldTops.get(li.dataset.id);
+    if (oldTop === undefined) continue;
+    const dy = oldTop - li.getBoundingClientRect().top;
+    if (!dy) continue;
+    li.style.transition = 'none';
+    li.style.transform = `translateY(${dy}px)`;
+    requestAnimationFrame(() => {
+      li.style.transition = '';
+      li.style.transform = '';
+    });
+  }
+
+  const lineupChanged =
+    newKeys.length !== prevWindowKeys.length ||
+    newKeys.some((k, i) => k !== prevWindowKeys[i]);
+  if (lineupChanged && prevWindowKeys.length > 0) {
+    const youRow = ladder.querySelector('.is-you');
+    if (youRow) {
+      youRow.classList.remove('pulse');
+      void youRow.offsetWidth;
+      youRow.classList.add('pulse');
+    }
+    const wasTop = prevWindowKeys[0] === 'you';
+    const isTop = newKeys[0] === 'you';
+    // Only celebrate when there's actually someone to overtake.
+    if (isTop && !wasTop && newKeys.length > 1) fireTopConfetti();
+  }
+  prevWindowKeys = newKeys;
+}
+
+function fireTopConfetti() {
+  const palette = ['#ffd700', '#ff6f3d', '#4ade80', '#60a5fa', '#f472b6', '#fff5c2'];
+  for (let i = 0; i < 70; i++) {
+    particles.push({
+      x: PF_LEFT + Math.random() * PF_W,
+      y: PF_TOP + 4,
+      vx: (Math.random() - 0.5) * 3,
+      vy: 1 + Math.random() * 2.5,
+      life: 90 + Math.random() * 50, max: 140,
+      color: palette[i % palette.length],
+      size: 3 + Math.random() * 2.5,
+      gravity: 0.16,
+    });
+  }
+}
+
 function dedupeByName(entries) {
   const seen = new Set();
   const out = [];
@@ -262,7 +482,6 @@ function startGame() {
   }
   score = 0;
   maxTier = 0;
-  document.getElementById('scoreVal').textContent = 0;
   particles = [];
   merges = [];
   overTimers.clear();
@@ -276,6 +495,11 @@ function startGame() {
   document.getElementById('gameover').classList.remove('show');
   clearState();
   startSaveTimer();
+  prevWindowKeys = [];
+  liveAbove = liveBelow = liveTop = null;
+  renderLadder();
+  createLiveSession();
+  startLivePolling();
 }
 
 function resumeGame(state) {
@@ -296,7 +520,6 @@ function resumeGame(state) {
     Body.setAngularVelocity(drink, d.av || 0);
     World.add(engine.world, drink);
   }
-  document.getElementById('scoreVal').textContent = score;
   document.getElementById('nextImg').src = TIERS[nextTier].img.src;
   gameOver = false;
   aiming = true;
@@ -304,11 +527,18 @@ function resumeGame(state) {
   document.body.classList.remove('menu');
   document.getElementById('gameover').classList.remove('show');
   startSaveTimer();
+  prevWindowKeys = [];
+  liveAbove = liveBelow = liveTop = null;
+  renderLadder();
+  createLiveSession();
+  startLivePolling();
 }
 
 function endGame() {
   gameOver = true;
   stopSaveTimer();
+  stopLivePolling();
+  deleteLiveSession();
   clearState();
   document.getElementById('finalScore').textContent = score;
   const input = document.getElementById('nameInput');
@@ -423,7 +653,8 @@ Events.on(engine, 'collisionStart', (event) => {
     } else {
       score += 600;
     }
-    document.getElementById('scoreVal').textContent = score;
+    renderLadder();
+    scheduleLivePatch();
   }
 });
 
@@ -453,7 +684,12 @@ function checkGameOver() {
 function updateEffects() {
   particles = particles.filter(p => {
     p.x += p.vx; p.y += p.vy;
-    p.vx *= 0.93; p.vy *= 0.93;
+    if (p.gravity) {
+      p.vy += p.gravity;
+      p.vx *= 0.99;
+    } else {
+      p.vx *= 0.93; p.vy *= 0.93;
+    }
     p.life--;
     return p.life > 0;
   });
@@ -638,7 +874,13 @@ document.getElementById('nameInput').addEventListener('keydown', (e) => {
 
 document.getElementById('nextImg').src = TIERS[nextTier].img.src;
 
-window.addEventListener('pagehide', () => { if (!gameOver) saveState(); });
+window.addEventListener('pagehide', () => {
+  if (!gameOver) saveState();
+  if (sessionId) {
+    // keepalive lets the request survive the page going away
+    fetch(liveUrl(`/${sessionId}`), { method: 'DELETE', keepalive: true }).catch(() => {});
+  }
+});
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && !gameOver) saveState();
 });
