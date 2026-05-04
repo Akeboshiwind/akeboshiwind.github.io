@@ -1,0 +1,1030 @@
+<!DOCTYPE html><html lang="en" class="font-sans text-base leading-relaxed text-text bg-bg"> <head><script>
+  (() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const resolve = (pref) =>
+      pref === 'light' || pref === 'dark' ? pref : (mq.matches ? 'dark' : 'light');
+    const apply = (pref) => {
+      const root = document.documentElement;
+      root.dataset.themePref = pref;
+      root.dataset.theme = resolve(pref);
+    };
+    const read = () => {
+      try { return localStorage.getItem('theme') ?? 'auto'; } catch { return 'auto'; }
+    };
+    apply(read());
+    mq.addEventListener('change', () => { if (read() === 'auto') apply('auto'); });
+    window.addEventListener('storage', (e) => { if (e.key === 'theme') apply(read()); });
+    window.__setTheme = (pref) => {
+      try { localStorage.setItem('theme', pref); } catch {}
+      apply(pref);
+    };
+  })();
+</script><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="X-Clacks-Overhead" content="GNU Terry Pratchett"><!-- Favicon --><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="shortcut icon" href="/favicon.ico"><link rel="manifest" href="/site.webmanifest"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><meta name="msapplication-TileColor" content="#da532c"><meta name="theme-color" content="#ffffff"><!-- SEO --><title>Tools | By the Rocks</title><meta name="description" content="A dashboard of all the tools, talks and toys on this site."><link rel="canonical" href="https://bythe.rocks/pr-preview/pr-59/tools/"><!-- Open Graph --><meta property="og:type" content="website"><meta property="og:url" content="https://bythe.rocks/pr-preview/pr-59/tools/"><meta property="og:title" content="Tools | By the Rocks"><meta property="og:description" content="A dashboard of all the tools, talks and toys on this site."><meta property="og:site_name" content="By the Rocks"><!-- Twitter --><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Tools | By the Rocks"><meta name="twitter:description" content="A dashboard of all the tools, talks and toys on this site."><link rel="stylesheet" href="/pr-preview/pr-59/_astro/_slug_.D2UxkY52.css">
+<style>.pin-btn[data-astro-cid-qkptn22r]{opacity:.25;transition:opacity .15s,color .15s,transform .15s}.pin-btn[data-astro-cid-qkptn22r]:hover,.pin-btn[data-astro-cid-qkptn22r]:focus-visible{opacity:.7}.tool-row[data-astro-cid-qkptn22r][data-pinned=true] .pin-btn[data-astro-cid-qkptn22r]{opacity:1;color:var(--color-link);transform:rotate(45deg)}.tool-row[data-astro-cid-qkptn22r][data-pinned=true] .pin-btn[data-astro-cid-qkptn22r]:hover{opacity:.85}
+</style></head> <body class="mx-auto px-5 max-w-[720px]"> <header class="mt-4 mb-8 flex items-center justify-between gap-4"> <a href="/pr-preview/pr-59/" class="text-xl font-bold text-heading no-underline hover:no-underline">By the Rocks</a> <button type="button" class="theme-toggle inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 cursor-pointer" aria-label="Theme: auto" title="Theme: auto"> <svg class="icon-auto" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <rect x="3" y="4" width="18" height="13" rx="2"></rect> <path d="M8 21h8M12 17v4"></path> </svg> <svg class="icon-light hidden" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <circle cx="12" cy="12" r="4"></circle> <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path> </svg> <svg class="icon-dark hidden" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path> </svg> </button> <script type="module">const n=["auto","light","dark"],e=document.querySelector(".theme-toggle"),s={auto:e.querySelector(".icon-auto"),light:e.querySelector(".icon-light"),dark:e.querySelector(".icon-dark")},r=()=>{const t=document.documentElement.dataset.themePref??"auto";for(const c of n)s[c]?.classList.toggle("hidden",c!==t);const o=`Theme: ${t}`;e.setAttribute("aria-label",o),e.setAttribute("title",o)};e.addEventListener("click",()=>{const t=document.documentElement.dataset.themePref??"auto",o=n[(n.indexOf(t)+1)%n.length];window.__setTheme?.(o),r()});r();</script> </header> <main>  <h1 class="text-2xl font-bold text-heading mt-4 mb-2" data-astro-cid-qkptn22r>Tools</h1> <p class="text-sm opacity-70 mt-0 mb-4" data-astro-cid-qkptn22r>Search or scroll. 24 things across 9 categories.</p> <label class="relative flex items-center gap-2 mb-6 border border-border rounded-md px-3 py-2 focus-within:border-link transition-colors" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-4 h-4 opacity-50"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-search"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m21 21-4.34-4.34" />
+  <circle cx="11" cy="11" r="8" />
+</svg>
+</span> <input id="tools-search" type="search" placeholder="Search tools…" autocomplete="off" class="flex-1 bg-transparent outline-none border-0 text-sm text-text placeholder:opacity-40" data-astro-cid-qkptn22r> </label> <p id="tools-empty" class="hidden text-sm opacity-60 italic mt-8" data-astro-cid-qkptn22r>No tools match that search.</p> <section id="pinned-section" class="hidden mb-8" data-pinned-section data-astro-cid-qkptn22r> <h2 class="flex items-center gap-2 text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-2 pb-1 border-b border-border" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-4 h-4"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> <span data-astro-cid-qkptn22r>Pinned</span> </h2> <ul id="pinned-list" class="flex flex-col gap-1 list-none p-0 m-0" data-astro-cid-qkptn22r></ul> </section> <div class="md:[column-count:2] md:gap-x-6" data-astro-cid-qkptn22r> <section class="mb-8 break-inside-avoid" data-category="finance" data-astro-cid-qkptn22r> <h2 class="flex items-center gap-2 text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-2 pb-1 border-b border-border" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-4 h-4"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-wallet"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+  <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+</svg>
+</span> <span data-astro-cid-qkptn22r>Finance</span> </h2> <ul class="flex flex-col gap-1 list-none p-0 m-0" data-astro-cid-qkptn22r> <li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="ynab-reimbursement" data-pinned="false" data-search="ynab reimbursement report generate reimbursement reports from ynab transaction data. finance finance tool finance" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/ynab-reimbursement/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="YNAB Reimbursement Report" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-file-spreadsheet"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M8 13h2" />
+  <path d="M14 13h2" />
+  <path d="M8 17h2" />
+  <path d="M14 17h2" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/ynab-reimbursement/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>YNAB Reimbursement Report</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Generate reimbursement reports from YNAB transaction data.</p> </div> <a href="/pr-preview/pr-59/ynab-reimbursement/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/ynab-reimbursement.B2YdFrdV_Z2lfSAO.webp" srcset="/pr-preview/pr-59/_astro/ynab-reimbursement.B2YdFrdV_Z1OF2it.webp 96w, /pr-preview/pr-59/_astro/ynab-reimbursement.B2YdFrdV_1e8iKS.webp 192w" alt="Screenshot of YNAB Reimbursement Report" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="900" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin YNAB Reimbursement Report" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="bill" data-pinned="false" data-search="bill splitter split bills fairly between people with different meal costs. finance finance tool finance" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/bill/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Bill Splitter" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-receipt"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17V7" />
+  <path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8" />
+  <path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/bill/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Bill Splitter</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Split bills fairly between people with different meal costs.</p> </div> <a href="/pr-preview/pr-59/bill/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/bill.3pFmyxv8_1B8oHB.webp" srcset="/pr-preview/pr-59/_astro/bill.3pFmyxv8_Pr1vE.webp 96w, /pr-preview/pr-59/_astro/bill.3pFmyxv8_Z1qyBym.webp 192w" alt="Screenshot of Bill Splitter" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="800" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Bill Splitter" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li> </ul> </section><section class="mb-8 break-inside-avoid" data-category="health" data-astro-cid-qkptn22r> <h2 class="flex items-center gap-2 text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-2 pb-1 border-b border-border" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-4 h-4"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-heart-pulse"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" />
+  <path d="M3.22 13H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27" />
+</svg>
+</span> <span data-astro-cid-qkptn22r>Health</span> </h2> <ul class="flex flex-col gap-1 list-none p-0 m-0" data-astro-cid-qkptn22r> <li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="exercise" data-pinned="false" data-search="exercise plan a week of workouts, then execute them. a pool of exercises, drag-to-reorder day editor, per-set checkboxes, manual rest and hiit-interval timers with audible cues, and a history of completed sessions. health health tool fitness" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/exercise/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Exercise" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-dumbbell"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" />
+  <path d="m2.5 21.5 1.4-1.4" />
+  <path d="m20.1 3.9 1.4-1.4" />
+  <path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" />
+  <path d="m9.6 14.4 4.8-4.8" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/exercise/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Exercise</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Plan a week of workouts, then execute them. A pool of exercises, drag-to-reorder day editor, per-set checkboxes, manual rest and HIIT-interval timers with audible cues, and a history of completed sessions.</p> </div> <a href="/pr-preview/pr-59/exercise/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/exercise.BtdR_z-t_ZoJvU0.webp" srcset="/pr-preview/pr-59/_astro/exercise.BtdR_z-t_b3sUb.webp 96w, /pr-preview/pr-59/_astro/exercise.BtdR_z-t_ZVUu1N.webp 192w" alt="Screenshot of Exercise" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="900" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Exercise" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="bridal-skincare" data-pinned="false" data-search="bridal skincare routine daily skincare routine tracker for the 3-month pre-wedding plan, showing am/pm steps, led mask schedule, and weekly treatments. health health tool" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/bridal-skincare/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Bridal Skincare Routine" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-flower"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="12" r="3" />
+  <path d="M12 16.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 1 1 12 7.5a4.5 4.5 0 1 1 4.5 4.5 4.5 4.5 0 1 1-4.5 4.5" />
+  <path d="M12 7.5V9" />
+  <path d="M7.5 12H9" />
+  <path d="M16.5 12H15" />
+  <path d="M12 16.5V15" />
+  <path d="m8 8 1.88 1.88" />
+  <path d="M14.12 9.88 16 8" />
+  <path d="m8 16 1.88-1.88" />
+  <path d="M14.12 14.12 16 16" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/bridal-skincare/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Bridal Skincare Routine</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Daily skincare routine tracker for the 3-month pre-wedding plan, showing AM/PM steps, LED mask schedule, and weekly treatments.</p> </div> <a href="/pr-preview/pr-59/bridal-skincare/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/bridal-skincare.BHX4pbrK_9VAqQ.webp" srcset="/pr-preview/pr-59/_astro/bridal-skincare.BHX4pbrK_ZtyzlR.webp 96w, /pr-preview/pr-59/_astro/bridal-skincare.BHX4pbrK_xzIr2.webp 192w" alt="Screenshot of Bridal Skincare Routine" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="720" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Bridal Skincare Routine" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="test-reader" data-pinned="false" data-search="lateral flow test reader photograph and analyze lateral flow tests with automatic result detection. health health tool ai images" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/test-reader/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Lateral Flow Test Reader" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-microscope"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M6 18h8" />
+  <path d="M3 22h18" />
+  <path d="M14 22a7 7 0 1 0 0-14h-1" />
+  <path d="M9 14h2" />
+  <path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z" />
+  <path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/test-reader/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Lateral Flow Test Reader</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Photograph and analyze lateral flow tests with automatic result detection.</p> </div> <a href="/pr-preview/pr-59/test-reader/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/test-reader.7X1ydAwu_cXoUD.webp" srcset="/pr-preview/pr-59/_astro/test-reader.7X1ydAwu_Zp7Dco.webp 96w, /pr-preview/pr-59/_astro/test-reader.7X1ydAwu_1rteew.webp 192w" alt="Screenshot of Lateral Flow Test Reader" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="900" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Lateral Flow Test Reader" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="mood-tracker" data-pinned="false" data-search="mood tracker track daily mood and feelings over time. health health tool personal" data-astro-cid-qkptn22r> <a href="https://mood.bythe.rocks/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Mood Tracker" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-smile"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="12" r="10" />
+  <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+  <line x1="9" x2="9.01" y1="9" y2="9" />
+  <line x1="15" x2="15.01" y1="9" y2="9" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="https://mood.bythe.rocks/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Mood Tracker</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Track daily mood and feelings over time.</p> </div>  <button type="button" data-pin aria-label="Pin Mood Tracker" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li> </ul> </section><section class="mb-8 break-inside-avoid" data-category="ai" data-astro-cid-qkptn22r> <h2 class="flex items-center gap-2 text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-2 pb-1 border-b border-border" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-4 h-4"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-sparkles"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" />
+  <path d="M20 2v4" />
+  <path d="M22 4h-4" />
+  <circle cx="4" cy="20" r="2" />
+</svg>
+</span> <span data-astro-cid-qkptn22r>AI</span> </h2> <ul class="flex flex-col gap-1 list-none p-0 m-0" data-astro-cid-qkptn22r> <li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="recommender" data-pinned="false" data-search="recommender ai-powered recommendation lists that learn from your feedback using the anthropic claude api. ai ai tool ai" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/recommender/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Recommender" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-list-ordered"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M11 5h10" />
+  <path d="M11 12h10" />
+  <path d="M11 19h10" />
+  <path d="M4 4h1v5" />
+  <path d="M4 9h2" />
+  <path d="M6.5 20H3.4c0-1 2.6-1.925 2.6-3.5a1.5 1.5 0 0 0-2.6-1.02" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/recommender/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Recommender</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>AI-powered recommendation lists that learn from your feedback using the Anthropic Claude API.</p> </div> <a href="/pr-preview/pr-59/recommender/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/recommender.Bfh516NT_1j1eaE.webp" srcset="/pr-preview/pr-59/_astro/recommender.Bfh516NT_Z1SKhQC.webp 96w, /pr-preview/pr-59/_astro/recommender.Bfh516NT_19Cn9O.webp 192w" alt="Screenshot of Recommender" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="900" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Recommender" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="glance" data-pinned="false" data-search="glance cli tool that summarizes large command outputs for llms by skimming head/tail and pattern-matched lines. ai ai tool ai" data-astro-cid-qkptn22r> <a href="https://github.com/Akeboshiwind/glance" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Glance" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-terminal"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 19h8" />
+  <path d="m4 17 6-6-6-6" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="https://github.com/Akeboshiwind/glance" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Glance</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>CLI tool that summarizes large command outputs for LLMs by skimming head/tail and pattern-matched lines.</p> </div> <a href="https://github.com/Akeboshiwind/glance" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/glance.DNY13Ig7_nNyYm.webp" srcset="/pr-preview/pr-59/_astro/glance.DNY13Ig7_14AacJ.webp 96w, /pr-preview/pr-59/_astro/glance.DNY13Ig7_Z1oU1Ww.webp 192w" alt="Screenshot of Glance" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="800" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Glance" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="tts" data-pinned="false" data-search="text to speech convert text to natural speech using openai's tts api with chunked generation and voice customization. ai ai tool ai" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/tts/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Text to Speech" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-volume-2"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" />
+  <path d="M16 9a5 5 0 0 1 0 6" />
+  <path d="M19.364 18.364a9 9 0 0 0 0-12.728" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/tts/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Text to Speech</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Convert text to natural speech using OpenAI&#39;s TTS API with chunked generation and voice customization.</p> </div> <a href="/pr-preview/pr-59/tts/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/tts.CBSLigCP_Zw7riw.webp" srcset="/pr-preview/pr-59/_astro/tts.CBSLigCP_Z2nnkpc.webp 96w, /pr-preview/pr-59/_astro/tts.CBSLigCP_1wwoYS.webp 192w" alt="Screenshot of Text to Speech" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="900" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Text to Speech" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li> </ul> </section><section class="mb-8 break-inside-avoid" data-category="images" data-astro-cid-qkptn22r> <h2 class="flex items-center gap-2 text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-2 pb-1 border-b border-border" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-4 h-4"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-images"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m22 11-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16" />
+  <path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2" />
+  <circle cx="13" cy="7" r="1" fill="currentColor" />
+  <rect x="8" y="2" width="14" height="14" rx="2" />
+</svg>
+</span> <span data-astro-cid-qkptn22r>Images</span> </h2> <ul class="flex flex-col gap-1 list-none p-0 m-0" data-astro-cid-qkptn22r> <li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="dual-bg-matte" data-pinned="false" data-search="dual-background matte combine two ai images of the same scene (one on white, one on black) into a transparent png that keeps soft edges and partial transparency. images images tool images" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/dual-bg-matte/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Dual-Background Matte" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-layers"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
+  <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />
+  <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/dual-bg-matte/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Dual-Background Matte</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Combine two AI images of the same scene (one on white, one on black) into a transparent PNG that keeps soft edges and partial transparency.</p> </div>  <button type="button" data-pin aria-label="Pin Dual-Background Matte" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="image-compare" data-pinned="false" data-search="image compare upload two images and compare them side-by-side with a draggable slider. images images tool images" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/image-compare/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Image Compare" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-columns-2"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="18" height="18" x="3" y="3" rx="2" />
+  <path d="M12 3v18" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/image-compare/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Image Compare</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Upload two images and compare them side-by-side with a draggable slider.</p> </div> <a href="/pr-preview/pr-59/image-compare/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/image-compare.DBvpXOxi_Z1rRytF.webp" srcset="/pr-preview/pr-59/_astro/image-compare.DBvpXOxi_3RGEl.webp 96w, /pr-preview/pr-59/_astro/image-compare.DBvpXOxi_2g4K9x.webp 192w" alt="Screenshot of Image Compare" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="720" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Image Compare" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="image-compress" data-pinned="false" data-search="image compress compress and resize images in the browser. no upload — everything stays local. images images tool images" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/image-compress/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Image Compress" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-image-down"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10l-3.1-3.1a2 2 0 0 0-2.814.014L6 21" />
+  <path d="m14 19 3 3v-5.5" />
+  <path d="m17 22 3-3" />
+  <circle cx="9" cy="9" r="2" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/image-compress/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Image Compress</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Compress and resize images in the browser. No upload — everything stays local.</p> </div> <a href="/pr-preview/pr-59/image-compress/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/image-compress.Bg0JZnW-_Z1fFjtu.webp" srcset="/pr-preview/pr-59/_astro/image-compress.Bg0JZnW-_Z20i4fM.webp 96w, /pr-preview/pr-59/_astro/image-compress.Bg0JZnW-_2uBFLX.webp 192w" alt="Screenshot of Image Compress" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="720" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Image Compress" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li> </ul> </section><section class="mb-8 break-inside-avoid" data-category="utilities" data-astro-cid-qkptn22r> <h2 class="flex items-center gap-2 text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-2 pb-1 border-b border-border" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-4 h-4"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-wrench"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z" />
+</svg>
+</span> <span data-astro-cid-qkptn22r>Utilities</span> </h2> <ul class="flex flex-col gap-1 list-none p-0 m-0" data-astro-cid-qkptn22r> <li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="pdf-compress" data-pinned="false" data-search="pdf compress compress pdfs in the browser with ghostscript wasm. no upload — everything stays local. utilities utilities tool pdf" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/pdf-compress/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="PDF Compress" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-file-text"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M10 9H8" />
+  <path d="M16 13H8" />
+  <path d="M16 17H8" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/pdf-compress/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>PDF Compress</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Compress PDFs in the browser with Ghostscript WASM. No upload — everything stays local.</p> </div>  <button type="button" data-pin aria-label="Pin PDF Compress" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="qr-code" data-pinned="false" data-search="qr code generator generate a qr code from text or a url and download it as a png. utilities utilities tool" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/qr-code/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="QR Code Generator" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-qr-code"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="5" height="5" x="3" y="3" rx="1" />
+  <rect width="5" height="5" x="16" y="3" rx="1" />
+  <rect width="5" height="5" x="3" y="16" rx="1" />
+  <path d="M21 16h-3a2 2 0 0 0-2 2v3" />
+  <path d="M21 21v.01" />
+  <path d="M12 7v3a2 2 0 0 1-2 2H7" />
+  <path d="M3 12h.01" />
+  <path d="M12 3h.01" />
+  <path d="M12 16v.01" />
+  <path d="M16 12h1" />
+  <path d="M21 12v.01" />
+  <path d="M12 21v-1" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/qr-code/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>QR Code Generator</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Generate a QR code from text or a URL and download it as a PNG.</p> </div>  <button type="button" data-pin aria-label="Pin QR Code Generator" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="transit-converter" data-pinned="false" data-search="transit converter convert transit format data to json. utilities utilities tool clojure" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/transit-converter/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Transit Converter" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-arrow-right-left"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m16 3 4 4-4 4" />
+  <path d="M20 7H4" />
+  <path d="m8 21-4-4 4-4" />
+  <path d="M4 17h16" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/transit-converter/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Transit Converter</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Convert Transit format data to JSON.</p> </div> <a href="/pr-preview/pr-59/transit-converter/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/transit-converter.B_bq4xbQ_ZHcjHG.webp" srcset="/pr-preview/pr-59/_astro/transit-converter.B_bq4xbQ_Zv4Awk.webp 96w, /pr-preview/pr-59/_astro/transit-converter.B_bq4xbQ_1Uh5i4.webp 192w" alt="Screenshot of Transit Converter" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="800" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Transit Converter" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="markdown-preview" data-pinned="false" data-search="markdown preview write and preview github flavoured markdown with mermaid diagram support. text is saved to local storage. utilities utilities tool" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/markdown-preview/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Markdown Preview" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-file-code"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M10 12.5 8 15l2 2.5" />
+  <path d="m14 12.5 2 2.5-2 2.5" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/markdown-preview/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Markdown Preview</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Write and preview GitHub Flavoured Markdown with Mermaid diagram support. Text is saved to local storage.</p> </div> <a href="/pr-preview/pr-59/markdown-preview/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/markdown-preview.fFCKAyQJ_Z1fOPGW.webp" srcset="/pr-preview/pr-59/_astro/markdown-preview.fFCKAyQJ_Z16TdXi.webp 96w, /pr-preview/pr-59/_astro/markdown-preview.fFCKAyQJ_1XGDil.webp 192w" alt="Screenshot of Markdown Preview" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="900" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Markdown Preview" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li> </ul> </section><section class="mb-8 break-inside-avoid" data-category="fun" data-astro-cid-qkptn22r> <h2 class="flex items-center gap-2 text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-2 pb-1 border-b border-border" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-4 h-4"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-gamepad-2"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <line x1="6" x2="10" y1="11" y2="11" />
+  <line x1="8" x2="8" y1="9" y2="13" />
+  <line x1="15" x2="15.01" y1="12" y2="12" />
+  <line x1="18" x2="18.01" y1="10" y2="10" />
+  <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" />
+</svg>
+</span> <span data-astro-cid-qkptn22r>Fun</span> </h2> <ul class="flex flex-col gap-1 list-none p-0 m-0" data-astro-cid-qkptn22r> <li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="coffee-merge" data-pinned="false" data-search="coffee merge a suika-style merge game with drinks — combine matching cups to climb the tier ladder. fun fun game javascript" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/coffee-merge/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Coffee Merge" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-coffee"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M10 2v2" />
+  <path d="M14 2v2" />
+  <path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1" />
+  <path d="M6 2v2" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/coffee-merge/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Coffee Merge</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>A Suika-style merge game with drinks — combine matching cups to climb the tier ladder.</p> </div> <a href="/pr-preview/pr-59/coffee-merge/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/coffee-merge.CBoBKg9z_17gnwX.webp" srcset="/pr-preview/pr-59/_astro/coffee-merge.CBoBKg9z_2gSd6p.webp 96w, /pr-preview/pr-59/_astro/coffee-merge.CBoBKg9z_Z1F3IkL.webp 192w" alt="Screenshot of Coffee Merge" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="414" height="730" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Coffee Merge" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="chat" data-pinned="false" data-search="chat a chat interface emulator. type in the box at the bottom and watch messages stack above. fun fun tool" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/chat/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Chat" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-message-circle"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/chat/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Chat</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>A chat interface emulator. Type in the box at the bottom and watch messages stack above.</p> </div> <a href="/pr-preview/pr-59/chat/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/chat.B28HWeF8_19iShD.webp" srcset="/pr-preview/pr-59/_astro/chat.B28HWeF8_1sIiG2.webp 96w, /pr-preview/pr-59/_astro/chat.B28HWeF8_Z1MA77A.webp 192w" alt="Screenshot of Chat" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="900" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Chat" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li> </ul> </section><section class="mb-8 break-inside-avoid" data-category="learning" data-astro-cid-qkptn22r> <h2 class="flex items-center gap-2 text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-2 pb-1 border-b border-border" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-4 h-4"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-graduation-cap"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z" />
+  <path d="M22 10v6" />
+  <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5" />
+</svg>
+</span> <span data-astro-cid-qkptn22r>Learning</span> </h2> <ul class="flex flex-col gap-1 list-none p-0 m-0" data-astro-cid-qkptn22r> <li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="sorting-comparator" data-pinned="false" data-search="sorting comparator sort any list by comparing items yourself. see how different algorithms feel when a human drives them. learning learning tool data visualization" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/sorting-comparator/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Sorting Comparator" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-arrow-up-down"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m21 16-4 4-4-4" />
+  <path d="M17 20V4" />
+  <path d="m3 8 4-4 4 4" />
+  <path d="M7 4v16" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/sorting-comparator/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Sorting Comparator</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Sort any list by comparing items yourself. See how different algorithms feel when a human drives them.</p> </div> <a href="/pr-preview/pr-59/sorting-comparator/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/sorting-comparator.BxSHSMhv_JoheO.webp" srcset="/pr-preview/pr-59/_astro/sorting-comparator.BxSHSMhv_Z1aR83X.webp 96w, /pr-preview/pr-59/_astro/sorting-comparator.BxSHSMhv_c6MRQ.webp 192w" alt="Screenshot of Sorting Comparator" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="720" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Sorting Comparator" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="hindi-srs" data-pinned="false" data-search="hindi letters srs spaced repetition system for learning hindi letters (devanagari script). learning learning tool learning" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/hindi-srs/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Hindi Letters SRS" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-languages"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m5 8 6 6" />
+  <path d="m4 14 6-6 2-3" />
+  <path d="M2 5h12" />
+  <path d="M7 2h1" />
+  <path d="m22 22-5-10-5 10" />
+  <path d="M14 18h6" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/hindi-srs/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Hindi Letters SRS</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Spaced repetition system for learning Hindi letters (Devanagari script).</p> </div> <a href="/pr-preview/pr-59/hindi-srs/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/hindi-srs.DaON5mdt_Z1RLCAS.webp" srcset="/pr-preview/pr-59/_astro/hindi-srs.DaON5mdt_ZLy9B2.webp 96w, /pr-preview/pr-59/_astro/hindi-srs.DaON5mdt_ZsX29v.webp 192w" alt="Screenshot of Hindi Letters SRS" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="800" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Hindi Letters SRS" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="bitemporal" data-pinned="false" data-search="bitemporal visualizer interactive visualization of bitemporal data concepts. learning learning visualization clojure" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/bitemporal/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Bitemporal Visualizer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-clock"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="12" r="10" />
+  <path d="M12 6v6l4 2" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/bitemporal/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Bitemporal Visualizer</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Interactive visualization of bitemporal data concepts.</p> </div> <a href="/pr-preview/pr-59/bitemporal/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/bitemporal.Cz0vWinW_1R3aRp.webp" srcset="/pr-preview/pr-59/_astro/bitemporal.Cz0vWinW_2vlykB.webp 96w, /pr-preview/pr-59/_astro/bitemporal.Cz0vWinW_Z1tAwmN.webp 192w" alt="Screenshot of Bitemporal Visualizer" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="800" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Bitemporal Visualizer" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li> </ul> </section><section class="mb-8 break-inside-avoid" data-category="talks" data-astro-cid-qkptn22r> <h2 class="flex items-center gap-2 text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-2 pb-1 border-b border-border" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-4 h-4"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-presentation"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M2 3h20" />
+  <path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3" />
+  <path d="m7 21 5-5 5 5" />
+</svg>
+</span> <span data-astro-cid-qkptn22r>Talks</span> </h2> <ul class="flex flex-col gap-1 list-none p-0 m-0" data-astro-cid-qkptn22r> <li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="chat-wrapped" data-pinned="false" data-search="chat wrapped an interactive quiz i built for new years for my friends talks talks presentation clojure" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/chat-wrapped/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Chat Wrapped" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-gift"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 7v14" />
+  <path d="M20 11v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8" />
+  <path d="M7.5 7a1 1 0 0 1 0-5A4.8 8 0 0 1 12 7a4.8 8 0 0 1 4.5-5 1 1 0 0 1 0 5" />
+  <rect x="3" y="7" width="18" height="4" rx="1" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/chat-wrapped/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Chat Wrapped</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>An interactive quiz I built for New Years for my friends</p> </div>  <button type="button" data-pin aria-label="Pin Chat Wrapped" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li><li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="christmas" data-pinned="false" data-search="christmas talk interactive live presentation with audience participation via ably. talks talks presentation clojure" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/christmas/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Christmas Talk" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-tree-pine"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m17 14 3 3.3a1 1 0 0 1-.7 1.7H4.7a1 1 0 0 1-.7-1.7L7 14h-.3a1 1 0 0 1-.7-1.7L9 9h-.2A1 1 0 0 1 8 7.3L12 3l4 4.3a1 1 0 0 1-.8 1.7H15l3 3.3a1 1 0 0 1-.7 1.7H17Z" />
+  <path d="M12 22v-3" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="/pr-preview/pr-59/christmas/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Christmas Talk</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Interactive live presentation with audience participation via Ably.</p> </div>  <button type="button" data-pin aria-label="Pin Christmas Talk" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li> </ul> </section><section class="mb-8 break-inside-avoid" data-category="personal" data-astro-cid-qkptn22r> <h2 class="flex items-center gap-2 text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-2 pb-1 border-b border-border" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-4 h-4"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-heart"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" />
+</svg>
+</span> <span data-astro-cid-qkptn22r>Personal</span> </h2> <ul class="flex flex-col gap-1 list-none p-0 m-0" data-astro-cid-qkptn22r> <li class="tool-row relative flex items-stretch gap-3 py-1.5 pr-7" data-tool data-slug="wedding-celebration" data-pinned="false" data-search="wedding celebration our wedding celebration website. personal personal personal tool" data-astro-cid-qkptn22r> <a href="https://celebration.hina-oliver.com/" class="flex items-center justify-center w-9 h-9 shrink-0 rounded-md border border-border text-text no-underline hover:bg-code-bg hover:text-link transition-colors" aria-label="Wedding Celebration" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-5 h-5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-heart-handshake"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M19.414 14.414C21 12.828 22 11.5 22 9.5a5.5 5.5 0 0 0-9.591-3.676.6.6 0 0 1-.818.001A5.5 5.5 0 0 0 2 9.5c0 2.3 1.5 4 3 5.5l5.535 5.362a2 2 0 0 0 2.879.052 2.12 2.12 0 0 0-.004-3 2.124 2.124 0 1 0 3-3 2.124 2.124 0 0 0 3.004 0 2 2 0 0 0 0-2.828l-1.881-1.882a2.41 2.41 0 0 0-3.409 0l-1.71 1.71a2 2 0 0 1-2.828 0 2 2 0 0 1 0-2.828l2.823-2.762" />
+</svg>
+</span> </a> <div class="flex flex-col justify-center min-w-0 flex-1" data-astro-cid-qkptn22r> <h3 class="text-sm font-semibold m-0 truncate" data-astro-cid-qkptn22r> <a href="https://celebration.hina-oliver.com/" class="text-link visited:text-link-visited no-underline hover:underline" data-astro-cid-qkptn22r>Wedding Celebration</a> </h3> <p class="text-xs m-0 mt-0.5 opacity-75 leading-snug line-clamp-2" data-astro-cid-qkptn22r>Our wedding celebration website.</p> </div> <a href="https://celebration.hina-oliver.com/" class="block w-12 h-12 shrink-0 rounded overflow-hidden" data-astro-cid-qkptn22r> <img src="/pr-preview/pr-59/_astro/wedding-celebration.Des-FX2T_Zr8vca.webp" srcset="/pr-preview/pr-59/_astro/wedding-celebration.Des-FX2T_Z1f9C76.webp 96w, /pr-preview/pr-59/_astro/wedding-celebration.Des-FX2T_xpv67.webp 192w" alt="Screenshot of Wedding Celebration" loading="lazy" sizes="48px" data-astro-cid-qkptn22r="true" decoding="async" fetchpriority="auto" width="1280" height="800" class="w-full h-full object-cover object-center"> </a> <button type="button" data-pin aria-label="Pin Wedding Celebration" class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer" data-astro-cid-qkptn22r> <span class="inline-flex items-center justify-center w-3.5 h-3.5"><!-- @license lucide-static v1.14.0 - ISC -->
+<svg
+  class="lucide lucide-pin"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 17v5" />
+  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+</svg>
+</span> </button> </li> </ul> </section> </div>  <script type="module">const u="tools.pins.v1",i=document.getElementById("tools-search"),v=document.getElementById("tools-empty"),m=document.getElementById("pinned-section"),c=document.getElementById("pinned-list"),E=Array.from(document.querySelectorAll("[data-category]"));function p(){try{const e=localStorage.getItem(u);if(!e)return new Set;const t=JSON.parse(e);return new Set(Array.isArray(t)?t.filter(n=>typeof n=="string"):[])}catch{return new Set}}function L(e){try{localStorage.setItem(u,JSON.stringify([...e]))}catch{}}const a=p();function f(e){return Array.from(document.querySelectorAll(`[data-tool][data-slug="${CSS.escape(e)}"]`))}function A(e){return document.querySelector(`[data-category] [data-tool][data-slug="${CSS.escape(e)}"]`)}function y(e){if(!c||c.querySelector(`[data-slug="${CSS.escape(e)}"]`))return;const t=A(e);if(!t)return;const n=t.cloneNode(!0);n.dataset.pinned="true",c.appendChild(n)}function S(e){c?.querySelector(`[data-slug="${CSS.escape(e)}"]`)?.remove()}function C(e,t){t?a.add(e):a.delete(e),L(a);for(const n of f(e))n.dataset.pinned=t?"true":"false";t?y(e):S(e),d(i?.value??"")}for(const e of a){for(const t of f(e))t.dataset.pinned="true";y(e)}function d(e){const t=e.trim().toLowerCase().split(/\s+/).filter(Boolean);let n=!1;for(const o of E){const r=Array.from(o.querySelectorAll("[data-tool]"));let s=0;for(const l of r){const w=l.dataset.search??"",g=t.every(h=>w.includes(h));l.classList.toggle("hidden",!g),g&&s++}o.classList.toggle("hidden",s===0),s>0&&(n=!0)}if(c&&m){const o=Array.from(c.querySelectorAll("[data-tool]"));for(const s of o)s.classList.remove("hidden");const r=t.length>0;m.classList.toggle("hidden",r||o.length===0)}v?.classList.toggle("hidden",n)}d("");i?.addEventListener("input",()=>d(i.value));document.addEventListener("click",e=>{const n=e.target?.closest("[data-pin]");if(!n)return;e.preventDefault();const r=n.closest("[data-tool]")?.dataset.slug;r&&C(r,!a.has(r))});window.addEventListener("storage",e=>{if(e.key!==u)return;const t=p(),n=new Set([...a,...t]);for(const o of n){const r=a.has(o),s=t.has(o);if(r!==s){s?a.add(o):a.delete(o);for(const l of f(o))l.dataset.pinned=s?"true":"false";s?y(o):S(o)}}d(i?.value??"")});document.addEventListener("keydown",e=>{e.key==="/"&&document.activeElement!==i&&!(document.activeElement instanceof HTMLInputElement)&&(e.preventDefault(),i?.focus())});</script>  </main> <footer class="mt-12 py-4 text-center text-sm text-text opacity-70"> <p>&copy; 2026 By the Rocks</p> </footer> </body></html>
