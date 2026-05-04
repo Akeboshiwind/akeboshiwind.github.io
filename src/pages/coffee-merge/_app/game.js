@@ -176,7 +176,8 @@ async function deleteLiveSession() {
 }
 
 async function fetchLiveRivals() {
-  const cutoff = new Date(Date.now() - LIVE_FRESH_MS).toISOString();
+  // PocketBase filter wants "YYYY-MM-DD HH:MM:SS.sssZ" (space, not T).
+  const cutoff = new Date(Date.now() - LIVE_FRESH_MS).toISOString().replace('T', ' ');
   let f = `game="${GAME_ID}" && updated>"${cutoff}"`;
   if (sessionId) f += ` && id!="${sessionId}"`;
   try {
