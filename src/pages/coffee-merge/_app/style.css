@@ -111,6 +111,23 @@ body.menu #stage { display: none; }
   background: rgba(255, 248, 220, 0.06);
   border: 1px solid rgba(255, 248, 220, 0.1);
 }
+#leaderboardList li.is-user {
+  background: rgba(255, 216, 155, 0.28);
+  border-color: rgba(255, 216, 155, 0.75);
+  box-shadow: 0 0 14px rgba(255, 216, 155, 0.25);
+}
+#leaderboardList li.separated {
+  margin-top: 22px;
+  position: relative;
+}
+#leaderboardList li.separated::before {
+  content: '⋮';
+  position: absolute;
+  top: -20px; left: 50%; transform: translateX(-50%);
+  color: rgba(255, 248, 220, 0.5);
+  font-size: 18px;
+  line-height: 1;
+}
 #leaderboardList li .rank {
   min-width: 32px;
   font-size: 16px; font-weight: 700;

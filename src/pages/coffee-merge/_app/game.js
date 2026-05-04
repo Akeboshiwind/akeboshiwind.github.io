@@ -99,17 +99,31 @@ const overTimers = new Map();
 const NAME_KEY = 'coffee-merge:lastName';
 const STATE_KEY = 'coffee-merge:gameState';
 const SAVE_INTERVAL_MS = 1000;
-const MAX_ENTRIES = 10;
+const TOP_ENTRIES = 5;
+// Overfetch so client-side dedup-by-name still yields enough unique users
+// even when the top of the table is dominated by repeat submissions.
+const FETCH_SIZE = 200;
 const PB_URL = 'https://pb.bythe.rocks';
 const GAME_ID = 'coffee-merge';
 
+function dedupeByName(entries) {
+  const seen = new Set();
+  const out = [];
+  for (const e of entries) {
+    if (seen.has(e.name)) continue;
+    seen.add(e.name);
+    out.push(e);
+  }
+  return out;
+}
+
 async function fetchLeaderboard() {
   const filter = encodeURIComponent(`game="${GAME_ID}"`);
-  const url = `${PB_URL}/api/collections/scores/records?filter=${filter}&sort=-score&perPage=${MAX_ENTRIES}`;
+  const url = `${PB_URL}/api/collections/scores/records?filter=${filter}&sort=-score&perPage=${FETCH_SIZE}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Leaderboard fetch failed: ${res.status}`);
   const data = await res.json();
-  return data.items || [];
+  return dedupeByName(data.items || []);
 }
 function loadLastName() {
   return localStorage.getItem(NAME_KEY) || '';
@@ -177,9 +191,35 @@ function setLeaderboardMessage(text) {
   list.appendChild(li);
 }
 
+function appendLeaderboardRow(list, entry, rank, opts = {}) {
+  const li = document.createElement('li');
+  if (opts.isUser) li.classList.add('is-user');
+  if (opts.separated) li.classList.add('separated');
+  const rankEl = document.createElement('span');
+  rankEl.className = 'rank';
+  rankEl.textContent = rank === 1 ? '👑' : `#${rank}`;
+  const name = document.createElement('span');
+  name.className = 'name';
+  name.textContent = entry.name;
+  const sc = document.createElement('span');
+  sc.className = 'score';
+  sc.textContent = entry.score;
+  li.append(rankEl, name);
+  if (typeof entry.tier === 'number' && TIERS[entry.tier]) {
+    const drink = document.createElement('img');
+    drink.className = 'drink';
+    drink.src = TIERS[entry.tier].img.src;
+    drink.alt = '';
+    li.append(drink);
+  }
+  li.append(sc);
+  list.appendChild(li);
+}
+
 async function renderLeaderboard() {
   const list = document.getElementById('leaderboardList');
   setLeaderboardMessage('loading…');
+  const userName = loadLastName();
   let entries;
   try {
     entries = await fetchLeaderboard();
@@ -195,28 +235,18 @@ async function renderLeaderboard() {
     list.appendChild(li);
     return;
   }
-  entries.forEach((entry, i) => {
-    const li = document.createElement('li');
-    const rank = document.createElement('span');
-    rank.className = 'rank';
-    rank.textContent = i === 0 ? '👑' : `#${i + 1}`;
-    const name = document.createElement('span');
-    name.className = 'name';
-    name.textContent = entry.name;
-    const sc = document.createElement('span');
-    sc.className = 'score';
-    sc.textContent = entry.score;
-    li.append(rank, name);
-    if (typeof entry.tier === 'number' && TIERS[entry.tier]) {
-      const drink = document.createElement('img');
-      drink.className = 'drink';
-      drink.src = TIERS[entry.tier].img.src;
-      drink.alt = '';
-      li.append(drink);
-    }
-    li.append(sc);
-    list.appendChild(li);
+  const userIdx = userName ? entries.findIndex(e => e.name === userName) : -1;
+  const top = entries.slice(0, TOP_ENTRIES);
+  top.forEach((entry, i) => {
+    const isUser = i === userIdx;
+    appendLeaderboardRow(list, entry, i + 1, { isUser });
   });
+  if (userIdx >= TOP_ENTRIES) {
+    appendLeaderboardRow(list, entries[userIdx], userIdx + 1, {
+      isUser: true,
+      separated: true,
+    });
+  }
 }
 
 function showLeaderboard() {
