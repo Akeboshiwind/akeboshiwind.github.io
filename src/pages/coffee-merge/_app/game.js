@@ -223,10 +223,16 @@ function startRealtime() {
   realtimeES.addEventListener('PB_CONNECT', async (e) => {
     try {
       realtimeClientId = JSON.parse(e.data).clientId;
-      await subscribeRealtime();
+      // Bulk-fetch the starting state before subscribing — otherwise events
+      // arriving during the bulk fetch get wiped by its clear() call.
       const [, top] = await Promise.all([bulkFetchLive(), fetchTopOne()]);
       topRecord = top;
+      // Snap prevWindowKeys to the bulk state so the placeholder YOU-only
+      // ladder doesn't register as a "lineup change" on the first real
+      // render — otherwise the player's row pulses on every game start.
+      prevWindowKeys = computeLadderWindow().map(c => c.id);
       renderLadder();
+      await subscribeRealtime();
     } catch (err) {
       console.warn('realtime connect handler failed', err);
     }
