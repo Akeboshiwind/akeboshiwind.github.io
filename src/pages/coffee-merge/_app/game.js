@@ -108,7 +108,7 @@ const GAME_ID = 'coffee-merge';
 
 // Live ladder: each player upserts a row in `live_sessions` while playing,
 // and polls others' rows to fill the two flanking slots around their score.
-const LIVE_FRESH_MS = 15000;
+const LIVE_FRESH_MS = 30000;
 const LIVE_PATCH_INTERVAL_MS = 2000;
 const LIVE_POLL_INTERVAL_MS = 3000;
 
@@ -180,7 +180,7 @@ async function fetchLiveRivals() {
   let f = `game="${GAME_ID}" && updated>"${cutoff}"`;
   if (sessionId) f += ` && id!="${sessionId}"`;
   try {
-    const res = await fetch(liveUrl(`?filter=${encodeURIComponent(f)}&perPage=20`));
+    const res = await fetch(liveUrl(`?filter=${encodeURIComponent(f)}&sort=-updated&perPage=20`));
     if (!res.ok) return [];
     const data = await res.json();
     return data.items || [];
@@ -209,6 +209,9 @@ function stopLivePolling() {
 }
 
 async function pollLive() {
+  // Heartbeat: bump our `updated` field even when no merge happened recently,
+  // so rivals don't see us go stale during long stretches of aiming.
+  scheduleLivePatch();
   const [rivals, top] = await Promise.all([fetchLiveRivals(), fetchTopOne()]);
   liveTop = top
     ? { id: `top:${top.id}`, name: top.name, score: top.score, kind: 'top' }
