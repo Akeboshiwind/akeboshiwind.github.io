@@ -42,6 +42,17 @@
       <p class="countdown" id="shutterCountdown"></p>
     </div>
   </div>
+  <script is:inline>
+    // Pre-apply the closed state before the deferred module runs so the
+    // shutter is already down on first paint during closed hours — no
+    // slide-down animation, no flash of the leaderboard, no input window.
+    (function () {
+      var h = new Date().getHours();
+      if (h >= 22 || h < 6) {
+        document.getElementById('shutter').classList.add('is-closed', 'no-anim');
+      }
+    })();
+  </script>
   <script>
     import './_app/style.css';
     import './_app/game.js';

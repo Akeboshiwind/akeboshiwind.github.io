@@ -594,6 +594,7 @@ function showLeaderboard() {
 }
 
 function startGame() {
+  if (paused) return;
   const bodies = Composite.allBodies(engine.world);
   for (const body of bodies) {
     if (body.isDrink) World.remove(engine.world, body);
@@ -662,7 +663,7 @@ function endGame() {
 
 let submitting = false;
 async function submitScore() {
-  if (submitting) return;
+  if (submitting || paused) return;
   const raw = document.getElementById('nameInput').value || '';
   const name = raw.trim().slice(0, 20) || 'Anonymous';
   saveLastName(name);
@@ -862,7 +863,19 @@ function updateShutter() {
   }
 }
 
+// The inline script in index.astro may have already pre-applied .is-closed
+// before this module loaded — sync our state so updateShutter() doesn't see
+// it as a transition and re-trigger the slide animation.
+if (shutterEl.classList.contains('is-closed')) {
+  paused = true;
+  prevClosed = true;
+}
 updateShutter();
+// Now that the initial state is committed, allow future open/close transitions
+// to animate. Two RAFs to ensure the browser has painted the no-anim state.
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => shutterEl.classList.remove('no-anim'));
+});
 setInterval(updateShutter, 1000);
 
 function drawTable() {

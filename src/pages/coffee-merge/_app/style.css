@@ -257,6 +257,7 @@ body.menu #stage { display: none; }
   transform: translateY(0);
   pointer-events: auto;
 }
+#shutter.no-anim { transition: none; }
 .shutter-sign {
   background: #fff5c2;
   color: #4a2410;
