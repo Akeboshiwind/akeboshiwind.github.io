@@ -1,1 +1,0 @@
-import{i as f}from"./core.ChbC4EjB.js";function a(t,n){if(n===void 0&&(n=t,t=""),n instanceof Array)return n.join(t);let e="",i=!1;for(const r of f(n))i&&(e+=t),e+=r,i=!0;return e}function o(t,n){if(n.length>1)for(;n[n.length-1]==="";)n.pop();return n}function u(t,n,e){const i=t.split(n,e);return o(e,i)}function d(t,n){return t.endsWith(n)}export{d as e,a as j,u as s};
