@@ -89,7 +89,6 @@ const OPEN_HOUR = 6;
 const CLOSE_HOUR = 22;
 let paused = false;
 let prevClosed = null;
-let manualOverride = null; // TEMP: null = real clock, true = forced closed
 
 let score = 0;
 let maxTier = 0;
@@ -829,7 +828,6 @@ function loop() {
 }
 
 function isClosedNow(now = new Date()) {
-  if (manualOverride !== null) return manualOverride;
   const h = now.getHours();
   return h >= CLOSE_HOUR || h < OPEN_HOUR;
 }
@@ -866,11 +864,6 @@ function updateShutter() {
 
 updateShutter();
 setInterval(updateShutter, 1000);
-
-document.getElementById('shutterTest').addEventListener('click', () => {
-  manualOverride = manualOverride === true ? null : true;
-  updateShutter();
-});
 
 function drawTable() {
   // Outer rim — darker stained wood that frames the playfield.
