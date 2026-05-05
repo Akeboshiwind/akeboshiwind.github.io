@@ -290,6 +290,18 @@ body.menu #stage { display: none; }
   text-transform: uppercase;
 }
 
+#shutterTest {
+  position: fixed; top: 12px; right: 12px; z-index: 1001;
+  background: #ff6f3d; color: #fff8e7;
+  border: 2px solid #4a2410;
+  padding: 8px 14px; border-radius: 999px;
+  font-family: 'Fredoka', sans-serif; font-weight: 700;
+  font-size: 13px; letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #a8531a, 0 6px 12px rgba(0,0,0,0.3);
+}
+#shutterTest:active { transform: translateY(2px); box-shadow: 0 2px 0 #a8531a; }
+
 #play, #submit {
   font-family: 'Fredoka', sans-serif; font-weight: 700;
   background: linear-gradient(180deg, #ffb15a, #e8823a);
