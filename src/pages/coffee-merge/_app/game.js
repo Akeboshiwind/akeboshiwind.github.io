@@ -83,6 +83,13 @@ function createDrink(x, y, tier, vx = 0, vy = 0) {
   return body;
 }
 
+// Café hours: closed 10pm–6am local time. The shutter overlay covers the
+// viewport during closed hours; `paused` gates the engine and input.
+const OPEN_HOUR = 6;
+const CLOSE_HOUR = 22;
+let paused = false;
+let prevClosed = null;
+
 let score = 0;
 let maxTier = 0;
 let currentTier = pickStarter();
@@ -705,7 +712,7 @@ canvas.addEventListener('touchstart', (e) => {
 canvas.addEventListener('touchend', () => tryLaunch());
 
 function tryLaunch() {
-  if (!aiming || gameOver) return;
+  if (!aiming || gameOver || paused) return;
   const drink = createDrink(launcherX, LAUNCHER_Y, currentTier, 0, -LAUNCH_SPEED);
   World.add(engine.world, drink);
   aiming = false;
@@ -811,7 +818,7 @@ function updateEffects() {
 }
 
 function loop() {
-  if (!gameOver) {
+  if (!gameOver && !paused) {
     Engine.update(engine, 1000 / 60);
     checkGameOver();
   }
@@ -819,6 +826,44 @@ function loop() {
   draw();
   requestAnimationFrame(loop);
 }
+
+function isClosedNow(now = new Date()) {
+  const h = now.getHours();
+  return h >= CLOSE_HOUR || h < OPEN_HOUR;
+}
+function nextOpenAt(now = new Date()) {
+  const next = new Date(now);
+  next.setHours(OPEN_HOUR, 0, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  return next;
+}
+function formatCountdown(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) return `opens in ${h}h ${String(m).padStart(2, '0')}m`;
+  return `opens in ${m}m ${String(s).padStart(2, '0')}s`;
+}
+
+const shutterEl = document.getElementById('shutter');
+const shutterCountdownEl = document.getElementById('shutterCountdown');
+
+function updateShutter() {
+  const now = new Date();
+  const closed = isClosedNow(now);
+  if (closed !== prevClosed) {
+    shutterEl.classList.toggle('is-closed', closed);
+    paused = closed;
+    prevClosed = closed;
+  }
+  if (closed) {
+    shutterCountdownEl.textContent = formatCountdown(nextOpenAt(now) - now);
+  }
+}
+
+updateShutter();
+setInterval(updateShutter, 1000);
 
 function drawTable() {
   // Outer rim — darker stained wood that frames the playfield.
