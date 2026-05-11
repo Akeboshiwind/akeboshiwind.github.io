@@ -941,11 +941,14 @@
           (join-room! code))))
     (swap! state assoc :room-code-input nil)))
 
-(defn copy-room-code! []
-  (let [code (:room-code @state)]
-    (-> (js/navigator.clipboard.writeText code)
-        (.then #(js/console.log "Copied room code:" code))
-        (.catch #(js/console.error "Failed to copy:" %)))))
+(defn share-room-url! []
+  "Copy a URL with the current room code in the ?room= query param."
+  (let [url (js/URL. js/window.location.href)]
+    (.set (.-searchParams url) "room" (:room-code @state))
+    (let [url-str (.toString url)]
+      (-> (js/navigator.clipboard.writeText url-str)
+          (.then #(js/console.log "Copied share URL:" url-str))
+          (.catch #(js/console.error "Failed to copy:" %))))))
 
 ;; >> DML Export
 
@@ -1090,9 +1093,9 @@
                                  (do (swap! state assoc :room-code-input nil)
                                      (.blur (.-target e)))))}]
        [:button {:class "px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded cursor-pointer"
-                 :title "Copy room code"
-                 :on-click copy-room-code!}
-        "Copy"]]]
+                 :title "Copy shareable link to this room"
+                 :on-click share-room-url!}
+        "Share"]]]
      ;; Options
      [:div {:class "flex flex-col gap-2 mb-4"}
       [:label {:class "flex items-center gap-2 cursor-pointer"}
