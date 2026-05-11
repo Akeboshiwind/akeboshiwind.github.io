@@ -21,6 +21,21 @@
 (defn room-channel-name [code]
   (str "room:" code))
 
+(defn room-code-from-url []
+  "Read and normalize the room code from URL query params, or nil if absent/invalid."
+  (when-let [raw (-> js/window.location.search
+                     (js/URLSearchParams.)
+                     (.get "room"))]
+    (let [code (-> raw .trim .toUpperCase (subs 0 (min 6 (count raw))))]
+      (when (and (seq code) (>= (count code) 4))
+        code))))
+
+(defn sync-room-code-to-url! [code]
+  "Update ?room=CODE in the URL without adding a history entry."
+  (let [url (js/URL. js/window.location.href)]
+    (.set (.-searchParams url) "room" code)
+    (js/window.history.replaceState nil "" (.toString url))))
+
 ;; >> Sample Bitemporal Events
 
 (def default-events
@@ -33,7 +48,8 @@
 (def default-settings
   {:show-grid false
    :snap-to-grid false
-   :show-ticks false})
+   :show-ticks false
+   :show-vt-eq-st false})
 
 ;; >> LocalStorage
 
@@ -50,7 +66,9 @@
      :points (or (:points stored) [])
      :show-grid (get stored :show-grid (:show-grid default-settings))
      :snap-to-grid (get stored :snap-to-grid (:snap-to-grid default-settings))
-     :show-ticks (get stored :show-ticks (:show-ticks default-settings))}))
+     :show-ticks (get stored :show-ticks (:show-ticks default-settings))
+     :show-vt-eq-st (get stored :show-vt-eq-st (:show-vt-eq-st default-settings))
+     :zoom-rect (:zoom-rect stored)}))
 
 ;; >> Saved States Storage
 
@@ -71,9 +89,11 @@
                   :show-grid (:show-grid initial-persisted)
                   :snap-to-grid (:snap-to-grid initial-persisted)
                   :show-ticks (:show-ticks initial-persisted)
-                  :current-tool :select      ; :select, :rectangle, or :point
+                  :show-vt-eq-st (:show-vt-eq-st initial-persisted)
+                  :current-tool :select      ; :select, :rectangle, :point, or :zoom
                   :auto-select true          ; switch to select after drawing
-                  :room-code (generate-room-code)
+                  :zoom-rect (:zoom-rect initial-persisted) ; shared dotted overlay rect (or nil)
+                  :room-code (or (room-code-from-url) (generate-room-code))
                   :room-count 0              ; users in current room
                   :global-count 0            ; total users online
                   :syncing false             ; true when receiving remote state
@@ -91,12 +111,16 @@
                        (not= (:points old-state) (:points new-state))
                        (not= (:show-grid old-state) (:show-grid new-state))
                        (not= (:snap-to-grid old-state) (:snap-to-grid new-state))
-                       (not= (:show-ticks old-state) (:show-ticks new-state)))
+                       (not= (:show-ticks old-state) (:show-ticks new-state))
+                       (not= (:show-vt-eq-st old-state) (:show-vt-eq-st new-state))
+                       (not= (:zoom-rect old-state) (:zoom-rect new-state)))
                (save-to-storage! {:events (:events new-state)
                                   :points (:points new-state)
                                   :show-grid (:show-grid new-state)
                                   :snap-to-grid (:snap-to-grid new-state)
-                                  :show-ticks (:show-ticks new-state)}))))
+                                  :show-ticks (:show-ticks new-state)
+                                  :show-vt-eq-st (:show-vt-eq-st new-state)
+                                  :zoom-rect (:zoom-rect new-state)}))))
 
 ;; Save saved-states to localStorage when they change
 (add-watch state ::persist-saved-states
@@ -152,8 +176,14 @@
                              (:events @state)
                              {:show-grid (:show-grid @state)
                               :show-ticks (:show-ticks @state)
+                              :show-vt-eq-st (:show-vt-eq-st @state)
                               :selection-box (when (or (= mode :select) (= mode :draw))
                                                {:start select-start :end select-end})
+                              :zoom-rect (:zoom-rect @state)
+                              :zoom-rect-draft (when (and (= mode :zoom-draw)
+                                                          select-start select-end)
+                                                 {:x1 (:x select-start) :y1 (:y select-start)
+                                                  :x2 (:x select-end) :y2 (:y select-end)})
                               :selected selected
                               :points (:points @state)
                               :selected-points selected-points}))))
@@ -238,6 +268,18 @@
         (reset! drag-state {:dragging nil
                             :dragging-point nil
                             :mode :draw
+                            :offset-x 0
+                            :offset-y 0
+                            :select-start {:x x :y y}
+                            :select-end {:x x :y y}
+                            :selected #{}
+                            :selected-points #{}})
+
+        ;; Zoom tool draws a single shared dotted rectangle
+        (= current-tool :zoom)
+        (reset! drag-state {:dragging nil
+                            :dragging-point nil
+                            :mode :zoom-draw
                             :offset-x 0
                             :offset-y 0
                             :select-start {:x x :y y}
@@ -395,6 +437,10 @@
         (or (= current-tool :rectangle) (= current-tool :point))
         (set! (.-cursor (.-style canvas-el)) "crosshair")
 
+        ;; Zoom tool shows a zoom-in cursor
+        (= current-tool :zoom)
+        (set! (.-cursor (.-style canvas-el)) "zoom-in")
+
         (= mode :select)
         (set! (.-cursor (.-style canvas-el)) "crosshair")
 
@@ -415,6 +461,12 @@
     (cond
       ;; Draw mode (rectangle tool)
       (= mode :draw)
+      (do
+        (swap! drag-state assoc :select-end {:x x :y y})
+        (render-canvas! canvas-el))
+
+      ;; Zoom draw mode (preview the in-progress zoom rect)
+      (= mode :zoom-draw)
       (do
         (swap! drag-state assoc :select-end {:x x :y y})
         (render-canvas! canvas-el))
@@ -599,6 +651,18 @@
           ;; Switch back to select tool if auto-select is enabled
           (when (:auto-select @state)
             (swap! state assoc :current-tool :select)))))
+    ;; If in zoom-draw mode, commit (or clear on a click) the shared rect
+    (when (and (= mode :zoom-draw) select-start select-end)
+      (let [width (js/Math.abs (- (:x select-end) (:x select-start)))
+            height (js/Math.abs (- (:y select-end) (:y select-start)))]
+        (if (or (> width 0.02) (> height 0.02))
+          (swap! state assoc :zoom-rect
+                 {:x1 (:x select-start) :y1 (:y select-start)
+                  :x2 (:x select-end) :y2 (:y select-end)})
+          ;; Tiny drag / click clears the shared rect
+          (swap! state assoc :zoom-rect nil))
+        (when (:auto-select @state)
+          (swap! state assoc :current-tool :select))))
     (reset! drag-state {:dragging nil
                         :dragging-point nil
                         :mode nil
@@ -910,22 +974,46 @@
                :title "Point"
                :on-click #(set-tool! :point)}
       [:svg {:width "16" :height "16" :viewBox "0 0 24 24" :fill "none" :stroke "currentColor" :stroke-width "2"}
-       [:circle {:cx "12" :cy "12" :r "4"}]]]]))
+       [:circle {:cx "12" :cy "12" :r "4"}]]]
+     ;; Zoom tool (shared dotted overlay rectangle)
+     [:button {:class (str "w-8 h-8 rounded flex items-center justify-center transition-colors "
+                           (if (= current-tool :zoom)
+                             "bg-blue-500 text-white"
+                             "hover:bg-gray-100 text-gray-600"))
+               :title "Zoom overlay (shared)"
+               :on-click #(set-tool! :zoom)}
+      [:svg {:width "16" :height "16" :viewBox "0 0 24 24" :fill "none" :stroke "currentColor" :stroke-width "2" :stroke-linecap "round" :stroke-linejoin "round"}
+       [:circle {:cx "11" :cy "11" :r "7"}]
+       [:path {:d "m20 20-3.5-3.5"}]]]]))
 
 (defn toggle-auto-select! []
   (swap! state update :auto-select not))
 
-(defn prompt-join-room! []
-  (when-let [code (js/prompt "Enter room code to join:")]
-    (let [code (-> code .trim .toUpperCase (subs 0 6))]
-      (when (and (seq code) (>= (count code) 4))
-        (join-room! code)))))
+(defn toggle-vt-eq-st! []
+  (swap! state update :show-vt-eq-st not))
 
-(defn copy-room-code! []
-  (let [code (:room-code @state)]
-    (-> (js/navigator.clipboard.writeText code)
-        (.then #(js/console.log "Copied room code:" code))
-        (.catch #(js/console.error "Failed to copy:" %)))))
+(defn commit-room-code-edit! []
+  "Validate the in-progress room code edit and join if valid, then clear edit state."
+  (let [input (:room-code-input @state)]
+    (when input
+      (let [code (-> input .trim .toUpperCase (subs 0 (min 6 (count input))))]
+        (when (and (seq code)
+                   (>= (count code) 4)
+                   (not= code (:room-code @state)))
+          (join-room! code))))
+    (swap! state assoc :room-code-input nil)))
+
+(defn share-room-url! []
+  "Copy a URL with the current room code in the ?room= query param."
+  (let [url (js/URL. js/window.location.href)]
+    (.set (.-searchParams url) "room" (:room-code @state))
+    (let [url-str (.toString url)]
+      (-> (js/navigator.clipboard.writeText url-str)
+          (.then (fn []
+                   (js/console.log "Copied share URL:" url-str)
+                   (swap! state assoc :share-copied true)
+                   (js/setTimeout #(swap! state assoc :share-copied false) 1500)))
+          (.catch #(js/console.error "Failed to copy:" %))))))
 
 ;; >> DML Export
 
@@ -1046,14 +1134,37 @@
      [:div {:class "mb-6 p-3 bg-gray-700 rounded-lg"}
       [:div {:class "text-xs text-gray-400 mb-1"} "Room"]
       [:div {:class "flex items-center gap-2"}
-       [:span {:class "font-mono text-lg tracking-wider"} (:room-code @state)]
-       [:button {:class "px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded cursor-pointer"
-                 :title "Copy room code"
-                 :on-click copy-room-code!}
-        "Copy"]
-       [:button {:class "px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 rounded cursor-pointer"
-                 :on-click prompt-join-room!}
-        "Join"]]]
+       [:input {:type "text"
+                :class "font-mono text-lg tracking-wider bg-transparent text-white w-24 px-1 -mx-1 py-0 rounded border border-transparent hover:border-gray-500 focus:border-blue-400 focus:outline-none cursor-text"
+                :title "Click to change room"
+                :max-length 6
+                :spell-check "false"
+                :auto-complete "off"
+                :value (or (:room-code-input @state) (:room-code @state))
+                :on-focus (fn [e]
+                            (swap! state assoc :room-code-input (:room-code @state))
+                            (.select (.-target e)))
+                :on-change #(let [v (.. % -target -value)
+                                  truncated (subs v 0 (min 6 (count v)))]
+                              (swap! state assoc :room-code-input
+                                     (.toUpperCase truncated)))
+                :on-blur (fn [_] (commit-room-code-edit!))
+                :on-key-down (fn [e]
+                               (cond
+                                 (= (.-key e) "Enter")
+                                 (.blur (.-target e))
+
+                                 (= (.-key e) "Escape")
+                                 (do (swap! state assoc :room-code-input nil)
+                                     (.blur (.-target e)))))}]
+       (let [copied? (:share-copied @state)]
+         [:button {:class (str "px-2 py-1 text-xs rounded cursor-pointer transition-colors w-16 text-center "
+                               (if copied?
+                                 "bg-green-600 hover:bg-green-600 text-white"
+                                 "bg-gray-600 hover:bg-gray-500"))
+                   :title "Copy shareable link to this room"
+                   :on-click share-room-url!}
+          (if copied? "Copied!" "Share")])]]
      ;; Options
      [:div {:class "flex flex-col gap-2 mb-4"}
       [:label {:class "flex items-center gap-2 cursor-pointer"}
@@ -1067,7 +1178,13 @@
                 :checked (:auto-select @state)
                 :on-change toggle-auto-select!
                 :class "w-4 h-4"}]
-       [:span "Auto-select after draw"]]]
+       [:span "Auto-select after draw"]]
+      [:label {:class "flex items-center gap-2 cursor-pointer"}
+       [:input {:type "checkbox"
+                :checked (:show-vt-eq-st @state)
+                :on-change toggle-vt-eq-st!
+                :class "w-4 h-4"}]
+       [:span "vt = st"]]]
 
      ;; Divider
      [:div {:class "h-px bg-gray-600 my-4"}]
@@ -1193,13 +1310,15 @@
           events (:events @state)
           points (:points @state)
           snap-to-grid (:snap-to-grid @state)
-          show-ticks (:show-ticks @state)]
+          show-ticks (:show-ticks @state)
+          zoom-rect (:zoom-rect @state)]
       (ably/publish! (room-channel-name room-code)
                      "state-sync"
                      #js {:events events
                           :points points
                           :snapToGrid snap-to-grid
                           :showTicks show-ticks
+                          :zoomRect zoom-rect
                           :from ably/client-id}))))
 
 (defn request-state! []
@@ -1222,7 +1341,8 @@
         (let [events (.-events data)
               points (.-points data)
               snap-to-grid (.-snapToGrid data)
-              show-ticks (.-showTicks data)]
+              show-ticks (.-showTicks data)
+              zoom-rect (.-zoomRect data)]
           (swap! state assoc :syncing true)
           (swap! state assoc :events (vec events))
           (when points
@@ -1231,6 +1351,10 @@
             (swap! state assoc :snap-to-grid snap-to-grid))
           (when (some? show-ticks)
             (swap! state assoc :show-ticks show-ticks))
+          (swap! state assoc :zoom-rect
+                 (when zoom-rect
+                   {:x1 (.-x1 zoom-rect) :y1 (.-y1 zoom-rect)
+                    :x2 (.-x2 zoom-rect) :y2 (.-y2 zoom-rect)}))
           (swap! state assoc :syncing false))
 
         nil))))
@@ -1246,6 +1370,7 @@
           (.leave)))
     ;; Update room code
     (swap! state assoc :room-code code :room-count 0)
+    (sync-room-code-to-url! code)
     ;; Join new room
     (ably/enter-presence! new-channel)
     (ably/on-presence-change! new-channel update-room-presence-count!)
@@ -1263,7 +1388,8 @@
                         (or (not= (:events old-state) (:events new-state))
                             (not= (:points old-state) (:points new-state))
                             (not= (:snap-to-grid old-state) (:snap-to-grid new-state))
-                            (not= (:show-ticks old-state) (:show-ticks new-state))))
+                            (not= (:show-ticks old-state) (:show-ticks new-state))
+                            (not= (:zoom-rect old-state) (:zoom-rect new-state))))
                (broadcast-state!))))
 
 ;; >> Init
