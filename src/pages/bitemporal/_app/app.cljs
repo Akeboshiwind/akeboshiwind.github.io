@@ -48,7 +48,8 @@
 (def default-settings
   {:show-grid false
    :snap-to-grid false
-   :show-ticks false})
+   :show-ticks false
+   :show-vt-eq-st false})
 
 ;; >> LocalStorage
 
@@ -65,7 +66,8 @@
      :points (or (:points stored) [])
      :show-grid (get stored :show-grid (:show-grid default-settings))
      :snap-to-grid (get stored :snap-to-grid (:snap-to-grid default-settings))
-     :show-ticks (get stored :show-ticks (:show-ticks default-settings))}))
+     :show-ticks (get stored :show-ticks (:show-ticks default-settings))
+     :show-vt-eq-st (get stored :show-vt-eq-st (:show-vt-eq-st default-settings))}))
 
 ;; >> Saved States Storage
 
@@ -86,6 +88,7 @@
                   :show-grid (:show-grid initial-persisted)
                   :snap-to-grid (:snap-to-grid initial-persisted)
                   :show-ticks (:show-ticks initial-persisted)
+                  :show-vt-eq-st (:show-vt-eq-st initial-persisted)
                   :current-tool :select      ; :select, :rectangle, or :point
                   :auto-select true          ; switch to select after drawing
                   :room-code (or (room-code-from-url) (generate-room-code))
@@ -106,12 +109,14 @@
                        (not= (:points old-state) (:points new-state))
                        (not= (:show-grid old-state) (:show-grid new-state))
                        (not= (:snap-to-grid old-state) (:snap-to-grid new-state))
-                       (not= (:show-ticks old-state) (:show-ticks new-state)))
+                       (not= (:show-ticks old-state) (:show-ticks new-state))
+                       (not= (:show-vt-eq-st old-state) (:show-vt-eq-st new-state)))
                (save-to-storage! {:events (:events new-state)
                                   :points (:points new-state)
                                   :show-grid (:show-grid new-state)
                                   :snap-to-grid (:snap-to-grid new-state)
-                                  :show-ticks (:show-ticks new-state)}))))
+                                  :show-ticks (:show-ticks new-state)
+                                  :show-vt-eq-st (:show-vt-eq-st new-state)}))))
 
 ;; Save saved-states to localStorage when they change
 (add-watch state ::persist-saved-states
@@ -167,6 +172,7 @@
                              (:events @state)
                              {:show-grid (:show-grid @state)
                               :show-ticks (:show-ticks @state)
+                              :show-vt-eq-st (:show-vt-eq-st @state)
                               :selection-box (when (or (= mode :select) (= mode :draw))
                                                {:start select-start :end select-end})
                               :selected selected
@@ -930,6 +936,9 @@
 (defn toggle-auto-select! []
   (swap! state update :auto-select not))
 
+(defn toggle-vt-eq-st! []
+  (swap! state update :show-vt-eq-st not))
+
 (defn commit-room-code-edit! []
   "Validate the in-progress room code edit and join if valid, then clear edit state."
   (let [input (:room-code-input @state)]
@@ -1116,7 +1125,13 @@
                 :checked (:auto-select @state)
                 :on-change toggle-auto-select!
                 :class "w-4 h-4"}]
-       [:span "Auto-select after draw"]]]
+       [:span "Auto-select after draw"]]
+      [:label {:class "flex items-center gap-2 cursor-pointer"}
+       [:input {:type "checkbox"
+                :checked (:show-vt-eq-st @state)
+                :on-change toggle-vt-eq-st!
+                :class "w-4 h-4"}]
+       [:span "vt = st"]]]
 
      ;; Divider
      [:div {:class "h-px bg-gray-600 my-4"}]
