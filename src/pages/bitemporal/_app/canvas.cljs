@@ -249,6 +249,26 @@
     (.stroke ctx)
     (.restore ctx)))
 
+(defn draw-zoom-rect! [ctx rect width height padding]
+  "Draw the shared zoom rectangle as a dotted outline on top of events."
+  (when rect
+    (let [draw-width (- width (* 2 padding))
+          draw-height (- height (* 2 padding))
+          x1 (:x1 rect)
+          y1 (:y1 rect)
+          x2 (:x2 rect)
+          y2 (:y2 rect)
+          px1 (+ padding (* (min x1 x2) draw-width))
+          px2 (+ padding (* (max x1 x2) draw-width))
+          py-top (- height padding (* (max y1 y2) draw-height))
+          py-bottom (- height padding (* (min y1 y2) draw-height))]
+      (.save ctx)
+      (set! (.-strokeStyle ctx) "rgba(37, 99, 235, 0.95)") ; blue-600
+      (set! (.-lineWidth ctx) 2)
+      (.setLineDash ctx #js [5 4])
+      (.strokeRect ctx px1 py-top (- px2 px1) (- py-bottom py-top))
+      (.restore ctx))))
+
 ;; >> Main Render Function
 
 (defn render-canvas! [canvas events opts]
@@ -262,6 +282,8 @@
           show-ticks (get opts :show-ticks false)
           show-vt-eq-st (get opts :show-vt-eq-st false)
           selection-box (get opts :selection-box)
+          zoom-rect (get opts :zoom-rect)
+          zoom-rect-draft (get opts :zoom-rect-draft)
           selected (or (get opts :selected) #{})
           points (or (get opts :points) [])
           selected-points (or (get opts :selected-points) #{})]
@@ -281,6 +303,8 @@
         (draw-grid! ctx width height padding divisions (:foreground-grid-color config)))
       ;; Pass 5: Selection box (drawn on top)
       (draw-selection-box! ctx width height padding selection-box)
-      ;; Pass 6: vt = st diagonal (drawn over everything)
+      ;; Pass 6: Zoom rectangle (in-progress draft replaces committed one)
+      (draw-zoom-rect! ctx (or zoom-rect-draft zoom-rect) width height padding)
+      ;; Pass 7: vt = st diagonal (drawn over everything)
       (when show-vt-eq-st
         (draw-vt-eq-st-line! ctx width height padding)))))

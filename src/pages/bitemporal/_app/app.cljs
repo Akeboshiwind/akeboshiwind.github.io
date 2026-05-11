@@ -89,8 +89,9 @@
                   :snap-to-grid (:snap-to-grid initial-persisted)
                   :show-ticks (:show-ticks initial-persisted)
                   :show-vt-eq-st (:show-vt-eq-st initial-persisted)
-                  :current-tool :select      ; :select, :rectangle, or :point
+                  :current-tool :select      ; :select, :rectangle, :point, or :zoom
                   :auto-select true          ; switch to select after drawing
+                  :zoom-rect nil             ; shared dotted overlay rect (or nil)
                   :room-code (or (room-code-from-url) (generate-room-code))
                   :room-count 0              ; users in current room
                   :global-count 0            ; total users online
@@ -175,6 +176,11 @@
                               :show-vt-eq-st (:show-vt-eq-st @state)
                               :selection-box (when (or (= mode :select) (= mode :draw))
                                                {:start select-start :end select-end})
+                              :zoom-rect (:zoom-rect @state)
+                              :zoom-rect-draft (when (and (= mode :zoom-draw)
+                                                          select-start select-end)
+                                                 {:x1 (:x select-start) :y1 (:y select-start)
+                                                  :x2 (:x select-end) :y2 (:y select-end)})
                               :selected selected
                               :points (:points @state)
                               :selected-points selected-points}))))
@@ -259,6 +265,18 @@
         (reset! drag-state {:dragging nil
                             :dragging-point nil
                             :mode :draw
+                            :offset-x 0
+                            :offset-y 0
+                            :select-start {:x x :y y}
+                            :select-end {:x x :y y}
+                            :selected #{}
+                            :selected-points #{}})
+
+        ;; Zoom tool draws a single shared dotted rectangle
+        (= current-tool :zoom)
+        (reset! drag-state {:dragging nil
+                            :dragging-point nil
+                            :mode :zoom-draw
                             :offset-x 0
                             :offset-y 0
                             :select-start {:x x :y y}
@@ -416,6 +434,10 @@
         (or (= current-tool :rectangle) (= current-tool :point))
         (set! (.-cursor (.-style canvas-el)) "crosshair")
 
+        ;; Zoom tool shows a zoom-in cursor
+        (= current-tool :zoom)
+        (set! (.-cursor (.-style canvas-el)) "zoom-in")
+
         (= mode :select)
         (set! (.-cursor (.-style canvas-el)) "crosshair")
 
@@ -436,6 +458,12 @@
     (cond
       ;; Draw mode (rectangle tool)
       (= mode :draw)
+      (do
+        (swap! drag-state assoc :select-end {:x x :y y})
+        (render-canvas! canvas-el))
+
+      ;; Zoom draw mode (preview the in-progress zoom rect)
+      (= mode :zoom-draw)
       (do
         (swap! drag-state assoc :select-end {:x x :y y})
         (render-canvas! canvas-el))
@@ -620,6 +648,18 @@
           ;; Switch back to select tool if auto-select is enabled
           (when (:auto-select @state)
             (swap! state assoc :current-tool :select)))))
+    ;; If in zoom-draw mode, commit (or clear on a click) the shared rect
+    (when (and (= mode :zoom-draw) select-start select-end)
+      (let [width (js/Math.abs (- (:x select-end) (:x select-start)))
+            height (js/Math.abs (- (:y select-end) (:y select-start)))]
+        (if (or (> width 0.02) (> height 0.02))
+          (swap! state assoc :zoom-rect
+                 {:x1 (:x select-start) :y1 (:y select-start)
+                  :x2 (:x select-end) :y2 (:y select-end)})
+          ;; Tiny drag / click clears the shared rect
+          (swap! state assoc :zoom-rect nil))
+        (when (:auto-select @state)
+          (swap! state assoc :current-tool :select))))
     (reset! drag-state {:dragging nil
                         :dragging-point nil
                         :mode nil
@@ -931,7 +971,17 @@
                :title "Point"
                :on-click #(set-tool! :point)}
       [:svg {:width "16" :height "16" :viewBox "0 0 24 24" :fill "none" :stroke "currentColor" :stroke-width "2"}
-       [:circle {:cx "12" :cy "12" :r "4"}]]]]))
+       [:circle {:cx "12" :cy "12" :r "4"}]]]
+     ;; Zoom tool (shared dotted overlay rectangle)
+     [:button {:class (str "w-8 h-8 rounded flex items-center justify-center transition-colors "
+                           (if (= current-tool :zoom)
+                             "bg-blue-500 text-white"
+                             "hover:bg-gray-100 text-gray-600"))
+               :title "Zoom overlay (shared)"
+               :on-click #(set-tool! :zoom)}
+      [:svg {:width "16" :height "16" :viewBox "0 0 24 24" :fill "none" :stroke "currentColor" :stroke-width "2" :stroke-linecap "round" :stroke-linejoin "round"}
+       [:circle {:cx "11" :cy "11" :r "7"}]
+       [:path {:d "m20 20-3.5-3.5"}]]]]))
 
 (defn toggle-auto-select! []
   (swap! state update :auto-select not))
@@ -1257,13 +1307,15 @@
           events (:events @state)
           points (:points @state)
           snap-to-grid (:snap-to-grid @state)
-          show-ticks (:show-ticks @state)]
+          show-ticks (:show-ticks @state)
+          zoom-rect (:zoom-rect @state)]
       (ably/publish! (room-channel-name room-code)
                      "state-sync"
                      #js {:events events
                           :points points
                           :snapToGrid snap-to-grid
                           :showTicks show-ticks
+                          :zoomRect zoom-rect
                           :from ably/client-id}))))
 
 (defn request-state! []
@@ -1286,7 +1338,8 @@
         (let [events (.-events data)
               points (.-points data)
               snap-to-grid (.-snapToGrid data)
-              show-ticks (.-showTicks data)]
+              show-ticks (.-showTicks data)
+              zoom-rect (.-zoomRect data)]
           (swap! state assoc :syncing true)
           (swap! state assoc :events (vec events))
           (when points
@@ -1295,6 +1348,10 @@
             (swap! state assoc :snap-to-grid snap-to-grid))
           (when (some? show-ticks)
             (swap! state assoc :show-ticks show-ticks))
+          (swap! state assoc :zoom-rect
+                 (when zoom-rect
+                   {:x1 (.-x1 zoom-rect) :y1 (.-y1 zoom-rect)
+                    :x2 (.-x2 zoom-rect) :y2 (.-y2 zoom-rect)}))
           (swap! state assoc :syncing false))
 
         nil))))
@@ -1328,7 +1385,8 @@
                         (or (not= (:events old-state) (:events new-state))
                             (not= (:points old-state) (:points new-state))
                             (not= (:snap-to-grid old-state) (:snap-to-grid new-state))
-                            (not= (:show-ticks old-state) (:show-ticks new-state))))
+                            (not= (:show-ticks old-state) (:show-ticks new-state))
+                            (not= (:zoom-rect old-state) (:zoom-rect new-state))))
                (broadcast-state!))))
 
 ;; >> Init
