@@ -947,7 +947,10 @@
     (.set (.-searchParams url) "room" (:room-code @state))
     (let [url-str (.toString url)]
       (-> (js/navigator.clipboard.writeText url-str)
-          (.then #(js/console.log "Copied share URL:" url-str))
+          (.then (fn []
+                   (js/console.log "Copied share URL:" url-str)
+                   (swap! state assoc :share-copied true)
+                   (js/setTimeout #(swap! state assoc :share-copied false) 1500)))
           (.catch #(js/console.error "Failed to copy:" %))))))
 
 ;; >> DML Export
@@ -1092,10 +1095,14 @@
                                  (= (.-key e) "Escape")
                                  (do (swap! state assoc :room-code-input nil)
                                      (.blur (.-target e)))))}]
-       [:button {:class "px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded cursor-pointer"
-                 :title "Copy shareable link to this room"
-                 :on-click share-room-url!}
-        "Share"]]]
+       (let [copied? (:share-copied @state)]
+         [:button {:class (str "px-2 py-1 text-xs rounded cursor-pointer transition-colors w-16 text-center "
+                               (if copied?
+                                 "bg-green-600 hover:bg-green-600 text-white"
+                                 "bg-gray-600 hover:bg-gray-500"))
+                   :title "Copy shareable link to this room"
+                   :on-click share-room-url!}
+          (if copied? "Copied!" "Share")])]]
      ;; Options
      [:div {:class "flex flex-col gap-2 mb-4"}
       [:label {:class "flex items-center gap-2 cursor-pointer"}
