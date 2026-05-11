@@ -67,7 +67,8 @@
      :show-grid (get stored :show-grid (:show-grid default-settings))
      :snap-to-grid (get stored :snap-to-grid (:snap-to-grid default-settings))
      :show-ticks (get stored :show-ticks (:show-ticks default-settings))
-     :show-vt-eq-st (get stored :show-vt-eq-st (:show-vt-eq-st default-settings))}))
+     :show-vt-eq-st (get stored :show-vt-eq-st (:show-vt-eq-st default-settings))
+     :zoom-rect (:zoom-rect stored)}))
 
 ;; >> Saved States Storage
 
@@ -91,7 +92,7 @@
                   :show-vt-eq-st (:show-vt-eq-st initial-persisted)
                   :current-tool :select      ; :select, :rectangle, :point, or :zoom
                   :auto-select true          ; switch to select after drawing
-                  :zoom-rect nil             ; shared dotted overlay rect (or nil)
+                  :zoom-rect (:zoom-rect initial-persisted) ; shared dotted overlay rect (or nil)
                   :room-code (or (room-code-from-url) (generate-room-code))
                   :room-count 0              ; users in current room
                   :global-count 0            ; total users online
@@ -111,13 +112,15 @@
                        (not= (:show-grid old-state) (:show-grid new-state))
                        (not= (:snap-to-grid old-state) (:snap-to-grid new-state))
                        (not= (:show-ticks old-state) (:show-ticks new-state))
-                       (not= (:show-vt-eq-st old-state) (:show-vt-eq-st new-state)))
+                       (not= (:show-vt-eq-st old-state) (:show-vt-eq-st new-state))
+                       (not= (:zoom-rect old-state) (:zoom-rect new-state)))
                (save-to-storage! {:events (:events new-state)
                                   :points (:points new-state)
                                   :show-grid (:show-grid new-state)
                                   :snap-to-grid (:snap-to-grid new-state)
                                   :show-ticks (:show-ticks new-state)
-                                  :show-vt-eq-st (:show-vt-eq-st new-state)}))))
+                                  :show-vt-eq-st (:show-vt-eq-st new-state)
+                                  :zoom-rect (:zoom-rect new-state)}))))
 
 ;; Save saved-states to localStorage when they change
 (add-watch state ::persist-saved-states
