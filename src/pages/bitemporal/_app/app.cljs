@@ -21,6 +21,21 @@
 (defn room-channel-name [code]
   (str "room:" code))
 
+(defn room-code-from-url []
+  "Read and normalize the room code from URL query params, or nil if absent/invalid."
+  (when-let [raw (-> js/window.location.search
+                     (js/URLSearchParams.)
+                     (.get "room"))]
+    (let [code (-> raw .trim .toUpperCase (subs 0 (min 6 (count raw))))]
+      (when (and (seq code) (>= (count code) 4))
+        code))))
+
+(defn sync-room-code-to-url! [code]
+  "Update ?room=CODE in the URL without adding a history entry."
+  (let [url (js/URL. js/window.location.href)]
+    (.set (.-searchParams url) "room" code)
+    (js/window.history.replaceState nil "" (.toString url))))
+
 ;; >> Sample Bitemporal Events
 
 (def default-events
@@ -73,7 +88,7 @@
                   :show-ticks (:show-ticks initial-persisted)
                   :current-tool :select      ; :select, :rectangle, or :point
                   :auto-select true          ; switch to select after drawing
-                  :room-code (generate-room-code)
+                  :room-code (or (room-code-from-url) (generate-room-code))
                   :room-count 0              ; users in current room
                   :global-count 0            ; total users online
                   :syncing false             ; true when receiving remote state
@@ -1270,6 +1285,7 @@
           (.leave)))
     ;; Update room code
     (swap! state assoc :room-code code :room-count 0)
+    (sync-room-code-to-url! code)
     ;; Join new room
     (ably/enter-presence! new-channel)
     (ably/on-presence-change! new-channel update-room-presence-count!)
