@@ -915,11 +915,16 @@
 (defn toggle-auto-select! []
   (swap! state update :auto-select not))
 
-(defn prompt-join-room! []
-  (when-let [code (js/prompt "Enter room code to join:")]
-    (let [code (-> code .trim .toUpperCase (subs 0 6))]
-      (when (and (seq code) (>= (count code) 4))
-        (join-room! code)))))
+(defn commit-room-code-edit! []
+  "Validate the in-progress room code edit and join if valid, then clear edit state."
+  (let [input (:room-code-input @state)]
+    (when input
+      (let [code (-> input .trim .toUpperCase (subs 0 (min 6 (count input))))]
+        (when (and (seq code)
+                   (>= (count code) 4)
+                   (not= code (:room-code @state)))
+          (join-room! code))))
+    (swap! state assoc :room-code-input nil)))
 
 (defn copy-room-code! []
   (let [code (:room-code @state)]
@@ -1046,14 +1051,33 @@
      [:div {:class "mb-6 p-3 bg-gray-700 rounded-lg"}
       [:div {:class "text-xs text-gray-400 mb-1"} "Room"]
       [:div {:class "flex items-center gap-2"}
-       [:span {:class "font-mono text-lg tracking-wider"} (:room-code @state)]
+       [:input {:type "text"
+                :class "font-mono text-lg tracking-wider bg-transparent text-white w-24 px-1 -mx-1 py-0 rounded border border-transparent hover:border-gray-500 focus:border-blue-400 focus:outline-none cursor-text"
+                :title "Click to change room"
+                :max-length 6
+                :spell-check "false"
+                :auto-complete "off"
+                :value (or (:room-code-input @state) (:room-code @state))
+                :on-focus (fn [e]
+                            (swap! state assoc :room-code-input (:room-code @state))
+                            (.select (.-target e)))
+                :on-change #(let [v (.. % -target -value)
+                                  truncated (subs v 0 (min 6 (count v)))]
+                              (swap! state assoc :room-code-input
+                                     (.toUpperCase truncated)))
+                :on-blur (fn [_] (commit-room-code-edit!))
+                :on-key-down (fn [e]
+                               (cond
+                                 (= (.-key e) "Enter")
+                                 (.blur (.-target e))
+
+                                 (= (.-key e) "Escape")
+                                 (do (swap! state assoc :room-code-input nil)
+                                     (.blur (.-target e)))))}]
        [:button {:class "px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 rounded cursor-pointer"
                  :title "Copy room code"
                  :on-click copy-room-code!}
-        "Copy"]
-       [:button {:class "px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 rounded cursor-pointer"
-                 :on-click prompt-join-room!}
-        "Join"]]]
+        "Copy"]]]
      ;; Options
      [:div {:class "flex flex-col gap-2 mb-4"}
       [:label {:class "flex items-center gap-2 cursor-pointer"}
