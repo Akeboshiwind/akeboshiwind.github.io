@@ -38,10 +38,6 @@ const ExitFullscreenIcon = () => (
   </svg>
 );
 
-const isFullscreenSupported = () =>
-  typeof document !== 'undefined' &&
-  (document.fullscreenEnabled || document.webkitFullscreenEnabled);
-
 const getFullscreenElement = () =>
   document.fullscreenElement || document.webkitFullscreenElement || null;
 
@@ -157,7 +153,6 @@ export function App() {
   const [hintGone, setHintGone] = useState(false);
   const [holding, setHolding] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [fullscreenAvailable, setFullscreenAvailable] = useState(false);
 
   // Draft inputs while the settings modal is open
   const [draftMins, setDraftMins] = useState(Math.floor(timerDuration / 60));
@@ -201,7 +196,6 @@ export function App() {
 
   // ---- Fullscreen ----
   useEffect(() => {
-    setFullscreenAvailable(isFullscreenSupported());
     const onChange = () => setIsFullscreen(!!getFullscreenElement());
     document.addEventListener('fullscreenchange', onChange);
     document.addEventListener('webkitfullscreenchange', onChange);
@@ -485,16 +479,14 @@ export function App() {
           {finished ? 'TIME' : 'PAUSED'}
         </div>
 
-        {fullscreenAvailable && (
-          <button
-            type="button"
-            className="fs-btn"
-            aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-            onClick={toggleFullscreen}
-          >
-            {isFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
-          </button>
-        )}
+        <button
+          type="button"
+          className="fs-btn"
+          aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          onClick={toggleFullscreen}
+        >
+          {isFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
+        </button>
       </div>
 
       <div
