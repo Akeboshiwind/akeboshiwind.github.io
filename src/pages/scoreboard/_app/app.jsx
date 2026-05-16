@@ -577,6 +577,16 @@ export function App() {
             />
           </div>
 
+          <div className="row">
+            <label>Fullscreen</label>
+            <div
+              className={`toggle${isFullscreen ? ' on' : ''}`}
+              role="switch"
+              aria-checked={isFullscreen}
+              onClick={toggleFullscreen}
+            />
+          </div>
+
           <div className="actions">
             <button className="sb-btn sb-btn-primary" onClick={applyAndClose}>Done</button>
             <button className="sb-btn sb-btn-ghost" onClick={resetScores}>Reset scores</button>
