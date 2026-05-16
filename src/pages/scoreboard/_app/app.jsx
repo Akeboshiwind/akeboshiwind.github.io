@@ -27,6 +27,33 @@ const SettingsIcon = () => (
     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
   </svg>
 );
+const EnterFullscreenIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6" />
+  </svg>
+);
+const ExitFullscreenIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+    <path d="M9 3v6H3M15 3v6h6M9 21v-6H3M15 21v-6h6" />
+  </svg>
+);
+
+const isFullscreenSupported = () =>
+  typeof document !== 'undefined' &&
+  (document.fullscreenEnabled || document.webkitFullscreenEnabled);
+
+const getFullscreenElement = () =>
+  document.fullscreenElement || document.webkitFullscreenElement || null;
+
+const requestFullscreen = (el) => {
+  const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+  return fn ? fn.call(el) : Promise.reject();
+};
+
+const exitFullscreen = () => {
+  const fn = document.exitFullscreen || document.webkitExitFullscreen;
+  return fn ? fn.call(document) : Promise.reject();
+};
 
 const vibe = (enabled, pattern) => {
   if (enabled && typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -129,6 +156,8 @@ export function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [hintGone, setHintGone] = useState(false);
   const [holding, setHolding] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreenAvailable, setFullscreenAvailable] = useState(false);
 
   // Draft inputs while the settings modal is open
   const [draftMins, setDraftMins] = useState(Math.floor(timerDuration / 60));
@@ -142,6 +171,12 @@ export function App() {
   const wakeLockRef = useRef(null);
   const holdTimeoutRef = useRef(null);
   const didHoldRef = useRef(false);
+
+  // Wall-clock timer state. Time elapsed is derived from these refs on every
+  // tick, so even if the browser throttles the interval (background tab,
+  // device sleep) the displayed value stays correct on resume.
+  const anchorRef = useRef(null);      // ms timestamp when the current segment started; null while paused
+  const accumulatedRef = useRef(0);    // ms elapsed during previously-finished segments
 
   const finished = mode === 'down' ? timerValue <= 0 : timerValue >= timerDuration;
   const idle = !timerRunning && timerValue === startValue;
@@ -163,6 +198,27 @@ export function App() {
       window.removeEventListener('keydown', unlock, true);
     };
   }, []);
+
+  // ---- Fullscreen ----
+  useEffect(() => {
+    setFullscreenAvailable(isFullscreenSupported());
+    const onChange = () => setIsFullscreen(!!getFullscreenElement());
+    document.addEventListener('fullscreenchange', onChange);
+    document.addEventListener('webkitfullscreenchange', onChange);
+    onChange(); // sync initial state
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange);
+      document.removeEventListener('webkitfullscreenchange', onChange);
+    };
+  }, []);
+
+  const toggleFullscreen = async (e) => {
+    e?.stopPropagation();
+    try {
+      if (getFullscreenElement()) await exitFullscreen();
+      else await requestFullscreen(document.documentElement);
+    } catch { /* silently degrade — e.g. iPhone Safari */ }
+  };
 
   // ---- Wake lock ----
   const requestWakeLock = useCallback(async () => {
@@ -190,31 +246,45 @@ export function App() {
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [requestWakeLock]);
 
-  // ---- Timer tick ----
+  // ---- Timer tick (wall-clock based) ----
+  // The displayed value is computed from anchorRef + accumulatedRef rather
+  // than decremented each second, so backgrounded/throttled tabs catch up
+  // correctly on the next tick.
   useEffect(() => {
     if (!timerRunning) return;
-    const id = setInterval(() => {
-      setTimerValue(v => {
-        const s = settingsRef.current;
-        const next = s.mode === 'down' ? v - 1 : v + 1;
-        const isFinished = s.mode === 'down' ? next <= 0 : next >= s.timerDuration;
-        if (isFinished) {
-          const snap = s.mode === 'down' ? 0 : s.timerDuration;
-          // Defer the running-state flip so we don't update state mid-render
-          setTimeout(() => setTimerRunning(false), 0);
-          if (s.mode === 'down') {
-            buzzer(s.sound);
-            vibe(s.haptics, [240, 100, 240, 100, 480]);
-          } else {
-            vibe(s.haptics, [180, 80, 180, 80, 320]);
-          }
-          return snap;
+    let prev = -1;
+    const tick = () => {
+      const s = settingsRef.current;
+      const elapsedMs = accumulatedRef.current
+        + (anchorRef.current != null ? Date.now() - anchorRef.current : 0);
+      const elapsedSec = Math.floor(elapsedMs / 1000);
+      const next = s.mode === 'down'
+        ? Math.max(0, s.timerDuration - elapsedSec)
+        : Math.min(s.timerDuration, elapsedSec);
+      if (next === prev) return;
+      prev = next;
+      const isFinished = s.mode === 'down' ? next <= 0 : next >= s.timerDuration;
+      if (isFinished) {
+        // Lock state at the finish line so timerValue stays at the end value
+        anchorRef.current = null;
+        accumulatedRef.current = s.timerDuration * 1000;
+        setTimerValue(s.mode === 'down' ? 0 : s.timerDuration);
+        setTimerRunning(false);
+        if (s.mode === 'down') {
+          buzzer(s.sound);
+          vibe(s.haptics, [240, 100, 240, 100, 480]);
+        } else {
+          vibe(s.haptics, [180, 80, 180, 80, 320]);
         }
-        const leftSec = s.mode === 'down' ? next : s.timerDuration - next;
-        if (leftSec > 0 && leftSec <= 5) vibe(s.haptics, 35);
-        return next;
-      });
-    }, 1000);
+        return;
+      }
+      setTimerValue(next);
+      const leftSec = s.mode === 'down' ? next : s.timerDuration - next;
+      if (leftSec > 0 && leftSec <= 5) vibe(s.haptics, 35);
+    };
+    tick();
+    // Sub-second polling so we catch up quickly when the tab is foregrounded.
+    const id = setInterval(tick, 250);
     return () => clearInterval(id);
   }, [timerRunning]);
 
@@ -239,10 +309,19 @@ export function App() {
   const startTimer = () => {
     if (timerRunning || finished) return;
     ensureAudio();
+    anchorRef.current = Date.now();
     setTimerRunning(true);
   };
-  const stopTimer = () => setTimerRunning(false);
+  const stopTimer = () => {
+    if (anchorRef.current != null) {
+      accumulatedRef.current += Date.now() - anchorRef.current;
+      anchorRef.current = null;
+    }
+    setTimerRunning(false);
+  };
   const resetTimer = () => {
+    anchorRef.current = null;
+    accumulatedRef.current = 0;
     setTimerRunning(false);
     setTimerValue(mode === 'down' ? timerDuration : 0);
     vibe(haptics, [30, 30, 30]);
@@ -286,6 +365,8 @@ export function App() {
     const durationChanged = total !== timerDuration;
     setTimerDuration(total);
     if (!timerRunning && (durationChanged || idle || finished)) {
+      anchorRef.current = null;
+      accumulatedRef.current = 0;
       setTimerValue(mode === 'down' ? total : 0);
     }
     setModalOpen(false);
@@ -294,6 +375,8 @@ export function App() {
   const changeMode = (newMode) => {
     if (newMode === mode) return;
     setMode(newMode);
+    anchorRef.current = null;
+    accumulatedRef.current = 0;
     setTimerRunning(false);
     setTimerValue(newMode === 'down' ? timerDuration : 0);
   };
@@ -325,6 +408,8 @@ export function App() {
   const resetEverything = () => {
     setScoreLeft(0);
     setScoreRight(0);
+    anchorRef.current = null;
+    accumulatedRef.current = 0;
     setTimerRunning(false);
     setTimerValue(mode === 'down' ? timerDuration : 0);
     vibe(haptics, [40, 60, 40]);
@@ -400,11 +485,16 @@ export function App() {
           {finished ? 'TIME' : 'PAUSED'}
         </div>
 
-        <div className="rotate-warning">
-          <div className="phone-icon" />
-          <h1>Rotate to landscape</h1>
-          <p>This scoreboard is designed for landscape orientation.</p>
-        </div>
+        {fullscreenAvailable && (
+          <button
+            type="button"
+            className="fs-btn"
+            aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            onClick={toggleFullscreen}
+          >
+            {isFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
+          </button>
+        )}
       </div>
 
       <div
