@@ -173,11 +173,14 @@ export function App() {
   const anchorRef = useRef(null);      // ms timestamp when the current segment started; null while paused
   const accumulatedRef = useRef(0);    // ms elapsed during previously-finished segments
 
-  const finished = mode === 'down' ? timerValue <= 0 : timerValue >= timerDuration;
+  // Stopwatch ('up') has no target — it just counts up; we cap at 99:59
+  // (5999 s) so the MM:SS display can't overflow.
+  const STOPWATCH_CAP = 99 * 60 + 59;
+
+  const finished = mode === 'down' && timerValue <= 0;
   const idle = !timerRunning && timerValue === startValue;
   const paused = !timerRunning && !idle && !finished;
-  const left = mode === 'down' ? timerValue : timerDuration - timerValue;
-  const warning = !finished && left > 0 && left <= 10;
+  const warning = mode === 'down' && !finished && timerValue > 0 && timerValue <= 10;
 
   // ---- Audio unlock on first user gesture anywhere ----
   useEffect(() => {
@@ -254,27 +257,30 @@ export function App() {
       const elapsedSec = Math.floor(elapsedMs / 1000);
       const next = s.mode === 'down'
         ? Math.max(0, s.timerDuration - elapsedSec)
-        : Math.min(s.timerDuration, elapsedSec);
+        : Math.min(STOPWATCH_CAP, elapsedSec);
       if (next === prev) return;
       prev = next;
-      const isFinished = s.mode === 'down' ? next <= 0 : next >= s.timerDuration;
-      if (isFinished) {
-        // Lock state at the finish line so timerValue stays at the end value
+      if (s.mode === 'down' && next <= 0) {
+        // Countdown finished — buzzer + final haptic, lock state at zero.
         anchorRef.current = null;
         accumulatedRef.current = s.timerDuration * 1000;
-        setTimerValue(s.mode === 'down' ? 0 : s.timerDuration);
+        setTimerValue(0);
         setTimerRunning(false);
-        if (s.mode === 'down') {
-          buzzer(s.sound);
-          vibe(s.haptics, [240, 100, 240, 100, 480]);
-        } else {
-          vibe(s.haptics, [180, 80, 180, 80, 320]);
-        }
+        buzzer(s.sound);
+        vibe(s.haptics, [240, 100, 240, 100, 480]);
+        return;
+      }
+      if (s.mode === 'up' && next >= STOPWATCH_CAP) {
+        // Stopwatch reached the display cap — stop silently.
+        anchorRef.current = null;
+        accumulatedRef.current = STOPWATCH_CAP * 1000;
+        setTimerValue(STOPWATCH_CAP);
+        setTimerRunning(false);
         return;
       }
       setTimerValue(next);
-      const leftSec = s.mode === 'down' ? next : s.timerDuration - next;
-      if (leftSec > 0 && leftSec <= 5) vibe(s.haptics, 35);
+      // 5-second warning tick — countdown only
+      if (s.mode === 'down' && next > 0 && next <= 5) vibe(s.haptics, 35);
     };
     tick();
     // Sub-second polling so we catch up quickly when the tab is foregrounded.
@@ -472,11 +478,13 @@ export function App() {
 
         <div
           className={[
-            'timer-badge',
-            finished ? 'show done' : paused ? 'show' : '',
+            'timer-badge show',
+            finished ? 'done' : '',
+            paused ? 'paused' : '',
+            !finished && !paused ? 'mode' : '',
           ].filter(Boolean).join(' ')}
         >
-          {finished ? 'TIME' : 'PAUSED'}
+          {finished ? 'TIME' : paused ? 'PAUSED' : (mode === 'down' ? 'MATCH' : 'STOPWATCH')}
         </div>
 
         <button
@@ -498,41 +506,43 @@ export function App() {
           <div className="sub">Settings</div>
 
           <div className="row">
-            <label>Match length</label>
-            <div className="time-input">
-              <input
-                type="number"
-                min="0"
-                max="99"
-                value={draftMins}
-                inputMode="numeric"
-                onChange={(e) => setDraftMins(e.target.value)}
-              />
-              <span>:</span>
-              <input
-                type="number"
-                min="0"
-                max="59"
-                value={draftSecs}
-                inputMode="numeric"
-                onChange={(e) => setDraftSecs(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="row">
             <label>Timer mode</label>
             <div className="mode-pick">
               <button
                 className={mode === 'down' ? 'on' : ''}
                 onClick={() => changeMode('down')}
-              >Count down</button>
+              >Match timer</button>
               <button
                 className={mode === 'up' ? 'on' : ''}
                 onClick={() => changeMode('up')}
-              >Count up</button>
+              >Stopwatch</button>
             </div>
           </div>
+
+          {mode === 'down' && (
+            <div className="row">
+              <label>Match length</label>
+              <div className="time-input">
+                <input
+                  type="number"
+                  min="0"
+                  max="99"
+                  value={draftMins}
+                  inputMode="numeric"
+                  onChange={(e) => setDraftMins(e.target.value)}
+                />
+                <span>:</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={draftSecs}
+                  inputMode="numeric"
+                  onChange={(e) => setDraftSecs(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="row">
             <label>Point increment</label>
@@ -547,15 +557,17 @@ export function App() {
             </div>
           </div>
 
-          <div className="row">
-            <label>Buzzer at full time</label>
-            <div
-              className={`toggle${sound ? ' on' : ''}`}
-              role="switch"
-              aria-checked={sound}
-              onClick={toggleSound}
-            />
-          </div>
+          {mode === 'down' && (
+            <div className="row">
+              <label>Buzzer at full time</label>
+              <div
+                className={`toggle${sound ? ' on' : ''}`}
+                role="switch"
+                aria-checked={sound}
+                onClick={toggleSound}
+              />
+            </div>
+          )}
 
           <div className="row">
             <label>Haptic feedback</label>

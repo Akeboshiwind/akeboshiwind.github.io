@@ -240,6 +240,11 @@ html, body {
   background: rgba(180, 30, 30, 0.85);
   animation: sb-badge-flash 0.6s ease-in-out infinite alternate;
 }
+/* Persistent mode badge sits quieter than the temporary PAUSED/TIME states */
+.timer-badge.mode {
+  background: rgba(15, 15, 20, 0.32);
+  color: rgba(250, 245, 230, 0.78);
+}
 @keyframes sb-badge-flash {
   from { opacity: 0.7; }
   to { opacity: 1; }
