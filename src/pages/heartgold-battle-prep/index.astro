@@ -1,0 +1,436 @@
+---
+// Full-page standalone PWA — no Astro layout.
+// Self-contained guide; installable to the home screen via manifest + service worker.
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>HeartGold Run — Battle Prep</title>
+<meta name="description" content="Level-cap battle prep for a Pokémon HeartGold run — gyms, rival, Elite Four, Red, Rocket and legendaries.">
+<link rel="manifest" href="/heartgold-battle-prep/manifest.webmanifest">
+<meta name="theme-color" content="#b07d10">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Battle Prep">
+<link rel="apple-touch-icon" href="/heartgold-battle-prep/apple-touch-icon.png">
+<link rel="icon" href="/heartgold-battle-prep/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style is:inline>
+  :root{
+    --paper:#faf8f4; --panel:#fff; --panel-2:#f3f0e9; --line:#e2ddd2;
+    --text:#27241c; --muted:#7b7568; --gold:#b07d10; --gold-deep:#8a6209;
+    --t-flying:#7e6bc4; --t-bug:#7c8a14; --t-normal:#8a7c58; --t-ghost:#6f4f9e;
+    --t-fighting:#d24a44; --t-steel:#5f6b8e; --t-ice:#2e8fa3; --t-dragon:#5b3fd6;
+    --t-rock:#a88a3a; --t-water:#3b76c4; --t-electric:#c9a312; --t-grass:#4a9d52;
+    --t-poison:#9a4ba0; --t-psychic:#cf5d8a; --t-fire:#d9742b; --t-dark:#4a4a52;
+    --t-mixed:#6b6b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(1100px 500px at 50% -8%, rgba(176,125,16,.08), transparent 60%), var(--paper);
+    color:var(--text); font-family:'Inter',system-ui,sans-serif; line-height:1.5;
+    -webkit-font-smoothing:antialiased; padding-bottom:60px;
+  }
+  .wrap{max-width:680px;margin:0 auto;padding:0 16px}
+  header{position:sticky;top:0;z-index:30;background:linear-gradient(180deg,rgba(250,248,244,.98),rgba(250,248,244,.93));backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .head-inner{max-width:680px;margin:0 auto;padding:11px 16px 0}
+  .home{display:inline-block;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--muted);text-decoration:none;margin-bottom:6px}
+  .home:hover{color:var(--gold-deep)}
+  .eyebrow{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:2px}
+  h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(19px,5vw,25px);line-height:1.02;letter-spacing:-.01em}
+  .rule{margin-top:7px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .rule .tag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;color:#fff;background:var(--gold);border-radius:4px;padding:2px 6px;text-transform:uppercase;font-weight:700;flex:none}
+  .rule b{color:var(--text)}
+  .tabs{display:flex;gap:4px;overflow-x:auto;margin-top:10px;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:none;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:8px 10px 9px;cursor:pointer;white-space:nowrap}
+  .tab[aria-selected="true"]{color:var(--gold-deep);border-bottom-color:var(--gold)}
+  .starter-bar{display:none;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0 4px;font-size:12px;color:var(--muted)}
+  .starter-bar .lbl{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+  .seg button{font:inherit;font-size:12px;border:none;background:none;padding:6px 11px;cursor:pointer;color:var(--text)}
+  .seg button[aria-pressed="true"]{background:var(--gold);color:#fff;font-weight:600}
+  .note{font-size:12.5px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:8px;padding:9px 12px;margin:14px 0 4px}
+  .note b{color:var(--text)}
+  .section-label{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px;display:flex;align-items:center;gap:10px}
+  .section-label::after{content:"";height:1px;flex:1;background:var(--line)}
+  .tools{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tool{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 1px 2px rgba(39,36,28,.04)}
+  .tool h3{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:13.5px}
+  .tool span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden;border-left:4px solid var(--gc,var(--gold));box-shadow:0 1px 3px rgba(39,36,28,.05)}
+  .chead{display:flex;align-items:center;gap:13px;padding:13px 14px;cursor:pointer;width:100%;background:none;border:none;color:inherit;text-align:left;font:inherit}
+  .stamp{flex:none;width:54px;height:54px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--panel-2);border:1.5px solid var(--gc,var(--gold))}
+  .stamp .cap{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--gc,var(--gold));text-transform:uppercase;line-height:1}
+  .stamp .lv{font-family:'Space Mono',monospace;font-weight:700;font-size:22px;color:var(--text);line-height:1.05}
+  .cmeta{flex:1;min-width:0}
+  .cnum{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.1em}
+  .cname{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:17px;line-height:1.1;margin:1px 0 4px}
+  .badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .type{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:#fff;background:var(--gc,var(--gold));border-radius:5px;padding:3px 7px}
+  .loc{font-size:12px;color:var(--muted)}
+  .chev{flex:none;color:var(--muted);transition:transform .25s ease;font-size:13px}
+  .card[open-state="1"] .chev{transform:rotate(90deg)}
+  .trick{padding:0 14px 13px;font-size:13.5px}
+  .trick .lead{color:var(--gc,var(--gold));font-weight:600}
+  .detail{display:none;border-top:1px solid var(--line);padding:13px 14px 15px;background:var(--panel-2)}
+  .card[open-state="1"] .detail{display:block}
+  .detail h4{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:12px 0 7px}
+  .detail h4:first-child{margin-top:0}
+  .team{display:flex;flex-direction:column;gap:5px}
+  .mon{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:5px 9px;background:var(--panel);border:1px solid var(--line);border-radius:7px}
+  .mon.ace{border-color:var(--gc,var(--gold));border-width:1.5px}
+  .mon .nm{font-weight:500}
+  .mon .tp{font-size:11px;color:var(--muted)}
+  .mon .ml{font-family:'Space Mono',monospace;font-weight:700}
+  .mon.ace .ml{color:var(--gc,var(--gold))}
+  .answers{font-size:13px}
+  .answers b{color:var(--gold-deep)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:12px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+  .chip b{font-weight:600}
+  footer{margin-top:24px;text-align:center;font-size:11.5px;color:var(--muted);line-height:1.6}
+  footer b{color:var(--text)}
+  @media (max-width:380px){.tools{grid-template-columns:1fr}}
+  @media (prefers-reduced-motion:reduce){.chev{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="head-inner">
+    <a class="home" href="../">&larr; By the Rocks</a>
+    <div class="eyebrow">HeartGold · Battle Prep</div>
+    <h1>Every fight worth planning for</h1>
+    <div class="rule"><span class="tag">Rule</span><span>Stay <b>at or below each fight's cap</b> (its ace's level). Status move first, win on tactics.</span></div>
+    <div class="tabs" id="tabs" role="tablist"></div>
+  </div>
+</header>
+<div class="wrap">
+  <div class="starter-bar" id="starterBar">
+    <span class="lbl">Your starter</span>
+    <span class="seg" id="starterSeg">
+      <button data-s="chikorita" aria-pressed="false">Chikorita</button>
+      <button data-s="cyndaquil" aria-pressed="true">Cyndaquil</button>
+      <button data-s="totodile" aria-pressed="false">Totodile</button>
+    </span>
+    <span id="starterNote"></span>
+  </div>
+  <div id="content"></div>
+  <footer id="foot"></footer>
+</div>
+
+<script is:inline>
+const TC = t => 'var(--t-'+t.toLowerCase().replace(/[^a-z]/g,'')+')';
+
+const PLAYBOOK = [
+  ["Status first","Sleep > paralysis > the rest. One landed status flips a fight at level parity."],
+  ["Speed = turn order","It never affects accuracy. Misses come from accuracy/evasion changes or the move itself. Slow foes = free setup turns."],
+  ["Stack accuracy drops","Sand-Attack / Smokescreen / Mud-Slap compound. Two or three and big threats whiff repeatedly."],
+  ["Switching resets","Stat drops on you, and ramping moves against you (Rollout, Fury Cutter), reset when a Pokémon leaves the field."],
+  ["STAB is free damage","A move matching the user's type does 1.5×. Build coverage with off-type moves, but lead with STAB."],
+  ["Priority ignores speed","Quick Attack etc. always move first — a guaranteed pick-off on anything faster but nearly down."],
+  ["Immunities are walls","Normal takes nothing from Ghost (and vice versa); Ground takes nothing from Electric. Switch into a 0× and the turn is free."],
+  ["Check the whole team","Read each Pokémon's full typing, not the gym's banner type. 'Fire beats Ice' fails when the Ice gym is half Water."]
+];
+
+const JOHTO=[
+  {n:1,name:"Falkner",loc:"Violet City",type:"Flying",cap:13,
+   trick:"Pidgeotto heals with Roost and drops your accuracy with Mud-Slap. Apply pressure early so it spends turns healing instead of snowballing.",
+   team:[["Pidgey","Normal/Flying",9,0],["Pidgeotto","Normal/Flying",13,1]],
+   answers:"<b>Rock and Electric</b> moves hit hard; Rock-types also shrug off Gust and Tackle. If Mud-Slap stacks, switch out and back to reset it.",
+   catches:[["Geodude","Dark Cave / Route 46 — Rock Throw wins this gym"],["Onix","Trade a Route 31 Bellsprout in town — tanks both birds"],["Gastly","Sprout Tower at night — Hypnosis from Lv 1: a sleep lead for any fight"]]},
+  {n:2,name:"Bugsy",loc:"Azalea Town",type:"Bug",cap:17,
+   trick:"Scyther's Fury Cutter doubles every consecutive hit. One miss or one switch breaks the chain — accuracy drops are a clean answer.",
+   team:[["Metapod","Bug",15,0],["Kakuna","Bug/Poison",15,0],["Scyther","Bug/Flying",17,1]],
+   answers:"<b>Fire, Rock, and Flying</b> all punish Bug. Scyther's double weakness to Rock means even a weak Rock Throw bites. The cocoons only Harden — free setup turns.",
+   catches:[["Mareep","Route 32 — Static punishes Fury Cutter's contact; Electric hits Scyther's Flying side 2×"],["Slowpoke","Slowpoke Well, in Azalea — Confusion punishes the cocoons; pull it before Scyther (weak to Bug)"],["Wooper","Route 32 — long-term: evolves into Quagsire, your Jasmine answer"]]},
+  {n:3,name:"Whitney",loc:"Goldenrod City",type:"Normal",cap:19,
+   trick:"Miltank's loop: Attract (only hits the opposite gender) → Rollout ramps → Milk Drink heals it back. Beat the combo, not the stats.",
+   team:[["Clefairy","Normal (this gen)",17,0],["Miltank","Normal",19,1]],
+   answers:"Lead <b>female or genderless</b> to blank Attract. <b>Switch to reset Rollout</b> before it ramps. <b>Fighting</b> hits both super effectively; paralysis stops the Milk Drink stall.",
+   catches:[["Machop","Goldenrod Dept. Store trade (give a Drowzee) — the Miltank answer"],["Drowzee","Route 34 — Hypnosis is elite, plus the trade above"],["Abra","Route 34 / Game Corner — long-term: only Teleport until Lv 16, then a Chuck answer"]]},
+  {n:4,name:"Morty",loc:"Ecruteak City",type:"Ghost",cap:25,
+   trick:"Gengar's loop: Hypnosis → Dream Eater, while the Haunters trap you with Mean Look. Deny the sleep and the whole plan collapses.",
+   team:[["Gastly","Ghost/Poison",21,0],["Haunter","Ghost/Poison",21,0],["Haunter","Ghost/Poison",23,0],["Gengar","Ghost/Poison",25,1]],
+   answers:"<b>Normal-types are immune to Shadow Ball</b> — but Dream Eater is Psychic and Gengar's Sucker Punch is Dark, so a Normal wall isn't fully safe. <b>Dark moves</b> (Bite) hit hardest. Carry Awakenings.",
+   catches:[["Growlithe","Routes 36/37 — learns Bite early: Dark is what Ghosts fear"],["Stantler","Routes 36/37 — Normal wall vs this very gym"],["Eevee","Gift from Bill in Goldenrod — slow burn: friendship-evolve to Umbreon for Dark STAB"]]},
+  {n:5,name:"Chuck",loc:"Cianwood City",type:"Fighting",cap:31,
+   trick:"Poliwrath uses Mind Reader to guarantee its next DynamicPunch (huge + always confuses). The Mind Reader turn is your free window — switch or burst.",
+   team:[["Primeape","Fighting",29,0],["Poliwrath","Water/Fighting",31,1]],
+   answers:"<b>Flying and Psychic</b> moves dominate Fighting. Switching on the Mind Reader turn wastes the lock-on. Confusion? Switching cures it.",
+   catches:[["Abra/Kadabra","If you trained it — Psychic STAB is the hard counter"],["Tentacool","Surfing nearby — resists Fighting: a safe pivot when Poliwrath locks on"],["Pidgeotto","Routes everywhere — Flying STAB does honest work"]]},
+  {n:6,name:"Jasmine",loc:"Olivine City",type:"Steel",cap:35,
+   trick:"Steelix uses Screech to shred your Defense before Iron Tail. If Screech lands, switch to reset rather than eating a boosted hit.",
+   team:[["Magnemite","Electric/Steel",30,0],["Magnemite","Electric/Steel",30,0],["Steelix","Steel/Ground",35,1]],
+   answers:"Steelix (Steel/Ground) takes 2× from <b>Fire, Water, Fighting, and Ground</b>. The Magnemites are Electric/Steel, so <b>Ground hits them 4×</b> — but they resist a huge list, so don't waste turns on resisted hits.",
+   catches:[["Quagsire","Evolve that Wooper — immune to the Magnemites' Electric, Ground STAB hits all three 2–4×"],["Krabby","Good Rod around Olivine — Water STAB folds Steelix"],["Magnemite","Route 38 — long-term: can't hit Steelix here, but resists Ice for Pryce and zaps Gyarados at Clair"]]},
+  {n:7,name:"Pryce",loc:"Mahogany Town",type:"Ice",cap:34,
+   trick:"An old-school staller: Dewgong has Rest, Piloswine has Blizzard. Keep offensive pressure so freezes and heals don't drag you into attrition.",
+   team:[["Seel","Water",30,0],["Dewgong","Water/Ice",32,0],["Piloswine","Ice/Ground",34,1]],
+   answers:"Forget the 'Fire beats Ice' reflex — Seel resists it, Dewgong takes it neutral. <b>Grass hits all three 2×</b>, <b>Fighting</b> handles Dewgong and Piloswine, <b>Electric</b> zaps the seals but does nothing to the ace (Ground). Keep a backup for a freeze.",
+   catches:[["Weepinbell","Evolve a Bellsprout — Sleep Powder + Stun Spore + Grass STAB: the run's philosophy in one Pokémon"],["Red Gyarados","Lake of Rage — guaranteed before this gym; its Water is resisted by the seals, so really a Piloswine answer"],["Machop line","From the Goldenrod trade — Fighting hits Dewgong and Piloswine 2×"]]},
+  {n:8,name:"Clair",loc:"Blackthorn City",type:"Dragon",cap:41,
+   trick:"Clair stalls: DragonBreath paralyses, Smokescreen makes you whiff. Kingdra's only weakness this gen is Dragon — plan for a long fight, not a sweep.",
+   team:[["Dragonair","Dragon",38,0],["Dragonair","Dragon",38,0],["Gyarados","Water/Flying",38,0],["Kingdra","Water/Dragon",41,1]],
+   answers:"<b>Ice</b> handles both Dragonair. <b>Electric</b> hits Gyarados 4× — one Thunderbolt ends it. For Kingdra: heal through paralysis, switch out Smokescreen stacks, grind it with your strongest neutral STAB.",
+   catches:[["Lapras","Union Cave B2F, Fridays only — Ice STAB + bulk, made for this gym"],["Swinub/Piloswine","Ice Path — Icy Wind slows, Ice STAB scales"],["Ampharos","From that Route 32 Mareep — the Gyarados button"]]}
+];
+
+const RIVAL_LINE = {
+  cyndaquil:{base:"Totodile",mid:"Croconaw",late:"Feraligatr",type:"Water"},
+  totodile :{base:"Chikorita",mid:"Bayleef",late:"Meganium",type:"Grass"},
+  chikorita:{base:"Cyndaquil",mid:"Quilava",late:"Typhlosion",type:"Fire"}
+};
+const RIVAL=[
+  {n:1,name:"Cherrygrove City",cap:5,when:"After your first Pokédex",
+   trick:"A throwaway first scrap — his lone starter at Lv 5. Worth noting his starter always type-beats yours, a theme for the whole game.",
+   slots:[["@base","@type",5,1]],
+   answers:"Just trade hits. The lesson here is the matchup: he holds the starter that's strong against your pick."},
+  {n:2,name:"Azalea Town",cap:18,when:"West exit to Ilex Forest",
+   trick:"His Gastly knows Hypnosis — getting put to sleep early can lose this. Lead something fast or status-immune.",
+   slots:[["Gastly","Ghost/Poison",14,0],["Zubat","Poison/Flying",16,0],["@mid","@type",18,1]],
+   answers:"Gastly fears <b>Dark/Ghost</b>; Zubat folds to <b>Electric/Rock/Psychic</b>; his starter is weak to whatever beats its type. Keep an Awakening handy."},
+  {n:3,name:"Burned Tower",cap:22,when:"Ecruteak, with Morty & Eusine",
+   trick:"Adds a Magnemite (Electric/Steel) to the Gastly/Zubat core. Same plan as Azalea, one extra typing to respect.",
+   slots:[["Gastly","Ghost/Poison",20,0],["Zubat","Poison/Flying",20,0],["Magnemite","Electric/Steel",18,0],["@mid","@type",22,1]],
+   answers:"<b>Ground</b> hits the Magnemite 4× and is immune to its Electric. <b>Dark/Ghost</b> for Gastly, <b>Rock</b> for Zubat. Don't lead Electric into the Magnemite."},
+  {n:4,name:"Goldenrod Underground",cap:34,when:"During the Radio Tower arc",
+   trick:"First real test: full team of five, Sneasel added. His ace starter is fully evolved here. Sneasel is fast and frail.",
+   slots:[["Haunter","Ghost/Poison",32,0],["Golbat","Poison/Flying",32,0],["Magnemite","Electric/Steel",30,0],["Sneasel","Dark/Ice",34,0],["@late","@type",34,1]],
+   answers:"Sneasel (Dark/Ice) dies to <b>Fighting/Fire/Rock</b>; Haunter to <b>Dark/Ghost/Ground</b>; Golbat to <b>Electric/Rock/Psychic</b>; the starter to its own counter-type. Spread coverage; nothing here is bulky except maybe the starter."},
+  {n:5,name:"Victory Road",cap:40,when:"Just before the League",
+   trick:"Six Pokémon now, Kadabra joins. He's training for real — expect a grind. No single sweep type; pick matchups per slot.",
+   slots:[["Sneasel","Dark/Ice",36,0],["Golbat","Poison/Flying",38,0],["Magneton","Electric/Steel",37,0],["Kadabra","Psychic",37,0],["Haunter","Ghost/Poison",37,0],["@late","@type",40,1]],
+   answers:"Kadabra (Psychic) hates <b>Dark/Bug/Ghost</b> — and a Dark move covers Sneasel, Haunter, and Kadabra at once. <b>Ground</b> for Magneton, <b>Ice/Rock</b> for Golbat."},
+  {n:6,name:"Mt. Moon",cap:50,when:"Kanto, after becoming Champion",
+   trick:"Post-game power level: Alakazam and Gengar replace their pre-evos. Same spine, ~Lv 50. A Dark-type still answers half his team.",
+   slots:[["Sneasel","Dark/Ice",46,0],["Golbat","Poison/Flying",47,0],["Magneton","Electric/Steel",46,0],["Alakazam","Psychic",48,0],["Gengar","Ghost/Poison",48,0],["@late","@type",50,1]],
+   answers:"A strong <b>Dark</b> attacker threatens Sneasel, Alakazam, and Gengar. <b>Ground</b> for Magneton/Gengar, <b>Ice/Rock/Electric</b> for Golbat. Watch Gengar's Hypnosis."}
+];
+
+const E4=[
+  {n:"E1",name:"Will",loc:"Indigo Plateau",type:"Psychic",cap:42,
+   trick:"Xatu opens and closes the team and likes to set up. Two of them plus assorted Psychics — Dark coverage trivialises most of it.",
+   team:[["Xatu","Psychic/Flying",40,0],["Jynx","Ice/Psychic",41,0],["Exeggutor","Grass/Psychic",41,0],["Slowbro","Water/Psychic",41,0],["Xatu","Psychic/Flying",42,1]],
+   answers:"<b>Dark</b> hits the whole team and is immune to their Psychic. <b>Bug/Ghost</b> also punish Psychic. Exeggutor (Grass) adds a 4× Bug weakness; Jynx (Ice) hates Fire/Rock."},
+  {n:"E2",name:"Koga",loc:"Indigo Plateau",type:"Poison",cap:44,
+   trick:"A staller built on Toxic, Double Team, and Forretress's Spikes/Explosion. Crobat is fast. Hit hard before the chip damage piles up.",
+   team:[["Ariados","Bug/Poison",40,0],["Venomoth","Bug/Poison",41,0],["Muk","Poison",42,0],["Forretress","Bug/Steel",43,0],["Crobat","Poison/Flying",44,1]],
+   answers:"<b>Psychic</b> blitzes the Poisons; <b>Fire</b> roasts Forretress (4×). Ground for Muk. Carry an antidote or a Poison-immune Steel."},
+  {n:"E3",name:"Bruno",loc:"Indigo Plateau",type:"Fighting",cap:46,
+   trick:"Three Hitmons, an Onix, and a Machamp ace. Onix is the odd one out. Machamp's confusing DynamicPunch is the real danger.",
+   team:[["Hitmontop","Fighting",42,0],["Hitmonlee","Fighting",42,0],["Hitmonchan","Fighting",42,0],["Onix","Rock/Ground",43,0],["Machamp","Fighting",46,1]],
+   answers:"<b>Psychic and Flying</b> wreck the Fighters. Onix wants <b>Water/Grass/Ice/Fighting</b> instead. Out-speed or out-range Machamp's DynamicPunch."},
+  {n:"E4",name:"Karen",loc:"Indigo Plateau",type:"Dark",cap:47,
+   trick:"The trickiest E4: Umbreon stalls forever, Houndoom hits hard, plus a surprise Vileplume and Gengar. Mixed answers needed.",
+   team:[["Umbreon","Dark",42,0],["Vileplume","Grass/Poison",42,0],["Murkrow","Dark/Flying",44,0],["Gengar","Ghost/Poison",45,0],["Houndoom","Dark/Fire",47,1]],
+   answers:"<b>Fighting</b> hits Umbreon, Murkrow, and Houndoom; <b>Bug</b> covers Dark too. Houndoom (Fire/Dark) takes 2× from Water/Ground/Rock/Fighting. Don't out-stall Umbreon — burst it."},
+  {n:"C",name:"Lance",loc:"Champion",type:"Dragon",cap:50,
+   trick:"Three Dragonites with Hyper Beam and Outrage; Aerodactyl and Charizard add Flying coverage; Gyarados opens. The wall of the whole game.",
+   team:[["Gyarados","Water/Flying",44,0],["Dragonite","Dragon/Flying",49,0],["Dragonite","Dragon/Flying",49,0],["Aerodactyl","Rock/Flying",48,0],["Charizard","Fire/Flying",48,0],["Dragonite","Dragon/Flying",50,1]],
+   answers:"<b>Ice</b> is the answer — the Dragonites, Aerodactyl, and Charizard are all 4× weak (everything but Gyarados flies). <b>Electric</b> one-shots Gyarados (4×). One strong Ice-move user near the cap carries this fight."}
+];
+
+const KANTO=[
+  {n:9,name:"Brock",loc:"Pewter City",type:"Rock",cap:54,
+   trick:"Half Rock/Ground, half Rock/Water (the fossils). Sturdy and high-defence — special attacks get through best.",
+   team:[["Graveler","Rock/Ground",51,0],["Rhyhorn","Ground/Rock",51,0],["Kabutops","Rock/Water",52,0],["Omastar","Rock/Water",53,0],["Onix","Rock/Ground",54,1]],
+   answers:"<b>Grass and Water</b> hit nearly everything (the Ground-types are 4× to Grass). Fighting/Ground work on the pure Rock/Grounds. Special Grass is the cleanest sweep."},
+  {n:10,name:"Misty",loc:"Cerulean City",type:"Water",cap:54,
+   trick:"Quagsire (Water/Ground) blanks Electric, and Starmie/Lapras are fast and bulky. Don't assume one Electric move solves the gym.",
+   team:[["Golduck","Water",49,0],["Quagsire","Water/Ground",49,0],["Lapras","Water/Ice",52,0],["Starmie","Water/Psychic",54,1]],
+   answers:"<b>Grass</b> hits all four and ignores Quagsire's Electric immunity. <b>Electric</b> is great except into Quagsire. Lapras (Ice) and Starmie (Psychic) add Grass/Dark angles."},
+  {n:11,name:"Lt. Surge",loc:"Vermilion City",type:"Electric",cap:53,
+   trick:"Fast and self-destruct-happy (the Electrodes). A Ground-type walls the whole gym since Electric can't touch it.",
+   team:[["Electrode","Electric",47,0],["Electrode","Electric",47,0],["Magneton","Electric/Steel",47,0],["Raichu","Electric",51,0],["Electabuzz","Electric",53,1]],
+   answers:"<b>Ground</b> is immune to Electric and hits all of it (Magneton 4×). Watch the Electrodes' Explosion — a bulky Ground-type shrugs the gym off."},
+  {n:12,name:"Erika",loc:"Celadon City",type:"Grass",cap:56,
+   trick:"Status-heavy: Sleep Powder, Stun Spore, Giga Drain stall. Jumpluff is a pure annoyer. End it fast before the powders pile up.",
+   team:[["Jumpluff","Grass/Flying",51,0],["Tangela","Grass",52,0],["Victreebel","Grass/Poison",56,0],["Bellossom","Grass",56,1]],
+   answers:"<b>Fire and Flying</b> tear through Grass; <b>Ice</b> too. Jumpluff (Grass/Flying) is 4× to Ice/Rock. Bring a status-immune lead or a fast Fire move to dodge the powder game."},
+  {n:13,name:"Janine",loc:"Fuchsia City",type:"Poison",cap:50,
+   trick:"Toxic, Double Team, and disabling moves — a classic ninja staller. Two Ariados and a fast Crobat. Pressure beats patience.",
+   team:[["Weezing","Poison",44,0],["Crobat","Poison/Flying",47,0],["Ariados","Bug/Poison",47,0],["Ariados","Bug/Poison",47,0],["Venomoth","Bug/Poison",50,1]],
+   answers:"<b>Psychic</b> hits the entire gym super effectively; <b>Ground</b> for Weezing, <b>Rock/Electric</b> for Crobat. Heal off Toxic or run a Poison-immune Steel/Poison type."},
+  {n:14,name:"Sabrina",loc:"Saffron City",type:"Psychic",cap:55,
+   trick:"Small but elite: Espeon, Mr. Mime, and an Alakazam ace with huge Special Attack. Glass cannons — out-speed or tank one hit and KO.",
+   team:[["Espeon","Psychic",53,0],["Mr. Mime","Psychic/Fairy",53,0],["Alakazam","Psychic",55,1]],
+   answers:"<b>Dark</b> is the dream: immune to their Psychic and super effective. <b>Bug/Ghost</b> too. A Dark-type like Houndoom or Tyranitar walks the whole gym."},
+  {n:15,name:"Blaine",loc:"Seafoam Islands",type:"Fire",cap:59,
+   trick:"Sunny Day boosts his Fire and weakens your Water — don't let it stick. Magcargo (Fire/Rock) is the odd defensive body.",
+   team:[["Magmar","Fire",54,0],["Magcargo","Fire/Rock",54,0],["Rapidash","Fire",59,1]],
+   answers:"<b>Water and Ground</b> dominate; Magcargo (Fire/Rock) is 4× to both. Quagsire (also ignores a Thunderpunch) sweeps — but stop Sunny Day from powering him up."},
+  {n:16,name:"Blue",loc:"Viridian City",type:"Mixed",cap:60,
+   trick:"No type theme — six different threats. You can't counter-type this one; bring balanced coverage. He only appears after the other 7 Kanto badges.",
+   team:[["Gyarados","Water/Flying",52,0],["Exeggutor","Grass/Psychic",55,0],["Machamp","Fighting",56,0],["Arcanine","Fire",58,0],["Rhydon","Ground/Rock",58,0],["Pidgeot","Normal/Flying",60,1]],
+   answers:"Pick per slot: <b>Electric</b> for Gyarados/Pidgeot, <b>Water/Grass</b> for Rhydon (4×), <b>Psychic/Flying</b> for Machamp, <b>Bug/Dark</b> for Exeggutor, <b>Water/Ground</b> for Arcanine. A varied team is the whole point."}
+];
+
+const RED=[
+  {n:"★",name:"Red",loc:"Mt. Silver",type:"Mixed",cap:88,
+   trick:"The hardest fight in the game. Pikachu's Light Screen + Thunder, the three Kanto starters, plus Lapras and Snorlax — all in the 80s. The capstone exam for a level-cap run.",
+   team:[["Lapras","Water/Ice",80,0],["Snorlax","Normal",82,0],["Venusaur","Grass/Poison",84,0],["Charizard","Fire/Flying",84,0],["Blastoise","Water",84,0],["Pikachu","Electric",88,1]],
+   answers:"No single answer — a coverage check. <b>Ground</b> for Pikachu, <b>Fighting</b> for Snorlax, <b>Ice/Psychic</b> for Venusaur, <b>Rock/Water</b> for Charizard, <b>Grass/Electric</b> for Blastoise, <b>Electric/Fighting</b> for Lapras. Status buys turns against the high levels — the cap rule makes this a genuine puzzle."}
+];
+
+const ROCKET=[
+  {n:"R1",name:"Slowpoke Well",loc:"Azalea Town",type:"Poison",cap:14,
+   trick:"Your first run-in with Team Rocket — Zubat/Rattata-tier grunts plus Proton. Light, but it gates Kurt and Bugsy's town.",
+   team:[["Grunts + Proton","Poison/Normal","~14",1]],
+   answers:"Anything trained for Bugsy clears it. Proton's Zubat line is the only thing to watch — <b>Electric/Rock</b> answers it."},
+  {n:"R2",name:"Mahogany Hideout",loc:"Mahogany Town",type:"Poison",cap:28,
+   trick:"The big mid-game gate before Pryce. Electrode traps that Self-Destruct, plus executives. Keep HP topped so an Explosion doesn't catch a weakened lead.",
+   team:[["Electrodes + execs","Electric/Poison","~28",1]],
+   answers:"<b>Ground</b> for the Electric bodies; expect lots of Koffing/Weezing. Bring a body that can eat a Self-Destruct, and don't over-invest a fragile sweeper."},
+  {n:"R3",name:"Radio Tower",loc:"Goldenrod City",type:"Dark",cap:40,
+   trick:"The Rocket finale: executives Petrel, Ariana, and Archer, whose Houndoom ace is the real threat. A genuine spike — tougher than some gyms.",
+   team:[["Execs → Archer's Houndoom","Dark/Poison","~40",1]],
+   answers:"Archer's Houndoom (Dark/Fire) folds to <b>Water/Ground/Rock/Fighting</b>. The rest is Poison chip and Murkrow — <b>Electric/Psychic</b> handles it. Heal between the back-to-back fights."}
+];
+
+const LEGEND=[
+  {name:"Sudowoodo",loc:"Route 36",lv:20,req:"Squirtbottle",req2:"Required gate",
+   tip:"Blocks the road as a battle, but you can catch it. False Swipe to 1 HP, then paralyse; it's Rock, so it won't flinch you."},
+  {name:"Red Gyarados",loc:"Lake of Rage",lv:30,req:"Story gate",req2:"Shiny, guaranteed",
+   tip:"Forced encounter before the Rocket hideout. Bring Ultra Balls; False Swipe + Thunder Wave makes it trivial. Strong early Water — worth keeping."},
+  {name:"Suicune",loc:"Static (after the beasts)",lv:40,req:"Kimono event",req2:"One shot",
+   tip:"Stands still, no chasing. False Swipe + sleep (so it can't Roar you out), chip and throw. Save first."},
+  {name:"Raikou / Entei",loc:"Roaming Johto",lv:40,req:"—",req2:"Hard to pin",
+   tip:"They flee each turn. Trap with Mean Look / Block (or Arena Trap / Shadow Tag), then status and whittle."},
+  {name:"Ho-Oh",loc:"Bell Tower",lv:45,req:"Rainbow Wing (HeartGold)",req2:"Box legendary",
+   tip:"Fire/Flying with Recover. Don't chip with Fire/Electric. Status to lock it, then Dusk/Ultra Balls."},
+  {name:"Lugia",loc:"Whirl Islands",lv:45,req:"Silver Wing",req2:"Post-E4 in HG",
+   tip:"Psychic/Flying with Recover and Aeroblast. Paralyse or sleep before it heals; avoid an accidental KO with Electric/Ice/Rock/Ghost/Dark."},
+  {name:"Articuno",loc:"Seafoam Islands",lv:50,req:"—",req2:"Kanto bird",
+   tip:"Ice/Flying. Avoid Fire/Electric/Rock for the chip. False Swipe + sleep, then Timer/Ultra Balls."},
+  {name:"Zapdos",loc:"Route 10 (Power Plant)",lv:50,req:"—",req2:"Kanto bird",
+   tip:"Electric/Flying — Ground can't even touch it. Chip with neutral non-KO moves, status, throw."},
+  {name:"Moltres",loc:"Mt. Silver",lv:50,req:"—",req2:"Kanto bird",
+   tip:"Fire/Flying. Same drill — paralyse, False Swipe, throw. You're already deep in Mt. Silver for Red."},
+  {name:"Mewtwo",loc:"Cerulean Cave",lv:70,req:"Post-game",req2:"Toughest catch",
+   tip:"Huge stats and Recover. Sleep is near-mandatory; False Swipe to a sliver, spam Ultra/Dusk Balls."},
+  {name:"Snorlax",loc:"Route 11 (Kanto)",lv:50,req:"Poké Flute",req2:"Required gate",
+   tip:"Blocks the road. Wake it via the Radio's Poké Flute channel, then a normal catch — para + False Swipe."},
+  {name:"Lapras",loc:"Union Cave B2F",lv:20,req:"Fridays only",req2:"Weekly",
+   tip:"Friday only. Great Ice/Water for Clair — grab it early if the day lines up."}
+];
+
+const TABS=[
+  {id:"playbook",label:"Playbook"},{id:"johto",label:"Johto Gyms"},{id:"rival",label:"Rival"},
+  {id:"e4",label:"Elite Four"},{id:"kanto",label:"Kanto Gyms"},{id:"red",label:"Red"},
+  {id:"rocket",label:"Rocket"},{id:"legend",label:"Legendaries"}
+];
+// Persist UI selections in localStorage, matching the React tools'
+// `<slug>_` key convention.
+const STORE='heartgold-battle-prep_';
+const save=(k,v)=>{try{localStorage.setItem(STORE+k,v);}catch(e){}};
+const load=(k,d)=>{try{const v=localStorage.getItem(STORE+k);return v===null?d:v;}catch(e){return d;}};
+const STARTERS=['chikorita','cyndaquil','totodile'];
+const TAB_IDS=TABS.map(t=>t.id);
+let starter=load('starter','cyndaquil'); if(!STARTERS.includes(starter))starter='cyndaquil';
+let activeTab=load('tab','playbook'); if(!TAB_IDS.includes(activeTab))activeTab='playbook';
+
+function monRow(m){return `<div class="mon ${m[3]?'ace':''}"><span><span class="nm">${m[0]}</span> <span class="tp">${m[1]}</span></span><span class="ml">Lv ${m[2]}</span></div>`;}
+function resolveSlots(slots){
+  const L=RIVAL_LINE[starter];
+  return slots.map(s=>{let nm=s[0],tp=s[1];
+    if(nm==="@base")nm=L.base; if(nm==="@mid")nm=L.mid; if(nm==="@late")nm=L.late;
+    if(tp==="@type")tp=L.type; return [nm,tp,s[2],s[3]];});
+}
+function bossCard(b,prefix){
+  const c=TC(b.type);
+  const team=(b.team||[]).map(monRow).join("");
+  const catches=(b.catches||[]).map(x=>`<div class="chip"><b>${x[0]}</b> — ${x[1]}</div>`).join("");
+  return `<div class="card" style="--gc:${c}" open-state="0">
+    <button class="chead" aria-expanded="false">
+      <div class="stamp"><span class="cap">Cap</span><span class="lv">${b.cap}</span></div>
+      <div class="cmeta"><div class="cnum">${prefix}</div><div class="cname">${b.name}</div>
+        <div class="badges"><span class="type">${b.type}</span><span class="loc">${b.loc}${b.when?' · '+b.when:''}</span></div></div>
+      <span class="chev">&#9654;</span>
+    </button>
+    <div class="trick"><span class="lead">The trick — </span>${b.trick}</div>
+    <div class="detail">
+      ${team?`<h4>Team (ace highlighted)</h4><div class="team">${team}</div>`:''}
+      ${b.answers?`<h4>What answers it</h4><div class="answers">${b.answers}</div>`:''}
+      ${catches?`<h4>Worth catching before this</h4><div class="chips">${catches}</div>`:''}
+    </div></div>`;
+}
+function render(tab){
+  activeTab=tab; save('tab',tab);
+  const C=document.getElementById('content');
+  document.getElementById('starterBar').style.display = tab==='rival'?'flex':'none';
+  let html="";
+  if(tab==='playbook'){
+    html=`<div class="section-label">General principles</div><div class="tools">`+
+      PLAYBOOK.map(p=>`<div class="tool"><h3>${p[0]}</h3><span>${p[1]}</span></div>`).join("")+`</div>`;
+  } else if(tab==='johto'){
+    html=`<div class="section-label">Johto · 8 gyms · tap a card</div>`+JOHTO.map(g=>bossCard(g,`GYM ${g.n}`)).join("");
+  } else if(tab==='rival'){
+    const L=RIVAL_LINE[starter];
+    document.getElementById('starterNote').innerHTML=`&rarr; rival runs the <b style="color:var(--text)">${L.late}</b> line (${L.type})`;
+    html=`<div class="note">Silver's team is fixed except his starter, which always type-beats yours. His spine: Sneasel, Golbat&rarr;Crobat, Magnemite&rarr;Magneton, Haunter&rarr;Gengar, Kadabra&rarr;Alakazam. A <b>Dark</b> move answers a lot of it.</div>`+
+      RIVAL.map(r=>bossCard(Object.assign({},r,{team:resolveSlots(r.slots),type:'dark'}),`FIGHT ${r.n}`)).join("");
+  } else if(tab==='e4'){
+    html=`<div class="note">All at the Indigo Plateau once you have 8 Johto badges. Levels 40–50 — your first cap jump after Clair.</div>`+
+      E4.map(b=>bossCard(b,b.n==='C'?'CHAMPION':`ELITE ${b.n.slice(1)}`)).join("");
+  } else if(tab==='kanto'){
+    html=`<div class="note"><b>Order is yours.</b> Kanto leaders have fixed teams (~Lv 49–60) but you tackle them in any order — so cap against <b>whichever you pick next</b>, not a fixed ladder. Surge is reachable first; <b>Blue</b> only appears once the other 7 Kanto badges are in.</div>`+
+      KANTO.map(g=>bossCard(g,`GYM ${g.n}`)).join("");
+  } else if(tab==='red'){
+    html=`<div class="note">Mt. Silver, after all 16 badges. The true capstone — and the ultimate test of a tactics-first, no-overlevel run.</div>`+
+      RED.map(b=>bossCard(b,'FINAL')).join("");
+  } else if(tab==='rocket'){
+    html=`<div class="note">Story gates, not optional. Rosters are grunt-heavy so they vary; the levels and the executive aces are what matter — flagged per card.</div>`+
+      ROCKET.map(b=>bossCard(b,'ROCKET')).join("");
+  } else if(tab==='legend'){
+    html=`<div class="note">A different kind of prep: these are <b>catches</b>, not wins. The drill is always the same — chip to ~1 HP with <b>False Swipe</b>, land <b>sleep</b> (or paralysis), then throw Ultra/Dusk/Timer Balls. Save before each.</div>`+
+      `<div class="section-label">Capture targets</div>`+
+      LEGEND.map(l=>`<div class="card" style="--gc:var(--gold)" open-state="0">
+        <button class="chead" aria-expanded="false">
+          <div class="stamp"><span class="cap">Lv</span><span class="lv">${l.lv}</span></div>
+          <div class="cmeta"><div class="cnum">${l.req2.toUpperCase()}</div><div class="cname">${l.name}</div>
+          <div class="badges"><span class="loc">${l.loc} · needs ${l.req}</span></div></div>
+          <span class="chev">&#9654;</span></button>
+        <div class="detail"><div class="answers">${l.tip}</div></div></div>`).join("");
+  }
+  C.innerHTML=html; bindCards(); window.scrollTo({top:0,behavior:'auto'});
+}
+function bindCards(){
+  document.querySelectorAll('.card').forEach(card=>{
+    const btn=card.querySelector('.chead');
+    btn.addEventListener('click',()=>{const open=card.getAttribute('open-state')==='1';
+      card.setAttribute('open-state',open?'0':'1'); btn.setAttribute('aria-expanded',open?'false':'true');});
+  });
+}
+const tabsEl=document.getElementById('tabs');
+TABS.forEach((t,i)=>{
+  const b=document.createElement('button');
+  b.className='tab';b.textContent=t.label;b.setAttribute('role','tab');
+  b.setAttribute('aria-selected',t.id===activeTab?'true':'false');
+  b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected','false'));
+    b.setAttribute('aria-selected','true');render(t.id);});
+  tabsEl.appendChild(b);
+});
+document.querySelectorAll('#starterSeg button').forEach(btn=>{
+  btn.addEventListener('click',()=>{starter=btn.dataset.s; save('starter',starter);
+    document.querySelectorAll('#starterSeg button').forEach(x=>x.setAttribute('aria-pressed','false'));
+    btn.setAttribute('aria-pressed','true'); render('rival');});
+});
+document.getElementById('foot').innerHTML=`Gym, rival, Elite Four & Red teams verified from source (HeartGold first-battle data). Rocket gates summarised. Caps = each fight's ace level.`;
+// Reflect the persisted starter on the segmented control, then restore the last tab.
+document.querySelectorAll('#starterSeg button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.s===starter?'true':'false'));
+render(activeTab);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/heartgold-battle-prep/sw.js', { scope: '/heartgold-battle-prep/' }).catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
