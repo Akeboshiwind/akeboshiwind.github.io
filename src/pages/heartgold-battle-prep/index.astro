@@ -325,7 +325,15 @@ const TABS=[
   {id:"e4",label:"Elite Four"},{id:"kanto",label:"Kanto Gyms"},{id:"red",label:"Red"},
   {id:"rocket",label:"Rocket"},{id:"legend",label:"Legendaries"}
 ];
-let starter="cyndaquil";
+// Persist UI selections in localStorage, matching the React tools'
+// `<slug>_` key convention.
+const STORE='heartgold-battle-prep_';
+const save=(k,v)=>{try{localStorage.setItem(STORE+k,v);}catch(e){}};
+const load=(k,d)=>{try{const v=localStorage.getItem(STORE+k);return v===null?d:v;}catch(e){return d;}};
+const STARTERS=['chikorita','cyndaquil','totodile'];
+const TAB_IDS=TABS.map(t=>t.id);
+let starter=load('starter','cyndaquil'); if(!STARTERS.includes(starter))starter='cyndaquil';
+let activeTab=load('tab','playbook'); if(!TAB_IDS.includes(activeTab))activeTab='playbook';
 
 function monRow(m){return `<div class="mon ${m[3]?'ace':''}"><span><span class="nm">${m[0]}</span> <span class="tp">${m[1]}</span></span><span class="ml">Lv ${m[2]}</span></div>`;}
 function resolveSlots(slots){
@@ -353,6 +361,7 @@ function bossCard(b,prefix){
     </div></div>`;
 }
 function render(tab){
+  activeTab=tab; save('tab',tab);
   const C=document.getElementById('content');
   document.getElementById('starterBar').style.display = tab==='rival'?'flex':'none';
   let html="";
@@ -402,18 +411,20 @@ const tabsEl=document.getElementById('tabs');
 TABS.forEach((t,i)=>{
   const b=document.createElement('button');
   b.className='tab';b.textContent=t.label;b.setAttribute('role','tab');
-  b.setAttribute('aria-selected',i===0?'true':'false');
+  b.setAttribute('aria-selected',t.id===activeTab?'true':'false');
   b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected','false'));
     b.setAttribute('aria-selected','true');render(t.id);});
   tabsEl.appendChild(b);
 });
 document.querySelectorAll('#starterSeg button').forEach(btn=>{
-  btn.addEventListener('click',()=>{starter=btn.dataset.s;
+  btn.addEventListener('click',()=>{starter=btn.dataset.s; save('starter',starter);
     document.querySelectorAll('#starterSeg button').forEach(x=>x.setAttribute('aria-pressed','false'));
     btn.setAttribute('aria-pressed','true'); render('rival');});
 });
 document.getElementById('foot').innerHTML=`Gym, rival, Elite Four & Red teams verified from source (HeartGold first-battle data). Rocket gates summarised. Caps = each fight's ace level.`;
-render('playbook');
+// Reflect the persisted starter on the segmented control, then restore the last tab.
+document.querySelectorAll('#starterSeg button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.s===starter?'true':'false'));
+render(activeTab);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
