@@ -1,6 +1,7 @@
 // Service worker for the HeartGold Battle Prep PWA.
-// Cache-first so the guide works offline once installed to the home screen.
-const CACHE = 'hg-battle-prep-v1';
+// Network-first for the page itself (so content updates show up immediately),
+// cache-first for static assets, with an offline fallback to the cached shell.
+const CACHE = 'hg-battle-prep-v2';
 const ROOT = '/heartgold-battle-prep/';
 const ASSETS = [
   ROOT,
@@ -24,21 +25,36 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+function cacheSameOrigin(request, response) {
+  if (response.ok && new URL(request.url).origin === self.location.origin) {
+    const copy = response.clone();
+    caches.open(CACHE).then((cache) => cache.put(request, copy));
+  }
+  return response;
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
+
+  // Navigations: network-first so an updated page is served as soon as we're
+  // online, falling back to the cached shell when offline.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => cacheSameOrigin(request, response))
+        .catch(() => caches.match(request).then((cached) => cached || caches.match(ROOT)))
+    );
+    return;
+  }
+
+  // Everything else (manifest, icons, fonts): cache-first.
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
       return fetch(request)
-        .then((response) => {
-          if (response.ok && new URL(request.url).origin === self.location.origin) {
-            const copy = response.clone();
-            caches.open(CACHE).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(() => caches.match(ROOT));
+        .then((response) => cacheSameOrigin(request, response))
+        .catch(() => cached);
     })
   );
 });
