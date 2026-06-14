@@ -1,0 +1,13 @@
+{
+  "title": "HeartGold Battle Prep",
+  "stage": "scribble",
+  "date": "2026-06-14",
+  "description": "A level-cap battle planner for a Pokémon HeartGold run — gyms, rival, Elite Four, Red, Rocket and legendaries, with per-fight tactics. Installable to the home screen.",
+  "tags": [
+    "tool",
+    "pokemon",
+    "game"
+  ],
+  "category": "fun",
+  "icon": "swords"
+}
