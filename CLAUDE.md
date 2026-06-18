@@ -60,6 +60,7 @@ All apps are built through Astro's Vite pipeline — no separate build step need
 2. Study 2-3 existing React apps for patterns (NOT bitemporal/christmas/chat-wrapped — those are bespoke)
 3. Add a screenshot at `src/assets/works/<slug>.png` for the front page card
 4. Fill in the description in the generated works JSON
+5. Set `category` and `icon` in the works JSON (defaults to `utilities` / `wrench`). Categories: finance, health, ai, images, utilities, fun, learning, talks, personal. `icon` is any [lucide](https://lucide.dev/icons/) icon name (all are auto-registered in `LucideIcon.astro`).
 
 Key conventions the scaffold already sets up:
 - `AppLayout` provides Tailwind, HTML shell, and `<div id="app">` mount point
