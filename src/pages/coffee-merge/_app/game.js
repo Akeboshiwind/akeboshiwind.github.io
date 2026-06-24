@@ -83,10 +83,12 @@ function createDrink(x, y, tier, vx = 0, vy = 0) {
   return body;
 }
 
-// Café hours: closed 10pm–6am local time. The shutter overlay covers the
+// Café hours: closed midnight–6am local time. The shutter overlay covers the
 // viewport during closed hours; `paused` gates the engine and input.
+// CLOSE_HOUR is 24 (rather than 0) so `h >= CLOSE_HOUR` never matches and the
+// closed window is driven purely by `h < OPEN_HOUR`.
 const OPEN_HOUR = 6;
-const CLOSE_HOUR = 22;
+const CLOSE_HOUR = 24;
 let paused = false;
 let prevClosed = null;
 

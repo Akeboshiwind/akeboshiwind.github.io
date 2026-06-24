@@ -48,7 +48,7 @@
     // slide-down animation, no flash of the leaderboard, no input window.
     (function () {
       var h = new Date().getHours();
-      if (h >= 22 || h < 6) {
+      if (h < 6) {
         document.getElementById('shutter').classList.add('is-closed', 'no-anim');
       }
     })();
