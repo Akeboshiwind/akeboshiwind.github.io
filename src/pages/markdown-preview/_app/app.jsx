@@ -1,6 +1,8 @@
 import { createRoot } from 'react-dom/client';
 import { useState, useEffect, useRef } from 'react';
 import { marked } from 'marked';
+import { markedHighlight } from 'marked-highlight';
+import hljs from 'highlight.js/lib/common';
 import mermaid from 'mermaid';
 import DOMPurify from 'dompurify';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
@@ -16,12 +18,26 @@ marked.use({
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;');
-        return `<pre class="mermaid not-prose">${escaped}</pre>`;
+        return `<pre class="mermaid">${escaped}</pre>`;
       }
       return false;
     },
   },
 });
+
+// Syntax highlighting for fenced code blocks, mirroring GitHub. The mermaid
+// renderer above short-circuits `mermaid` blocks before this runs.
+marked.use(
+  markedHighlight({
+    emptyLangClass: 'hljs',
+    langPrefix: 'hljs language-',
+    highlight(code, lang) {
+      if (lang === 'mermaid') return code;
+      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+      return hljs.highlight(code, { language }).value;
+    },
+  }),
+);
 
 mermaid.initialize({ startOnLoad: false });
 
@@ -87,7 +103,7 @@ function App({ historyUrl }) {
       </button>
       <div
         ref={previewRef}
-        className="prose dark:prose-invert max-w-4xl mx-auto"
+        className="markdown-body max-w-4xl mx-auto"
       />
     </div>
   );
