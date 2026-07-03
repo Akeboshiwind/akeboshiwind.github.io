@@ -1,1 +1,236 @@
-@plugin "@tailwindcss/typography";
+/*
+ * GitHub-flavoured markdown rendering, adapted from github-markdown-css.
+ * Scoped to `.markdown-body` so it doesn't leak into the app chrome.
+ * Dark mode keys off `[data-theme="dark"]` set on <html> by ThemeInit.
+ */
+
+.markdown-body {
+  --md-fg: #1f2328;
+  --md-muted: #59636e;
+  --md-link: #0969da;
+  --md-border: #d1d9e0;
+  --md-border-muted: #d1d9e0b3;
+  --md-code-bg: #818b981f;
+  --md-canvas-subtle: #f6f8fa;
+  --md-neutral-muted: #818b9826;
+
+  color: var(--md-fg);
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica,
+    Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  font-size: 16px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+[data-theme='dark'] .markdown-body {
+  --md-fg: #f0f6fc;
+  --md-muted: #9198a1;
+  --md-link: #4493f8;
+  --md-border: #3d444d;
+  --md-border-muted: #3d444db3;
+  --md-code-bg: #656c7633;
+  --md-canvas-subtle: #151b23;
+  --md-neutral-muted: #656c7633;
+}
+
+/* Collapse the leading/trailing margins so the block hugs its container. */
+.markdown-body > *:first-child {
+  margin-top: 0 !important;
+}
+.markdown-body > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Headings */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.markdown-body h1 {
+  font-size: 2em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--md-border-muted);
+}
+
+.markdown-body h2 {
+  font-size: 1.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--md-border-muted);
+}
+
+.markdown-body h3 {
+  font-size: 1.25em;
+}
+.markdown-body h4 {
+  font-size: 1em;
+}
+.markdown-body h5 {
+  font-size: 0.875em;
+}
+.markdown-body h6 {
+  font-size: 0.85em;
+  color: var(--md-muted);
+}
+
+/* Paragraphs & inline text */
+.markdown-body p {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.markdown-body strong {
+  font-weight: 600;
+}
+
+.markdown-body a {
+  color: var(--md-link);
+  text-decoration: none;
+}
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+/* Lists */
+.markdown-body ul,
+.markdown-body ol {
+  margin-top: 0;
+  margin-bottom: 16px;
+  padding-left: 2em;
+}
+.markdown-body ul {
+  list-style-type: disc;
+}
+.markdown-body ol {
+  list-style-type: decimal;
+}
+.markdown-body ul ul {
+  list-style-type: circle;
+}
+.markdown-body ul ul ul {
+  list-style-type: square;
+}
+.markdown-body li + li {
+  margin-top: 0.25em;
+}
+.markdown-body li > p {
+  margin-bottom: 0;
+}
+.markdown-body ul ul,
+.markdown-body ul ol,
+.markdown-body ol ol,
+.markdown-body ol ul {
+  margin-top: 0.25em;
+  margin-bottom: 0;
+}
+
+/* Task lists */
+.markdown-body li.task-list-item,
+.markdown-body ul:has(> li > input[type='checkbox']) {
+  list-style-type: none;
+}
+.markdown-body input[type='checkbox'] {
+  margin: 0 0.35em 0.25em -1.4em;
+  vertical-align: middle;
+}
+
+/* Blockquotes */
+.markdown-body blockquote {
+  margin: 0 0 16px 0;
+  padding: 0 1em;
+  color: var(--md-muted);
+  border-left: 0.25em solid var(--md-border);
+}
+.markdown-body blockquote > :first-child {
+  margin-top: 0;
+}
+.markdown-body blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* Inline code */
+.markdown-body code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  white-space: break-spaces;
+  background-color: var(--md-code-bg);
+  border-radius: 6px;
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
+}
+
+/* Code blocks */
+.markdown-body pre:not(.mermaid) {
+  margin-top: 0;
+  margin-bottom: 16px;
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: var(--md-canvas-subtle);
+  border-radius: 6px;
+}
+.markdown-body pre code {
+  display: inline;
+  max-width: auto;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  font-size: 100%;
+  line-height: inherit;
+  word-wrap: normal;
+  background-color: transparent;
+  border: 0;
+}
+
+/* Tables */
+.markdown-body table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+  margin-top: 0;
+  margin-bottom: 16px;
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+.markdown-body table th {
+  font-weight: 600;
+}
+.markdown-body table th,
+.markdown-body table td {
+  padding: 6px 13px;
+  border: 1px solid var(--md-border);
+}
+.markdown-body table tr {
+  background-color: transparent;
+  border-top: 1px solid var(--md-border-muted);
+}
+.markdown-body table tr:nth-child(2n) {
+  background-color: var(--md-canvas-subtle);
+}
+
+/* Horizontal rule */
+.markdown-body hr {
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  background-color: var(--md-border);
+  border: 0;
+}
+
+/* Images */
+.markdown-body img {
+  max-width: 100%;
+  box-sizing: content-box;
+}

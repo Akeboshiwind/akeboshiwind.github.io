@@ -16,7 +16,7 @@ marked.use({
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;');
-        return `<pre class="mermaid not-prose">${escaped}</pre>`;
+        return `<pre class="mermaid">${escaped}</pre>`;
       }
       return false;
     },
@@ -87,7 +87,7 @@ function App({ historyUrl }) {
       </button>
       <div
         ref={previewRef}
-        className="prose dark:prose-invert max-w-4xl mx-auto"
+        className="markdown-body max-w-4xl mx-auto"
       />
     </div>
   );
