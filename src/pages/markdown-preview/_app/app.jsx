@@ -1,6 +1,8 @@
 import { createRoot } from 'react-dom/client';
 import { useState, useEffect, useRef } from 'react';
 import { marked } from 'marked';
+import { markedHighlight } from 'marked-highlight';
+import hljs from 'highlight.js/lib/common';
 import mermaid from 'mermaid';
 import DOMPurify from 'dompurify';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
@@ -22,6 +24,20 @@ marked.use({
     },
   },
 });
+
+// Syntax highlighting for fenced code blocks, mirroring GitHub. The mermaid
+// renderer above short-circuits `mermaid` blocks before this runs.
+marked.use(
+  markedHighlight({
+    emptyLangClass: 'hljs',
+    langPrefix: 'hljs language-',
+    highlight(code, lang) {
+      if (lang === 'mermaid') return code;
+      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+      return hljs.highlight(code, { language }).value;
+    },
+  }),
+);
 
 mermaid.initialize({ startOnLoad: false });
 

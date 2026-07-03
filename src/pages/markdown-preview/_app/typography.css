@@ -14,6 +14,21 @@
   --md-canvas-subtle: #f6f8fa;
   --md-neutral-muted: #818b9826;
 
+  /* highlight.js token colours — GitHub light (prettylights-syntax-*) */
+  --hljs-keyword: #d73a49;
+  --hljs-entity: #6f42c1;
+  --hljs-constant: #005cc5;
+  --hljs-string: #032f62;
+  --hljs-variable: #e36209;
+  --hljs-comment: #6a737d;
+  --hljs-entity-tag: #22863a;
+  --hljs-section: #005cc5;
+  --hljs-bullet: #735c0f;
+  --hljs-addition-fg: #22863a;
+  --hljs-addition-bg: #f0fff4;
+  --hljs-deletion-fg: #b31d28;
+  --hljs-deletion-bg: #ffeef0;
+
   color: var(--md-fg);
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica,
@@ -32,6 +47,21 @@
   --md-code-bg: #656c7633;
   --md-canvas-subtle: #151b23;
   --md-neutral-muted: #656c7633;
+
+  /* highlight.js token colours — GitHub dark */
+  --hljs-keyword: #ff7b72;
+  --hljs-entity: #d2a8ff;
+  --hljs-constant: #79c0ff;
+  --hljs-string: #a5d6ff;
+  --hljs-variable: #ffa657;
+  --hljs-comment: #8b949e;
+  --hljs-entity-tag: #7ee787;
+  --hljs-section: #1f6feb;
+  --hljs-bullet: #f2cc60;
+  --hljs-addition-fg: #aff5b4;
+  --hljs-addition-bg: #033a16;
+  --hljs-deletion-fg: #ffdcd7;
+  --hljs-deletion-bg: #67060c;
 }
 
 /* Collapse the leading/trailing margins so the block hugs its container. */
@@ -233,4 +263,84 @@
 .markdown-body img {
   max-width: 100%;
   box-sizing: content-box;
+}
+
+/*
+ * Syntax highlighting (highlight.js), themed to match GitHub's
+ * prettylights palette. Colours come from the CSS variables above so the
+ * same rules serve light and dark. `.hljs` itself keeps the code block's
+ * own background/foreground — only tokens are coloured.
+ */
+.markdown-body .hljs-doctag,
+.markdown-body .hljs-keyword,
+.markdown-body .hljs-meta .hljs-keyword,
+.markdown-body .hljs-template-tag,
+.markdown-body .hljs-template-variable,
+.markdown-body .hljs-type,
+.markdown-body .hljs-variable.language_ {
+  color: var(--hljs-keyword);
+}
+.markdown-body .hljs-title,
+.markdown-body .hljs-title.class_,
+.markdown-body .hljs-title.class_.inherited__,
+.markdown-body .hljs-title.function_ {
+  color: var(--hljs-entity);
+}
+.markdown-body .hljs-attr,
+.markdown-body .hljs-attribute,
+.markdown-body .hljs-literal,
+.markdown-body .hljs-meta,
+.markdown-body .hljs-number,
+.markdown-body .hljs-operator,
+.markdown-body .hljs-variable,
+.markdown-body .hljs-selector-attr,
+.markdown-body .hljs-selector-class,
+.markdown-body .hljs-selector-id {
+  color: var(--hljs-constant);
+}
+.markdown-body .hljs-regexp,
+.markdown-body .hljs-string,
+.markdown-body .hljs-meta .hljs-string {
+  color: var(--hljs-string);
+}
+.markdown-body .hljs-built_in,
+.markdown-body .hljs-symbol {
+  color: var(--hljs-variable);
+}
+.markdown-body .hljs-comment,
+.markdown-body .hljs-code,
+.markdown-body .hljs-formula {
+  color: var(--hljs-comment);
+}
+.markdown-body .hljs-name,
+.markdown-body .hljs-quote,
+.markdown-body .hljs-selector-tag,
+.markdown-body .hljs-selector-pseudo {
+  color: var(--hljs-entity-tag);
+}
+.markdown-body .hljs-subst {
+  color: var(--md-fg);
+}
+.markdown-body .hljs-section {
+  color: var(--hljs-section);
+  font-weight: bold;
+}
+.markdown-body .hljs-bullet {
+  color: var(--hljs-bullet);
+}
+.markdown-body .hljs-emphasis {
+  color: var(--md-fg);
+  font-style: italic;
+}
+.markdown-body .hljs-strong {
+  color: var(--md-fg);
+  font-weight: bold;
+}
+.markdown-body .hljs-addition {
+  color: var(--hljs-addition-fg);
+  background-color: var(--hljs-addition-bg);
+}
+.markdown-body .hljs-deletion {
+  color: var(--hljs-deletion-fg);
+  background-color: var(--hljs-deletion-bg);
 }
