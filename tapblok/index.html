@@ -1,0 +1,24 @@
+<!DOCTYPE html><html lang="en"> <head><script>
+  (() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const resolve = (pref) =>
+      pref === 'light' || pref === 'dark' ? pref : (mq.matches ? 'dark' : 'light');
+    const apply = (pref) => {
+      const root = document.documentElement;
+      root.dataset.themePref = pref;
+      root.dataset.theme = resolve(pref);
+    };
+    const read = () => {
+      try { return localStorage.getItem('theme') ?? 'auto'; } catch { return 'auto'; }
+    };
+    apply(read());
+    mq.addEventListener('change', () => { if (read() === 'auto') apply('auto'); });
+    window.addEventListener('storage', (e) => { if (e.key === 'theme') apply(read()); });
+    window.__setTheme = (pref) => {
+      try { localStorage.setItem('theme', pref); } catch {}
+      apply(pref);
+    };
+  })();
+</script><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>TapBlok Unlock</title><style>@keyframes tapblok-pop{0%{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}@keyframes tapblok-sweep{0%{opacity:0;transform:translate(-150%) skew(-16deg)}25%{opacity:.85}to{opacity:0;transform:translate(250%) skew(-16deg)}}@keyframes tapblok-halo{0%{box-shadow:0 0 #10b98180}to{box-shadow:0 0 0 32px #10b98100}}@keyframes tapblok-breathe{0%,to{opacity:.75;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}@keyframes tapblok-spring{0%{transform:rotate(0) scale(1)}35%{transform:rotate(-14deg) scale(1.18) translateY(-6px)}to{transform:rotate(0) scale(1)}}.tapblok-pop{animation:tapblok-pop .55s cubic-bezier(.16,1,.3,1) both}.tapblok-sweep{animation:tapblok-sweep .9s cubic-bezier(.4,0,.2,1) .12s both}.tapblok-halo{animation:tapblok-halo .9s cubic-bezier(.16,1,.3,1) both}.tapblok-breathe{animation:tapblok-breathe 2.4s ease-in-out infinite}.tapblok-spring{animation:tapblok-spring .6s cubic-bezier(.16,1,.3,1) both}@media(prefers-reduced-motion:reduce){.tapblok-pop,.tapblok-sweep,.tapblok-halo,.tapblok-breathe,.tapblok-spring{animation:none}}
+</style>
+<link rel="stylesheet" href="/_astro/index.BUxvHCaa.css"></head> <body class="bg-gray-50 dark:bg-gray-900 min-h-screen"> <div id="app" data-history-url="https://github.com/akeboshiwind/akeboshiwind.github.io/commits/master/src/pages/tapblok"></div>  <script type="module" src="/_astro/index.astro_astro_type_script_index_0_lang.wDDKcPUo.js"></script>  </body></html>
