@@ -94,7 +94,7 @@ const today = new Date().toISOString().slice(0, 10);
 writeFileSync(worksFile, JSON.stringify({
   title,
   stage: 'scribble',
-  date: today,
+  published: today,
   description: '',
   tags: ['tool'],
   category: 'utilities',

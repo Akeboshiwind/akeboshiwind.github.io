@@ -1,7 +1,7 @@
 ---
 title: "Making a case sensitive folder on MacOS"
 stage: scribble
-date: 2025-03-10
+published: 2025-03-10
 updated: 2026-03-23
 tags: ["devops"]
 ---

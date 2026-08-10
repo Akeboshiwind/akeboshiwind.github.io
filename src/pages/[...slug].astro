@@ -21,7 +21,7 @@ const historyUrl = historyFromPath(`src/content/notes/${note.id}`);
   title={`A ${note.data.stage}: ${note.data.title}`}
   description={note.data.title}
   type="article"
-  publishedTime={note.data.date}
+  publishedTime={note.data.published}
 >
   <article class="prose prose-sm font-sans max-w-none leading-relaxed
     prose-a:text-link prose-a:no-underline hover:prose-a:underline prose-a:visited:text-link-visited
@@ -32,8 +32,8 @@ const historyUrl = historyFromPath(`src/content/notes/${note.id}`);
     </h1>
 
     <p class="font-mono text-[0.9rem]">
-      <time datetime={note.data.date.toISOString().split('T')[0]}>
-        {note.data.date.toISOString().split('T')[0]}
+      <time datetime={note.data.published.toISOString().split('T')[0]}>
+        {note.data.published.toISOString().split('T')[0]}
       </time>
       {note.data.updated && (
         <span class="opacity-60">

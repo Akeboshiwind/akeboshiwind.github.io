@@ -1,7 +1,7 @@
 {
   "title": "Markdown Preview",
   "stage": "tale",
-  "date": "2026-03-09",
+  "published": "2026-03-09",
   "description": "Write and preview GitHub Flavoured Markdown with Mermaid diagram support. Text is saved to local storage.",
   "tags": [
     "tool"

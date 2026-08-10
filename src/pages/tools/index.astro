@@ -42,8 +42,8 @@ const grouped = CATEGORIES.map(cat => {
   const items = works
     .filter(w => w.data.category === cat.id)
     .sort((a, b) => {
-      const da = (a.data.updated ?? a.data.date).getTime();
-      const db = (b.data.updated ?? b.data.date).getTime();
+      const da = (a.data.updated ?? a.data.published).getTime();
+      const db = (b.data.updated ?? b.data.published).getTime();
       return db - da;
     });
   return { ...cat, items };

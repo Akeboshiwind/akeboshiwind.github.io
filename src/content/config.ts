@@ -7,7 +7,7 @@ const notes = defineCollection({
   schema: z.object({
     title: z.string(),
     stage: stage,
-    date: z.date(),
+    published: z.date(),
     updated: z.date(),
     tags: z.array(z.string()).optional(),
     pinned: z.boolean().optional().default(false),
@@ -19,7 +19,7 @@ const works = defineCollection({
   schema: z.object({
     title: z.string(),
     stage: stage,
-    date: z.coerce.date(),
+    published: z.coerce.date(),
     updated: z.coerce.date().optional(),
     description: z.string(),
     url: z.string().url().optional(),

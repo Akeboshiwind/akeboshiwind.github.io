@@ -1,7 +1,7 @@
 {
   "title": "Recommender",
   "stage": "draft",
-  "date": "2026-02-22",
+  "published": "2026-02-22",
   "description": "AI-powered recommendation lists that learn from your feedback using the Anthropic Claude API.",
   "pinned": true,
   "tags": [

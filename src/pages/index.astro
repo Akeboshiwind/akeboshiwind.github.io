@@ -24,7 +24,7 @@ const allItems = [
     url: `${base}${note.slug}/`,
     title: note.data.title,
     stage: note.data.stage,
-    date: note.data.updated ?? note.data.date,
+    date: note.data.updated ?? note.data.published,
     pinned: note.data.pinned,
   })),
   ...works.map(work => ({
@@ -32,7 +32,7 @@ const allItems = [
     title: work.data.title,
     stage: work.data.stage,
     description: work.data.description,
-    date: work.data.updated ?? work.data.date,
+    date: work.data.updated ?? work.data.published,
     image: screenshot(work),
     pinned: work.data.pinned,
   })),

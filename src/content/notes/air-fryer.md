@@ -1,7 +1,7 @@
 ---
 title: "Air Fryer"
 stage: tale
-date: 2026-08-10
+published: 2026-08-10
 updated: 2026-08-10
 tags: ["personal"]
 ---
