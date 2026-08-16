@@ -1,0 +1,12 @@
+{
+  "title": "Scoreboard",
+  "stage": "scribble",
+  "date": "2026-05-16",
+  "description": "Two-tap landscape scoreboard with a match timer. Tap a side to add, swipe down to subtract; hold the timer pill to reset. Settings for count-up/down, increment, buzzer, haptics, and screen-wake.",
+  "tags": [
+    "tool",
+    "sports"
+  ],
+  "category": "fun",
+  "icon": "trophy"
+}
