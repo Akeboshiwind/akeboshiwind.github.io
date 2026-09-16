@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
-import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
+import { Menu } from './menu.jsx';
 import { mealById } from './meals.js';
 import { swatch } from './color.js';
 import {
@@ -40,7 +40,7 @@ const Band = ({ slot, onToggleLock }) => {
 
   return (
     <li
-      className="flex-1 flex items-center justify-between gap-4 px-6 py-5 min-h-0 transition-colors duration-300 md:flex-col md:items-start md:justify-end md:px-5 md:pb-8"
+      className="flex-1 flex items-center justify-between gap-4 px-6 py-5 min-h-0 md:flex-col md:items-start md:justify-end md:px-5 md:pb-8"
       style={{ backgroundColor: background, color: text }}
     >
       <div className="min-w-0 md:mb-4">
@@ -88,10 +88,13 @@ export function App({ historyUrl }) {
 
   const apply = fn => setStored(fn(state));
 
+  // Set while the corner menu or the meals dialog is up.
+  const [menuOpen, setMenuOpen] = useState(false);
+
   useEffect(() => {
     const onKeyDown = e => {
       // Let the focused control have the key — space activates buttons.
-      if (e.target !== document.body || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (menuOpen || e.target !== document.body || e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === ' ') { e.preventDefault(); apply(generate); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); apply(undo); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); apply(redo); }
@@ -146,7 +149,7 @@ export function App({ historyUrl }) {
         <span className="hidden shrink-0 px-2 text-xs text-gray-400 sm:inline">
           {state.index + 1} / {state.entries.length}
         </span>
-        <ThemeToggle className="shrink-0 text-gray-500 dark:text-gray-400" />
+        <Menu slots={slots} onOpenChange={setMenuOpen} />
       </div>
     </div>
   );

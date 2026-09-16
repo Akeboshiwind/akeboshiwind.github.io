@@ -122,6 +122,36 @@ describe('Meal Generator', () => {
     expect(names()).toEqual(second);
   });
 
+  test('bands change colour outright, with no transition', () => {
+    render(<App />);
+    for (const band of bands()) {
+      expect(band.className).not.toMatch(/transition|duration|animate/);
+    }
+  });
+
+  test('the menu reaches the theme setting and the meal list', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    expect(screen.getByRole('radiogroup', { name: 'Theme' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'All meals' }));
+    const dialog = screen.getByRole('dialog', { name: 'All meals' });
+    expect(within(dialog).getAllByText('in this set')).toHaveLength(SLOT_COUNT);
+  });
+
+  test('the keyboard shortcuts stand down while the menu is open', () => {
+    render(<App />);
+    const before = names();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    fireEvent.keyDown(document.body, { key: ' ' });
+    expect(names()).toEqual(before);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.keyDown(document.body, { key: ' ' });
+    expect(names()).not.toEqual(before);
+  });
+
   test('the palette and its locks survive a reload', () => {
     render(<App />);
     fireEvent.click(generateButton());
