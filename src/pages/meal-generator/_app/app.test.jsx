@@ -64,19 +64,19 @@ describe('Meal Generator', () => {
     expect(after.getAttribute('aria-label')).toMatch(/^Unlock /);
   });
 
-  test('unlock all clears every lock, and back brings them again', () => {
+  test('unlock all clears every lock, leaving the history where it was', () => {
     render(<App />);
+    fireEvent.click(generateButton());
+    const meals = names();
     fireEvent.click(lockButton(bands()[0]));
     fireEvent.click(lockButton(bands()[2]));
-    const lockedBefore = bands().map(b => lockButton(b).getAttribute('aria-pressed'));
 
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
     fireEvent.click(screen.getByRole('button', { name: 'Unlock all' }));
 
     expect(bands().map(b => lockButton(b).getAttribute('aria-pressed'))).toEqual(Array(SLOT_COUNT).fill('false'));
-
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    expect(bands().map(b => lockButton(b).getAttribute('aria-pressed'))).toEqual(lockedBefore);
+    expect(names()).toEqual(meals);
+    expect(screen.getByText('2 / 2')).toBeTruthy();
   });
 
   test('unlock all is offered only when something is locked', () => {
@@ -122,17 +122,41 @@ describe('Meal Generator', () => {
     expect(forward().disabled).toBe(false);
   });
 
-  test('going back restores the locks of that palette', () => {
+  test('locking is not a history step', () => {
+    render(<App />);
+    const back = () => screen.getByRole('button', { name: 'Back' });
+
+    // Nothing generated yet, so there is nowhere to step back to — and
+    // locking must not invent somewhere.
+    fireEvent.click(lockButton(bands()[2]));
+    expect(back().disabled).toBe(true);
+    expect(screen.getByText('1 / 1')).toBeTruthy();
+
+    fireEvent.click(generateButton());
+    expect(screen.getByText('2 / 2')).toBeTruthy();
+
+    // One step back lands on the palette the lock was set on, not on a
+    // separate entry recording the lock.
+    fireEvent.click(back());
+    expect(back().disabled).toBe(true);
+    expect(lockButton(bands()[2]).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  test('a generated palette keeps the locks it was made with', () => {
     render(<App />);
     fireEvent.click(lockButton(bands()[2]));
+    const pinned = names()[2];
+
     fireEvent.click(generateButton());
+    expect(names()[2]).toBe(pinned);
     expect(lockButton(bands()[2]).getAttribute('aria-pressed')).toBe('true');
 
-    // Back past the generate, then back past the lock itself.
+    // Unlocking here stays with this palette; the one behind keeps its lock.
+    fireEvent.click(lockButton(bands()[2]));
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(lockButton(bands()[2]).getAttribute('aria-pressed')).toBe('true');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Forward' }));
     expect(lockButton(bands()[2]).getAttribute('aria-pressed')).toBe('false');
   });
 

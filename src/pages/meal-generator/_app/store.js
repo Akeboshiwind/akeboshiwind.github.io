@@ -3,9 +3,11 @@
 //   { entries: [ [ { id, locked }, ... ], ... ], index }
 //
 // An entry is one palette — a slot per band, each naming a meal and whether
-// it is locked. Locks live in the entry, so stepping back through history
-// restores the locks that were in force at the time. Generating or toggling
-// a lock pushes a new entry and drops anything ahead of the cursor.
+// it is locked. Generating pushes a new entry and drops anything ahead of the
+// cursor; locking is not a history step of its own, it edits the palette at
+// the cursor in place. The locks still travel in the entry, so a generated
+// palette records the locks that were in force when it was made, and stepping
+// back to a palette brings back the locks it was left with.
 
 import { MEALS, mealById } from './meals.js';
 
@@ -73,14 +75,21 @@ const push = (state, slots) => {
 export const generate = (state, options = {}) =>
   push(state, generateSlots(current(state), options));
 
-export const toggleLock = (state, i) =>
-  push(state, current(state).map((s, j) => (j === i ? { ...s, locked: !s.locked } : s)));
+// Swap the palette at the cursor, leaving the history either side of it — and
+// the cursor itself — alone.
+const replace = (state, slots) => ({
+  entries: state.entries.map((entry, i) => (i === state.index ? slots : entry)),
+  index: state.index,
+});
 
-// Clears every lock in one go. A palette with nothing locked is left exactly
-// as it is, rather than spending a history entry on a no-op.
+export const toggleLock = (state, i) =>
+  replace(state, current(state).map((s, j) => (j === i ? { ...s, locked: !s.locked } : s)));
+
+// Clears every lock in one go. A palette with nothing locked is returned
+// untouched, so the caller can tell nothing happened.
 export const unlockAll = state =>
   anyLocked(state)
-    ? push(state, current(state).map(slot => (slot.locked ? { ...slot, locked: false } : slot)))
+    ? replace(state, current(state).map(slot => (slot.locked ? { ...slot, locked: false } : slot)))
     : state;
 
 export const anyLocked = state => current(state).some(slot => slot.locked);

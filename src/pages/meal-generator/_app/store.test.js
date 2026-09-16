@@ -181,23 +181,46 @@ describe('history', () => {
 });
 
 describe('locking', () => {
-  test('toggling a lock records a new entry', () => {
-    const a = initialState({});
+  test('toggling a lock is not a history step', () => {
+    const a = generate(initialState({}), {});
     const b = toggleLock(a, 2);
 
-    expect(b.entries).toHaveLength(2);
+    expect(b.entries).toHaveLength(a.entries.length);
+    expect(b.index).toBe(a.index);
     expect(current(b)[2].locked).toBe(true);
     expect(ids(current(b))).toEqual(ids(current(a)));
+    // Only the palette under the cursor changes.
+    expect(b.entries[0]).toEqual(a.entries[0]);
   });
 
-  test('undo restores the lock state as it was', () => {
-    const a = initialState({});
-    const locked = toggleLock(a, 0);
-    const regenerated = generate(locked, {});
+  test('a lock leaves the entries ahead of the cursor alone', () => {
+    const a = generate(generate(initialState({}), {}), {});
+    const stepped = undo(a);
+    const locked = toggleLock(stepped, 1);
 
-    expect(current(regenerated)[0].locked).toBe(true);
+    expect(canRedo(locked)).toBe(true);
+    expect(locked.entries[2]).toEqual(a.entries[2]);
+    expect(current(redo(locked))).toEqual(a.entries[2]);
+  });
+
+  test('a generated palette carries the locks in force when it was made', () => {
+    const a = toggleLock(initialState({}), 0);
+    const pinned = current(a)[0].id;
+    const b = generate(a, {});
+
+    expect(current(b)[0]).toEqual({ id: pinned, locked: true });
+  });
+
+  test('stepping back brings a palette its locks as it was left', () => {
+    const a = toggleLock(initialState({}), 0);
+    const regenerated = generate(a, {});
+
     expect(current(undo(regenerated))[0].locked).toBe(true);
-    expect(current(undo(undo(regenerated)))[0].locked).toBe(false);
+    // Unlocking on the way back sticks to that palette, and the newer one
+    // keeps the lock it was generated with.
+    const unlocked = toggleLock(undo(regenerated), 0);
+    expect(current(unlocked)[0].locked).toBe(false);
+    expect(current(redo(unlocked))[0].locked).toBe(true);
   });
 
   test('unlocking frees the slot for the next generation', () => {
@@ -211,35 +234,29 @@ describe('locking', () => {
     expect(rolls.some(id => id !== pinned)).toBe(true);
   });
 
-  test('unlockAll clears every lock in one entry', () => {
-    let state = toggleLock(toggleLock(initialState({}), 0), 3);
+  test('unlockAll clears every lock without touching the history', () => {
+    const state = toggleLock(toggleLock(generate(initialState({}), {}), 0), 3);
     const meals = ids(current(state));
 
     const cleared = unlockAll(state);
     expect(current(cleared).every(s => !s.locked)).toBe(true);
     expect(ids(current(cleared))).toEqual(meals);
-    expect(cleared.entries).toHaveLength(state.entries.length + 1);
+    expect(cleared.entries).toHaveLength(state.entries.length);
+    expect(cleared.index).toBe(state.index);
   });
 
-  test('undo brings the locks back after unlockAll', () => {
-    const state = toggleLock(toggleLock(initialState({}), 1), 4);
-    const back = undo(unlockAll(state));
-
-    expect(current(back).map(s => s.locked)).toEqual(current(state).map(s => s.locked));
-  });
-
-  test('unlockAll spends no history entry when nothing is locked', () => {
+  test('unlockAll leaves the state alone when nothing is locked', () => {
     const state = initialState({});
     expect(unlockAll(state)).toBe(state);
   });
 
   test('anyLocked reports the palette at the cursor', () => {
-    const state = initialState({});
+    const state = generate(initialState({}), {});
     expect(anyLocked(state)).toBe(false);
 
     const locked = toggleLock(state, 2);
     expect(anyLocked(locked)).toBe(true);
-    // Stepping back to a palette with nothing locked reports that.
+    // The palette behind it was left with nothing locked.
     expect(anyLocked(undo(locked))).toBe(false);
   });
 
