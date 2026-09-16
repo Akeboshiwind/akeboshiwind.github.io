@@ -64,6 +64,35 @@ describe('Meal Generator', () => {
     expect(after.getAttribute('aria-label')).toMatch(/^Unlock /);
   });
 
+  test('unlock all clears every lock, and back brings them again', () => {
+    render(<App />);
+    fireEvent.click(lockButton(bands()[0]));
+    fireEvent.click(lockButton(bands()[2]));
+    const lockedBefore = bands().map(b => lockButton(b).getAttribute('aria-pressed'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Unlock all' }));
+
+    expect(bands().map(b => lockButton(b).getAttribute('aria-pressed'))).toEqual(Array(SLOT_COUNT).fill('false'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(bands().map(b => lockButton(b).getAttribute('aria-pressed'))).toEqual(lockedBefore);
+  });
+
+  test('unlock all is offered only when something is locked', () => {
+    render(<App />);
+    const item = () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+      return screen.getByRole('button', { name: 'Unlock all' });
+    };
+
+    expect(item().disabled).toBe(true);
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    fireEvent.click(lockButton(bands()[1]));
+    expect(item().disabled).toBe(false);
+  });
+
   test('back and forward walk the history', () => {
     render(<App />);
     const first = names();

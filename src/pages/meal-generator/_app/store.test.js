@@ -2,7 +2,7 @@ import { describe, test, expect } from 'vitest';
 import {
   SLOT_COUNT, MIN_HUE_GAP, hueDistance,
   generateSlots, initialState, current, generate, toggleLock,
-  undo, redo, canUndo, canRedo, isValidState,
+  unlockAll, anyLocked, undo, redo, canUndo, canRedo, isValidState,
 } from './store.js';
 import { MEALS, mealById } from './meals.js';
 
@@ -209,6 +209,38 @@ describe('locking', () => {
     // With every slot unlocked the pinned meal is no longer guaranteed to stay.
     const rolls = Array.from({ length: 50 }, () => current(generate(b, {}))[1].id);
     expect(rolls.some(id => id !== pinned)).toBe(true);
+  });
+
+  test('unlockAll clears every lock in one entry', () => {
+    let state = toggleLock(toggleLock(initialState({}), 0), 3);
+    const meals = ids(current(state));
+
+    const cleared = unlockAll(state);
+    expect(current(cleared).every(s => !s.locked)).toBe(true);
+    expect(ids(current(cleared))).toEqual(meals);
+    expect(cleared.entries).toHaveLength(state.entries.length + 1);
+  });
+
+  test('undo brings the locks back after unlockAll', () => {
+    const state = toggleLock(toggleLock(initialState({}), 1), 4);
+    const back = undo(unlockAll(state));
+
+    expect(current(back).map(s => s.locked)).toEqual(current(state).map(s => s.locked));
+  });
+
+  test('unlockAll spends no history entry when nothing is locked', () => {
+    const state = initialState({});
+    expect(unlockAll(state)).toBe(state);
+  });
+
+  test('anyLocked reports the palette at the cursor', () => {
+    const state = initialState({});
+    expect(anyLocked(state)).toBe(false);
+
+    const locked = toggleLock(state, 2);
+    expect(anyLocked(locked)).toBe(true);
+    // Stepping back to a palette with nothing locked reports that.
+    expect(anyLocked(undo(locked))).toBe(false);
   });
 
   test('a fully locked palette survives generation unchanged', () => {

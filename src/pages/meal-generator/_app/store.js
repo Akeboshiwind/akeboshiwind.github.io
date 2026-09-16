@@ -76,6 +76,15 @@ export const generate = (state, options = {}) =>
 export const toggleLock = (state, i) =>
   push(state, current(state).map((s, j) => (j === i ? { ...s, locked: !s.locked } : s)));
 
+// Clears every lock in one go. A palette with nothing locked is left exactly
+// as it is, rather than spending a history entry on a no-op.
+export const unlockAll = state =>
+  anyLocked(state)
+    ? push(state, current(state).map(slot => (slot.locked ? { ...slot, locked: false } : slot)))
+    : state;
+
+export const anyLocked = state => current(state).some(slot => slot.locked);
+
 export const canUndo = state => state.index > 0;
 export const canRedo = state => state.index < state.entries.length - 1;
 

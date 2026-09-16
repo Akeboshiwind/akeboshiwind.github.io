@@ -87,6 +87,27 @@ describe('Menu', () => {
     });
   });
 
+  describe('unlock all', () => {
+    test('is offered, and disabled when nothing is locked', () => {
+      render(<Menu slots={slots.map(s => ({ ...s, locked: false }))} anyLocked={false} />);
+      openMenu();
+      expect(screen.getByRole('button', { name: 'Unlock all' }).disabled).toBe(true);
+    });
+
+    test('runs and closes the menu when something is locked', () => {
+      const onUnlockAll = vi.fn();
+      render(<Menu slots={slots} anyLocked onUnlockAll={onUnlockAll} />);
+      openMenu();
+
+      const item = screen.getByRole('button', { name: 'Unlock all' });
+      expect(item.disabled).toBe(false);
+      fireEvent.click(item);
+
+      expect(onUnlockAll).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole('radiogroup')).toBeNull();
+    });
+  });
+
   describe('all meals', () => {
     test('lists every meal the generator draws from', () => {
       render(<Menu slots={slots} />);

@@ -6,7 +6,7 @@ import { mealById } from './meals.js';
 import { swatch } from './color.js';
 import {
   initialState, isValidState, current,
-  generate, toggleLock, undo, redo, canUndo, canRedo,
+  generate, toggleLock, unlockAll, anyLocked, undo, redo, canUndo, canRedo,
 } from './store.js';
 
 const PREFIX = 'mealGenerator_';
@@ -167,7 +167,12 @@ export function App({ historyUrl }) {
         <span className="hidden shrink-0 px-2 text-xs text-gray-400 sm:inline">
           {state.index + 1} / {state.entries.length}
         </span>
-        <Menu slots={slots} onOpenChange={setMenuOpen} />
+        <Menu
+          slots={slots}
+          onOpenChange={setMenuOpen}
+          onUnlockAll={() => apply(unlockAll)}
+          anyLocked={anyLocked(state)}
+        />
       </div>
     </div>
   );

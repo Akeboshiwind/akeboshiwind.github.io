@@ -100,8 +100,9 @@ const MealsDialog = ({ slots, onClose }) => {
   );
 };
 
-// The corner menu: theme, and the meals the generator draws from.
-export function Menu({ slots, onOpenChange }) {
+// The corner menu: theme, the meals the generator draws from, and the one
+// action that doesn't belong on a single band.
+export function Menu({ slots, onOpenChange, onUnlockAll, anyLocked }) {
   const [open, setOpen] = useState(false);
   const [showMeals, setShowMeals] = useState(false);
   const wrapper = useRef(null);
@@ -136,6 +137,14 @@ export function Menu({ slots, onOpenChange }) {
         <div className="absolute right-0 bottom-full z-20 mb-2 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-800 dark:bg-gray-900">
           <ThemeChoice />
           <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+          <button
+            type="button"
+            onClick={() => { onUnlockAll?.(); setOpen(false); }}
+            disabled={!anyLocked}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 transition-colors enabled:cursor-pointer enabled:hover:bg-gray-100 disabled:opacity-40 dark:text-gray-200 dark:enabled:hover:bg-gray-800"
+          >
+            Unlock all
+          </button>
           <button
             type="button"
             onClick={() => { setShowMeals(true); setOpen(false); }}
