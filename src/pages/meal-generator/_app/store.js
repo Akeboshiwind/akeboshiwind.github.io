@@ -13,8 +13,11 @@ export const SLOT_COUNT = 5;
 const MAX_ENTRIES = 50;
 
 // How far apart two bands' hues have to be, in degrees, for the palette to
-// read as five colours rather than five shades of one.
-export const MIN_HUE_GAP = 30;
+// read as five colours rather than five shades of one. Kept at or below the
+// closest pair in meals.js (a test holds the pool to that), so the rule is a
+// guard against a future meal landing on a neighbour's colour rather than
+// something that quietly stops two meals ever being served in the same week.
+export const MIN_HUE_GAP = 15;
 
 // Degrees between two hues the short way round the wheel.
 export const hueDistance = (a, b) => {

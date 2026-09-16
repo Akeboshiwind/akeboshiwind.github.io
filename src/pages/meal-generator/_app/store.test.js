@@ -69,6 +69,28 @@ describe('generateSlots', () => {
 describe('hue spacing', () => {
   const hues = slots => slots.map(s => mealById(s.id).hue);
 
+  test('no two meals are closer than the gap generation asks for', () => {
+    // Otherwise the rule would be deciding which meals can share a palette,
+    // which is the colours dictating the dinners rather than the other way up.
+    for (const a of MEALS) {
+      for (const b of MEALS) {
+        if (a === b) continue;
+        expect(hueDistance(a.hue, b.hue), `${a.name} vs ${b.name}`)
+          .toBeGreaterThanOrEqual(MIN_HUE_GAP);
+      }
+    }
+  });
+
+  test('every meal can turn up alongside every other', () => {
+    const seen = new Set();
+    for (let i = 0; i < 4000; i++) {
+      const palette = generateSlots(null, {});
+      for (const a of palette) for (const b of palette) if (a.id !== b.id) seen.add(`${a.id}|${b.id}`);
+    }
+    const pairs = MEALS.length * (MEALS.length - 1);
+    expect(seen.size).toBe(pairs);
+  });
+
   test('hueDistance takes the short way round the wheel', () => {
     expect(hueDistance(10, 40)).toBe(30);
     expect(hueDistance(350, 10)).toBe(20);
