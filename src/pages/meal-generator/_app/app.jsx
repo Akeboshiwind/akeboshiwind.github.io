@@ -45,9 +45,7 @@ const Band = ({ slot, onToggleLock }) => {
     >
       <div className="min-w-0 md:mb-4">
         <div className="text-xl md:text-2xl font-semibold tracking-tight">{meal.name}</div>
-        <div className="mt-1 text-[11px] uppercase tracking-[0.2em] opacity-70">
-          {meal.cuisine} <span className="hidden md:inline">· {hex}</span>
-        </div>
+        <div className="mt-1 text-[11px] uppercase tracking-[0.2em] opacity-70">{hex}</div>
       </div>
       <button
         type="button"

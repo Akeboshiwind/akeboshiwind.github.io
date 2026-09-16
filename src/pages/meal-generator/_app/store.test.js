@@ -90,10 +90,10 @@ describe('hue spacing', () => {
 
   test('new bands keep clear of locked ones too', () => {
     const locked = [
-      { id: 'pad-thai', locked: true },
+      { id: 'pav-baji', locked: true },
       ...Array.from({ length: SLOT_COUNT - 1 }, (_, i) => ({ id: MEALS[i].id, locked: false })),
     ];
-    const pinned = mealById('pad-thai').hue;
+    const pinned = mealById('pav-baji').hue;
     for (let i = 0; i < 100; i++) {
       for (const slot of generateSlots(locked, {}).slice(1)) {
         expect(hueDistance(mealById(slot.id).hue, pinned)).toBeGreaterThanOrEqual(MIN_HUE_GAP);
