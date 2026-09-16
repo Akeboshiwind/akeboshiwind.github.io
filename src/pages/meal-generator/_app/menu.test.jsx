@@ -110,6 +110,18 @@ describe('Menu', () => {
       expect(within(dialog).queryAllByText(/in this set|locked/)).toHaveLength(slots.length);
     });
 
+    test('the list can shrink and scroll inside the sheet', () => {
+      render(<Menu slots={slots} />);
+      openMeals();
+
+      const list = screen.getByRole('dialog', { name: 'All meals' }).querySelector('ul');
+      // Without min-h-0 the list refuses to shrink in the flex column and
+      // overflows the sheet rather than scrolling within it.
+      expect(list.className).toContain('min-h-0');
+      expect(list.className).toContain('overflow-y-auto');
+      expect(list.className).toContain('flex-1');
+    });
+
     test('closes on its close button, the backdrop and Escape', () => {
       render(<Menu slots={slots} />);
 
