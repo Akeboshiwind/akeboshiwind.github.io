@@ -1,0 +1,12 @@
+{
+  "title": "Meal Generator",
+  "stage": "scribble",
+  "published": "2026-09-16",
+  "description": "A Coolors-style palette generator for dinner. Five meals, one colour band each, lock the ones you want and hit generate for a fresh set — with back and forward through everything you've rolled.",
+  "tags": [
+    "tool",
+    "food"
+  ],
+  "category": "utilities",
+  "icon": "utensils-crossed"
+}
