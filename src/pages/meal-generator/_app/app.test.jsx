@@ -122,6 +122,36 @@ describe('Meal Generator', () => {
     expect(names()).toEqual(second);
   });
 
+  test('the top band leaves room for the nav pill on mobile only', () => {
+    render(<App />);
+    const [first, ...rest] = bands();
+
+    expect(first.className).toContain('pt-14');
+    expect(first.className).toContain('flex-[1.25]');
+    // Desktop lays the bands out as equal columns, with the pill clear of them.
+    expect(first.className).toContain('md:flex-1');
+    expect(first.className).toContain('md:pt-5');
+
+    for (const band of rest) {
+      expect(band.className).not.toContain('pt-14');
+      expect(band.className).toContain('flex-1');
+    }
+  });
+
+  test('the browser chrome is tinted with the top band, and follows it', () => {
+    render(<App />);
+    const chrome = () => document.head.querySelector('meta[name="theme-color"]')?.getAttribute('content');
+    const topHex = () => within(bands()[0]).getByText(/^#[0-9A-F]{6}$/).textContent;
+
+    expect(chrome()).toBe(topHex());
+
+    fireEvent.click(generateButton());
+    expect(chrome()).toBe(topHex());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(chrome()).toBe(topHex());
+  });
+
   test('bands change colour outright, with no transition', () => {
     render(<App />);
     for (const band of bands()) {

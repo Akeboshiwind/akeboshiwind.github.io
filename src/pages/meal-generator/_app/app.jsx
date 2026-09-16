@@ -34,13 +34,17 @@ const Arrow = ({ direction }) => (
   </svg>
 );
 
-const Band = ({ slot, onToggleLock }) => {
+const Band = ({ slot, onToggleLock, first }) => {
   const meal = mealById(slot.id);
   const { background, text, hex } = swatch(meal.hue);
 
   return (
     <li
-      className="flex-1 flex items-center justify-between gap-4 px-6 py-5 min-h-0 md:flex-col md:items-start md:justify-end md:px-5 md:pb-8"
+      className={`flex items-center justify-between gap-4 px-6 py-5 min-h-0 md:flex-1 md:flex-col md:items-start md:justify-end md:px-5 md:pt-5 md:pb-8 ${
+        // On mobile the nav pill floats over the top band, so that one is
+        // given extra room rather than having its label crowded.
+        first ? 'flex-[1.25] pt-14' : 'flex-1'
+      }`}
       style={{ backgroundColor: background, color: text }}
     >
       <div className="min-w-0 md:mb-4">
@@ -91,6 +95,19 @@ export function App({ historyUrl }) {
   // Set while the corner menu or the meals dialog is up.
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // iOS Safari tints its chrome — the strip around the Dynamic Island most
+  // visibly — with theme-color, so it tracks the band at the top of the page.
+  const topColor = swatch(mealById(slots[0].id).hue).hex;
+  useEffect(() => {
+    let meta = document.head.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', topColor);
+  }, [topColor]);
+
   useEffect(() => {
     const onKeyDown = e => {
       // Let the focused control have the key — space activates buttons.
@@ -124,6 +141,7 @@ export function App({ historyUrl }) {
             <Band
               key={i}
               slot={slot}
+              first={i === 0}
               onToggleLock={() => apply(s => toggleLock(s, i))}
             />
           ))}
