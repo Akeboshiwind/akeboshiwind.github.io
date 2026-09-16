@@ -1,16 +1,18 @@
 // Turning a meal's hue into the colours of its band.
 //
-// Every band uses the same saturation and lightness so a meal keeps its
-// identity wherever it lands in the palette. Text colour is picked per band
-// by contrast, because a fixed white would fail on the yellows.
+// Bands are as bright as white text allows: rather than a fixed lightness,
+// each hue is solved for the lightness that lands on TARGET_CONTRAST against
+// white. A fixed lightness has to be set for the worst hue — yellow, which
+// carries far more luminance than blue at the same value — leaving every
+// other band needlessly dark. Solving per hue also evens out the palette,
+// since equal contrast against white reads as equal brightness.
 
-// Muted and deep enough that white text clears 4.5:1 at every hue — the
-// mid-lightness band where neither white nor ink reaches 4.5 sits just above
-// this (see color.test.js).
-export const SATURATION = 34;
-export const LIGHTNESS = 33;
+export const SATURATION = 72;
 
-const INK = [26, 20, 35]; // near-black with a hint of purple, as in the mock
+// A hair above the 4.5:1 AA threshold for body text, so the 8-bit rounding
+// on the way to a CSS colour can't drop a band under it.
+export const TARGET_CONTRAST = 4.6;
+
 const PAPER = [255, 255, 255];
 
 export const hslToRgb = (h, s, l) => {
@@ -45,15 +47,34 @@ export const contrastRatio = (a, b) => {
   return (hi + 0.05) / (lo + 0.05);
 };
 
+// Contrast against white falls as lightness rises, so a binary search on
+// lightness converges on the target from either side.
+const solveLightness = hue => {
+  let lo = 0;
+  let hi = 100;
+  for (let i = 0; i < 24; i++) {
+    const mid = (lo + hi) / 2;
+    if (contrastRatio(hslToRgb(hue, SATURATION, mid), PAPER) > TARGET_CONTRAST) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+};
+
+const lightnessCache = new Map();
+
+export const lightnessFor = hue => {
+  if (!lightnessCache.has(hue)) lightnessCache.set(hue, solveLightness(hue));
+  return lightnessCache.get(hue);
+};
+
 const css = ([r, g, b]) => `rgb(${r} ${g} ${b})`;
 
 export const toHex = ([r, g, b]) =>
   '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
 
-// The band's background, the text colour that reads best on it, and a hex
-// label for the colour itself.
+// The band's background, the text that sits on it, and a hex label for the
+// colour itself.
 export const swatch = hue => {
-  const rgb = hslToRgb(hue, SATURATION, LIGHTNESS);
-  const text = contrastRatio(rgb, PAPER) >= contrastRatio(rgb, INK) ? PAPER : INK;
-  return { background: css(rgb), text: css(text), hex: toHex(rgb) };
+  const rgb = hslToRgb(hue, SATURATION, lightnessFor(hue));
+  return { background: css(rgb), text: css(PAPER), hex: toHex(rgb) };
 };

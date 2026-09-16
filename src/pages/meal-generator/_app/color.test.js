@@ -1,5 +1,8 @@
 import { describe, test, expect } from 'vitest';
-import { hslToRgb, relativeLuminance, contrastRatio, toHex, swatch } from './color.js';
+import {
+  hslToRgb, relativeLuminance, contrastRatio, toHex, swatch,
+  lightnessFor, TARGET_CONTRAST,
+} from './color.js';
 import { MEALS } from './meals.js';
 
 describe('hslToRgb', () => {
@@ -43,6 +46,29 @@ describe('toHex', () => {
   });
 });
 
+describe('lightnessFor', () => {
+  test('lands on the target contrast at every hue, never under it', () => {
+    for (let hue = 0; hue < 360; hue++) {
+      const rgb = hslToRgb(hue, 72, lightnessFor(hue));
+      const ratio = contrastRatio(rgb, [255, 255, 255]);
+      // Rounding the solved lightness to 8-bit channels nudges the realised
+      // ratio up a little; it must never round the other way.
+      expect(ratio, `hue ${hue}`).toBeGreaterThanOrEqual(TARGET_CONTRAST - 0.001);
+      expect(ratio, `hue ${hue}`).toBeLessThan(TARGET_CONTRAST + 0.15);
+    }
+  });
+
+  test('gives luminous hues less lightness than dark ones', () => {
+    // Yellow carries far more luminance than blue at the same HSL lightness,
+    // so equal contrast means it has to sit lower.
+    expect(lightnessFor(60)).toBeLessThan(lightnessFor(240));
+  });
+
+  test('is stable across calls', () => {
+    expect(lightnessFor(200)).toBe(lightnessFor(200));
+  });
+});
+
 describe('swatch', () => {
   test('every meal band clears 4.5:1 for its text', () => {
     for (const meal of MEALS) {
@@ -51,6 +77,14 @@ describe('swatch', () => {
       expect(contrastRatio(parse(background), parse(text)),
         `${meal.name} (hue ${meal.hue})`).toBeGreaterThanOrEqual(4.5);
     }
+  });
+
+  test('bands read as equally bright — no band is much darker than the rest', () => {
+    const ratios = MEALS.map(meal => {
+      const rgb = swatch(meal.hue).background.match(/\d+/g).map(Number);
+      return contrastRatio(rgb, [255, 255, 255]);
+    });
+    expect(Math.max(...ratios) - Math.min(...ratios)).toBeLessThan(0.2);
   });
 
   test('is a pure function of the hue', () => {
