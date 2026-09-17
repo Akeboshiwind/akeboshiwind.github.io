@@ -2,7 +2,7 @@ import { describe, test, expect } from 'vitest';
 import {
   SLOT_COUNT, MIN_HUE_GAP, hueDistance,
   generateSlots, initialState, current, generate, toggleLock,
-  unlockAll, anyLocked, undo, redo, canUndo, canRedo, isValidState,
+  chooseMeal, unlockAll, anyLocked, undo, redo, canUndo, canRedo, isValidState,
 } from './store.js';
 import { MEALS, mealById } from './meals.js';
 
@@ -266,6 +266,68 @@ describe('locking', () => {
     const before = current(state);
 
     expect(current(generate(state, {}))).toEqual(before);
+  });
+});
+
+describe('chooseMeal', () => {
+  // A meal the palette isn't already using.
+  const spare = state => MEALS.find(m => !ids(current(state)).includes(m.id)).id;
+
+  test('sets the band and locks it', () => {
+    const state = initialState({});
+    const meal = spare(state);
+    const chosen = chooseMeal(state, 1, meal);
+
+    expect(current(chosen)[1]).toEqual({ id: meal, locked: true });
+    expect(current(chosen).filter((_, i) => i !== 1)).toEqual(current(state).filter((_, i) => i !== 1));
+  });
+
+  test('is not a history step', () => {
+    const state = generate(initialState({}), {});
+    const chosen = chooseMeal(state, 0, spare(state));
+
+    expect(chosen.entries).toHaveLength(state.entries.length);
+    expect(chosen.index).toBe(state.index);
+  });
+
+  test('swaps when the meal is already on another band', () => {
+    const state = initialState({});
+    const [a, b] = ids(current(state));
+    const chosen = chooseMeal(state, 0, b);
+
+    expect(ids(current(chosen)).slice(0, 2)).toEqual([b, a]);
+    expect(new Set(ids(current(chosen))).size).toBe(SLOT_COUNT);
+    expect(current(chosen)[0].locked).toBe(true);
+    // The band handing its meal over keeps its own lock state.
+    expect(current(chosen)[1].locked).toBe(false);
+  });
+
+  test('refuses to take a meal out of a locked band', () => {
+    const state = toggleLock(initialState({}), 3);
+    const pinned = ids(current(state))[3];
+
+    expect(chooseMeal(state, 0, pinned)).toBe(state);
+  });
+
+  test('locks the band when the meal chosen is the one already there', () => {
+    const state = initialState({});
+    const own = ids(current(state))[2];
+    const chosen = chooseMeal(state, 2, own);
+
+    expect(current(chosen)[2]).toEqual({ id: own, locked: true });
+  });
+
+  test('ignores a meal that is not on the list', () => {
+    const state = initialState({});
+    expect(chooseMeal(state, 0, 'not-a-meal')).toBe(state);
+  });
+
+  test('a chosen meal survives the next generate', () => {
+    const state = initialState({});
+    const meal = spare(state);
+    const chosen = generate(chooseMeal(state, 4, meal), {});
+
+    expect(current(chosen)[4]).toEqual({ id: meal, locked: true });
   });
 });
 

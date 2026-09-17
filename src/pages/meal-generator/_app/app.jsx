@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
 import { Menu } from './menu.jsx';
+import { MealPicker } from './picker.jsx';
 import { mealById } from './meals.js';
 import { swatch } from './color.js';
 import {
   initialState, isValidState, current,
-  generate, toggleLock, unlockAll, anyLocked, undo, redo, canUndo, canRedo,
+  generate, toggleLock, chooseMeal, unlockAll, anyLocked, undo, redo, canUndo, canRedo,
 } from './store.js';
 
 const PREFIX = 'mealGenerator_';
@@ -34,9 +35,9 @@ const Arrow = ({ direction }) => (
   </svg>
 );
 
-const Band = ({ slot, onToggleLock, first }) => {
+const Band = ({ slot, onToggleLock, onPick, first }) => {
   const meal = mealById(slot.id);
-  const { background, text, hex } = swatch(meal.hue);
+  const { background, text } = swatch(meal.hue);
 
   return (
     <li
@@ -47,10 +48,15 @@ const Band = ({ slot, onToggleLock, first }) => {
       }`}
       style={{ backgroundColor: background, color: text }}
     >
-      <div className="min-w-0 md:mb-4">
-        <div className="text-xl md:text-2xl font-semibold tracking-tight">{meal.name}</div>
-        <div className="mt-1 text-[11px] uppercase tracking-[0.2em] opacity-70">{hex}</div>
-      </div>
+      <button
+        type="button"
+        onClick={onPick}
+        aria-haspopup="dialog"
+        aria-label={`Change ${meal.name}`}
+        className="min-w-0 cursor-pointer text-left text-xl font-semibold tracking-tight transition-opacity hover:opacity-75 md:mb-4 md:text-2xl"
+      >
+        {meal.name}
+      </button>
       <button
         type="button"
         onClick={onToggleLock}
@@ -94,6 +100,9 @@ export function App({ historyUrl }) {
 
   // Set while the corner menu or the meals dialog is up.
   const [menuOpen, setMenuOpen] = useState(false);
+  // The band whose meal is being picked by hand, if any.
+  const [picking, setPicking] = useState(null);
+  const overlayOpen = menuOpen || picking !== null;
 
   // iOS Safari tints its chrome — the strip around the Dynamic Island most
   // visibly — with theme-color, so it tracks the band at the top of the page.
@@ -111,7 +120,7 @@ export function App({ historyUrl }) {
   useEffect(() => {
     const onKeyDown = e => {
       // Let the focused control have the key — space activates buttons.
-      if (menuOpen || e.target !== document.body || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (overlayOpen || e.target !== document.body || e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === ' ') { e.preventDefault(); apply(generate); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); apply(undo); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); apply(redo); }
@@ -121,6 +130,11 @@ export function App({ historyUrl }) {
     // No dependency list: the handler closes over the current palette, and
     // rebinding it each render is cheaper than threading state through a ref.
   });
+
+  const choose = mealId => {
+    apply(s => chooseMeal(s, picking, mealId));
+    setPicking(null);
+  };
 
   return (
     <div className="flex flex-col h-[100dvh] overflow-hidden">
@@ -136,17 +150,27 @@ export function App({ historyUrl }) {
           )}
         </nav>
 
-        <ul className="flex h-full flex-col md:flex-row">
+        <ul aria-label="Palette" className="flex h-full flex-col md:flex-row">
           {slots.map((slot, i) => (
             <Band
               key={i}
               slot={slot}
               first={i === 0}
               onToggleLock={() => apply(s => toggleLock(s, i))}
+              onPick={() => setPicking(i)}
             />
           ))}
         </ul>
       </div>
+
+      {picking !== null && (
+        <MealPicker
+          slots={slots}
+          index={picking}
+          onChoose={choose}
+          onClose={() => setPicking(null)}
+        />
+      )}
 
       <div className="flex items-center gap-1 border-t border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900">
         <ToolbarButton onClick={() => apply(undo)} disabled={!canUndo(state)} label="Back">

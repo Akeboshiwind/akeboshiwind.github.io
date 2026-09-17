@@ -2,15 +2,20 @@ import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { App } from './app.jsx';
 import { SLOT_COUNT } from './store.js';
-import { MEALS } from './meals.js';
+import { MEALS, mealById } from './meals.js';
+import { swatch } from './color.js';
 
 afterEach(cleanup);
 beforeEach(() => localStorage.clear());
 
-const bands = () => screen.getAllByRole('listitem');
-const names = () => bands().map(b => b.querySelector('div > div').textContent);
-const lockButton = band => within(band).getByRole('button');
+const palette = () => screen.getByRole('list', { name: 'Palette' });
+const bands = () => within(palette()).getAllByRole('listitem');
+const nameButton = band => within(band).getByRole('button', { name: /^Change / });
+const names = () => bands().map(b => nameButton(b).textContent);
+const lockButton = band => within(band).getByRole('button', { name: /^(Lock|Unlock) / });
 const generateButton = () => screen.getByRole('button', { name: 'Generate' });
+const openPicker = i => fireEvent.click(nameButton(bands()[i]));
+const pickerRow = name => within(screen.getByRole('dialog')).getByRole('button', { name: new RegExp(`^${name}`) });
 
 describe('Meal Generator', () => {
   test('renders a palette of distinct meals', () => {
@@ -194,7 +199,7 @@ describe('Meal Generator', () => {
   test('the browser chrome is tinted with the top band, and follows it', () => {
     render(<App />);
     const chrome = () => document.head.querySelector('meta[name="theme-color"]')?.getAttribute('content');
-    const topHex = () => within(bands()[0]).getByText(/^#[0-9A-F]{6}$/).textContent;
+    const topHex = () => swatch(MEALS.find(m => m.name === names()[0]).hue).hex;
 
     expect(chrome()).toBe(topHex());
 
@@ -203,6 +208,84 @@ describe('Meal Generator', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(chrome()).toBe(topHex());
+  });
+
+  test('tapping a name picks a meal by hand, and locks the band', () => {
+    render(<App />);
+    const taken = new Set(names());
+    const free = MEALS.find(m => !taken.has(m.name));
+
+    openPicker(1);
+    expect(screen.getByRole('dialog', { name: /Choose a meal/ })).toBeTruthy();
+    fireEvent.click(pickerRow(free.name));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(names()[1]).toBe(free.name);
+    expect(lockButton(bands()[1]).getAttribute('aria-pressed')).toBe('true');
+
+    // Locked, so the next generate leaves it alone.
+    fireEvent.click(generateButton());
+    expect(names()[1]).toBe(free.name);
+  });
+
+  test('picking a meal already on another band swaps the two', () => {
+    render(<App />);
+    const [a, b] = names();
+
+    openPicker(0);
+    fireEvent.click(pickerRow(b));
+
+    expect(names()[0]).toBe(b);
+    expect(names()[1]).toBe(a);
+    expect(new Set(names()).size).toBe(SLOT_COUNT);
+    expect(lockButton(bands()[1]).getAttribute('aria-pressed')).toBe('false');
+  });
+
+  test("a locked band won't give its meal up to the picker", () => {
+    render(<App />);
+    const pinned = names()[3];
+    fireEvent.click(lockButton(bands()[3]));
+
+    openPicker(0);
+    expect(pickerRow(pinned).disabled).toBe(true);
+  });
+
+  test('the picker marks the band\'s own meal as current', () => {
+    render(<App />);
+    const own = names()[2];
+
+    openPicker(2);
+    const row = pickerRow(own);
+    expect(row.getAttribute('aria-current')).toBe('true');
+    expect(row.disabled).toBe(false);
+  });
+
+  test('the picker closes on Escape, leaving the band alone', () => {
+    render(<App />);
+    const before = names();
+
+    openPicker(0);
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(names()).toEqual(before);
+    expect(lockButton(bands()[0]).getAttribute('aria-pressed')).toBe('false');
+  });
+
+  test('the keyboard shortcuts stand down while the picker is open', () => {
+    render(<App />);
+    const before = names();
+
+    openPicker(0);
+    fireEvent.keyDown(document.body, { key: ' ' });
+    expect(names()).toEqual(before);
+  });
+
+  test('bands show the meal alone, with no colour code', () => {
+    render(<App />);
+    for (const band of bands()) {
+      expect(band.textContent).not.toMatch(/#[0-9A-F]{6}/);
+    }
   });
 
   test('bands change colour outright, with no transition', () => {

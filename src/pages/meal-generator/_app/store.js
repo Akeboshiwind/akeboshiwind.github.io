@@ -85,6 +85,25 @@ const replace = (state, slots) => ({
 export const toggleLock = (state, i) =>
   replace(state, current(state).map((s, j) => (j === i ? { ...s, locked: !s.locked } : s)));
 
+// Sets a band's meal by hand, and locks it: a meal chosen deliberately
+// shouldn't be rolled away by the next generate. If the meal is already on
+// another band the two swap, which keeps the palette a set of distinct meals
+// while still putting the meal where it was asked for. A locked band won't
+// give its meal up that way, and the caller is expected to offer no such
+// choice; an unknown meal is ignored.
+export const chooseMeal = (state, i, mealId) => {
+  if (!mealById(mealId)) return state;
+  const slots = current(state);
+  const from = slots.findIndex((slot, j) => j !== i && slot.id === mealId);
+  if (from !== -1 && slots[from].locked) return state;
+
+  return replace(state, slots.map((slot, j) => {
+    if (j === i) return { id: mealId, locked: true };
+    if (j === from) return { ...slot, id: slots[i].id };
+    return slot;
+  }));
+};
+
 // Clears every lock in one go. A palette with nothing locked is returned
 // untouched, so the caller can tell nothing happened.
 export const unlockAll = state =>

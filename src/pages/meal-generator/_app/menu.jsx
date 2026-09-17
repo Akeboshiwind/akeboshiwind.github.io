@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MEALS } from './meals.js';
-import { swatch } from './color.js';
+import { Sheet, MealSwatch, MealNote } from './sheet.jsx';
 
 const THEMES = [
   { id: 'auto', label: 'Auto' },
@@ -50,53 +50,18 @@ const MealsDialog = ({ slots, onClose }) => {
   const inPalette = new Map(slots.map(slot => [slot.id, slot]));
 
   return (
-    <div
-      className="fixed inset-0 z-30 flex items-end justify-center bg-black/40 sm:items-center sm:p-6"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="All meals"
-        onClick={e => e.stopPropagation()}
-        className="flex max-h-[80dvh] w-full max-w-md flex-col rounded-t-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900 sm:rounded-2xl"
-      >
-        <div className="flex shrink-0 items-center justify-between px-4 pt-4 pb-2">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">All meals</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="cursor-pointer rounded-lg px-2 py-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-          >
-            ✕
-          </button>
-        </div>
-        {/* min-h-0 is what lets this shrink inside the flex column and scroll:
-            a flex item's min-height defaults to its content, which in Safari
-            runs the list past the sheet instead of giving it a scrollbar. */}
-        <ul className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-          {MEALS.map(meal => {
-            const slot = inPalette.get(meal.id);
-            return (
-              <li key={meal.id} className="flex items-center gap-3 py-1.5">
-                <span
-                  aria-hidden="true"
-                  className="h-7 w-7 shrink-0 rounded-md"
-                  style={{ backgroundColor: swatch(meal.hue).background }}
-                />
-                <span className="flex-1 truncate text-sm text-gray-900 dark:text-gray-100">{meal.name}</span>
-                {slot && (
-                  <span className="shrink-0 text-[11px] uppercase tracking-wider text-gray-400">
-                    {slot.locked ? 'locked' : 'in this set'}
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    </div>
+    <Sheet title="All meals" onClose={onClose}>
+      {MEALS.map(meal => {
+        const slot = inPalette.get(meal.id);
+        return (
+          <li key={meal.id} className="flex items-center gap-3 px-2 py-1.5">
+            <MealSwatch hue={meal.hue} />
+            <span className="flex-1 truncate text-sm text-gray-900 dark:text-gray-100">{meal.name}</span>
+            {slot && <MealNote>{slot.locked ? 'locked' : 'in this set'}</MealNote>}
+          </li>
+        );
+      })}
+    </Sheet>
   );
 };
 
@@ -111,17 +76,12 @@ export function Menu({ slots, onOpenChange, onUnlockAll, anyLocked }) {
   // The palette's keyboard shortcuts stand down while this is up.
   useEffect(() => { onOpenChange?.(isOpen); }, [isOpen, onOpenChange]);
 
+  // The sheet looks after its own dismissal, so this is only the popover's.
   useEffect(() => {
-    if (!isOpen) return;
-    const onKeyDown = e => {
-      if (e.key !== 'Escape') return;
-      if (showMeals) setShowMeals(false);
-      else setOpen(false);
-    };
-    // The dialog closes on its own backdrop, so only the popover listens out
-    // for clicks landing elsewhere.
+    if (!open) return;
+    const onKeyDown = e => { if (e.key === 'Escape') setOpen(false); };
     const onPointerDown = e => {
-      if (!showMeals && wrapper.current && !wrapper.current.contains(e.target)) setOpen(false);
+      if (wrapper.current && !wrapper.current.contains(e.target)) setOpen(false);
     };
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('pointerdown', onPointerDown);
@@ -129,7 +89,7 @@ export function Menu({ slots, onOpenChange, onUnlockAll, anyLocked }) {
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('pointerdown', onPointerDown);
     };
-  }, [isOpen, showMeals]);
+  }, [open]);
 
   return (
     <div ref={wrapper} className="relative shrink-0">
