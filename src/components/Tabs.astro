@@ -2,13 +2,14 @@
 const base = import.meta.env.BASE_URL;
 
 interface Props {
-  active: 'main' | 'tools';
+  active: 'main' | 'posts' | 'tools';
 }
 
 const { active } = Astro.props;
 
 const tabs = [
   { id: 'main', label: 'Main', href: base },
+  { id: 'posts', label: 'Posts', href: `${base}posts/` },
   { id: 'tools', label: 'Tools', href: `${base}tools/` },
 ];
 ---
