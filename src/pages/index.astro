@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import CardList from '../components/CardList.astro';
+import Tabs from '../components/Tabs.astro';
 import { getCollection } from 'astro:content';
 
 const base = import.meta.env.BASE_URL;
@@ -43,7 +44,7 @@ const rest = allItems.filter(i => !i.pinned).sort((a, b) => b.date.getTime() - a
 ---
 
 <Layout>
-  <a href={`${base}tools/`} class="text-sm text-text opacity-60 hover:opacity-100 no-underline hover:underline">All tools →</a>
+  <Tabs active="main" />
 
   {pinned.length > 0 && (
     <>

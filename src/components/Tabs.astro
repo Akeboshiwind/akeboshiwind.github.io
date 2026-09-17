@@ -1,0 +1,33 @@
+---
+const base = import.meta.env.BASE_URL;
+
+interface Props {
+  active: 'main' | 'tools';
+}
+
+const { active } = Astro.props;
+
+const tabs = [
+  { id: 'main', label: 'Main', href: base },
+  { id: 'tools', label: 'Tools', href: `${base}tools/` },
+];
+---
+
+<nav class="border-b border-border mb-2" aria-label="Sections">
+  <ul class="flex gap-1 list-none p-0 m-0 -mb-px">
+    {tabs.map(tab => (
+      <li>
+        <a
+          href={tab.href}
+          aria-current={active === tab.id ? 'page' : undefined}
+          class:list={[
+            'block px-3 py-2 text-sm no-underline border-b-2 transition-colors hover:no-underline',
+            active === tab.id
+              ? 'border-link text-heading font-semibold'
+              : 'border-transparent text-text opacity-60 hover:opacity-100 hover:border-border',
+          ]}
+        >{tab.label}</a>
+      </li>
+    ))}
+  </ul>
+</nav>
