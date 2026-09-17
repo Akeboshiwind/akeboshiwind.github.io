@@ -3,6 +3,7 @@ import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import LucideIcon from '../../components/LucideIcon.astro';
+import Tabs from '../../components/Tabs.astro';
 
 const base = import.meta.env.BASE_URL;
 
@@ -51,6 +52,8 @@ const grouped = CATEGORIES.map(cat => {
 ---
 
 <Layout title="Tools" description="A dashboard of all the tools, talks and toys on this site.">
+  <Tabs active="tools" />
+
   <h1 class="text-2xl font-bold text-heading mt-4 mb-2">Tools</h1>
   <p class="text-sm opacity-70 mt-0 mb-4">Search or scroll. {works.length} things across {grouped.length} categories.</p>
 
