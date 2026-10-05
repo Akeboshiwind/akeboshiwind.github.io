@@ -25,6 +25,8 @@ export const MEALS = [
   { id: 'mushroom-muttar', name: 'Mushroom muttar', hue: 293 },
   { id: 'egg-curry', name: 'Egg curry', hue: 23 },
   { id: 'green-pepper-besan', name: 'Green pepper besan', hue: 143 },
+  { id: 'gutte-ki-subji', name: 'Gutte ki subji', hue: 263 },
+  { id: 'lasagne', name: 'Lasagne', hue: 53 },
 ];
 
 const BY_ID = new Map(MEALS.map(m => [m.id, m]));
