@@ -1,7 +1,14 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import ALGORITHMS from './algorithms/index.js';
-import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
+import { SectionLabel } from '../../../components/pixel/SectionLabel.jsx';
+import { Sheet } from '../../../components/pixel/Sheet.jsx';
+import { Icon } from '../../../components/pixel/Icon.jsx';
+import checkSvg from 'pixelarticons/svg/check.svg?raw';
+import minusSvg from 'pixelarticons/svg/minus.svg?raw';
+import closeSvg from 'pixelarticons/svg/close.svg?raw';
+import chevronDownSvg from 'pixelarticons/svg/chevron-down.svg?raw';
+import chevronUpSvg from 'pixelarticons/svg/chevron-up.svg?raw';
 
 function shuffle(arr) {
   const a = [...arr];
@@ -25,84 +32,74 @@ function replaySort(algoKey, shuffledItems, history) {
 // ——— Screen 1: Algorithm Selection ———
 
 const RATING_STYLE = {
-  great: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800',
-  ok:    'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800',
-  poor:  'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800',
+  great: 'border-ok text-ok',
+  ok:    'border-warn text-warn',
+  poor:  'border-danger text-danger',
 };
-const RATING_ICON = { great: '✓', ok: '~', poor: '✗' };
+const RATING_ICON = { great: checkSvg, ok: minusSvg, poor: closeSvg };
+
+const Estimate = ({ label, children }) => (
+  <span>
+    <span className="opacity-70">{label} </span>
+    <span className="pixel-num text-heading">{children}</span>
+  </span>
+);
 
 const AlgoRow = ({ algoKey, algo, n, expanded, onToggle, onStart }) => {
   const est = algo.estimates;
   return (
-    <div className="border-b border-gray-100 dark:border-gray-700 last:border-b-0">
-      <div
-        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-        onClick={onToggle}
-      >
-        <button
-          onClick={e => { e.stopPropagation(); onStart(algoKey); }}
-          className="shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-medium rounded-lg transition-colors"
-        >
+    <li className="pixel-line last:bg-none">
+      <div className="flex items-center gap-3 p-3">
+        <button onClick={() => onStart(algoKey)} className="pixel-button shrink-0" data-variant="primary">
           Sort
         </button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{algo.name}</span>
-            <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">{algo.complexity}</span>
-          </div>
-          <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-            <span>~{est.avg(n)} comps</span>
-            <span>{algo.stable ? 'stable' : 'unstable'}</span>
-            <span className={algo.noRepeatPairs ? 'text-blue-600 dark:text-blue-400' : ''}>
-              {algo.noRepeatPairs ? 'no repeats' : 'may repeat'}
-            </span>
-          </div>
-        </div>
-        <svg
-          className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+        <button
+          onClick={onToggle}
+          aria-expanded={expanded}
+          className="group flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
         >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <span className="font-medium text-heading group-hover:text-accent">{algo.name}</span>
+              <span className="font-pixel text-pixel opacity-70">{algo.complexity}</span>
+            </div>
+            <div className="label mt-0.5 flex flex-wrap items-center gap-x-3">
+              <span className="opacity-70">~{est.avg(n)} comps</span>
+              <span className="opacity-70">{algo.stable ? 'stable' : 'unstable'}</span>
+              <span className={algo.noRepeatPairs ? 'text-accent' : 'opacity-70'}>
+                {algo.noRepeatPairs ? 'no repeats' : 'may repeat'}
+              </span>
+            </div>
+          </div>
+          <Icon svg={expanded ? chevronUpSvg : chevronDownSvg} className="h-5 w-5 shrink-0 group-hover:text-accent" />
+        </button>
       </div>
       {expanded && (
-        <div className="px-4 pb-4 pt-1">
-          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
-            {algo.description}
-          </p>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs mb-3">
-            <span className="text-gray-500 dark:text-gray-400">
-              <span className="text-gray-400 dark:text-gray-500">Best </span>
-              <span className="font-mono font-semibold text-gray-800 dark:text-gray-100">{est.best(n)}</span>
-            </span>
-            <span className="text-gray-500 dark:text-gray-400">
-              <span className="text-gray-400 dark:text-gray-500">Avg </span>
-              <span className="font-mono font-semibold text-gray-800 dark:text-gray-100">~{est.avg(n)}</span>
-            </span>
-            <span className="text-gray-500 dark:text-gray-400">
-              <span className="text-gray-400 dark:text-gray-500">Worst </span>
-              <span className="font-mono font-semibold text-gray-800 dark:text-gray-100">{est.worst(n)}</span>
-            </span>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <span className={algo.noRepeatPairs ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}>
+        <div className="flex flex-col gap-3 px-3 pb-4">
+          <p className="text-sm leading-relaxed">{algo.description}</p>
+          <div className="label flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <Estimate label="Best">{est.best(n)}</Estimate>
+            <Estimate label="Avg">~{est.avg(n)}</Estimate>
+            <Estimate label="Worst">{est.worst(n)}</Estimate>
+            <span className={algo.noRepeatPairs ? 'text-accent' : 'opacity-70'}>
               {algo.noRepeatPairs ? '✓ no repeated pairs' : '↻ may repeat pairs'}
             </span>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <ul className="flex flex-wrap gap-1.5">
             {algo.scenarios.map(s => (
-              <span
+              <li
                 key={s.label}
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${RATING_STYLE[s.rating]}`}
+                className={`pixel-chip inline-flex items-center gap-1 ${RATING_STYLE[s.rating]}`}
                 title={s.note}
               >
-                <span className="opacity-60">{RATING_ICON[s.rating]}</span>
+                <Icon svg={RATING_ICON[s.rating]} className="h-3 w-3" />
                 {s.label}
-              </span>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
-    </div>
+    </li>
   );
 };
 
@@ -120,91 +117,65 @@ const SelectScreen = ({ items, configText, onConfigTextChange, onStart }) => {
 
   return (
     <>
-      <h1 className="text-2xl font-bold mt-4 mb-1">Sorting Comparator</h1>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-        Sort any list by comparing items yourself. See how different algorithms feel when a human drives them.
-      </p>
-      <p className="text-xs text-gray-400 dark:text-gray-500 mb-6">
-        Great for prioritising todos, ranking preferences, or just seeing how sorting algorithms actually work.
-      </p>
+      <header className="flex flex-col gap-2">
+        <h1 className="page-title">Sorting Comparator</h1>
+        <p className="page-sub">
+          Sort any list by comparing items yourself. See how different algorithms feel when a human drives them.
+        </p>
+        <p className="page-sub">
+          Great for prioritising todos, ranking preferences, or just seeing how sorting algorithms actually work.
+        </p>
+      </header>
 
-      {/* Item config */}
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          {n} items to sort
-        </span>
-        <button
-          onClick={() => setShowConfig(true)}
-          className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-        >
+      <div className="flex items-center justify-between gap-3">
+        <span className="label text-heading">{n} items to sort</span>
+        <button onClick={() => setShowConfig(true)} className="pixel-button">
           Edit items
         </button>
       </div>
 
-      {/* Algorithm table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
-        <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            Choose an algorithm
-          </span>
-        </div>
-        {Object.entries(ALGORITHMS).map(([key, algo]) => (
-          <AlgoRow
-            key={key}
-            algoKey={key}
-            algo={algo}
-            n={n}
-            expanded={expandedAlgo === key}
-            onToggle={() => setExpandedAlgo(expandedAlgo === key ? null : key)}
-            onStart={onStart}
-          />
-        ))}
-      </div>
-
-      {/* Config modal */}
-      {showConfig && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900 dark:text-gray-100">Edit Items</h2>
-              <button
-                onClick={() => setShowConfig(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-              One item per line. Minimum 2 items.
-            </p>
-            <textarea
-              value={configText}
-              onChange={e => onConfigTextChange(e.target.value)}
-              rows={8}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              placeholder={"Apple\nBanana\nCherry"}
-              autoFocus
+      <section className="flex flex-col gap-3">
+        <SectionLabel>Choose an algorithm</SectionLabel>
+        <ul className="pixel-panel">
+          {Object.entries(ALGORITHMS).map(([key, algo]) => (
+            <AlgoRow
+              key={key}
+              algoKey={key}
+              algo={algo}
+              n={n}
+              expanded={expandedAlgo === key}
+              onToggle={() => setExpandedAlgo(expandedAlgo === key ? null : key)}
+              onStart={onStart}
             />
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => setShowConfig(false)}
-                className="flex-1 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveConfig}
-                disabled={configText.split('\n').filter(s => s.trim()).length < 2}
-                className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
-              >
-                Save
-              </button>
-            </div>
+          ))}
+        </ul>
+      </section>
+
+      {showConfig && (
+        <Sheet title="Edit Items" onClose={() => setShowConfig(false)}>
+          <p className="text-sm">One item per line. Minimum 2 items.</p>
+          <textarea
+            value={configText}
+            onChange={e => onConfigTextChange(e.target.value)}
+            rows={8}
+            className="pixel-field min-h-0 w-full resize-none font-mono text-sm"
+            placeholder={"Apple\nBanana\nCherry"}
+            autoFocus
+          />
+          <div className="flex gap-2">
+            <button onClick={() => setShowConfig(false)} className="pixel-button flex-1">
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveConfig}
+              disabled={configText.split('\n').filter(s => s.trim()).length < 2}
+              className="pixel-button flex-1"
+              data-variant="primary"
+            >
+              Save
+            </button>
           </div>
-        </div>
+        </Sheet>
       )}
     </>
   );
@@ -288,6 +259,9 @@ function buildKnownOrder(shuffledItems, algoKey, history) {
 
 // ——— Screen 2: Sorting ———
 
+// The item being ranked reads at 22px; the rest is the pixel-button's border, hover and focus.
+const choice = 'pixel-button w-full whitespace-normal break-words px-4 py-4 text-left text-pixel-lg normal-case tracking-normal';
+
 const SortingScreen = ({ algoKey, shuffledItems, onBack, onComplete }) => {
   const algo = ALGORITHMS[algoKey];
   const [history, setHistory] = useState([]);
@@ -333,127 +307,78 @@ const SortingScreen = ({ algoKey, shuffledItems, onBack, onComplete }) => {
 
   return (
     <>
-      {/* Header */}
-      <div className="flex items-center gap-3 mt-4 mb-5">
-        <button
-          onClick={handleBack}
-          className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
+      <header className="flex items-center gap-3">
+        <button onClick={handleBack} className="pixel-button shrink-0">
           ← Back
         </button>
-        <div className="flex-1">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{algo.name}</h2>
-        </div>
-      </div>
+        <h1 className="page-title min-w-0">{algo.name}</h1>
+      </header>
 
-      {/* Progress bar */}
-      <div className="mb-5">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-3">
+          <span className="label text-heading">
             Comparison {completed + 1}
             {algo.exact ? ` of ${totalExpected}` : ` / ≤ ${totalExpected}`}
           </span>
           <div className="flex items-center gap-3">
             {history.length > 0 && (
-              <button
-                onClick={handleUndo}
-                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
+              <button onClick={handleUndo} className="pixel-button">
                 Undo
               </button>
             )}
-            <span className="text-xs text-gray-400 dark:text-gray-500">
+            <span className="label opacity-70">
               {algo.exact ? `${remaining} left` : `≤ ${remaining} left`}
             </span>
           </div>
         </div>
-        <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-blue-500 rounded-full transition-all duration-300"
-            style={{ width: `${progressPct}%` }}
-          />
+        <div className="pixel-panel h-3" aria-hidden="true">
+          <div className="h-full bg-accent" style={{ width: `${progressPct}%` }} />
         </div>
       </div>
 
-      {/* Comparison area */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div className="p-5">
-          <p className="text-sm text-center text-gray-500 dark:text-gray-400 mb-5">
-            Which should rank first?
-          </p>
-
-          {/* Item A - tap to choose */}
-          <button
-            onClick={() => handleChoice(1)}
-            className="w-full text-left px-5 py-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-700 border-2 border-transparent transition-all duration-150 group cursor-pointer"
-          >
-            <span className="text-2xl font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
-              {comparison.a}
-            </span>
-          </button>
-
-          {/* Equal button */}
-          <div className="flex justify-center py-2">
-            <button
-              onClick={() => handleChoice(0)}
-              className="px-4 py-1.5 text-sm font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              = Equal
-            </button>
-          </div>
-
-          {/* Item B - tap to choose */}
-          <button
-            onClick={() => handleChoice(-1)}
-            className="w-full text-left px-5 py-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-700 border-2 border-transparent transition-all duration-150 group cursor-pointer"
-          >
-            <span className="text-2xl font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
-              {comparison.b}
-            </span>
+      <section className="pixel-panel flex flex-col p-4 sm:p-5">
+        <p className="page-sub mb-4 text-center">Which should rank first?</p>
+        <button onClick={() => handleChoice(1)} className={choice}>
+          {comparison.a}
+        </button>
+        <div className="flex justify-center py-2">
+          <button onClick={() => handleChoice(0)} className="pixel-button">
+            = Equal
           </button>
         </div>
-      </div>
+        <button onClick={() => handleChoice(-1)} className={choice}>
+          {comparison.b}
+        </button>
+      </section>
 
-      {/* Progress view toggle */}
-      <div className="mt-4">
+      <div className="flex flex-col gap-2">
         <button
           onClick={() => setShowProgress(p => !p)}
-          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          aria-expanded={showProgress}
+          className="pixel-button self-start"
         >
           {showProgress ? 'Hide progress' : 'Show progress'}
         </button>
         {showProgress && knownOrder && (
-          <div className="mt-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
-            <div className="space-y-1">
-              {knownOrder.sorted.map((item, idx) => {
-                const isActive = comparison && (item === comparison.a || item === comparison.b);
-                const isSettled = knownOrder.settled.has(item);
-                return (
-                  <div
-                    key={idx}
-                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm ${
-                      isActive
-                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium'
-                        : isSettled
-                          ? 'text-gray-900 dark:text-gray-100'
-                          : 'text-gray-400 dark:text-gray-500'
-                    }`}
-                  >
-                    <span className="text-xs font-mono w-5 text-right shrink-0 opacity-50">
-                      {idx + 1}
-                    </span>
-                    <span>{item}</span>
-                    {isActive && (
-                      <span className="text-xs opacity-50 ml-auto">comparing</span>
-                    )}
-                    {isSettled && !isActive && (
-                      <span className="text-xs text-emerald-500 dark:text-emerald-400 ml-auto opacity-60">✓</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <ol className="pixel-panel p-2">
+            {knownOrder.sorted.map((item, idx) => {
+              const isActive = comparison && (item === comparison.a || item === comparison.b);
+              const isSettled = knownOrder.settled.has(item);
+              return (
+                <li
+                  key={idx}
+                  className={`flex items-center gap-2.5 px-2 py-1 text-sm ${
+                    isActive ? 'text-accent' : isSettled ? 'text-heading' : 'opacity-50'
+                  }`}
+                >
+                  <span className="w-5 shrink-0 text-right font-pixel text-pixel opacity-70">{idx + 1}</span>
+                  <span className="min-w-0 break-words">{item}</span>
+                  {isActive && <span className="label ml-auto">comparing</span>}
+                  {isSettled && !isActive && <Icon svg={checkSvg} className="ml-auto h-4 w-4 shrink-0 text-ok" />}
+                </li>
+              );
+            })}
+          </ol>
         )}
       </div>
     </>
@@ -467,44 +392,27 @@ const ResultsScreen = ({ algoKey, sorted, comparisons, onTryAnother, onSortAgain
 
   return (
     <>
-      <div className="mt-4 mb-5">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Done!</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      <header className="flex flex-col gap-2">
+        <h1 className="page-title">Done!</h1>
+        <p className="page-sub">
           {comparisons} comparison{comparisons !== 1 ? 's' : ''} with {algo.name}
         </p>
-      </div>
+      </header>
 
-      {/* Sorted list */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden mb-5">
-        <div className="p-5">
-          <div className="space-y-1.5">
-            {[...sorted].reverse().map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
-              >
-                <span className="text-xs font-mono text-gray-400 dark:text-gray-500 w-6 text-right shrink-0">
-                  #{idx + 1}
-                </span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <ol className="pixel-panel px-2">
+        {[...sorted].reverse().map((item, idx) => (
+          <li key={idx} className="pixel-line flex items-baseline gap-3 px-2 py-2 last:bg-none">
+            <span className="w-8 shrink-0 text-right font-pixel text-pixel opacity-70">#{idx + 1}</span>
+            <span className="min-w-0 break-words text-heading">{item}</span>
+          </li>
+        ))}
+      </ol>
 
-      {/* Actions */}
       <div className="flex gap-2">
-        <button
-          onClick={onTryAnother}
-          className="flex-1 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-        >
+        <button onClick={onTryAnother} className="pixel-button flex-1 py-2">
           Try another algorithm
         </button>
-        <button
-          onClick={onSortAgain}
-          className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-sm font-medium transition-colors shadow-sm"
-        >
+        <button onClick={onSortAgain} className="pixel-button flex-1 py-2" data-variant="primary">
           Sort again
         </button>
       </div>
@@ -516,7 +424,7 @@ const ResultsScreen = ({ algoKey, sorted, comparisons, onTryAnother, onSortAgain
 
 const DEFAULT_ITEMS = ['23', '7', '45', '12', '89', '34', '56', '1', '78', '90'];
 
-const App = ({ historyUrl }) => {
+export const App = () => {
   const [screen, setScreen] = useState('select'); // 'select' | 'sorting' | 'results'
   const [items, setItems] = useState(DEFAULT_ITEMS);
   const [configText, setConfigText] = useState(DEFAULT_ITEMS.join('\n'));
@@ -561,64 +469,37 @@ const App = ({ historyUrl }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <div className="max-w-lg mx-auto px-4 py-8">
+    <main className="flex flex-col gap-6">
+      {screen === 'select' && (
+        <SelectScreen
+          items={items}
+          configText={configText}
+          onConfigTextChange={handleConfigTextChange}
+          onStart={handleStart}
+        />
+      )}
 
-        {/* Back link */}
-        {screen === 'select' && (
-          <nav className="flex items-center gap-3 text-sm text-gray-400">
-            <a
-              href="../"
-              className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              ← Home
-            </a>
-            {historyUrl && (
-              <a
-                href={historyUrl}
-                target="_blank"
-                rel="noopener"
-                className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                history
-              </a>
-            )}
-            <ThemeToggle className="ml-auto" />
-          </nav>
-        )}
+      {screen === 'sorting' && algoKey && shuffledItems && (
+        <SortingScreen
+          algoKey={algoKey}
+          shuffledItems={shuffledItems}
+          onBack={() => setScreen('select')}
+          onComplete={handleComplete}
+        />
+      )}
 
-        {screen === 'select' && (
-          <SelectScreen
-            items={items}
-            configText={configText}
-            onConfigTextChange={handleConfigTextChange}
-            onStart={handleStart}
-          />
-        )}
-
-        {screen === 'sorting' && algoKey && shuffledItems && (
-          <SortingScreen
-            algoKey={algoKey}
-            shuffledItems={shuffledItems}
-            onBack={() => setScreen('select')}
-            onComplete={handleComplete}
-          />
-        )}
-
-        {screen === 'results' && sortResult && (
-          <ResultsScreen
-            algoKey={algoKey}
-            sorted={sortResult.sorted}
-            comparisons={sortResult.comparisons}
-            onTryAnother={handleTryAnother}
-            onSortAgain={handleSortAgain}
-          />
-        )}
-      </div>
-    </div>
+      {screen === 'results' && sortResult && (
+        <ResultsScreen
+          algoKey={algoKey}
+          sorted={sortResult.sorted}
+          comparisons={sortResult.comparisons}
+          onTryAnother={handleTryAnother}
+          onSortAgain={handleSortAgain}
+        />
+      )}
+    </main>
   );
 };
 
 const container = document.getElementById('app');
-const root = createRoot(container);
-root.render(<App historyUrl={container.dataset.historyUrl} />);
+if (container) createRoot(container).render(<App />);
