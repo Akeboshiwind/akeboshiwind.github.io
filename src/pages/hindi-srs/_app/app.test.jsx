@@ -64,7 +64,7 @@ describe('studying', () => {
     expect(screen.getByText(letter.hint)).toBeTruthy();
     fireEvent.keyDown(document, { key: '4' });
     expect(saved().find((c) => c.char === letter.char)).toMatchObject({ state: 'review', interval: 4 });
-    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe(String(Math.round(100 / LETTERS.length)));
+    expect(screen.getByRole('progressbar', { name: 'Cards in review' }).value).toBeCloseTo(100 / LETTERS.length);
     fireEvent.keyDown(document, { key: 'u' });
     expect(saved().find((c) => c.char === letter.char).state).toBe('new');
   });
