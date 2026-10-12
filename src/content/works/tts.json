@@ -8,5 +8,6 @@
     "ai"
   ],
   "category": "ai",
-  "icon": "volume-2"
+  "icon": "volume-2",
+  "dither": "ui"
 }
