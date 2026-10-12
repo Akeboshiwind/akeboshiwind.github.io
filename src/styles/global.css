@@ -116,21 +116,25 @@
     inset: 0;
   }
 
+  .dither-img img {
+    position: relative;
+    z-index: 1;
+  }
+
   /* Without JS nothing paints the overlay, so the screenshot only starts hidden when the script will run. */
   .js .dither-img img {
-    opacity: 0;
+    mask: linear-gradient(transparent, transparent) 0 0 / 4px 4px repeat;
   }
 
-  .dither-img[data-ready] :is(img, [data-dither]) {
-    transition: opacity 0.25s steps(4);
-  }
+  /* The keyframes are generated from dissolveFrames() by DissolveKeyframes.astro. */
+  @media (hover: hover) {
+    .dither-img:is(:hover, :focus-visible) img {
+      animation: undither 0.10s step-end both;
+    }
 
-  .dither-img:is(:hover, :focus-visible, [data-revealed]) img {
-    opacity: 1;
-  }
-
-  .dither-img:is(:hover, :focus-visible, [data-revealed]) [data-dither] {
-    opacity: 0;
+    .dither-img[data-touched]:not(:hover, :focus-visible) img {
+      animation: redither 0.10s step-end both;
+    }
   }
 
   .pixel-line {

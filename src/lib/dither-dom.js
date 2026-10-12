@@ -71,18 +71,10 @@ function paint(el, seed, width, height) {
     maskSize: size, webkitMaskSize: size,
   });
   el.dataset.dithered = '';
-  if (shape === 'image') requestAnimationFrame(() => { el.parentElement.dataset.ready = ''; });
 }
 
-function revealer() {
-  if (!matchMedia('(hover: none)').matches) return () => {};
-  const observer = new IntersectionObserver(
-    (entries) => entries.forEach(({ target, isIntersecting }) => {
-      target.toggleAttribute('data-revealed', isIntersecting);
-    }),
-    { rootMargin: '-35% 0px -35% 0px' },
-  );
-  return (el) => observer.observe(el);
+function markTouched({ target }) {
+  target.closest?.('.dither-img')?.setAttribute('data-touched', '');
 }
 
 const SELECTOR = 'hr, [data-dither]';
@@ -92,7 +84,6 @@ export function ditherAll(root = document) {
   let nextSeed = 1;
   const seeds = new WeakMap();
   const sizes = new WeakMap();
-  const reveal = revealer();
   const resizes = new ResizeObserver((entries) => {
     for (const { target, borderBoxSize: [box] } of entries) {
       const [width, height] = [box.inlineSize, box.blockSize];
@@ -110,9 +101,10 @@ export function ditherAll(root = document) {
     const seed = Number.parseInt(el.dataset.seed ?? '', 10);
     seeds.set(el, Number.isNaN(seed) ? inOrder : seed);
     resizes.observe(el);
-    if (el.dataset.dither === 'image') reveal(el.parentElement);
   };
   root.querySelectorAll(SELECTOR).forEach(track);
+  root.addEventListener('pointerover', markTouched);
+  root.addEventListener('focusin', markTouched);
   new MutationObserver((records) => records.forEach(({ addedNodes }) => addedNodes.forEach((node) => {
     if (node.nodeType !== 1) return;
     if (node.matches(SELECTOR)) track(node);
