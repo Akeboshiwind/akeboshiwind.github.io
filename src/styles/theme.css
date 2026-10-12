@@ -96,7 +96,7 @@
     opacity: 0.7;
   }
 
-  .label, .pixel-button, .pixel-chip, .section-label, .pixel-table th {
+  .label, .pixel-button, .pixel-chip, .pixel-file, .section-label, .pixel-table th {
     font-family: var(--font-pixel);
     font-size: var(--text-pixel);
     line-height: 1.4;
@@ -328,5 +328,89 @@
     border-color: var(--danger);
     background: var(--danger);
     color: var(--bg);
+  }
+
+  .pixel-file {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    border: 2px solid var(--border);
+    color: var(--text);
+    text-align: center;
+    cursor: pointer;
+  }
+
+  /* Hidden but still focusable, so the label is the target for clicks, drops and the keyboard. */
+  .pixel-file input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .pixel-file:is(:hover, [data-dragover]) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .pixel-file:has(input:focus-visible) {
+    border-color: var(--accent);
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .pixel-range {
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 16px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .pixel-range::-webkit-slider-runnable-track {
+    height: 2px;
+    background: var(--border);
+  }
+
+  .pixel-range::-moz-range-track {
+    height: 2px;
+    background: var(--border);
+  }
+
+  /* WebKit sits the thumb on the track's top edge: (2px track − 16px thumb) / 2 centres it. */
+  .pixel-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -7px;
+    border: 0;
+    border-radius: 0;
+    background: var(--accent);
+  }
+
+  .pixel-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border: 0;
+    border-radius: 0;
+    background: var(--accent);
+  }
+
+  .pixel-range:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .pixel-range:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }

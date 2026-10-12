@@ -1,0 +1,16 @@
+---
+// Static twin of FileDrop.jsx: no drop handling or drag-over state, as those need the React component's handlers.
+interface Props {
+  accept?: string;
+  multiple?: boolean;
+  name?: string;
+  class?: string;
+}
+
+const { accept, multiple, name, class: className = '' } = Astro.props;
+---
+
+<label class:list={['pixel-file', className]}>
+  <input type="file" accept={accept} multiple={multiple} name={name} />
+  <slot />
+</label>
