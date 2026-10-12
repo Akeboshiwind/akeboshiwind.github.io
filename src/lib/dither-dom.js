@@ -78,7 +78,7 @@ function markTouched({ target }) {
 }
 
 const DISSOLVES = { undither: 'in', redither: 'out' };
-const settledAs = (animationName) => DISSOLVES[animationName];
+const settledAs = (animationName) => DISSOLVES[animationName.replace(/-\d+$/, '')];
 
 // Covers a dissolve that starts but never fires animationend.
 const SETTLE_SLACK_MS = 50;

@@ -36,6 +36,11 @@ describe('settleDissolves', () => {
     expect(el.dataset.dissolved).toBeUndefined();
   });
 
+  it('recognises a dissolve by name whatever its step count', () => {
+    fire(el, 'animationend', 'undither-16');
+    expect(el.dataset.dissolved).toBe('in');
+  });
+
   it('ignores animations that are not dissolves', () => {
     fire(el, 'animationend', 'spin');
     expect(el.dataset.dissolved).toBeUndefined();

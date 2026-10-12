@@ -124,14 +124,14 @@
     mask: linear-gradient(transparent, transparent) 0 0 / 4px 4px repeat;
   }
 
-  /* The keyframes are generated from dissolveFrames() by DissolveKeyframes.astro. */
+  /* The keyframes are generated from dissolveKeyframes() by DissolveKeyframes.astro. */
   @media (hover: hover) {
     .dither-img:is(:hover, :focus-visible) img {
-      animation: undither 0.10s step-end both;
+      animation: undither-6 0.1s step-end both;
     }
 
     .dither-img[data-touched]:not(:hover, :focus-visible) img {
-      animation: redither 0.10s step-end both;
+      animation: redither-6 0.1s step-end both;
     }
 
     /* data-dissolved is set by settleDissolves() once a dissolve ends, so the resting state doesn't depend on the held last frame. */
