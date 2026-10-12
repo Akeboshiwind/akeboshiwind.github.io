@@ -1,1 +1,12 @@
-@import "tailwindcss";
+/* The canvas takes whatever height the viewport leaves, so the page itself never scrolls. */
+body {
+  height: 100dvh;
+}
+
+#app {
+  min-height: 0;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}
