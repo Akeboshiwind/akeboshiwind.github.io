@@ -1,19 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Sheet } from '../../../../components/pixel/Sheet.jsx';
+import { Icon } from '../../../../components/pixel/Icon.jsx';
+import noteSvg from 'pixelarticons/svg/note.svg?raw';
+import pencilSvg from 'pixelarticons/svg/pencil.svg?raw';
+import checkSvg from 'pixelarticons/svg/check.svg?raw';
+import trashSvg from 'pixelarticons/svg/trash.svg?raw';
 import { PromptModal } from './PromptModal.jsx';
 
 const StatusBadge = ({ status }) => {
   if (status === 'seen') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400">
-        <span>📝</span> Seen
+      <span className="label shrink-0 inline-flex items-center gap-1 opacity-70">
+        <Icon svg={noteSvg} className="w-3.5 h-3.5" /> Seen
       </span>
     );
   }
-  return (
-    <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-400">
-      Pending
-    </span>
-  );
+  return <span className="label shrink-0 text-accent">Pending</span>;
 };
 
 const ItemEditor = ({ rec, onSave, onCancel }) => {
@@ -27,7 +29,10 @@ const ItemEditor = ({ rec, onSave, onCancel }) => {
   }, []);
 
   const handleKeyDown = e => {
-    if (e.key === 'Escape') onCancel();
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      onCancel();
+    }
   };
 
   const handleSave = () => {
@@ -36,14 +41,15 @@ const ItemEditor = ({ rec, onSave, onCancel }) => {
   };
 
   return (
-    <div className="py-2 border-b border-gray-100 dark:border-gray-700 space-y-2">
+    <li className="pixel-line py-2 flex flex-col gap-2">
       <input
         ref={nameRef}
         value={name}
         onChange={e => setName(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Item name"
-        className="w-full px-2.5 py-1.5 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        aria-label="Item name"
+        className="pixel-field w-full text-sm"
       />
       <textarea
         value={note}
@@ -51,24 +57,16 @@ const ItemEditor = ({ rec, onSave, onCancel }) => {
         onKeyDown={handleKeyDown}
         rows={2}
         placeholder="Add a note..."
-        className="w-full px-2.5 py-1.5 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs resize-none"
+        aria-label="Note"
+        className="pixel-field w-full text-sm resize-none"
       />
       <div className="flex gap-2">
-        <button
-          onClick={onCancel}
-          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={!name.trim()}
-          className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-40"
-        >
+        <button onClick={onCancel} className="pixel-button">Cancel</button>
+        <button onClick={handleSave} disabled={!name.trim()} className="pixel-button" data-variant="primary">
           Save
         </button>
       </div>
-    </div>
+    </li>
   );
 };
 
@@ -80,31 +78,27 @@ const ReviewForm = ({ onConfirm, onCancel }) => {
 
   const handleKeyDown = e => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) onConfirm(note.trim());
-    if (e.key === 'Escape') onCancel();
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      onCancel();
+    }
   };
 
   return (
-    <div className="mt-1.5 space-y-1.5">
+    <div className="mt-2 flex flex-col gap-2">
       <textarea
         ref={ref}
         value={note}
         onChange={e => setNote(e.target.value)}
         onKeyDown={handleKeyDown}
         rows={2}
-        className="w-full px-2.5 py-1.5 border border-green-300 dark:border-green-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 text-xs resize-none"
+        aria-label="Note"
+        className="pixel-field w-full text-sm resize-none"
         placeholder="Add a note (optional)..."
       />
       <div className="flex gap-2">
-        <button
-          onClick={onCancel}
-          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={() => onConfirm(note.trim())}
-          className="text-xs text-green-600 dark:text-green-400 font-medium hover:text-green-700 dark:hover:text-green-300"
-        >
+        <button onClick={onCancel} className="pixel-button">Cancel</button>
+        <button onClick={() => onConfirm(note.trim())} className="pixel-button" data-variant="primary">
           Mark as seen
         </button>
       </div>
@@ -126,34 +120,28 @@ const AddItemForm = ({ onSave, onCancel }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-3 flex-shrink-0">
+    <form onSubmit={handleSubmit} className="shrink-0 flex flex-col gap-2 pt-3 border-t-2 border-border">
       <input
         ref={inputRef}
         value={text}
         onChange={e => setText(e.target.value)}
         placeholder="Item name"
-        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        aria-label="Item name"
+        className="pixel-field w-full text-sm py-2"
       />
       <textarea
         value={note}
         onChange={e => setNote(e.target.value)}
         placeholder="Add a note..."
+        aria-label="Note"
         rows={2}
-        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+        className="pixel-field w-full text-sm resize-none"
       />
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-        >
+        <button type="button" onClick={onCancel} className="pixel-button flex-1 py-2">
           Cancel
         </button>
-        <button
-          type="submit"
-          disabled={!text.trim() || !note.trim()}
-          className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
-        >
+        <button type="submit" disabled={!text.trim() || !note.trim()} className="pixel-button flex-1 py-2" data-variant="primary">
           Add
         </button>
       </div>
@@ -161,43 +149,37 @@ const AddItemForm = ({ onSave, onCancel }) => {
   );
 };
 
-const ItemActions = ({ rec, onEdit, onReview, onDelete }) => {
-  return (
-    <div className="flex items-center gap-2 mt-1">
-      <button
-        onClick={() => onEdit(rec.id)}
-        className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-        title="Edit"
-      >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-        </svg>
+const iconButton = 'p-1 cursor-pointer opacity-70 hover:opacity-100 focus-visible:outline-2 focus-visible:outline-accent';
+
+const ItemActions = ({ rec, onEdit, onReview, onDelete }) => (
+  <div className="flex items-center gap-1 mt-1 -ml-1">
+    <button onClick={() => onEdit(rec.id)} aria-label="Edit" title="Edit" className={`${iconButton} hover:text-accent`}>
+      <Icon svg={pencilSvg} className="w-4 h-4" />
+    </button>
+    {rec.status === 'pending' && (
+      <button onClick={() => onReview(rec.id)} aria-label="Mark as seen" title="Mark as seen" className={`${iconButton} hover:text-ok`}>
+        <Icon svg={checkSvg} className="w-4 h-4" />
       </button>
-      {rec.status === 'pending' && (
-        <button
-          onClick={() => onReview(rec.id)}
-          className="text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400"
-          title="Mark as seen"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </button>
-      )}
-      <button
-        onClick={() => {
-          if (window.confirm(`Delete "${rec.text}"?`)) onDelete(rec.id);
-        }}
-        className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400"
-        title="Delete"
-      >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-      </button>
-    </div>
-  );
-};
+    )}
+    <button
+      onClick={() => {
+        if (window.confirm(`Delete "${rec.text}"?`)) onDelete(rec.id);
+      }}
+      aria-label="Delete"
+      title="Delete"
+      className={`${iconButton} hover:text-danger`}
+    >
+      <Icon svg={trashSvg} className="w-4 h-4" />
+    </button>
+  </div>
+);
+
+const Group = ({ title, children }) => (
+  <div>
+    <h3 className="label opacity-70 mb-1">{title}</h3>
+    <ul>{children}</ul>
+  </div>
+);
 
 export const HistoryModal = ({ list, onClose, onUpdateNote, onUpdateName, onDelete, onReview, onAddCustom }) => {
   const [editingId, setEditingId] = useState(null);
@@ -210,10 +192,6 @@ export const HistoryModal = ({ list, onClose, onUpdateNote, onUpdateName, onDele
     .sort((a, b) => (b.reviewedAt || 0) - (a.reviewedAt || 0));
 
   const pending = list.recommendations.filter(r => r.status === 'pending');
-
-  const handleBackdropClick = e => {
-    if (e.target === e.currentTarget) onClose();
-  };
 
   const handleSaveEdit = (recId, name, note) => {
     onUpdateName(recId, name);
@@ -239,9 +217,9 @@ export const HistoryModal = ({ list, onClose, onUpdateNote, onUpdateName, onDele
     }
 
     return (
-      <div key={r.id} className="py-2 border-b border-gray-100 dark:border-gray-700">
+      <li key={r.id} className="pixel-line py-2">
         <div className="flex items-start justify-between gap-2">
-          <span className="text-sm text-gray-700 dark:text-gray-300">{r.text}</span>
+          <span className="text-sm text-heading min-w-0 break-words">{r.text}</span>
           <StatusBadge status={r.status} />
         </div>
 
@@ -253,9 +231,7 @@ export const HistoryModal = ({ list, onClose, onUpdateNote, onUpdateName, onDele
         )}
 
         {r.note && reviewingId !== r.id && (
-          <p className="text-xs text-gray-400 dark:text-gray-500 italic mt-1">
-            "{r.note}"
-          </p>
+          <p className="text-sm italic opacity-70 mt-1 break-words">"{r.note}"</p>
         )}
 
         {reviewingId !== r.id && (
@@ -266,84 +242,47 @@ export const HistoryModal = ({ list, onClose, onUpdateNote, onUpdateName, onDele
             onDelete={onDelete}
           />
         )}
-      </div>
+      </li>
     );
   };
 
+  // Shown in place of this sheet, not over it: two sheets would both close on one Escape.
+  if (showPrompt) return <PromptModal list={list} onClose={() => setShowPrompt(false)} />;
+
   return (
-    <div
-      className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center p-4 z-50"
-      onClick={handleBackdropClick}
-    >
-      <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg shadow-xl max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">History</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{list.name}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            ✕
-          </button>
-        </div>
+    <Sheet title="History" onClose={onClose}>
+      <p className="page-sub -mt-1 shrink-0">{list.name}</p>
 
-        <div className="overflow-y-auto flex-1 p-6 min-h-0">
-          {reviewed.length === 0 && pending.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-8">
-              No recommendations yet.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {pending.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
-                    Current ({pending.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {pending.map(renderItem)}
-                  </div>
-                </div>
-              )}
-
-              {reviewed.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
-                    Reviewed ({reviewed.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {reviewed.map(renderItem)}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {showAddForm ? (
-          <AddItemForm
-            onSave={(text, note) => { onAddCustom(text, note); setShowAddForm(false); }}
-            onCancel={() => setShowAddForm(false)}
-          />
+      <div className="min-h-0 overflow-y-auto overscroll-contain">
+        {reviewed.length === 0 && pending.length === 0 ? (
+          <p className="text-sm opacity-70 text-center py-8">No recommendations yet.</p>
         ) : (
-          <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex-shrink-0 flex gap-2">
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="flex-1 py-2 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 font-medium transition-colors"
-            >
-              + Add item
-            </button>
-            <button
-              onClick={() => setShowPrompt(true)}
-              className="flex-1 py-2 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 font-medium transition-colors"
-            >
-              View prompt
-            </button>
+          <div className="flex flex-col gap-4">
+            {pending.length > 0 && (
+              <Group title={`Current (${pending.length})`}>{pending.map(renderItem)}</Group>
+            )}
+            {reviewed.length > 0 && (
+              <Group title={`Reviewed (${reviewed.length})`}>{reviewed.map(renderItem)}</Group>
+            )}
           </div>
         )}
-      {showPrompt && <PromptModal list={list} onClose={() => setShowPrompt(false)} />}
       </div>
-    </div>
+
+      {showAddForm ? (
+        <AddItemForm
+          onSave={(text, note) => { onAddCustom(text, note); setShowAddForm(false); }}
+          onCancel={() => setShowAddForm(false)}
+        />
+      ) : (
+        <div className="shrink-0 flex gap-2">
+          <button onClick={() => setShowAddForm(true)} className="pixel-button flex-1 py-2">
+            + Add item
+          </button>
+          <button onClick={() => setShowPrompt(true)} className="pixel-button flex-1 py-2">
+            View prompt
+          </button>
+        </div>
+      )}
+    </Sheet>
   );
 };
