@@ -12,7 +12,7 @@ import { SettingsModal } from './components/SettingsModal.jsx';
 import { HistoryModal } from './components/HistoryModal.jsx';
 import { ImportExportModal } from './components/ImportExportModal.jsx';
 
-const App = ({ historyUrl }) => {
+export const App = ({ historyUrl }) => {
   const [apiKey, setApiKey] = useLocalStorage('anthropic_apiKey', '');
   const [lists, setLists] = useLocalStorage('recommender_lists', []);
 
@@ -303,5 +303,4 @@ const App = ({ historyUrl }) => {
 };
 
 const container = document.getElementById('app');
-const root = createRoot(container);
-root.render(<App historyUrl={container.dataset.historyUrl} />);
+if (container) createRoot(container).render(<App historyUrl={container.dataset.historyUrl} />);
