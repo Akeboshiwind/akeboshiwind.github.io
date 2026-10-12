@@ -17,6 +17,8 @@
   --color-bg: var(--bg);
   --color-accent: var(--accent);
   --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
   --color-code-bg: var(--code-bg);
   --color-code-text: var(--code-text);
   --font-sans: Verdana, sans-serif;
@@ -39,6 +41,8 @@
   --code-text: #1c1b19;
   --border: #d3cfc3;
   --danger: oklch(57.7% 0.245 27.325);
+  --ok: oklch(52.7% 0.154 150.069);
+  --warn: oklch(55.5% 0.163 48.998);
 }
 
 [data-theme="dark"] {
@@ -51,6 +55,8 @@
   --code-text: #e6e3d9;
   --border: #3d3c38;
   --danger: oklch(70.4% 0.191 22.216);
+  --ok: oklch(79.2% 0.209 151.711);
+  --warn: oklch(82.8% 0.189 84.429);
 }
 
 @layer base {
@@ -90,7 +96,7 @@
     opacity: 0.7;
   }
 
-  .label, .pixel-button, .pixel-chip, .section-label {
+  .label, .pixel-button, .pixel-chip, .section-label, .pixel-table th {
     font-family: var(--font-pixel);
     font-size: var(--text-pixel);
     line-height: 1.4;
@@ -148,8 +154,45 @@
     }
   }
 
-  .pixel-line {
+  .pixel-line, .pixel-table tr {
     background: linear-gradient(90deg, var(--border) 50%, transparent 0) bottom / 4px 2px repeat-x;
+  }
+
+  .pixel-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .pixel-table :is(th, td) {
+    padding: 0.25rem;
+  }
+
+  .pixel-table th {
+    font-weight: 400;
+    color: var(--heading);
+    text-align: left;
+  }
+
+  .pixel-num {
+    font-family: var(--font-pixel);
+    font-size: var(--text-pixel-md);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* At 15px, four columns of amounts overflow a 390px phone. */
+  .pixel-table .pixel-num {
+    font-size: var(--text-pixel);
+  }
+
+  @media (width >= 40rem) {
+    .pixel-table :is(th, td) {
+      padding: 0.5rem;
+    }
+
+    .pixel-table .pixel-num {
+      font-size: var(--text-pixel-md);
+    }
   }
 
   .pixel-check {

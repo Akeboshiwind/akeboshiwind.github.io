@@ -3,16 +3,13 @@ import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import lockIcon from 'pixelarticons/svg/lock.svg?raw';
 import unlockIcon from 'pixelarticons/svg/unlock.svg?raw';
-import { PAGE_BACKGROUND } from '../../../lib/accents.js';
+import { PAGE_BACKGROUND, PAGE_INK } from '../../../lib/accents.js';
 import { Icon } from '../../../components/pixel/Icon.jsx';
 import './unlock.css';
 
 // The code TapBlok's own "Your QR Code" screen shows — scanning it starts or
 // stops a monitoring session.
 const PAYLOAD = 'TAPBLOK_TOGGLE';
-
-// The light theme's --heading on its page colour, in both themes: scanners want dark-on-light.
-const INK = '#1c1b19';
 
 export function App() {
   const [unlocked, setUnlocked] = useState(false);
@@ -26,7 +23,8 @@ export function App() {
     QRCode.toCanvas(canvas, PAYLOAD, {
       width: 512,
       margin: 2,
-      color: { dark: INK, light: PAGE_BACKGROUND },
+      // Light-themed in both themes: scanners want dark-on-light.
+      color: { dark: PAGE_INK, light: PAGE_BACKGROUND },
     }).then(
       () => {
         // `toCanvas` stamps an inline 512px size on the element, which would
@@ -63,7 +61,7 @@ export function App() {
             className={drawn ? 'h-full w-full [image-rendering:pixelated]' : 'hidden'}
           />
           {!drawn && (
-            <span className="flex h-full items-center justify-center break-all p-3 text-center font-mono text-sm" style={{ color: INK }}>
+            <span className="flex h-full items-center justify-center break-all p-3 text-center font-mono text-sm" style={{ color: PAGE_INK }}>
               {PAYLOAD}
             </span>
           )}
