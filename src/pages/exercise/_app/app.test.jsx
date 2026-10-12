@@ -14,10 +14,11 @@ describe('Exercise app', () => {
     expect(found).toBe(true);
   });
 
-  test('has a home link', () => {
+  test('leaves the home link and theme toggle to the layout\'s app bar', () => {
     render(<App />);
-    const home = screen.getByText('← Home').closest('a');
-    expect(home.getAttribute('href')).toBe('../');
+    expect(screen.queryByText('← Home')).toBeNull();
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'Exercise' })).toBeTruthy();
   });
 
   test('sets are inert until the user starts a session', () => {

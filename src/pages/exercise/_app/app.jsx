@@ -1,4 +1,3 @@
-import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
 import { useStore, todayKey, DAYS } from './store.js';
 import { useHashRoute } from './hooks.js';
 import { Today } from './screens/Today.jsx';
@@ -10,44 +9,31 @@ import { History } from './screens/History.jsx';
 import { HistoryDetail } from './screens/HistoryDetail.jsx';
 import { Settings } from './screens/Settings.jsx';
 
-export function App({ historyUrl }) {
+export function App() {
   const [state, setState] = useStore();
   const [path, navigate] = useHashRoute();
   const today = todayKey();
 
   const screen = renderScreen(path, { state, setState, navigate, today });
+  const onToday = path === '/' || path === '';
 
   return (
-    <div className="flex flex-col min-h-screen text-gray-900 dark:text-gray-100">
-      <nav className="flex items-center gap-3 text-sm text-gray-400 px-4 py-3">
-        <a href="../" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">← Home</a>
-        {historyUrl && (
-          <a href={historyUrl} target="_blank" rel="noopener" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">history</a>
-        )}
-        {path !== '/' && (
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            Today
-          </button>
-        )}
-        {path === '/' && (
-          <button
-            type="button"
-            onClick={() => navigate('/planner')}
-            className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            Plan
-          </button>
-        )}
-        <ThemeToggle className="ml-auto" />
-      </nav>
+    <div className="flex flex-col gap-4 text-text">
+      <header className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="page-title">Exercise</h1>
+          <p className="page-sub">Plan a week of workouts, then tick them off set by set.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate(onToday ? '/planner' : '/')}
+          className="pixel-button shrink-0"
+        >
+          {onToday ? 'Plan' : 'Today'}
+        </button>
+      </header>
 
-      <main className="flex-1 px-4 pb-32 max-w-xl mx-auto w-full">
-        {screen}
-      </main>
+      <main>{screen}</main>
     </div>
   );
 }
@@ -82,8 +68,8 @@ function renderScreen(path, ctx) {
   }
   return (
     <div className="text-center py-12">
-      <p className="text-gray-500 dark:text-gray-400">Not found.</p>
-      <button onClick={() => ctx.navigate('/')} className="mt-2 text-sm underline">
+      <p className="opacity-70">Not found.</p>
+      <button onClick={() => ctx.navigate('/')} className="pixel-button mt-2">
         Back to today
       </button>
     </div>

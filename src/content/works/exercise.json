@@ -8,5 +8,6 @@
     "fitness"
   ],
   "category": "health",
-  "icon": "dumbbell"
+  "icon": "dumbbell",
+  "dither": "ui"
 }
