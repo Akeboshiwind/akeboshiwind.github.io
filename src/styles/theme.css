@@ -510,7 +510,6 @@
     cursor: not-allowed;
   }
 
-  /* A bare icon: no border, but never a smaller target than 32px. */
   .pixel-icon-button {
     display: inline-flex;
     flex-shrink: 0;
