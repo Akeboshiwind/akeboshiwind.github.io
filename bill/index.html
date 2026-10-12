@@ -1,458 +1,538 @@
-<!DOCTYPE html><html lang="en"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Bill Splitter | By the Rocks</title><meta name="description" content="Split bills easily with friends"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="shortcut icon" href="/favicon.ico"><script src="https://cdn.tailwindcss.com"></script><script>
-    tailwind.config = { darkMode: 'media' }
-  </script><script src="https://unpkg.com/react@18/umd/react.production.min.js"></script><script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script><script src="https://unpkg.com/@babel/standalone/babel.min.js"></script></head> <body class="bg-white dark:bg-gray-900"> <div class="max-w-4xl mx-auto p-4"> <header class="mb-4"> <a href="/" class="text-blue-600 dark:text-blue-400 hover:underline">&larr; Home</a> <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2">Bill Splitter</h1> </header> <div id="root"></div> </div> <script type="text/babel">
-const { useState, useEffect } = React;
+<!DOCTYPE html><html lang="en"> <head><style>:root{--accent-light:#e5501c;--link-light:#b23b0e;--accent-dark:#ff6a33;--link-dark:#ff8c5e}</style><script>(() => {
+const c3 = (n) => +n.toFixed(3);
 
-const Component = () => {
-  const loadFromLocalStorage = (key, defaultValue) => {
-    try {
-      const savedData = localStorage.getItem(`billSplitter_${key}`);
-      if (key === 'currency' || key === 'homeCurrency') return savedData || defaultValue;
-      if (key === 'exchangeRate') return savedData ? parseFloat(savedData) : defaultValue;
-      return savedData ? JSON.parse(savedData) : defaultValue;
-    } catch (error) {
-      console.error(`Error loading ${key} from localStorage:`, error);
-      return defaultValue;
+/** Light and dark `--accent`/`--link` for an OKLCH hue, at the lightness each theme's background needs. */
+const fromHue = (hue, chroma = 0.19) => ({
+  light: { accent: `oklch(0.62 ${chroma} ${hue})`, link: `oklch(0.47 ${c3(chroma * 0.85)} ${hue})` },
+  dark: { accent: `oklch(0.72 ${c3(chroma * 0.9)} ${hue})`, link: `oklch(0.80 ${c3(chroma * 0.7)} ${hue})` },
+});
+
+const DEFAULT_ACCENT = 'orange';
+
+/** The light theme's page colour, for the places outside CSS that need it: theme-color and the icon set. */
+const PAGE_BACKGROUND = '#f1efe8';
+
+const HUES = [
+  ['Red', 25], ['Vermilion', 40], ['Amber', 70], ['Ochre', 90], ['Olive', 120], ['Green', 150],
+  ['Teal', 185], ['Cyan', 215], ['Blue', 255], ['Indigo', 280], ['Violet', 305], ['Magenta', 335],
+];
+
+const ACCENTS = [
+  {
+    id: DEFAULT_ACCENT,
+    name: 'Orange',
+    light: { accent: '#e5501c', link: '#b23b0e' },
+    dark: { accent: '#ff6a33', link: '#ff8c5e' },
+  },
+  ...HUES.map(([name, hue]) => ({ id: `h${hue}`, name, ...fromHue(hue) })),
+];
+
+/**
+ * A random accent id other than `current`; an unknown `current` counts as the default.
+ *
+ * @param {string} current
+ * @param {() => number} [random] uniform in [0, 1)
+ */
+function nextAccent(current, random = Math.random) {
+  const from = ACCENTS.some((a) => a.id === current) ? current : DEFAULT_ACCENT;
+  const others = ACCENTS.filter((a) => a.id !== from);
+  return others[Math.floor(random() * others.length)].id;
+}
+
+const [L, M, R] = [5, 10, 15];
+
+/** Pip corners for die faces 1–6 (face n is `DICE_FACES[n - 1]`); each pip is 4×4 on a 24-unit icon. */
+const DICE_FACES = [
+  [[M, M]],
+  [[L, L], [R, R]],
+  [[L, L], [M, M], [R, R]],
+  [[L, L], [R, L], [L, R], [R, R]],
+  [[L, L], [R, L], [M, M], [L, R], [R, R]],
+  [[L, L], [R, L], [L, M], [R, M], [L, R], [R, R]],
+];
+
+const DEFAULT_FACE = 5;
+
+const isFace = (face) => Number.isInteger(face) && face >= 1 && face <= DICE_FACES.length;
+
+/**
+ * A random die face other than `current`, for the re-roll button.
+ *
+ * @param {number} current
+ * @param {() => number} [random] uniform in [0, 1)
+ */
+function nextFace(current, random = Math.random) {
+  const others = DICE_FACES.map((_, i) => i + 1).filter((f) => f !== current);
+  return others[Math.floor(random() * others.length)];
+}
+
+/**
+ * The remembered accent and dice face from their stored form; each part that is missing or invalid
+ * falls back to its default independently.
+ *
+ * @param {string | null} raw as written by `serialiseChoice`
+ * @returns {{ id: string, face: number }}
+ */
+function parseChoice(raw) {
+  let stored = null;
+  try { stored = JSON.parse(raw); } catch {}
+  const { id, face } = stored && typeof stored === 'object' ? stored : {};
+  return {
+    id: ACCENTS.some((a) => a.id === id) ? id : DEFAULT_ACCENT,
+    face: isFace(face) ? face : DEFAULT_FACE,
+  };
+}
+
+/** @param {{ id: string, face: number }} choice */
+const serialiseChoice = ({ id, face }) => JSON.stringify({ id, face });
+
+
+
+const ACCENT_VARS = [
+  ['--accent-light', 'light', 'accent'],
+  ['--link-light', 'light', 'link'],
+  ['--accent-dark', 'dark', 'accent'],
+  ['--link-dark', 'dark', 'link'],
+];
+
+/**
+ * Applies the remembered theme and accent to <html> before first paint, keeps them in step with other tabs,
+ * and installs `window.__setTheme(pref)` and `window.__setAccent({ id, face })` for the toggles.
+ */
+function initTheme() {
+  const root = document.documentElement;
+  const dark = window.matchMedia('(prefers-color-scheme: dark)');
+  const get = (key) => { try { return localStorage.getItem(key); } catch { return null; } };
+  const set = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
+
+  const readTheme = () => {
+    const pref = get('theme');
+    return pref === 'light' || pref === 'dark' ? pref : 'auto';
+  };
+  const applyTheme = (pref) => {
+    root.dataset.themePref = pref;
+    root.dataset.theme = pref === 'auto' ? (dark.matches ? 'dark' : 'light') : pref;
+  };
+  const applyAccent = ({ id, face }) => {
+    const accent = ACCENTS.find((a) => a.id === id);
+    root.dataset.accent = id;
+    root.dataset.accentFace = String(face);
+    for (const [name, theme, key] of ACCENT_VARS) root.style.setProperty(name, accent[theme][key]);
+  };
+
+  root.classList.add('js');
+  applyTheme(readTheme());
+  applyAccent(parseChoice(get('accent')));
+
+  dark.addEventListener('change', () => applyTheme(readTheme()));
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'theme') applyTheme(readTheme());
+    if (e.key === 'accent') applyAccent(parseChoice(get('accent')));
+  });
+  window.__setTheme = (pref) => {
+    set('theme', pref);
+    applyTheme(pref);
+  };
+  window.__setAccent = (choice) => {
+    set('accent', serialiseChoice(choice));
+    applyAccent(choice);
+  };
+}
+
+initTheme();
+})();</script><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Bill Splitter | By the Rocks</title><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=d2f361b1"><link rel="icon" type="image/svg+xml" href="/favicon.svg?v=d2f361b1"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=d2f361b1"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=d2f361b1"><link rel="shortcut icon" href="/favicon.ico?v=d2f361b1"><link rel="manifest" href="/site.webmanifest?v=d2f361b1"><link rel="mask-icon" href="/safari-pinned-tab.svg?v=d2f361b1" color="#e5501c"><meta name="msapplication-TileColor" content="#f1efe8"><meta name="msapplication-config" content="/browserconfig.xml?v=d2f361b1"> <style>@keyframes undither-6 {0% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3C%2Fsvg%3E") } 16.666666666666668% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 33.333333333333336% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 50% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 66.66666666666667% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 83.33333333333333% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 100% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") }}
+@keyframes redither-6 {0% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 16.666666666666668% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 33.333333333333336% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 50% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 66.66666666666667% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 83.33333333333333% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 100% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3C%2Fsvg%3E") }}
+@keyframes undither-16 {0% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3C%2Fsvg%3E") } 6.25% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 12.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 18.75% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 25% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 31.25% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 37.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 43.75% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 50% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 56.25% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 62.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 68.75% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 75% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 81.25% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 87.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 93.75% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 100% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") }}
+@keyframes redither-16 {0% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 6.25% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 12.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 18.75% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 25% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 31.25% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 37.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 43.75% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 50% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 56.25% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 62.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 68.75% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 75% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 81.25% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 87.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 93.75% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 100% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3C%2Fsvg%3E") }}</style> <meta name="theme-color" content="#f1efe8"> <link rel="preload" href="/fonts/DepartureMono-Regular.woff2" as="font" type="font/woff2" crossorigin>  <link rel="stylesheet" href="/_astro/index.N4_VPg2j.css">
+<style>.pixel-icon[data-astro-cid-patnjmll] svg{width:100%;height:100%;shape-rendering:crispEdges}
+</style></head> <body class="flex flex-col min-h-screen w-full max-w-[720px] mx-auto p-4 gap-4 font-sans text-text bg-bg [&#38;>#app]:flex-1 [&#38;>#app]:flex [&#38;>#app]:flex-col"> <nav class="label flex items-center gap-4 text-text"> <a href="../" class="hover:text-accent">← Home</a> <a href="https://github.com/akeboshiwind/akeboshiwind.github.io/commits/master/src/pages/bill" target="_blank" rel="noopener" class="hover:text-accent">History</a> <span class="ml-auto flex items-center gap-2"> <button type="button" class="accent-toggle inline-flex items-center justify-center w-9 h-9 border border-border hover:border-accent cursor-pointer" aria-label="Re-roll accent colour" title="Re-roll accent colour"> <svg viewBox="0 0 24 24" width="24" height="24" shape-rendering="crispEdges" aria-hidden="true"> <rect x="4" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="5" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="6" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="7" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="8" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="9" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="10" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="11" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="12" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="13" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="14" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="15" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="16" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="17" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="18" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="19" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="4" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="5" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="6" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="7" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="8" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="9" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="10" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="11" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="12" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="13" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="14" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="15" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="16" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="17" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="18" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="19" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="4" y="20" width="1" height="1" fill="#2e9e48"></rect><rect x="5" y="20" width="1" height="1" fill="#2f6fe0"></rect><rect x="6" y="20" width="1" height="1" fill="#2f6fe0"></rect><rect x="7" y="20" width="1" height="1" fill="#2f6fe0"></rect><rect x="8" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="9" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="10" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="11" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="12" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="13" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="14" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="15" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="16" y="20" width="1" height="1" fill="#2f6fe0"></rect><rect x="17" y="20" width="1" height="1" fill="#2f6fe0"></rect><rect x="18" y="20" width="1" height="1" fill="#2f6fe0"></rect><rect x="19" y="20" width="1" height="1" fill="#2e9e48"></rect><rect x="4" y="21" width="1" height="1" fill="#2e9e48"></rect><rect x="5" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="6" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="7" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="8" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="9" y="21" width="1" height="1" fill="#8e3fd6"></rect><rect x="10" y="21" width="1" height="1" fill="#8e3fd6"></rect><rect x="11" y="21" width="1" height="1" fill="#8e3fd6"></rect><rect x="12" y="21" width="1" height="1" fill="#8e3fd6"></rect><rect x="13" y="21" width="1" height="1" fill="#8e3fd6"></rect><rect x="14" y="21" width="1" height="1" fill="#8e3fd6"></rect><rect x="15" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="16" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="17" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="18" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="19" y="21" width="1" height="1" fill="#2e9e48"></rect><rect x="2" y="4" width="1" height="1" fill="#e0302b"></rect><rect x="3" y="4" width="1" height="1" fill="#e0302b"></rect><rect x="2" y="5" width="1" height="1" fill="#e0302b"></rect><rect x="3" y="5" width="1" height="1" fill="#e0302b"></rect><rect x="2" y="6" width="1" height="1" fill="#e0302b"></rect><rect x="3" y="6" width="1" height="1" fill="#f28a12"></rect><rect x="2" y="7" width="1" height="1" fill="#f28a12"></rect><rect x="3" y="7" width="1" height="1" fill="#f28a12"></rect><rect x="2" y="8" width="1" height="1" fill="#f28a12"></rect><rect x="3" y="8" width="1" height="1" fill="#f28a12"></rect><rect x="2" y="9" width="1" height="1" fill="#f28a12"></rect><rect x="3" y="9" width="1" height="1" fill="#f28a12"></rect><rect x="2" y="10" width="1" height="1" fill="#f28a12"></rect><rect x="3" y="10" width="1" height="1" fill="#f2c418"></rect><rect x="2" y="11" width="1" height="1" fill="#f2c418"></rect><rect x="3" y="11" width="1" height="1" fill="#f2c418"></rect><rect x="2" y="12" width="1" height="1" fill="#f2c418"></rect><rect x="3" y="12" width="1" height="1" fill="#f2c418"></rect><rect x="2" y="13" width="1" height="1" fill="#f2c418"></rect><rect x="3" y="13" width="1" height="1" fill="#f2c418"></rect><rect x="2" y="14" width="1" height="1" fill="#f2c418"></rect><rect x="3" y="14" width="1" height="1" fill="#f2c418"></rect><rect x="2" y="15" width="1" height="1" fill="#f2c418"></rect><rect x="3" y="15" width="1" height="1" fill="#2e9e48"></rect><rect x="2" y="16" width="1" height="1" fill="#f2c418"></rect><rect x="3" y="16" width="1" height="1" fill="#2e9e48"></rect><rect x="2" y="17" width="1" height="1" fill="#2e9e48"></rect><rect x="3" y="17" width="1" height="1" fill="#2e9e48"></rect><rect x="2" y="18" width="1" height="1" fill="#2e9e48"></rect><rect x="3" y="18" width="1" height="1" fill="#2e9e48"></rect><rect x="2" y="19" width="1" height="1" fill="#2e9e48"></rect><rect x="3" y="19" width="1" height="1" fill="#2e9e48"></rect><rect x="20" y="4" width="1" height="1" fill="#e0302b"></rect><rect x="21" y="4" width="1" height="1" fill="#e0302b"></rect><rect x="20" y="5" width="1" height="1" fill="#e0302b"></rect><rect x="21" y="5" width="1" height="1" fill="#e0302b"></rect><rect x="20" y="6" width="1" height="1" fill="#f28a12"></rect><rect x="21" y="6" width="1" height="1" fill="#e0302b"></rect><rect x="20" y="7" width="1" height="1" fill="#f28a12"></rect><rect x="21" y="7" width="1" height="1" fill="#f28a12"></rect><rect x="20" y="8" width="1" height="1" fill="#f28a12"></rect><rect x="21" y="8" width="1" height="1" fill="#f28a12"></rect><rect x="20" y="9" width="1" height="1" fill="#f28a12"></rect><rect x="21" y="9" width="1" height="1" fill="#f28a12"></rect><rect x="20" y="10" width="1" height="1" fill="#f2c418"></rect><rect x="21" y="10" width="1" height="1" fill="#f28a12"></rect><rect x="20" y="11" width="1" height="1" fill="#f2c418"></rect><rect x="21" y="11" width="1" height="1" fill="#f2c418"></rect><rect x="20" y="12" width="1" height="1" fill="#f2c418"></rect><rect x="21" y="12" width="1" height="1" fill="#f2c418"></rect><rect x="20" y="13" width="1" height="1" fill="#f2c418"></rect><rect x="21" y="13" width="1" height="1" fill="#f2c418"></rect><rect x="20" y="14" width="1" height="1" fill="#f2c418"></rect><rect x="21" y="14" width="1" height="1" fill="#f2c418"></rect><rect x="20" y="15" width="1" height="1" fill="#2e9e48"></rect><rect x="21" y="15" width="1" height="1" fill="#f2c418"></rect><rect x="20" y="16" width="1" height="1" fill="#2e9e48"></rect><rect x="21" y="16" width="1" height="1" fill="#f2c418"></rect><rect x="20" y="17" width="1" height="1" fill="#2e9e48"></rect><rect x="21" y="17" width="1" height="1" fill="#2e9e48"></rect><rect x="20" y="18" width="1" height="1" fill="#2e9e48"></rect><rect x="21" y="18" width="1" height="1" fill="#2e9e48"></rect><rect x="20" y="19" width="1" height="1" fill="#2e9e48"></rect><rect x="21" y="19" width="1" height="1" fill="#2e9e48"></rect> <g data-pips="1"> <rect x="10" y="10" width="4" height="4" fill="#2e9e48"></rect> </g><g data-pips="2"> <rect x="5" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="15" y="15" width="4" height="4" fill="#2f6fe0"></rect> </g><g data-pips="3"> <rect x="5" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="10" y="10" width="4" height="4" fill="#2e9e48"></rect><rect x="15" y="15" width="4" height="4" fill="#2f6fe0"></rect> </g><g data-pips="4"> <rect x="5" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="15" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="5" y="15" width="4" height="4" fill="#2f6fe0"></rect><rect x="15" y="15" width="4" height="4" fill="#2f6fe0"></rect> </g><g data-pips="5"> <rect x="5" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="15" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="10" y="10" width="4" height="4" fill="#2e9e48"></rect><rect x="5" y="15" width="4" height="4" fill="#2f6fe0"></rect><rect x="15" y="15" width="4" height="4" fill="#2f6fe0"></rect> </g><g data-pips="6"> <rect x="5" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="15" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="5" y="10" width="4" height="4" fill="#2e9e48"></rect><rect x="15" y="10" width="4" height="4" fill="#2e9e48"></rect><rect x="5" y="15" width="4" height="4" fill="#2f6fe0"></rect><rect x="15" y="15" width="4" height="4" fill="#2f6fe0"></rect> </g> </svg> </button> <style>.accent-toggle [data-pips]{display:none}:root:not([data-accent-face]) .accent-toggle [data-pips="5"],[data-accent-face="1"] .accent-toggle [data-pips="1"],[data-accent-face="2"] .accent-toggle [data-pips="2"],[data-accent-face="3"] .accent-toggle [data-pips="3"],[data-accent-face="4"] .accent-toggle [data-pips="4"],[data-accent-face="5"] .accent-toggle [data-pips="5"],[data-accent-face="6"] .accent-toggle [data-pips="6"]{display:inline}</style> <script type="module" src="/_astro/AccentToggle.astro_astro_type_script_index_0_lang.B9SRPXWd.js"></script> <button type="button" class="theme-toggle inline-flex items-center justify-center w-9 h-9 border border-border text-text hover:text-bg hover:bg-accent hover:border-accent cursor-pointer" aria-label="Theme: auto" title="Theme: auto"> <span class="hidden pref-auto:inline-flex"><span class="pixel-icon inline-flex items-center justify-center w-6 h-6" data-astro-cid-patnjmll><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+  <path d="M4 2h16v2H4zm0 14h16v2H4zM2 4h2v12H2zm18 0h2v12h-2zm-9 14h2v2h-2zm-3 2h8v2H8z"/>
+</svg>
+</span> </span> <span class="hidden pref-light:inline-flex"><span class="pixel-icon inline-flex items-center justify-center w-6 h-6" data-astro-cid-patnjmll><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M13 22h-2v-3h2v3Zm-6-3H5v-2h2v2Zm12 0h-2v-2h2v2Zm-4-2H9v-2h6v2Zm-6-2H7V9h2v6Zm8 0h-2V9h2v6ZM5 13H2v-2h3v2Zm17 0h-3v-2h3v2Zm-7-4H9V7h6v2ZM7 7H5V5h2v2Zm12 0h-2V5h2v2Zm-6-2h-2V2h2v3Z"/></svg></span> </span> <span class="hidden pref-dark:inline-flex"><span class="pixel-icon inline-flex items-center justify-center w-6 h-6" data-astro-cid-patnjmll><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+  <path d="M18 22H8v-2h10v2ZM8 20H6v-2h2v2Zm12 0h-2v-2h2v2ZM6 18H4v-2h2v2Zm16 0h-2v-4h-2v-2h2v-2h2v8ZM4 16H2V6h2v10Zm14 0h-6v-2h6v2Zm-6-2h-2v-2h2v2Zm-2-2H8V6h2v6ZM6 6H4V4h2v2Zm8-2h-2v2h-2V4H6V2h8v2Z"/>
+</svg>
+</span> </span> </button> <script type="module">const t=["auto","light","dark"],n=document.querySelector(".theme-toggle"),c=()=>{const e=`Theme: ${document.documentElement.dataset.themePref??"auto"}`;n.setAttribute("aria-label",e),n.setAttribute("title",e)};n.addEventListener("click",()=>{const o=document.documentElement.dataset.themePref??"auto",e=t[(t.indexOf(o)+1)%t.length];window.__setTheme?.(e),c()});c();</script> </span> </nav> <div id="app" data-history-url="https://github.com/akeboshiwind/akeboshiwind.github.io/commits/master/src/pages/bill"></div>     <script type="module" src="/_astro/index.astro_astro_type_script_index_0_lang.CHT3XfcW.js"></script>  <script>(() => {
+// Ordered dithering: https://en.wikipedia.org/wiki/Ordered_dithering
+function bayer(n) {
+  if (n === 1) return [[0]];
+  const m = bayer(n / 2);
+  const q = (k) => m.map((row) => row.map((v) => 4 * v + k));
+  const [a, b, c, d] = [q(0), q(2), q(3), q(1)];
+  return [
+    ...a.map((row, i) => [...row, ...b[i]]),
+    ...c.map((row, i) => [...row, ...d[i]]),
+  ];
+}
+
+const BAYER_8 = bayer(8);
+
+/**
+ * CSS `url()`s of an ordered-dither dissolve, for animating a tiled 4×4 mask: frame k of `steps` has the
+ * Bayer cells below level `16k / steps` on, so frame 0 shows nothing, the last shows everything,
+ * and each frame keeps every cell the one before had.
+ *
+ * @param {number} steps
+ * @returns {string[]} `steps + 1` frames
+ */
+function dissolveFrames(steps) {
+  const levels = bayer(4);
+  return Array.from({ length: steps + 1 }, (_, k) => {
+    let rects = '';
+    levels.forEach((row, y) => row.forEach((level, x) => {
+      if (level < (16 * k) / steps) rects += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
+    }));
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4" shape-rendering="crispEdges">${rects}</svg>`;
+    return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  });
+}
+
+/**
+ * `@keyframes undither-<steps>`, which turns the dissolve's cells on from none to all, and `redither-<steps>`,
+ * its reverse, one per line, for a `step-end` animation of a mask tiled at 4×4.
+ *
+ * @param {number} steps
+ * @returns {string}
+ */
+function dissolveKeyframes(steps) {
+  const frames = dissolveFrames(steps);
+  const keyframes = (name, order) =>
+    `@keyframes ${name} {${order.map((url, k) => `${(100 * k) / steps}% { mask-image: ${url} }`).join(' ')}}`;
+  return [keyframes(`undither-${steps}`, frames), keyframes(`redither-${steps}`, [...frames].reverse())].join('\n');
+}
+
+// mulberry32: https://gist.github.com/tommyettinger/46a874533244883189143505d203312c
+function rng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Threshold a density field into a 1-bit mask.
+ *
+ * @param {number} cols
+ * @param {number} rows
+ * @param {(x: number, y: number) => number} density
+ *   Called with the cell centre in cell units; returns 0 (never lit) to 1 (always lit).
+ * @param {{ method?: 'bayer' | 'noise' | 'atkinson', seed?: number }} [opts] `seed` only affects `noise`.
+ * @returns {Uint8Array} row-major, 1 = lit
+ */
+function dither(cols, rows, density, { method = 'bayer', seed = 1 } = {}) {
+  if (method === 'atkinson') return atkinson(cols, rows, density);
+  const mask = new Uint8Array(cols * rows);
+  const random = rng(seed);
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const threshold = method === 'noise'
+        ? random()
+        : (BAYER_8[y % 8][x % 8] + 0.5) / 64;
+      mask[y * cols + x] = density(x + 0.5, y + 0.5) > threshold ? 1 : 0;
     }
-  };
+  }
+  return mask;
+}
 
-  const defaultItems = [
-    { name: 'Salade César', price: 12.00, quantity: 1, translation: 'Caesar Salad' },
-    { name: 'Café', price: 5.00, quantity: 2, translation: 'Coffee' },
-    { name: 'Hamburger', price: 16.00, quantity: 1, translation: 'Hamburger' },
-    { name: 'Pâtes', price: 14.00, quantity: 1, translation: 'Pasta' },
-    { name: 'Eau Pétillante', price: 4.00, quantity: 1, translation: 'Sparkling Water' },
-    { name: 'Pain à l\'Ail', price: 8.00, quantity: 1, translation: 'Garlic Bread' },
-  ].map((item, index) => ({ ...item, id: index + 1 }));
+// Atkinson dithering: https://en.wikipedia.org/wiki/Atkinson_dithering
+const ATKINSON_SPREAD = [[1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]];
 
-  const defaultPeople = ['Alice', 'Bob', 'Charlie'];
-
-  // Default assignments: Alice (salad, coffee), Bob (burger, coffee), Charlie (pasta, water), shared (garlic bread)
-  const defaultAssignments = {
-    '1-0': ['Alice'],           // Caesar Salad
-    '2-0': ['Alice'],           // Coffee 1
-    '2-1': ['Bob'],             // Coffee 2
-    '3-0': ['Bob'],             // Burger
-    '4-0': ['Charlie'],         // Pasta
-    '5-0': ['Charlie'],         // Sparkling Water
-    '6-0': ['Alice', 'Bob', 'Charlie'], // Garlic Bread (shared)
-  };
-
-  const defaultShares = {
-    '1-0': { 'Alice': 100 },
-    '2-0': { 'Alice': 100 },
-    '2-1': { 'Bob': 100 },
-    '3-0': { 'Bob': 100 },
-    '4-0': { 'Charlie': 100 },
-    '5-0': { 'Charlie': 100 },
-    '6-0': { 'Alice': 33.33, 'Bob': 33.33, 'Charlie': 33.34 },
-  };
-
-  const [people, setPeople] = useState(loadFromLocalStorage('people', defaultPeople));
-  const [personShares, setPersonShares] = useState(loadFromLocalStorage('personShares', defaultShares));
-  const [itemAssignments, setItemAssignments] = useState(loadFromLocalStorage('itemAssignments', defaultAssignments));
-  const [items, setItems] = useState(loadFromLocalStorage('items', defaultItems));
-  const [expandedRows, setExpandedRows] = useState(loadFromLocalStorage('expandedRows', {}));
-  const [processingError, setProcessingError] = useState(null);
-  const [currency, setCurrency] = useState(loadFromLocalStorage('currency', '$'));
-  const [homeCurrency, setHomeCurrency] = useState(loadFromLocalStorage('homeCurrency', '$'));
-  const [exchangeRate, setExchangeRate] = useState(loadFromLocalStorage('exchangeRate', 1));
-  const [showCurrencySettings, setShowCurrencySettings] = useState(loadFromLocalStorage('showCurrencySettings', false));
-  const [showPeopleSettings, setShowPeopleSettings] = useState(loadFromLocalStorage('showPeopleSettings', false));
-  const [tax, setTax] = useState(loadFromLocalStorage('tax', 0));
-  const [serviceCharge, setServiceCharge] = useState(loadFromLocalStorage('serviceCharge', 0));
-  const [serviceChargeMode, setServiceChargeMode] = useState(loadFromLocalStorage('serviceChargeMode', '%'));
-  const [expandedSummary, setExpandedSummary] = useState({});
-  const [showTaxSettings, setShowTaxSettings] = useState(false);
-
-  const claudePromptText = `This is an image of a receipt. Extract all the items with their name, price, quantity, and an English translation of the item name. Also identify the currency used in the receipt (£, $, €, etc.). If the receipt shows a tax/VAT amount or a service charge, extract those too.
-
-Format the output as a JSON object with these fields:
-1. "items": An array of items, each with name (as it appears on the receipt), price (as a unit price, not the line total — e.g. if the receipt shows 2 x 2.80€, the price is 2.80, not 5.60), quantity (as a number), and translation (English translation of the item name)
-2. "currency": The currency symbol used in the receipt (£, $, €, etc.)
-3. "tax": (optional) The total tax/VAT amount as a number, if shown on the receipt
-4. "serviceCharge": (optional) The service charge as a fixed amount, if shown on the receipt
-5. "serviceChargePercent": (optional) The service charge as a percentage, if shown on the receipt (prefer this over serviceCharge if both are available)
-
-If this is not a receipt, simply respond with: "Not a receipt"
-
-Here's an example of the expected format with sample data:
-{
-  "items": ${JSON.stringify(defaultItems.map(({id, ...item}) => item))},
-  "currency": "€",
-  "tax": 3.54
-}`;
-
-  useEffect(() => { localStorage.setItem('billSplitter_people', JSON.stringify(people)); }, [people]);
-  useEffect(() => { localStorage.setItem('billSplitter_personShares', JSON.stringify(personShares)); }, [personShares]);
-  useEffect(() => {
-    localStorage.setItem('billSplitter_itemAssignments', JSON.stringify(itemAssignments));
-    setExpandedRows(prev => {
-      const newState = { ...prev };
-      let hasChanges = false;
-      Object.keys(newState).forEach(itemId => {
-        if (!canItemBeSplit(itemId)) { delete newState[itemId]; hasChanges = true; }
-      });
-      return hasChanges ? newState : prev;
-    });
-  }, [itemAssignments]);
-  useEffect(() => { localStorage.setItem('billSplitter_items', JSON.stringify(items)); }, [items]);
-  useEffect(() => { localStorage.setItem('billSplitter_expandedRows', JSON.stringify(expandedRows)); }, [expandedRows]);
-  useEffect(() => { localStorage.setItem('billSplitter_currency', currency); }, [currency]);
-  useEffect(() => { localStorage.setItem('billSplitter_homeCurrency', homeCurrency); }, [homeCurrency]);
-  useEffect(() => { localStorage.setItem('billSplitter_exchangeRate', exchangeRate.toString()); }, [exchangeRate]);
-  useEffect(() => { localStorage.setItem('billSplitter_showCurrencySettings', JSON.stringify(showCurrencySettings)); }, [showCurrencySettings]);
-  useEffect(() => { localStorage.setItem('billSplitter_showPeopleSettings', JSON.stringify(showPeopleSettings)); }, [showPeopleSettings]);
-  useEffect(() => { localStorage.setItem('billSplitter_tax', JSON.stringify(tax)); }, [tax]);
-  useEffect(() => { localStorage.setItem('billSplitter_serviceCharge', JSON.stringify(serviceCharge)); }, [serviceCharge]);
-  useEffect(() => { localStorage.setItem('billSplitter_serviceChargeMode', JSON.stringify(serviceChargeMode)); }, [serviceChargeMode]);
-
-
-  const expandedItems = items.flatMap(item =>
-    Array(item.quantity).fill().map((_, i) => ({
-      ...item, uniqueId: `${item.id}-${i}`, originalQuantity: item.quantity, quantity: 1
-    }))
-  );
-
-  const createEqualSplit = (people) => {
-    const sharePerPerson = Math.floor((100 / people.length) * 100) / 100;
-    const shares = {};
-    people.forEach(p => { shares[p] = 0; });
-    let totalAllocated = 0;
-    people.forEach((person, index) => {
-      if (index === people.length - 1) { shares[person] = 100 - totalAllocated; }
-      else { shares[person] = sharePerPerson; totalAllocated += sharePerPerson; }
-    });
-    return shares;
-  };
-
-  const updateSharesFromAssignments = (assignments) => {
-    const newShares = {};
-    Object.entries(assignments).forEach(([itemUniqueId, assignedPeople]) => {
-      if (assignedPeople.length > 0) newShares[itemUniqueId] = createEqualSplit(assignedPeople);
-    });
-    setPersonShares(newShares);
-  };
-
-  const toggleAllPeople = (itemUniqueId) => {
-    setItemAssignments(prev => {
-      const newAssignments = { ...prev };
-      const currentAssignees = newAssignments[itemUniqueId] || [];
-      if (currentAssignees.length === people.length) {
-        delete newAssignments[itemUniqueId];
-      } else {
-        newAssignments[itemUniqueId] = [...people];
+function atkinson(cols, rows, density) {
+  const grid = new Float32Array(cols * rows);
+  for (let y = 0; y < rows; y++)
+    for (let x = 0; x < cols; x++) grid[y * cols + x] = density(x + 0.5, y + 0.5);
+  const mask = new Uint8Array(cols * rows);
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const i = y * cols + x;
+      mask[i] = grid[i] >= 0.5 ? 1 : 0;
+      const err = (grid[i] - mask[i]) / 8;
+      for (const [dx, dy] of ATKINSON_SPREAD) {
+        const [nx, ny] = [x + dx, y + dy];
+        if (nx >= 0 && nx < cols && ny < rows) grid[ny * cols + nx] += err;
       }
-      updateSharesFromAssignments(newAssignments);
-      return newAssignments;
-    });
-  };
+    }
+  }
+  return mask;
+}
 
-  const togglePersonAssignment = (itemUniqueId, person) => {
-    setItemAssignments(prev => {
-      const newAssignments = { ...prev };
-      const currentAssignees = newAssignments[itemUniqueId] || [];
-      if (currentAssignees.includes(person)) {
-        newAssignments[itemUniqueId] = currentAssignees.filter(p => p !== person);
-        if (newAssignments[itemUniqueId].length === 0) delete newAssignments[itemUniqueId];
-      } else {
-        newAssignments[itemUniqueId] = [...currentAssignees, person];
+const clamp = (v) => Math.min(1, Math.max(0, v));
+
+const shade = (x, y, cx, cy, r) => clamp(0.12 + Math.hypot(x - (cx - r * 0.45), y - (cy - r * 0.5)) / (r * 1.6));
+
+const facet = (d, steps = 4) => Math.round(d * steps) / steps;
+
+function lumpy(random, wobble = 1) {
+  const harmonics = [2, 3, 5].map((k, i) => ({ k, phase: random() * Math.PI * 2, amp: wobble * [0.18, 0.12, 0.07][i] * (0.6 + random() * 0.8) }));
+  const tilt = (random() - 0.5) * 0.5;
+  return (angle) => 1 + harmonics.reduce((s, { k, phase, amp }) => s + amp * Math.sin(k * (angle + tilt) + phase), 0);
+}
+
+function stone(x, y, { cx, cy, rx, ry, outline }) {
+  const dx = (x - cx) / rx;
+  const dy = (y - cy) / ry;
+  if (Math.hypot(dx, dy) > outline(Math.atan2(dy, dx))) return null;
+  return facet(shade(x, y, cx, cy, Math.max(rx, ry)));
+}
+
+/**
+ * Shapes keyed by the `data-dither` value that selects them: the `dither` method each is drawn with, and
+ * `make(cols, rows, random)`, which takes the grid size and a seeded `random` and returns its density function.
+ */
+const shapes = {
+  rule: { method: 'noise', make: (w, h) => (x, y) => {
+    const across = 1 - Math.abs((2 * y) / h - 1);
+    const ends = clamp(Math.min(x, w - x) / (w * 0.2));
+    return clamp(across * 1.4 * ends);
+  } },
+
+  'fade-x': { method: 'bayer', make: (w) => (x) => clamp(1 - x / w) },
+
+  ripples: { method: 'bayer', make: (w, h, random) => {
+    const squash = 3;
+    const n = Math.max(3, Math.round(w / 30));
+    const drops = Array.from({ length: n }, (_, i) => ({
+      x: ((i + 0.2 + 0.6 * random()) / n) * w,
+      y: h * (0.25 + 0.6 * random()),
+      r: h * (0.6 + 1.6 * random()),
+    }));
+    return (x, y) => {
+      let d = 0;
+      for (const drop of drops) {
+        const t = Math.hypot(x - drop.x, (y - drop.y) * squash) / drop.r;
+        if (t >= 1) continue;
+        const ring = (0.5 + 0.5 * Math.cos(t * Math.PI * 6)) ** 6;
+        d = Math.max(d, ring * (1 - t) ** 1.5);
       }
-      updateSharesFromAssignments(newAssignments);
-      return newAssignments;
-    });
-  };
-
-  const handleShareChange = (itemUniqueId, person, share) => {
-    const shareValue = parseInt(share, 10) || 0;
-    setPersonShares(prev => {
-      const updated = { ...prev };
-      if (!updated[itemUniqueId]) updated[itemUniqueId] = {};
-      updated[itemUniqueId][person] = shareValue;
-      return updated;
-    });
-  };
-
-  const getTotalPercentForItem = (itemUniqueId) => {
-    if (!personShares[itemUniqueId]) return 0;
-    const total = Object.values(personShares[itemUniqueId]).reduce((sum, share) => sum + share, 0);
-    if (Math.abs(total - 100) < 0.1) return 100;
-    return Math.round(total * 100) / 100;
-  };
-
-  const convertToHomeCurrency = (amount) => {
-    if (currency === homeCurrency || exchangeRate === 1) return amount;
-    return amount * exchangeRate;
-  };
-
-  const billSubtotal = expandedItems.reduce((sum, item) => sum + item.price, 0);
-  const serviceChargeAmount = serviceChargeMode === '%'
-    ? billSubtotal * (serviceCharge / 100)
-    : serviceCharge;
-
-  const calculatePersonTotal = (person) => {
-    let itemTotal = 0;
-    expandedItems.forEach(item => {
-      if (personShares[item.uniqueId] && personShares[item.uniqueId][person]) {
-        itemTotal += (item.price * (personShares[item.uniqueId][person] / 100));
-      }
-    });
-    const proportion = billSubtotal > 0 ? itemTotal / billSubtotal : 0;
-    const personTax = tax * proportion;
-    const personService = serviceChargeAmount * proportion;
-    return {
-      items: itemTotal,
-      tax: personTax,
-      service: personService,
-      total: itemTotal + personTax + personService,
+      return clamp(d);
     };
-  };
+  } },
 
-  const updateItemName = (id, newName) => setItems(prev => prev.map(item => item.id === id ? { ...item, name: newName } : item));
-  const updateItemPrice = (id, newPrice) => setItems(prev => prev.map(item => item.id === id ? { ...item, price: parseFloat(newPrice) || 0 } : item));
+  rings: { method: 'bayer', make: (w, h) => {
+    const r = Math.min(w, h) / 2;
+    return (x, y) => {
+      const d = Math.hypot(x - w / 2, y - h / 2) / r;
+      if (d > 1) return 0;
+      return clamp((0.5 + 0.5 * Math.cos(d * Math.PI * 7)) * (1 - d));
+    };
+  } },
 
-  const billTotal = (billSubtotal + tax + serviceChargeAmount).toFixed(2);
-  const allocatedTotal = people.reduce((sum, person) => sum + calculatePersonTotal(person).total, 0).toFixed(2);
-  const canItemBeSplit = (itemUniqueId) => (itemAssignments[itemUniqueId]?.length ?? 0) >= 2;
-
-  const toggleExpandedRow = (itemUniqueId) => {
-    if (!canItemBeSplit(itemUniqueId)) return;
-    setExpandedRows(prev => {
-      const newState = { ...prev };
-      if (newState[itemUniqueId]) delete newState[itemUniqueId];
-      else newState[itemUniqueId] = true;
-      return newState;
-    });
-  };
-
-  const resetData = () => {
-    ['people','personShares','itemAssignments','items','expandedRows','currency','homeCurrency','exchangeRate','showCurrencySettings','showPeopleSettings','tax','serviceCharge','serviceChargeMode']
-      .forEach(k => localStorage.removeItem(`billSplitter_${k}`));
-    setPeople(defaultPeople); setPersonShares(defaultShares); setItemAssignments(defaultAssignments); setItems(defaultItems);
-    setExpandedRows({}); setProcessingError(null); setCurrency('$'); setHomeCurrency('$');
-    setExchangeRate(1); setShowCurrencySettings(false); setShowPeopleSettings(false);
-    setTax(0); setServiceCharge(0); setServiceChargeMode('%'); setExpandedSummary({});
-  };
-
-  return (
-    <div className="p-2 sm:p-4 max-w-4xl mx-auto text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800">
-      <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded text-sm">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <p><strong>Instructions:</strong></p>
-              <button onClick={resetData} className="sm:hidden px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs">Reset</button>
-            </div>
-            <ol className="list-decimal pl-5 space-y-1">
-              <li>Scan a receipt or use the default items</li>
-              <li>Claude will detect the currency from your receipt</li>
-              <li>Edit item names and prices as needed</li>
-              <li>Adjust currency settings if needed</li>
-              <li>Click on person buttons to assign people to items</li>
-              <li>When 2+ people are assigned, click <strong>Split</strong></li>
-              <li>Adjust percentages to customize the split</li>
-            </ol>
-            <p className="mt-2 text-xs italic">All changes are automatically saved.</p>
-          </div>
-          <button onClick={resetData} className="hidden sm:block px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm">Reset Data</button>
-        </div>
-      </div>
-
-      <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-3 sm:p-4 rounded">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
-          <h3 className="font-semibold">Scan Receipt with Claude</h3>
-          <button onClick={() => navigator.clipboard.writeText(claudePromptText)} className="self-start bg-blue-500 hover:bg-blue-600 text-white px-3 sm:px-4 py-1 sm:py-2 rounded text-sm w-full sm:w-auto">Copy Prompt</button>
-        </div>
-        <p className="mb-2 text-sm">Visit <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">claude.ai</a>, upload your receipt image, and paste the prompt below:</p>
-        <div className="bg-white dark:bg-gray-700 p-3 rounded border border-gray-300 dark:border-gray-600 mb-1 text-sm whitespace-pre-wrap font-mono text-xs max-h-24 overflow-y-auto">{claudePromptText}</div>
-      </div>
-
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-2">Enter Claude Response</h2>
-        <textarea className="w-full border dark:border-gray-600 p-2 mb-2 rounded dark:bg-gray-700 font-mono text-sm" rows="1" placeholder='{"items": [...], "currency": "£"}'
-          onChange={(e) => {
-            try {
-              const data = JSON.parse(e.target.value.trim());
-              if (data.items && Array.isArray(data.items)) {
-                setItems(data.items.map((item, i) => ({ id: i + 1, name: item.name || 'Unnamed', price: parseFloat(item.price) || 0, quantity: parseInt(item.quantity) || 1, translation: item.translation || '' })));
-                if (data.currency) setCurrency(data.currency);
-                setTax(parseFloat(data.tax) || 0);
-                if (data.serviceChargePercent != null) { setServiceCharge(parseFloat(data.serviceChargePercent) || 0); setServiceChargeMode('%'); }
-                else if (data.serviceCharge != null) { setServiceCharge(parseFloat(data.serviceCharge) || 0); setServiceChargeMode('fixed'); }
-                else { setServiceCharge(0); }
-                setPersonShares({}); setItemAssignments({}); setExpandedRows({}); setProcessingError(null);
-              } else setProcessingError('Invalid format');
-            } catch { setProcessingError('Invalid JSON'); }
-          }} />
-        {processingError && <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded text-sm"><strong>Error:</strong> {processingError}</div>}
-      </div>
-
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Manage People</h2>
-          <button onClick={() => setShowPeopleSettings(!showPeopleSettings)} className="text-blue-500 hover:text-blue-700 text-sm">{showPeopleSettings ? 'Hide ▲' : 'Show ▼'}</button>
-        </div>
-        {!showPeopleSettings && <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded flex flex-wrap gap-1 text-sm"><span className="font-medium mr-2">People:</span>{people.map((p,i) => <span key={i} className="bg-white dark:bg-gray-800 rounded-full px-2 py-1 text-xs">{p}</span>)}</div>}
-        {showPeopleSettings && (
-          <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded">
-            <div className="flex flex-wrap gap-2 mb-2">
-              {people.map((person, i) => (
-                <div key={i} className="flex items-center bg-white dark:bg-gray-800 rounded-full px-3 py-1">
-                  <span className="mr-2">{person}</span>
-                  <button onClick={() => { setPeople(people.filter((_,idx) => idx !== i)); }} className="text-red-500">×</button>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center">
-              <input type="text" placeholder="Add person" className="border dark:border-gray-600 p-2 rounded mr-2 dark:bg-gray-700 flex-grow"
-                onKeyDown={(e) => { if (e.key === 'Enter' && e.target.value.trim() && !people.includes(e.target.value.trim())) { setPeople([...people, e.target.value.trim()]); e.target.value = ''; }}} />
-              <button onClick={(e) => { const input = e.target.previousSibling; if (input.value.trim() && !people.includes(input.value.trim())) { setPeople([...people, input.value.trim()]); input.value = ''; }}} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded">Add</button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="mb-6 overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-2">Assign Items</h2>
-        <table className="w-full border-collapse text-sm">
-          <thead><tr className="bg-gray-100 dark:bg-gray-700"><th className="border dark:border-gray-600 p-1 sm:p-2 text-left">Item</th><th className="border dark:border-gray-600 p-1 sm:p-2 text-right">Price ({currency})</th><th className="border dark:border-gray-600 p-1 sm:p-2">Assigned To</th><th className="border dark:border-gray-600 p-1 sm:p-2 text-center w-20">Actions</th></tr></thead>
-          <tbody>
-            {expandedItems.map((item) => {
-              const totalPercent = getTotalPercentForItem(item.uniqueId);
-              const isComplete = totalPercent === 100;
-              const isOver = totalPercent > 100;
-              const assignees = itemAssignments[item.uniqueId] || [];
-              const isFirst = item.uniqueId.endsWith('-0');
-              const orig = items.find(i => i.id === item.id);
-              return (
-                <React.Fragment key={item.uniqueId}>
-                  <tr className={`${isComplete ? 'bg-green-50 dark:bg-green-900/20' : ''} ${isOver ? 'bg-red-50 dark:bg-red-900/20' : ''} hover:bg-gray-50 dark:hover:bg-gray-700`}>
-                    <td className="border dark:border-gray-600 p-1 sm:p-2">
-                      <div>
-                        <div className="flex items-center">
-                          {isFirst ? <input type="text" value={orig.name} onChange={(e) => updateItemName(orig.id, e.target.value)} className="w-full border dark:border-gray-500 p-1 rounded dark:bg-gray-600" /> : <span>{item.name}</span>}
-                          {item.originalQuantity > 1 && <span className="ml-1 whitespace-nowrap">({parseInt(item.uniqueId.split('-')[1]) + 1}/{item.originalQuantity})</span>}
-                        </div>
-                        {item.translation && <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.translation}</div>}
-                      </div>
-                    </td>
-                    <td className="border dark:border-gray-600 p-1 sm:p-2">
-                      {isFirst ? <input type="number" min="0" step="0.01" value={orig.price} onChange={(e) => updateItemPrice(orig.id, e.target.value)} className="w-20 border dark:border-gray-500 p-1 rounded text-right dark:bg-gray-600" /> : <span className="text-right block">{item.price.toFixed(2)}</span>}
-                    </td>
-                    <td className="border dark:border-gray-600 p-1 sm:p-2">
-                      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1.5 sm:gap-1"><button onClick={() => toggleAllPeople(item.uniqueId)} className={`w-full sm:w-auto px-3 sm:px-2 py-1.5 sm:py-1 text-sm sm:text-xs rounded-full font-semibold min-h-[36px] sm:min-h-0 ${assignees.length === people.length ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'}`}>All</button>{people.map(p => <button key={p} onClick={() => togglePersonAssignment(item.uniqueId, p)} className={`w-full sm:w-auto px-3 sm:px-2 py-1.5 sm:py-1 text-sm sm:text-xs rounded-full min-h-[36px] sm:min-h-0 ${assignees.includes(p) ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'}`}>{p}</button>)}</div>
-                    </td>
-                    <td className="border dark:border-gray-600 p-1 sm:p-2 text-center">
-                      <button onClick={() => toggleExpandedRow(item.uniqueId)} disabled={!canItemBeSplit(item.uniqueId)} className={`px-2 py-1 rounded text-xs ${canItemBeSplit(item.uniqueId) ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'} ${expandedRows[item.uniqueId] ? 'bg-blue-700' : ''}`}>{expandedRows[item.uniqueId] ? 'Hide' : 'Split'}</button>
-                    </td>
-                  </tr>
-                  {expandedRows[item.uniqueId] && canItemBeSplit(item.uniqueId) && (
-                    <tr className="bg-gray-50 dark:bg-gray-800">
-                      <td colSpan="4" className="p-2 sm:p-4 border dark:border-gray-600">
-                        <div className="bg-white dark:bg-gray-700 p-2 sm:p-4 rounded shadow">
-                          <h4 className="font-semibold text-sm mb-3">Adjust Split</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>{assignees.map(p => <div key={p} className="flex items-center mb-2"><span className="mr-2 w-24">{p}</span><input type="number" min="0" max="100" value={personShares[item.uniqueId]?.[p] || 0} onChange={(e) => handleShareChange(item.uniqueId, p, e.target.value)} className="w-20 p-2 text-right border dark:border-gray-500 dark:bg-gray-600 rounded" /><span className="ml-1">%</span></div>)}</div>
-                            <div>
-                              <div className={`text-lg mb-2 ${isComplete ? 'text-green-600' : isOver ? 'text-red-600' : 'text-yellow-600'}`}>Total: {totalPercent}%</div>
-                              <button onClick={() => { const ns = { ...personShares }; ns[item.uniqueId] = createEqualSplit(assignees); setPersonShares(ns); }} className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded">Equal Split</button>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Tax & Service Charge</h2>
-          <button onClick={() => setShowTaxSettings(!showTaxSettings)} className="text-blue-500 hover:text-blue-700 text-sm">{showTaxSettings ? 'Hide ▲' : 'Show ▼'}</button>
-        </div>
-        {!showTaxSettings && <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded text-sm"><span className="font-medium">Tax: {currency}{tax.toFixed(2)}</span><span className="ml-3">Service: {serviceChargeMode === '%' ? `${serviceCharge}%` : `${currency}${serviceCharge.toFixed(2)}`}{serviceChargeMode === '%' && serviceCharge > 0 ? ` (${currency}${serviceChargeAmount.toFixed(2)})` : ''}</span></div>}
-        {showTaxSettings && (
-          <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">Tax ({currency})</label>
-              <input type="number" min="0" step="0.01" value={tax} onChange={(e) => setTax(parseFloat(e.target.value) || 0)} className="w-32 p-2 border dark:border-gray-600 rounded dark:bg-gray-700" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Service Charge</label>
-              <div className="flex items-center gap-2">
-                <input type="number" min="0" step="0.01" value={serviceCharge} onChange={(e) => setServiceCharge(parseFloat(e.target.value) || 0)} className="w-32 p-2 border dark:border-gray-600 rounded dark:bg-gray-700" />
-                <select value={serviceChargeMode} onChange={(e) => setServiceChargeMode(e.target.value)} className="p-2 border dark:border-gray-600 rounded dark:bg-gray-700">
-                  <option value="%">%</option>
-                  <option value="fixed">{currency}</option>
-                </select>
-              </div>
-              {serviceChargeMode === '%' && serviceCharge > 0 && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">= {currency}{serviceChargeAmount.toFixed(2)}</p>}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Currency Settings</h2>
-          <button onClick={() => setShowCurrencySettings(!showCurrencySettings)} className="text-blue-500 hover:text-blue-700 text-sm">{showCurrencySettings ? 'Hide ▲' : 'Show ▼'}</button>
-        </div>
-        {!showCurrencySettings && <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded text-sm"><span className="font-medium">Bill Currency: {currency}</span>{currency !== homeCurrency && exchangeRate !== 1 && <span> → Home: {homeCurrency} (Rate: {exchangeRate})</span>}</div>}
-        {showCurrencySettings && (
-          <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div><label className="block text-sm font-medium mb-1">Bill Currency</label><select value={currency} onChange={(e) => setCurrency(e.target.value)} className="p-2 border dark:border-gray-600 rounded dark:bg-gray-700"><option value="£">£ GBP</option><option value="€">€ EUR</option><option value="$">$ USD</option><option value="¥">¥ JPY</option></select></div>
-            <div><label className="block text-sm font-medium mb-1">Home Currency</label><select value={homeCurrency} onChange={(e) => setHomeCurrency(e.target.value)} className="p-2 border dark:border-gray-600 rounded dark:bg-gray-700"><option value="£">£ GBP</option><option value="€">€ EUR</option><option value="$">$ USD</option><option value="¥">¥ JPY</option></select></div>
-            <div><label className="block text-sm font-medium mb-1">Bill Total in Home Currency ({homeCurrency})</label><input type="number" min="0" step="0.01" value={parseFloat((parseFloat(billTotal) * exchangeRate).toFixed(2))} onChange={(e) => { const homeAmount = parseFloat(e.target.value); const total = parseFloat(billTotal); if (total > 0 && homeAmount >= 0) setExchangeRate(parseFloat((homeAmount / total).toFixed(6))); }} className="w-32 p-2 border dark:border-gray-600 rounded dark:bg-gray-700" /></div>
-            <div><label className="block text-sm font-medium mb-1">Exchange Rate</label><input type="number" min="0" step="0.01" value={exchangeRate} onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 1)} className="w-32 p-2 border dark:border-gray-600 rounded dark:bg-gray-700" /></div>
-          </div>
-        )}
-      </div>
-
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-2">Summary</h2>
-        <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="p-2 bg-white dark:bg-gray-800 rounded">
-            <h3 className="font-semibold text-sm mb-2">Per Person</h3>
-            {people.map((p,i) => {
-              const breakdown = calculatePersonTotal(p);
-              const totalStr = breakdown.total.toFixed(2);
-              const homeTotal = convertToHomeCurrency(breakdown.total).toFixed(2);
-              const hasExtras = tax > 0 || serviceChargeAmount > 0;
-              const isExpanded = expandedSummary[p];
-              const showHome = currency !== homeCurrency && exchangeRate !== 1;
-              return <div key={i}>
-                <div className={`flex justify-between py-1 border-b dark:border-gray-700 ${hasExtras ? 'cursor-pointer' : ''}`} onClick={() => hasExtras && setExpandedSummary(prev => ({ ...prev, [p]: !prev[p] }))}>
-                  <span className="flex items-center gap-1">{hasExtras && <span className="text-base text-gray-400">{isExpanded ? '▾' : '▸'}</span>}{p}:</span>
-                  <span className="font-semibold">{currency}{totalStr}{showHome && <span className="text-gray-500 ml-1 text-sm">({homeCurrency}{homeTotal})</span>}</span>
-                </div>
-                {isExpanded && <div className="pl-4 py-1 text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
-                  <div className="flex justify-between"><span>Items:</span><span>{currency}{breakdown.items.toFixed(2)}{showHome && <span className="ml-1">({homeCurrency}{convertToHomeCurrency(breakdown.items).toFixed(2)})</span>}</span></div>
-                  {tax > 0 && <div className="flex justify-between"><span>Tax:</span><span>{currency}{breakdown.tax.toFixed(2)}{showHome && <span className="ml-1">({homeCurrency}{convertToHomeCurrency(breakdown.tax).toFixed(2)})</span>}</span></div>}
-                  {serviceChargeAmount > 0 && <div className="flex justify-between"><span>Service:</span><span>{currency}{breakdown.service.toFixed(2)}{showHome && <span className="ml-1">({homeCurrency}{convertToHomeCurrency(breakdown.service).toFixed(2)})</span>}</span></div>}
-                </div>}
-              </div>;
-            })}
-          </div>
-          <div className="p-2 bg-white dark:bg-gray-800 rounded">
-            <h3 className="font-semibold text-sm mb-2">Bill Total</h3>
-            {(() => { const showHome = currency !== homeCurrency && exchangeRate !== 1; return <>
-              <div className="flex justify-between py-1 border-b dark:border-gray-700 text-sm"><span>Subtotal:</span><span>{currency}{billSubtotal.toFixed(2)}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(billSubtotal).toFixed(2)})</span>}</span></div>
-              {tax > 0 && <div className="flex justify-between py-1 border-b dark:border-gray-700 text-sm"><span>Tax:</span><span>{currency}{tax.toFixed(2)}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(tax).toFixed(2)})</span>}</span></div>}
-              {serviceChargeAmount > 0 && <div className="flex justify-between py-1 border-b dark:border-gray-700 text-sm"><span>Service:</span><span>{currency}{serviceChargeAmount.toFixed(2)}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(serviceChargeAmount).toFixed(2)})</span>}</span></div>}
-              <div className="flex justify-between py-1 border-b dark:border-gray-700"><span className="font-bold">Total:</span><span className="font-bold">{currency}{billTotal}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(parseFloat(billTotal)).toFixed(2)})</span>}</span></div>
-              <div className="flex justify-between py-1"><span className={parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600' : 'text-green-600'}>Allocated:</span><span className={parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600' : 'text-green-600'}>{currency}{allocatedTotal}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(parseFloat(allocatedTotal)).toFixed(2)})</span>}</span></div>
-            </>; })()}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  cairn: { method: 'bayer', make: (w, h, random) => {
+    const stones = [
+      { cx: w * 0.5, cy: h * 0.24, rx: w * 0.2, ry: h * 0.12 },
+      { cx: w * 0.52, cy: h * 0.5, rx: w * 0.31, ry: h * 0.14 },
+      { cx: w * 0.48, cy: h * 0.78, rx: w * 0.46, ry: h * 0.16 },
+    ].map((s) => ({ ...s, outline: lumpy(random, 0.6) }));
+    return (x, y) => {
+      for (const s of stones) {
+        const d = stone(x, y, s);
+        if (d !== null) return d;
+      }
+      return 0;
+    };
+  } },
 };
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<Component />);
-  </script> </body> </html>
+const PAPER = 0.9;
+const INK_FLOOR = 0.15;
+
+const luminance = (rgba, i) => (0.2126 * rgba[4 * i] + 0.7152 * rgba[4 * i + 1] + 0.0722 * rgba[4 * i + 2]) / 255;
+
+/**
+ * Density field from an image: dark pixels light up.
+ *
+ * @param {Uint8ClampedArray} rgba `ImageData.data` for a `cols × rows` image
+ * @param {number} cols
+ * @param {number} rows
+ * @param {{ tone?: 'stretch' | 'equalise' | 'paper' }} [opts]
+ *   - `stretch`: contrast stretched to the image's own luminance range.
+ *   - `equalise`: histogram equalisation, so each distinct luminance gets an evenly spaced density;
+ *     a single-luminance image falls back to `stretch`.
+ *   - `paper`: luminance ≥ `PAPER` is empty page; the remaining ink is equalised into [`INK_FLOOR`, 1],
+ *     so off-white panels don't speckle and the lightest ink colour still shows.
+ */
+function imageDensity(rgba, cols, rows, { tone = 'stretch' } = {}) {
+  const lum = new Float32Array(cols * rows);
+  for (let i = 0; i < lum.length; i++) lum[i] = luminance(rgba, i);
+  const at = (x, y) => lum[Math.floor(y) * cols + Math.floor(x)];
+  if (tone === 'equalise') {
+    const equalised = equalise(lum);
+    if (equalised) return (x, y) => equalised(at(x, y));
+  }
+  if (tone === 'paper') {
+    const ink = lum.filter((v) => v < PAPER);
+    const equalised = ink.length ? equalise(ink) : null;
+    return (x, y) => {
+      const v = at(x, y);
+      if (v >= PAPER) return 0;
+      return INK_FLOOR + (1 - INK_FLOOR) * (equalised ? equalised(v) : 1);
+    };
+  }
+  const min = lum.reduce((a, v) => Math.min(a, v), Infinity);
+  const range = lum.reduce((a, v) => Math.max(a, v), -Infinity) - min;
+  const stretch = range < 0.05 ? (v) => v : (v) => (v - min) / range;
+  return (x, y) => clamp(1 - stretch(at(x, y)));
+}
+
+function equalise(lum) {
+  const bin = (v) => Math.round(v * 255);
+  const cdf = new Float32Array(256);
+  for (const v of lum) cdf[bin(v)]++;
+  for (let b = 1; b < 256; b++) cdf[b] += cdf[b - 1];
+  const cdfMin = cdf[bin(lum.reduce((a, v) => Math.min(a, v), Infinity))];
+  const span = lum.length - cdfMin;
+  if (span === 0) return null;
+  return (v) => clamp(1 - (cdf[bin(v)] - cdfMin) / span);
+}
+
+
+
+
+const IMAGE_TONES = { ui: 'equalise', image: 'paper' };
+
+const watched = new WeakSet();
+
+function imageField(el, cols, rows, repaint) {
+  const img = el.parentElement.querySelector('img');
+  if (!img) return null;
+  if (!watched.has(img)) {
+    watched.add(img);
+    img.addEventListener('load', repaint);
+  }
+  if (!img.complete || !img.naturalWidth) return null;
+  // naturalWidth is density-corrected for srcset candidates, but drawImage's source rect is in bitmap pixels,
+  // so crop with the destination rect, which only depends on the aspect ratio.
+  const s = Math.max(cols / img.naturalWidth, rows / img.naturalHeight);
+  const [dw, dh] = [img.naturalWidth * s, img.naturalHeight * s];
+  const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  ctx.canvas.width = cols;
+  ctx.canvas.height = rows;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, (cols - dw) / 2, (rows - dh) / 2, dw, dh);
+  return imageDensity(ctx.getImageData(0, 0, cols, rows).data, cols, rows, { tone: IMAGE_TONES[el.dataset.ditherKind] });
+}
+
+function imageShape(el, seed) {
+  const repaint = () => {
+    const box = el.getBoundingClientRect();
+    paint(el, seed, box.width, box.height);
+  };
+  return { method: 'atkinson', make: (cols, rows) => imageField(el, cols, rows, repaint) };
+}
+
+function maskUrl(mask, cols, rows, scale) {
+  const cells = document.createElement('canvas');
+  cells.width = cols;
+  cells.height = rows;
+  const pixels = new ImageData(cols, rows);
+  mask.forEach((on, i) => { pixels.data[4 * i + 3] = on ? 255 : 0; });
+  cells.getContext('2d').putImageData(pixels, 0, 0);
+
+  // Mask images are resampled smoothly, so draw at device resolution to keep pixel edges hard.
+  const canvas = document.createElement('canvas');
+  canvas.width = cols * scale;
+  canvas.height = rows * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(cells, 0, 0, canvas.width, canvas.height);
+  return `url(${canvas.toDataURL()})`;
+}
+
+function paint(el, seed, width, height) {
+  const shape = el.dataset.dither || 'rule';
+  const px = Number(el.dataset.px) || 2;
+  const cols = Math.ceil(width / px);
+  const rows = Math.ceil(height / px);
+  if (!cols || !rows) return;
+
+  const { method, make } = shape === 'image' ? imageShape(el, seed) : shapes[shape] ?? {};
+  const random = rng(seed);
+  const density = make?.(cols, rows, random);
+  if (!density) return;
+
+  const mask = dither(cols, rows, density, { method, seed: Math.floor(random() * 2 ** 32) });
+
+  const url = maskUrl(mask, cols, rows, Math.max(1, Math.round(px * devicePixelRatio)));
+  const size = `${cols * px}px ${rows * px}px`;
+  Object.assign(el.style, {
+    maskImage: url, webkitMaskImage: url,
+    maskSize: size, webkitMaskSize: size,
+  });
+  el.dataset.dithered = '';
+}
+
+function markTouched({ target }) {
+  target.closest?.('.dither-img')?.setAttribute('data-touched', '');
+}
+
+const DISSOLVES = { undither: 'in', redither: 'out' };
+const settledAs = (animationName) => DISSOLVES[animationName.replace(/-\d+$/, '')];
+
+// Covers a dissolve that starts but never fires animationend.
+const SETTLE_SLACK_MS = 50;
+
+/**
+ * Mark each element whose dissolve has finished with `data-dissolved="in" | "out"`, so CSS can swap the
+ * animation's held last frame for a plain resting style; WebKit sometimes leaves a dissolve painted mid-way.
+ */
+function settleDissolves(root = document) {
+  const timers = new WeakMap();
+  const settle = (el, state) => {
+    clearTimeout(timers.get(el));
+    el.dataset.dissolved = state;
+  };
+  root.addEventListener('animationstart', ({ target, animationName }) => {
+    const state = settledAs(animationName);
+    if (!state) return;
+    delete target.dataset.dissolved;
+    clearTimeout(timers.get(target));
+    const ms = (Number.parseFloat(getComputedStyle(target).animationDuration) || 0) * 1000;
+    timers.set(target, setTimeout(() => settle(target, state), ms + SETTLE_SLACK_MS));
+  });
+  root.addEventListener('animationend', ({ target, animationName }) => {
+    const state = settledAs(animationName);
+    if (state) settle(target, state);
+  });
+}
+
+const SELECTOR = 'hr, [data-dither]';
+
+/** Paint every `hr` and `[data-dither]` element, including ones added later, repainting when its size changes. */
+function ditherAll(root = document) {
+  let nextSeed = 1;
+  const seeds = new WeakMap();
+  const sizes = new WeakMap();
+  const resizes = new ResizeObserver((entries) => {
+    for (const { target, borderBoxSize: [box] } of entries) {
+      const [width, height] = [box.inlineSize, box.blockSize];
+      // Hidden elements report 0×0; keeping the last real size means showing them again doesn't re-dither.
+      if (!width || !height) continue;
+      const size = `${Math.round(width)}x${Math.round(height)}`;
+      if (sizes.get(target) === size) continue;
+      sizes.set(target, size);
+      paint(target, seeds.get(target), width, height);
+    }
+  });
+  const track = (el) => {
+    if (seeds.has(el)) return;
+    const inOrder = nextSeed++;
+    const seed = Number.parseInt(el.dataset.seed ?? '', 10);
+    seeds.set(el, Number.isNaN(seed) ? inOrder : seed);
+    resizes.observe(el);
+  };
+  root.querySelectorAll(SELECTOR).forEach(track);
+  root.addEventListener('pointerover', markTouched);
+  root.addEventListener('focusin', markTouched);
+  settleDissolves(root);
+  new MutationObserver((records) => records.forEach(({ addedNodes }) => addedNodes.forEach((node) => {
+    if (node.nodeType !== 1) return;
+    if (node.matches(SELECTOR)) track(node);
+    node.querySelectorAll(SELECTOR).forEach(track);
+  }))).observe(root.body ?? root, { childList: true, subtree: true });
+}
+
+ditherAll();
+})();</script>  </body></html>
