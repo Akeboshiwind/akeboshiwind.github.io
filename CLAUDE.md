@@ -25,9 +25,10 @@ src/
     sorting-comparator/
     christmas/
     ...              # All SPAs at top level
-  layouts/           # Layout components (Layout.astro for notes, AppLayout.astro for SPAs)
+  layouts/           # Layout.astro for notes, PixelAppLayout.astro for SPAs (AppLayout.astro for older ones)
   components/        # Reusable components
-  styles/            # Global CSS (global.css for notes, app.css for SPAs)
+    pixel/           # The pixel kit's components (see Pixel UI)
+  styles/            # theme.css (pixel theme + kit classes), global.css (notes' prose)
 public/              # Static assets (favicons, logos, images)
 plugins/             # Vite plugins (squint compiler)
 ```
@@ -47,33 +48,41 @@ Two collections, rendered together on the front page:
 - `title`, `stage` (scribble/draft/tale), `date`, `updated`, `tags`, `pinned`
 - Stage prefix ("A scribble:", etc.) is added at render time, not in the data.
 
+## Pixel UI
+
+Tools and posts draw their UI from one kit. **Read both locations before styling a tool or post, and add to them instead of styling inline.**
+
+- **Classes** — `src/styles/theme.css`, `@layer components`. They work unchanged in `.astro`, `.jsx`, `.md` and `.mdx`.
+- **Components** — `src/components/pixel/`. Each is an `.astro` and `.jsx` pair: Astro pages here cannot render `.jsx` (no `@astrojs/react`), and React apps cannot import `.astro`. The pair carries no styling of its own; that lives in the classes.
+- **Catalogue** — `/kit/` (`src/pages/kit/index.astro`) shows everything in both themes. `src/lib/pixel-kit.test.js` fails until a new class or component is on it.
+
 ## Apps
 
 All apps are built through Astro's Vite pipeline — no separate build step needed.
 
-- **React apps** (.jsx) use `@vitejs/plugin-react` and `AppLayout` — **strongly recommended for new apps**
+- **React apps** (.jsx) use `@vitejs/plugin-react` and `PixelAppLayout` — **strongly recommended for new apps**
 - **Squint apps** (.cljs) are compiled by `plugins/vite-plugin-squint.js` — deprecated, new apps should use React
 - **Standalone apps** (christmas, chat-wrapped) have bespoke structures and don't use `AppLayout`
 
 ### Building a new React app
 
-1. Run `npm run new-tool <slug> "<Title>"` — scaffolds index.astro, app.jsx, hooks.js, and works entry
-2. Study 2-3 existing React apps for patterns (NOT christmas/chat-wrapped — those are bespoke)
+1. Run `npm run new-tool <slug> "<Title>"` — scaffolds index.astro, app.jsx, app.test.jsx and the works entry
+2. Build the UI from the Pixel UI kit; Bill Splitter and TapBlok show it in use (NOT christmas/chat-wrapped — those are bespoke)
 3. Add a screenshot at `src/assets/works/<slug>.png` for the front page card
 4. Fill in the description in the generated works JSON
-5. Set `category` and `icon` in the works JSON (defaults to `utilities` / `wrench`). Categories: finance, health, ai, images, utilities, fun, learning, talks, personal. `icon` is a [pixelarticons](https://pixelarticons.com/) name, or a [lucide](https://lucide.dev/icons/) name mapped in `LUCIDE_ALIASES` in `Icon.astro` (any other name fails the build).
+5. Set `category` and `icon` in the works JSON (defaults to `utilities` / `wrench`). Categories: finance, health, ai, images, utilities, fun, learning, talks, personal. `icon` is a [pixelarticons](https://pixelarticons.com/) name, or a [lucide](https://lucide.dev/icons/) name mapped in `LUCIDE_ALIASES` in `components/pixel/Icon.astro` (any other name fails the build).
 6. Set `dither` in the works JSON to match the screenshot (the scaffold writes `"ui"`). The card shows the screenshot dithered in the accent colour until hovered:
    - `"ui"` — app UI: panels, text, buttons. Equalised so layout and colour blocks stay distinct.
    - `"image"` — mainly a picture, photo or illustration (e.g. `animal-crossing-hourly`, `wedding-celebration`). Treats near-white as empty page so the picture isn't flattened.
    The tone for each value is `IMAGE_TONES` in `src/lib/dither-dom.js`.
 
 Key conventions the scaffold already sets up:
-- `AppLayout` provides Tailwind, HTML shell, and `<div id="app">` mount point
-- "← Home" link top-left via `<a href="../">`
-- `useLocalStorage` hook in hooks.js for persisting state
-- Dark mode via Tailwind `dark:` variants
+- `PixelAppLayout` provides the HTML shell, the pixel theme, the app bar (← Home, History, accent and theme toggles) and the `<div id="app">` mount point
+- `PixelAppLayout` sits in the notes' 720px column; `wide` spans the window, for an app whose content is a canvas
+- `useLocalStorage` from `src/lib/useLocalStorage.js` for persisting state
+- Dark mode via the theme's tokens (`bg-bg`, `text-text`, `border-border`, `text-accent`, `text-danger`, …), which swap with the theme
 - Apps must work on both mobile and desktop — use responsive Tailwind classes
-- `AppLayout` has a `<slot name="head" />` for extra `<head>` content if needed
+- `PixelAppLayout` has a `<slot name="head" />` for extra `<head>` content if needed
 
 ## Code Style
 
