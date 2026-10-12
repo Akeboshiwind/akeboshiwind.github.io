@@ -47,44 +47,42 @@ export function TimerBar({ phases, onDismiss }) {
   return (
     <div
       role="status"
-      className={`fixed inset-x-0 bottom-0 z-20 border-t-2 bg-bg ${done ? 'border-ok' : 'border-border'}`}
+      className={`pixel-bar pt-4 flex items-center gap-3 ${done ? 'border-ok' : ''}`}
     >
-      <div className="h-1 bg-border">
+      <div className="absolute inset-x-0 top-0 h-1 bg-border">
         <div
           className={`h-full transition-[width] duration-1000 ease-linear ${done ? 'bg-ok' : 'bg-accent'}`}
           style={{ width: `${Math.min(100, Math.max(0, progress * 100))}%` }}
         />
       </div>
 
-      <div className="px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center gap-3 max-w-[720px] mx-auto">
-        <div className="flex-1 min-w-0">
-          <p className={`label truncate ${done ? 'text-ok' : 'opacity-70'}`}>
-            {phaseLabel}
-            {!done && phases.length > 1 && (
-              <span className="ml-2">{phaseIdx + 1} / {phases.length}</span>
-            )}
-          </p>
-          <p className={`font-pixel text-pixel-lg tabular-nums ${done ? 'text-ok' : 'text-heading'}`}>{formatRemaining(remaining)}</p>
-        </div>
-        {!done && (
-          <button
-            type="button"
-            onClick={() => setPaused(p => !p)}
-            className="pixel-button py-2"
-            aria-label={paused ? 'Resume' : 'Pause'}
-          >
-            {paused ? 'Resume' : 'Pause'}
-          </button>
-        )}
+      <div className="flex-1 min-w-0">
+        <p className={`label truncate ${done ? 'text-ok' : 'opacity-70'}`}>
+          {phaseLabel}
+          {!done && phases.length > 1 && (
+            <span className="ml-2">{phaseIdx + 1} / {phases.length}</span>
+          )}
+        </p>
+        <p className={`font-pixel text-pixel-lg tabular-nums ${done ? 'text-ok' : 'text-heading'}`}>{formatRemaining(remaining)}</p>
+      </div>
+      {!done && (
         <button
           type="button"
-          onClick={onDismiss}
-          data-variant={done ? 'primary' : undefined}
+          onClick={() => setPaused(p => !p)}
           className="pixel-button py-2"
+          aria-label={paused ? 'Resume' : 'Pause'}
         >
-          {done ? 'Close' : 'Cancel'}
+          {paused ? 'Resume' : 'Pause'}
         </button>
-      </div>
+      )}
+      <button
+        type="button"
+        onClick={onDismiss}
+        data-variant={done ? 'primary' : undefined}
+        className="pixel-button py-2"
+      >
+        {done ? 'Close' : 'Cancel'}
+      </button>
     </div>
   );
 }

@@ -229,7 +229,7 @@ function Form({ initial, isNew, onSave, onDelete }) {
         </div>
       </Field>
 
-      <div className="flex gap-2 sticky bottom-0 bg-bg -mx-4 px-4 py-3 border-t-2 border-border">
+      <div className="pixel-bar flex gap-2" data-position="sticky">
         <button type="submit" data-variant="primary" className="pixel-button flex-1 py-3">Save</button>
         {onDelete && (
           <button type="button" onClick={onDelete} data-variant="danger" className="pixel-button px-4 py-3">Delete</button>
