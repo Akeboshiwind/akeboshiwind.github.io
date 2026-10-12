@@ -941,25 +941,20 @@ import Favicons from '../components/Favicons.astro';
 
     <audio id="audioPlayer"></audio>
 
-    <script is:inline>
-        // Constants
-        const VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'nova', 'onyx', 'sage', 'shimmer', 'verse', 'marin', 'cedar'];
-        const STORAGE_KEYS = {
-            apiKey: 'tts-api-key',
-            voice: 'tts-voice',
-            instructions: 'tts-instructions'
-        };
-        const MAX_CHUNK_SIZE = 4000;
-        const MAX_RETRIES = 3;
-        const RETRY_DELAYS = [1000, 2000, 4000];
-        const CONCURRENCY_LIMIT = 3;
-        const PREVIEW_TEXT = "Hello, this is a preview of my voice.";
+    <script>
+        import { splitIntoChunks } from './tts/_app/chunking.js';
+        import { VOICES, PREVIEW_TEXT, generateSpeech } from './tts/_app/speech.js';
+        import * as settings from './tts/_app/settings.js';
+        import { runChunk, runPool, CONCURRENCY_LIMIT } from './tts/_app/generation.js';
+        import { playableCount, totalPlayableDuration, globalPosition, locate, formatTime } from './tts/_app/timeline.js';
+
+        const saved = settings.loadSettings();
 
         // State
         const state = {
-            apiKey: localStorage.getItem(STORAGE_KEYS.apiKey) || '',
-            voice: localStorage.getItem(STORAGE_KEYS.voice) || 'nova',
-            voiceInstructions: localStorage.getItem(STORAGE_KEYS.instructions) || '',
+            apiKey: saved.apiKey,
+            voice: saved.voice,
+            voiceInstructions: saved.instructions,
             text: '',
             chunks: [],
             generation: 'idle',
@@ -1039,12 +1034,12 @@ import Favicons from '../components/Favicons.astro';
         // API Key handling
         function saveApiKey(key) {
             state.apiKey = key;
-            localStorage.setItem(STORAGE_KEYS.apiKey, key);
+            settings.saveApiKey(key);
         }
 
         function clearApiKey() {
             state.apiKey = '';
-            localStorage.removeItem(STORAGE_KEYS.apiKey);
+            settings.clearApiKey();
         }
 
         saveKeyBtn.addEventListener('click', () => {
@@ -1090,7 +1085,7 @@ import Favicons from '../components/Favicons.astro';
             voiceGrid.querySelectorAll('input[name="voice"]').forEach(input => {
                 input.addEventListener('change', () => {
                     state.voice = input.value;
-                    localStorage.setItem(STORAGE_KEYS.voice, state.voice);
+                    settings.saveVoice(state.voice);
                     renderVoiceGrid();
                 });
             });
@@ -1128,7 +1123,7 @@ import Favicons from '../components/Favicons.astro';
         // Voice instructions
         voiceInstructions.addEventListener('input', () => {
             state.voiceInstructions = voiceInstructions.value;
-            localStorage.setItem(STORAGE_KEYS.instructions, state.voiceInstructions);
+            settings.saveInstructions(state.voiceInstructions);
         });
 
         // Settings modal
@@ -1148,43 +1143,6 @@ import Favicons from '../components/Favicons.astro';
             }
         });
 
-        // Text chunking
-        function splitIntoChunks(text) {
-            const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim());
-            const chunks = [];
-
-            for (const para of paragraphs) {
-                const trimmed = para.trim();
-                if (trimmed.length <= MAX_CHUNK_SIZE) {
-                    chunks.push(trimmed);
-                } else {
-                    const sentences = trimmed.match(/[^.!?]+[.!?]+\s*/g) || [trimmed];
-                    let current = '';
-
-                    for (const sentence of sentences) {
-                        if ((current + sentence).length > MAX_CHUNK_SIZE) {
-                            if (current) chunks.push(current.trim());
-                            current = sentence;
-                        } else {
-                            current += sentence;
-                        }
-                    }
-                    if (current) chunks.push(current.trim());
-                }
-            }
-
-            return chunks.map((text, id) => ({
-                id,
-                text,
-                status: 'pending',
-                audioBlob: null,
-                audioUrl: null,
-                duration: 0,
-                retryCount: 0,
-                error: null
-            }));
-        }
-
         function updateChunkPreview() {
             const text = textInput.value.trim();
             const chunks = text ? splitIntoChunks(text) : [];
@@ -1194,33 +1152,8 @@ import Favicons from '../components/Favicons.astro';
 
         textInput.addEventListener('input', updateChunkPreview);
 
-        // OpenAI TTS API
-        async function generateTTS(text, voice, instructions) {
-            const body = {
-                model: 'gpt-4o-mini-tts',
-                voice: voice,
-                input: text
-            };
-
-            if (instructions && instructions.trim()) {
-                body.instructions = instructions.trim();
-            }
-
-            const response = await fetch('https://api.openai.com/v1/audio/speech', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${state.apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(body)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`API error ${response.status}: ${errorText}`);
-            }
-
-            return await response.blob();
+        function generateTTS(text, voice, instructions) {
+            return generateSpeech(state.apiKey, text, voice, instructions);
         }
 
         // Get duration of audio from URL
@@ -1239,81 +1172,38 @@ import Favicons from '../components/Favicons.astro';
 
         // Chunk generation
         async function generateChunk(chunk) {
-            chunk.status = 'generating';
-            emit('chunk-status-changed', { id: chunk.id });
-
-            try {
-                chunk.audioBlob = await generateTTS(chunk.text, state.voice, state.voiceInstructions);
-                chunk.audioUrl = URL.createObjectURL(chunk.audioBlob);
-                chunk.duration = await getAudioDuration(chunk.audioUrl);
-                chunk.status = 'completed';
-                chunk.error = null;
-                emit('chunk-completed', { id: chunk.id });
-                checkPlayableAudio();
-            } catch (error) {
-                chunk.error = error.message;
-
-                if (chunk.retryCount < MAX_RETRIES) {
-                    chunk.status = 'failed';
-                    emit('chunk-status-changed', { id: chunk.id });
-
-                    const delay = RETRY_DELAYS[chunk.retryCount];
-                    chunk.retryCount++;
-
-                    await new Promise(r => setTimeout(r, delay));
-
-                    chunk.status = 'retrying';
-                    emit('chunk-status-changed', { id: chunk.id });
-                    return generateChunk(chunk);
+            const completed = await runChunk(async () => {
+                const audioBlob = await generateTTS(chunk.text, state.voice, state.voiceInstructions);
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const duration = await getAudioDuration(audioUrl);
+                return { audioBlob, audioUrl, duration };
+            }, (patch) => {
+                Object.assign(chunk, patch);
+                if (patch.status === 'completed') {
+                    emit('chunk-completed', { id: chunk.id });
+                    checkPlayableAudio();
+                } else if (patch.status === 'failed' && !('retryCount' in patch)) {
+                    emit('chunk-failed', { id: chunk.id, error: patch.error });
                 } else {
-                    chunk.status = 'failed';
-                    emit('chunk-failed', { id: chunk.id, error: error.message });
+                    emit('chunk-status-changed', { id: chunk.id });
                 }
-            }
+            });
+            return completed;
         }
 
         async function generateAllChunks() {
-            const pending = [...state.chunks.filter(c => c.status === 'pending' || c.status === 'failed')];
-            const active = new Set();
-
+            const pending = state.chunks.filter(c => c.status === 'pending' || c.status === 'failed');
             state.generation = 'generating';
-
-            return new Promise((resolve) => {
-                function startNext() {
-                    while (active.size < CONCURRENCY_LIMIT && pending.length > 0) {
-                        const chunk = pending.shift();
-                        active.add(chunk.id);
-
-                        generateChunk(chunk).finally(() => {
-                            active.delete(chunk.id);
-
-                            if (pending.length === 0 && active.size === 0) {
-                                const hasFailures = state.chunks.some(c => c.status === 'failed');
-                                state.generation = hasFailures ? 'error' : 'complete';
-                                resolve();
-                            } else {
-                                startNext();
-                            }
-                        });
-                    }
-                }
-                startNext();
-            });
+            await runPool(pending, CONCURRENCY_LIMIT, generateChunk);
+            const hasFailures = state.chunks.some(c => c.status === 'failed');
+            state.generation = hasFailures ? 'error' : 'complete';
         }
 
         // Playable audio tracking
         let lastPlayableCount = 0;
 
         function getPlayableCount() {
-            let count = 0;
-            for (const chunk of state.chunks) {
-                if (chunk.status === 'completed') {
-                    count++;
-                } else {
-                    break;
-                }
-            }
-            return count;
+            return playableCount(state.chunks);
         }
 
         function checkPlayableAudio() {
@@ -1383,62 +1273,31 @@ import Favicons from '../components/Favicons.astro';
 
         // Audio player
         function getTotalPlayableDuration() {
-            let total = 0;
-            for (const chunk of state.chunks) {
-                if (chunk.status === 'completed' && chunk.duration) {
-                    total += chunk.duration;
-                } else {
-                    break;
-                }
-            }
-            return total;
+            return totalPlayableDuration(state.chunks);
         }
 
         function getGlobalPosition() {
-            let position = 0;
-            for (let i = 0; i < player.currentChunkIndex; i++) {
-                const chunk = state.chunks[i];
-                if (chunk && chunk.duration) {
-                    position += chunk.duration;
-                }
-            }
-            position += audioPlayer.currentTime || 0;
-            return position;
+            return globalPosition(state.chunks, player.currentChunkIndex, audioPlayer.currentTime);
         }
 
         function seekToGlobalPosition(globalTime) {
-            let remaining = globalTime;
-            const playableCount = getPlayableCount();
-
-            for (let i = 0; i < playableCount; i++) {
-                const chunk = state.chunks[i];
-                if (!chunk || !chunk.duration) continue;
-
-                if (remaining <= chunk.duration) {
-                    if (i !== player.currentChunkIndex) {
-                        player.currentChunkIndex = i;
-                        audioPlayer.src = chunk.audioUrl;
-                        audioPlayer.oncanplaythrough = () => {
-                            audioPlayer.oncanplaythrough = null;
-                            audioPlayer.currentTime = remaining;
-                            if (player.isPlaying) {
-                                audioPlayer.play().catch(err => console.error('Seek play failed:', err));
-                            }
-                            updatePlayingChunkHighlight();
-                        };
-                    } else {
-                        audioPlayer.currentTime = remaining;
+            const target = locate(state.chunks, globalTime);
+            if (!target) return;
+            const { index, offset } = target;
+            if (index !== player.currentChunkIndex) {
+                player.currentChunkIndex = index;
+                audioPlayer.src = state.chunks[index].audioUrl;
+                audioPlayer.oncanplaythrough = () => {
+                    audioPlayer.oncanplaythrough = null;
+                    audioPlayer.currentTime = offset;
+                    if (player.isPlaying) {
+                        audioPlayer.play().catch(err => console.error('Seek play failed:', err));
                     }
-                    return;
-                }
-                remaining -= chunk.duration;
+                    updatePlayingChunkHighlight();
+                };
+            } else {
+                audioPlayer.currentTime = offset;
             }
-        }
-
-        function formatTime(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
 
         function updatePlayerState() {
