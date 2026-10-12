@@ -40,15 +40,15 @@ describe('a state saved under exercise_state in today\'s shape', () => {
 
     const goblet = within(card('Goblet Squat'));
     expect(goblet.getByText('3 × 10 · 12 kg · 60s rest')).toBeTruthy();
-    expect(goblet.getByRole('button', { name: 'Set 1' }).getAttribute('aria-pressed')).toBe('true');
-    expect(goblet.getByRole('button', { name: 'Set 2' }).getAttribute('aria-pressed')).toBe('false');
+    expect(goblet.getByRole('checkbox', { name: 'Set 1' }).checked).toBe(true);
+    expect(goblet.getByRole('checkbox', { name: 'Set 2' }).checked).toBe(false);
 
     expect(within(card('Front Plank')).getByText('2 × 40s · 20s rest')).toBeTruthy();
     expect(within(card('Easy Jog')).getByText('10 min')).toBeTruthy();
 
     const finisher = within(card('Finisher'));
     expect(finisher.getByText('Round 1 of 2')).toBeTruthy();
-    expect(finisher.getByRole('button', { name: 'Mark Burpee not done' }).getAttribute('aria-pressed')).toBe('true');
+    expect(finisher.getByRole('checkbox', { name: 'Mark Burpee not done' }).checked).toBe(true);
   });
 
   test('lists its history by week, newest first', async () => {
@@ -74,8 +74,8 @@ describe('a state saved under exercise_state in today\'s shape', () => {
     expect(screen.getByText(/7\/8 done · 42m$/)).toBeTruthy();
     const goblet = within(card('Goblet Squat'));
     for (const name of ['Set 1', 'Set 2', 'Set 3']) {
-      const set = goblet.getByRole('button', { name });
-      expect(set.getAttribute('aria-pressed')).toBe('true');
+      const set = goblet.getByRole('checkbox', { name });
+      expect(set.checked).toBe(true);
       expect(set.disabled).toBe(true);
     }
     expect(within(card('Finisher')).getByText('Round 2 of 2')).toBeTruthy();

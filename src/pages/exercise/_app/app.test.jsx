@@ -25,7 +25,7 @@ describe('Exercise app', () => {
     const startBtn = screen.queryByRole('button', { name: /^start (workout|.*'s workout)/i });
     if (!startBtn) return; // rest day, skip
     // Sets exist but clicking does nothing while no session is running.
-    const set1 = screen.queryAllByRole('button', { name: /set 1|done/i })[0];
+    const set1 = screen.queryAllByRole('checkbox', { name: /set 1|done/i })[0];
     if (set1) {
       fireEvent.click(set1);
       const beforeStart = JSON.parse(localStorage.getItem('exercise_state') || '{}');
@@ -36,7 +36,7 @@ describe('Exercise app', () => {
     expect(stored.inProgress).not.toBeNull();
     expect(stored.inProgress.startedAt).toBeTypeOf('number');
     // After starting, toggling a set should record it.
-    const setNow = screen.queryAllByRole('button', { name: /set 1|done/i })[0];
+    const setNow = screen.queryAllByRole('checkbox', { name: /set 1|done/i })[0];
     if (setNow) {
       fireEvent.click(setNow);
       const after = JSON.parse(localStorage.getItem('exercise_state'));

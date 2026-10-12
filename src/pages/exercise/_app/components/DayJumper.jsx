@@ -1,4 +1,5 @@
 import { DAYS, DAY_NAMES } from '../store.js';
+import { Icon, prevSvg, nextSvg } from '../icons.js';
 
 export function DayJumper({ viewDay, onChange }) {
   const idx = DAYS.indexOf(viewDay);
@@ -6,23 +7,23 @@ export function DayJumper({ viewDay, onChange }) {
   const next = DAYS[(idx + 1) % DAYS.length];
 
   return (
-    <div className="flex items-center justify-between gap-2 mb-4">
+    <div className="flex items-center justify-between gap-2 mb-2">
       <button
         type="button"
         onClick={() => onChange(prev)}
         aria-label={`Previous day (${DAY_NAMES[prev]})`}
-        className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        className="pixel-button p-1"
       >
-        <svg viewBox="0 0 16 16" className="w-5 h-5"><path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M10 3l-5 5 5 5"/></svg>
+        <Icon svg={prevSvg} />
       </button>
-      <h1 className="text-2xl font-semibold flex-1 text-center">{DAY_NAMES[viewDay]}</h1>
+      <h2 className="font-pixel text-pixel-lg text-heading flex-1 text-center">{DAY_NAMES[viewDay]}</h2>
       <button
         type="button"
         onClick={() => onChange(next)}
         aria-label={`Next day (${DAY_NAMES[next]})`}
-        className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        className="pixel-button p-1"
       >
-        <svg viewBox="0 0 16 16" className="w-5 h-5"><path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 3l5 5-5 5"/></svg>
+        <Icon svg={nextSvg} />
       </button>
     </div>
   );

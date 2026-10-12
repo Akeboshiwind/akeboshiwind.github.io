@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { SetCheckboxes } from './SetCheckboxes.jsx';
+import { Icon, clockSvg, moreSvg, tipSvg } from '../icons.js';
 
 export function ExerciseCard({ item, exercise, completed, onToggle, onStartTimer, onOpenActions, disabled }) {
   const [showDetails, setShowDetails] = useState(false);
@@ -10,20 +11,20 @@ export function ExerciseCard({ item, exercise, completed, onToggle, onStartTimer
   const timerButton = renderTimerButton(item, onStartTimer);
 
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+    <div className="pixel-panel p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100">{name}</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{summary(item)}</p>
+          <h3 className="font-pixel text-pixel-md text-heading">{name}</h3>
+          <p className="text-sm opacity-70 mt-1">{summary(item)}</p>
         </div>
         {onOpenActions && (
           <button
             type="button"
             onClick={onOpenActions}
             aria-label="Edit exercise"
-            className="flex-shrink-0 p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="flex-shrink-0 -m-1 p-1 hover:text-accent"
           >
-            <svg viewBox="0 0 16 16" className="w-5 h-5"><circle cx="3.5" cy="8" r="1.4" fill="currentColor"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="12.5" cy="8" r="1.4" fill="currentColor"/></svg>
+            <Icon svg={moreSvg} />
           </button>
         )}
       </div>
@@ -32,20 +33,20 @@ export function ExerciseCard({ item, exercise, completed, onToggle, onStartTimer
         <button
           type="button"
           onClick={() => setShowDetails(s => !s)}
-          className="mt-2 text-xs text-gray-500 dark:text-gray-400 underline-offset-2 hover:underline"
+          aria-expanded={showDetails}
+          className="label mt-2 opacity-70 hover:opacity-100 hover:text-accent"
         >
           {showDetails ? 'Hide' : 'How to do this'}
         </button>
       )}
 
       {showDetails && (
-        <div className="mt-2 space-y-2">
-          {description && (
-            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{description}</p>
-          )}
+        <div className="mt-2 space-y-2 text-sm leading-relaxed">
+          {description && <p>{description}</p>}
           {tip && (
-            <p className="text-sm text-emerald-700 dark:text-emerald-300 leading-relaxed">
-              <span aria-hidden="true">💡 </span>{tip}
+            <p className="flex gap-2">
+              <Icon svg={tipSvg} className="w-4 h-4 mt-0.5 shrink-0 text-accent" />
+              <span>{tip}</span>
             </p>
           )}
         </div>
@@ -63,9 +64,9 @@ export function ExerciseCard({ item, exercise, completed, onToggle, onStartTimer
             type="button"
             onClick={timerButton.onClick}
             disabled={disabled}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="pixel-button inline-flex items-center gap-2 py-2"
           >
-            <svg viewBox="0 0 16 16" className="w-4 h-4"><path fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" d="M8 4v4l2.5 2.5M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13z"/></svg>
+            <Icon svg={clockSvg} className="w-4 h-4" />
             {timerButton.label}
           </button>
         )}

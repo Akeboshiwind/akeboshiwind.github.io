@@ -15,6 +15,7 @@ const stored = () => JSON.parse(localStorage.getItem(KEY));
 const card = name => screen.getByRole('heading', { name }).closest('li');
 const click = el => fireEvent.click(el);
 const button = (name, root = screen) => root.getByRole('button', { name });
+const checkbox = (name, root = screen) => root.getByRole('checkbox', { name });
 const tick = (ms = 1000) => act(() => { vi.advanceTimersByTime(ms); });
 
 const open = (hash, state = savedState()) => {
@@ -46,9 +47,9 @@ describe('Today', () => {
     expect(screen.getByText('Session in progress')).toBeTruthy();
 
     const goblet = within(card('Goblet Squat'));
-    click(button('Set 1', goblet));
-    click(button('Set 2', goblet));
-    expect(button('Set 2', goblet).getAttribute('aria-pressed')).toBe('true');
+    click(checkbox('Set 1', goblet));
+    click(checkbox('Set 2', goblet));
+    expect(checkbox('Set 2', goblet).checked).toBe(true);
     expect(screen.getByText('2 / 8 done')).toBeTruthy();
 
     click(button('Finish workout'));
@@ -97,7 +98,7 @@ describe('Today', () => {
     const finisher = within(card('Finisher'));
     click(button('Complete round 1', finisher));
     expect(finisher.getByText('Round 2 of 2')).toBeTruthy();
-    expect(button('Mark Burpee done', finisher).getAttribute('aria-pressed')).toBe('false');
+    expect(checkbox('Mark Burpee done', finisher).checked).toBe(false);
     click(button('Complete round 2', finisher));
     expect(button('Circuit complete', finisher).disabled).toBe(true);
     expect(stored().inProgress.completedSets.c1).toEqual([true, true]);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BottomSheet } from './BottomSheet.jsx';
+import { Field, inputClass } from './Field.jsx';
 
 export function CircuitEditSheet({ open, onClose, circuit, onSave, onRemove }) {
   const [name, setName] = useState('');
@@ -48,28 +49,18 @@ export function CircuitEditSheet({ open, onClose, circuit, onSave, onRemove }) {
             <button
               type="button"
               onClick={() => { if (confirm('Remove this circuit?')) onRemove(); }}
-              className="px-3 py-2 rounded-md text-sm border border-red-500/40 text-red-700 dark:text-red-400"
+              data-variant="danger"
+              className="pixel-button py-2"
             >
               Remove
             </button>
           )}
-          <button type="submit" className="ml-auto px-3 py-2 rounded-md bg-emerald-600 text-white text-sm font-medium">
+          <button type="submit" data-variant="primary" className="pixel-button ml-auto py-2">
             Save
           </button>
         </div>
       </form>
     </BottomSheet>
-  );
-}
-
-const inputClass = 'w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-base';
-
-function Field({ label, children }) {
-  return (
-    <label className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
-      {label}
-      {children}
-    </label>
   );
 }
 
