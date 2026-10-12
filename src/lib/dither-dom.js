@@ -77,6 +77,36 @@ function markTouched({ target }) {
   target.closest?.('.dither-img')?.setAttribute('data-touched', '');
 }
 
+const DISSOLVES = { undither: 'in', redither: 'out' };
+const settledAs = (animationName) => DISSOLVES[animationName.replace(/-\d+$/, '')];
+
+// Covers a dissolve that starts but never fires animationend.
+const SETTLE_SLACK_MS = 50;
+
+/**
+ * Mark each element whose dissolve has finished with `data-dissolved="in" | "out"`, so CSS can swap the
+ * animation's held last frame for a plain resting style; WebKit sometimes leaves a dissolve painted mid-way.
+ */
+export function settleDissolves(root = document) {
+  const timers = new WeakMap();
+  const settle = (el, state) => {
+    clearTimeout(timers.get(el));
+    el.dataset.dissolved = state;
+  };
+  root.addEventListener('animationstart', ({ target, animationName }) => {
+    const state = settledAs(animationName);
+    if (!state) return;
+    delete target.dataset.dissolved;
+    clearTimeout(timers.get(target));
+    const ms = (Number.parseFloat(getComputedStyle(target).animationDuration) || 0) * 1000;
+    timers.set(target, setTimeout(() => settle(target, state), ms + SETTLE_SLACK_MS));
+  });
+  root.addEventListener('animationend', ({ target, animationName }) => {
+    const state = settledAs(animationName);
+    if (state) settle(target, state);
+  });
+}
+
 const SELECTOR = 'hr, [data-dither]';
 
 /** Paint every `hr` and `[data-dither]` element, including ones added later, repainting when its size changes. */
@@ -105,6 +135,7 @@ export function ditherAll(root = document) {
   root.querySelectorAll(SELECTOR).forEach(track);
   root.addEventListener('pointerover', markTouched);
   root.addEventListener('focusin', markTouched);
+  settleDissolves(root);
   new MutationObserver((records) => records.forEach(({ addedNodes }) => addedNodes.forEach((node) => {
     if (node.nodeType !== 1) return;
     if (node.matches(SELECTOR)) track(node);

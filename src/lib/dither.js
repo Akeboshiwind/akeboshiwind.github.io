@@ -32,6 +32,20 @@ export function dissolveFrames(steps) {
   });
 }
 
+/**
+ * `@keyframes undither-<steps>`, which turns the dissolve's cells on from none to all, and `redither-<steps>`,
+ * its reverse, one per line, for a `step-end` animation of a mask tiled at 4×4.
+ *
+ * @param {number} steps
+ * @returns {string}
+ */
+export function dissolveKeyframes(steps) {
+  const frames = dissolveFrames(steps);
+  const keyframes = (name, order) =>
+    `@keyframes ${name} {${order.map((url, k) => `${(100 * k) / steps}% { mask-image: ${url} }`).join(' ')}}`;
+  return [keyframes(`undither-${steps}`, frames), keyframes(`redither-${steps}`, [...frames].reverse())].join('\n');
+}
+
 // mulberry32: https://gist.github.com/tommyettinger/46a874533244883189143505d203312c
 export function rng(seed) {
   let a = seed >>> 0;

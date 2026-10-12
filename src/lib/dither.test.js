@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { bayer, dissolveFrames, dither, imageDensity, rng, shapes } from './dither.js';
+import { bayer, dissolveFrames, dissolveKeyframes, dither, imageDensity, rng, shapes } from './dither.js';
 
 describe('dissolveFrames', () => {
   const cells = (frame) => (decodeURIComponent(frame).match(/<rect /g) ?? []).length;
@@ -13,6 +13,28 @@ describe('dissolveFrames', () => {
 
   it('only ever turns cells on, two Bayer levels per step', () => {
     expect(dissolveFrames(8).map(cells)).toEqual([0, 2, 4, 6, 8, 10, 12, 14, 16]);
+  });
+});
+
+describe('dissolveKeyframes', () => {
+  const block = (css, name) => css.split('\n').find((line) => line.startsWith(`@keyframes ${name} `));
+
+  it('names the in and out dissolves by their step count', () => {
+    const css = dissolveKeyframes(6);
+    expect(block(css, 'undither-6')).toBeDefined();
+    expect(block(css, 'redither-6')).toBeDefined();
+  });
+
+  it('has one stop per frame, so steps + 1', () => {
+    expect(block(dissolveKeyframes(6), 'undither-6').match(/[\d.]+% \{/g)).toHaveLength(7);
+    expect(block(dissolveKeyframes(16), 'redither-16').match(/[\d.]+% \{/g)).toHaveLength(17);
+  });
+
+  it('runs in from no cells and out from all of them', () => {
+    const frames = dissolveFrames(6);
+    const css = dissolveKeyframes(6);
+    expect(block(css, 'undither-6')).toContain(`{0% { mask-image: ${frames[0]} }`);
+    expect(block(css, 'redither-6')).toContain(`{0% { mask-image: ${frames[6]} }`);
   });
 });
 
