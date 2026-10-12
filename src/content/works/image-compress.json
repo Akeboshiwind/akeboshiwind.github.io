@@ -8,5 +8,6 @@
     "images"
   ],
   "category": "images",
-  "icon": "image-down"
+  "icon": "image-down",
+  "dither": "image"
 }
