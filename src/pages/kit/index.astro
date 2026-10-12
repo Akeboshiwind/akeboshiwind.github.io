@@ -40,6 +40,16 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
           </div>
           <p class="label opacity-60">.pixel-button · data-variant="primary" | "danger"</p>
 
+          <SectionLabel class="mt-4 mb-2">Icon buttons</SectionLabel>
+          <div class="flex flex-wrap gap-1">
+            <button class="pixel-icon-button" aria-label="Edit"><Icon name="pencil" class="w-4 h-4" /></button>
+            <button class="pixel-icon-button" data-variant="ok" aria-label="Mark done"><Icon name="check" class="w-4 h-4" /></button>
+            <button class="pixel-icon-button" data-variant="danger" aria-label="Delete"><Icon name="trash" class="w-4 h-4" /></button>
+            <button class="pixel-icon-button" aria-label="More"><Icon name="more-horizontal" class="w-5 h-5" /></button>
+            <button class="pixel-icon-button" aria-label="Disabled" disabled><Icon name="arrow-up" class="w-4 h-4" /></button>
+          </div>
+          <p class="label opacity-60">.pixel-icon-button · no border, at least 32px square · accent on hover, data-variant="danger" | "ok" swaps the hover colour</p>
+
           <SectionLabel class="mt-4 mb-2">Chips</SectionLabel>
           <div class="flex flex-wrap gap-1">
             <span class="pixel-chip">Static</span>
