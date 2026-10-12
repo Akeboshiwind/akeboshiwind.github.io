@@ -1,7 +1,56 @@
 import React from 'react';
+import { Sheet } from '../../../../components/pixel/Sheet.jsx';
+import { Icon } from '../../../../components/pixel/Icon.jsx';
+import warningIcon from 'pixelarticons/svg/warning-diamond.svg?raw';
+import reloadIcon from 'pixelarticons/svg/reload.svg?raw';
 
 const ACCOUNT_TYPES = ['Unset', 'His', 'Hers', 'Shared'];
 const CATEGORY_TYPES = ['Unset', 'His', 'Hers', 'Shared'];
+
+const TABS = [
+  ['general', 'General'],
+  ['accounts', 'Accounts'],
+  ['categories', 'Categories'],
+];
+
+const TypeSelect = ({ value, types, onChange }) => (
+  <select value={value} onChange={(e) => onChange(e.target.value)} className="pixel-field">
+    {types.map(type => (
+      <option key={type} value={type}>{type}</option>
+    ))}
+  </select>
+);
+
+const Marks = ({ item, hasWarning }) => (
+  <>
+    {hasWarning && (
+      <span className="text-warn inline-flex align-middle ml-2" title="Needs a type">
+        <Icon svg={warningIcon} className="w-4 h-4" />
+      </span>
+    )}
+    {item.closed && <span className="label opacity-60 ml-2">Closed</span>}
+    {item.deleted && <span className="label opacity-60 ml-2">Deleted</span>}
+  </>
+);
+
+const Toolbar = ({ title, showHidden, onShowHiddenChange, showHiddenLabel, onSync, syncLabel }) => (
+  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
+    <h3 className="label text-heading m-0 mr-auto">{title}</h3>
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input
+        type="checkbox"
+        checked={showHidden}
+        onChange={() => onShowHiddenChange(!showHidden)}
+        className="pixel-check"
+      />
+      <span className="label">{showHiddenLabel}</span>
+    </label>
+    <button onClick={onSync} className="pixel-button flex items-center gap-2">
+      <Icon svg={reloadIcon} className="w-4 h-4" />
+      {syncLabel}
+    </button>
+  </div>
+);
 
 export const ConfigMenu = ({
   onClose,
@@ -43,241 +92,179 @@ export const ConfigMenu = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 w-full max-w-4xl max-h-screen overflow-auto rounded-lg shadow-lg">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-xl font-bold">Configuration</h2>
+    <Sheet title="Configuration" onClose={onClose} className="sm:max-w-2xl">
+      <div className="flex flex-wrap gap-2 shrink-0">
+        {TABS.map(([tab, label]) => (
           <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            key={tab}
+            onClick={() => onTabChange(tab)}
+            aria-pressed={configTab === tab}
+            className="pixel-chip"
           >
-            ✕
+            {label}
           </button>
-        </div>
+        ))}
+      </div>
 
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
-          <button
-            onClick={() => onTabChange('general')}
-            className={`px-4 py-2 ${configTab === 'general'
-              ? 'border-b-2 border-blue-500 text-blue-500'
-              : 'text-gray-500'}`}
-          >
-            General
-          </button>
-          <button
-            onClick={() => onTabChange('accounts')}
-            className={`px-4 py-2 ${configTab === 'accounts'
-              ? 'border-b-2 border-blue-500 text-blue-500'
-              : 'text-gray-500'}`}
-          >
-            Accounts
-          </button>
-          <button
-            onClick={() => onTabChange('categories')}
-            className={`px-4 py-2 ${configTab === 'categories'
-              ? 'border-b-2 border-blue-500 text-blue-500'
-              : 'text-gray-500'}`}
-          >
-            Categories
-          </button>
-        </div>
+      <div className="min-h-0 overflow-y-auto">
+        {configTab === 'general' && (
+          <div className="flex flex-col gap-4">
+            <label className="flex flex-col gap-1">
+              <span className="label">Access Token</span>
+              <input
+                type="password"
+                value={accessToken}
+                onChange={(e) => onAccessTokenChange(e.target.value)}
+                className="pixel-field w-full"
+              />
+            </label>
 
-        <div className="p-4">
-          {configTab === 'general' && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Access Token</label>
-                <input
-                  type="password"
-                  value={accessToken}
-                  onChange={(e) => onAccessTokenChange(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                />
-              </div>
+            <label className="flex flex-col gap-1">
+              <span className="label">Selected Budget</span>
+              <select
+                value={selectedBudgetId}
+                onChange={(e) => onBudgetChange(e.target.value)}
+                className="pixel-field w-full"
+              >
+                {budgets.map(budget => (
+                  <option key={budget.id} value={budget.id}>{budget.name}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Selected Budget</label>
-                <select
-                  value={selectedBudgetId}
-                  onChange={(e) => onBudgetChange(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                >
-                  {budgets.map(budget => (
-                    <option key={budget.id} value={budget.id}>{budget.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
+        {configTab === 'accounts' && (
+          <div>
+            <Toolbar
+              title="Accounts"
+              showHidden={showHiddenAccounts}
+              onShowHiddenChange={onShowHiddenAccountsChange}
+              showHiddenLabel="Show Closed Accounts"
+              onSync={onSyncAccounts}
+              syncLabel="Sync Accounts"
+            />
 
-          {configTab === 'accounts' && (
-            <div>
-              <div className="flex justify-between items-center mb-4 gap-4">
-                <h3 className="font-medium">Accounts</h3>
-                <div className="flex-grow"></div>
-                <div>
-                  <input type="checkbox"
-                    checked={showHiddenAccounts}
-                    onChange={() => onShowHiddenAccountsChange(!showHiddenAccounts)}
-                    className="mr-2" />
-                  <label className="text-sm">Show Closed Accounts</label>
-                </div>
-                <button
-                  onClick={onSyncAccounts}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                >
-                  Sync Accounts
-                </button>
-              </div>
+            {isLoading ? (
+              <p className="label">Loading accounts...</p>
+            ) : (
+              <table className="pixel-table">
+                <thead>
+                  <tr>
+                    <th>Account Name</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {accounts.map(account => {
+                    const hasWarning = warnings.some(w => w.id === `account-${account.id}`);
 
-              {isLoading ? (
-                <p>Loading accounts...</p>
-              ) : (
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-gray-100 dark:bg-gray-700">
-                      <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Account Name</th>
-                      <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Type</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {accounts.map(account => {
-                      const hasWarning = warnings.some(w => w.id === `account-${account.id}`);
+                    if (!(showHiddenAccounts || (!account.closed && !account.deleted))) {
+                      return null;
+                    }
 
-                      if (!(showHiddenAccounts || (!account.closed && !account.deleted))) {
-                        return null;
-                      }
+                    return (
+                      <tr key={account.id}>
+                        <td>
+                          {account.name}
+                          <Marks item={account} hasWarning={hasWarning} />
+                        </td>
+                        <td>
+                          <TypeSelect
+                            value={accountTypes[account.id] || 'Unset'}
+                            types={ACCOUNT_TYPES}
+                            onChange={(type) => updateAccountType(account.id, type)}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
 
-                      return (
-                        <tr key={account.id} className={hasWarning ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}>
-                          <td className="p-2 border border-gray-300 dark:border-gray-600">
-                            {account.name}
-                            {hasWarning && <span className="ml-2 text-yellow-600 dark:text-yellow-400">⚠️</span>}
-                            {account.closed && <span className="ml-2">🚫 Closed</span>}
-                            {account.deleted && <span className="ml-2">🗑️ Deleted</span>}
+        {configTab === 'categories' && (
+          <div>
+            <Toolbar
+              title="Categories"
+              showHidden={showHiddenCategories}
+              onShowHiddenChange={onShowHiddenCategoriesChange}
+              showHiddenLabel="Show Hidden Categories"
+              onSync={onSyncCategories}
+              syncLabel="Sync Categories"
+            />
+
+            {isLoading ? (
+              <p className="label">Loading categories...</p>
+            ) : (
+              <table className="pixel-table">
+                <thead>
+                  <tr>
+                    <th>Category Name</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categoryGroups.map(group => {
+                    if (!(showHiddenCategories || (!group.deleted && !group.hidden))) {
+                      return null;
+                    }
+
+                    const hasWarning = warnings.some(w => w.id === `group-${group.id}`);
+                    const groupCategories = categories
+                      .filter(c => c.category_group_id === group.id)
+                      .filter(c => showHiddenCategories || (!c.deleted && !c.hidden));
+
+                    if (groupCategories.length === 0) {
+                      return null;
+                    }
+
+                    return (
+                      <React.Fragment key={group.id}>
+                        <tr>
+                          <td className="label text-heading">
+                            {group.name}
+                            <Marks item={group} hasWarning={hasWarning} />
                           </td>
-                          <td className="p-2 border border-gray-300 dark:border-gray-600">
-                            <select
-                              value={accountTypes[account.id] || 'Unset'}
-                              onChange={(e) => updateAccountType(account.id, e.target.value)}
-                              className="p-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                            >
-                              {ACCOUNT_TYPES.map(type => (
-                                <option key={type} value={type}>{type}</option>
-                              ))}
-                            </select>
+                          <td>
+                            <TypeSelect
+                              value={categoryGroupTypes[group.id] || 'Unset'}
+                              types={CATEGORY_TYPES}
+                              onChange={(type) => updateCategoryGroupType(group.id, type)}
+                            />
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          )}
 
-          {configTab === 'categories' && (
-            <div>
-              <div className="flex justify-between items-center mb-4 gap-4">
-                <h3 className="font-medium">Categories</h3>
-                <div className="flex-grow"></div>
-                <div>
-                  <input type="checkbox"
-                    checked={showHiddenCategories}
-                    onChange={() => onShowHiddenCategoriesChange(!showHiddenCategories)}
-                    className="mr-2" />
-                  <label className="text-sm">Show Hidden Categories</label>
-                </div>
-                <button
-                  onClick={onSyncCategories}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                >
-                  Sync Categories
-                </button>
-              </div>
+                        {groupCategories.map(category => {
+                          const catHasWarning = warnings.some(w => w.id === `category-${category.id}`);
 
-              {isLoading ? (
-                <p>Loading categories...</p>
-              ) : (
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-gray-100 dark:bg-gray-700">
-                      <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Category Name</th>
-                      <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Type</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {categoryGroups.map(group => {
-                      if (!(showHiddenCategories || (!group.deleted && !group.hidden))) {
-                        return null;
-                      }
-
-                      const hasWarning = warnings.some(w => w.id === `group-${group.id}`);
-                      const groupCategories = categories
-                        .filter(c => c.category_group_id === group.id)
-                        .filter(c => showHiddenCategories || (!c.deleted && !c.hidden));
-
-                      if (groupCategories.length === 0) {
-                        return null;
-                      }
-
-                      return (
-                        <React.Fragment key={group.id}>
-                          <tr className={`bg-gray-100 dark:bg-gray-700 font-bold ${hasWarning ? 'bg-yellow-100 dark:bg-yellow-900/40' : ''}`}>
-                            <td className="p-2 border border-gray-300 dark:border-gray-600">
-                              {group.name}
-                              {hasWarning && <span className="ml-2 text-yellow-600 dark:text-yellow-400">⚠️</span>}
-                              {group.closed && <span className="ml-2">🚫 Closed</span>}
-                              {group.deleted && <span className="ml-2">🗑️ Deleted</span>}
-                            </td>
-                            <td className="p-2 border border-gray-300 dark:border-gray-600">
-                              <select
-                                value={categoryGroupTypes[group.id] || 'Unset'}
-                                onChange={(e) => updateCategoryGroupType(group.id, e.target.value)}
-                                className="p-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                              >
-                                {CATEGORY_TYPES.map(type => (
-                                  <option key={type} value={type}>{type}</option>
-                                ))}
-                              </select>
-                            </td>
-                          </tr>
-
-                          {groupCategories.map(category => {
-                            const catHasWarning = warnings.some(w => w.id === `category-${category.id}`);
-
-                            return (
-                              <tr key={category.id} className={catHasWarning ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}>
-                                <td className="p-2 border border-gray-300 dark:border-gray-600 pl-5">
-                                  {category.name}
-                                  {catHasWarning && <span className="ml-2 text-yellow-600 dark:text-yellow-400">⚠️</span>}
-                                  {category.closed && <span className="ml-2">🚫 Closed</span>}
-                                  {category.deleted && <span className="ml-2">🗑️ Deleted</span>}
-                                </td>
-                                <td className="p-2 border border-gray-300 dark:border-gray-600">
-                                  <select
-                                    value={categoryTypes[category.id] || 'Unset'}
-                                    onChange={(e) => updateCategoryType(category.id, e.target.value)}
-                                    className="p-1 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                                  >
-                                    {CATEGORY_TYPES.map(type => (
-                                      <option key={type} value={type}>{type}</option>
-                                    ))}
-                                  </select>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </React.Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          )}
-        </div>
+                          return (
+                            <tr key={category.id}>
+                              <td className="pl-4 sm:pl-6">
+                                {category.name}
+                                <Marks item={category} hasWarning={catHasWarning} />
+                              </td>
+                              <td>
+                                <TypeSelect
+                                  value={categoryTypes[category.id] || 'Unset'}
+                                  types={CATEGORY_TYPES}
+                                  onChange={(type) => updateCategoryType(category.id, type)}
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </div>
-    </div>
+    </Sheet>
   );
 };

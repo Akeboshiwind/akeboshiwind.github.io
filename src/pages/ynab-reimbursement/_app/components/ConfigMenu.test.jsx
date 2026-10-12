@@ -42,7 +42,7 @@ describe("ConfigMenu", () => {
     const onClose = vi.fn();
     render(<ConfigMenu {...defaultProps} onClose={onClose} />);
 
-    fireEvent.click(screen.getByText("✕"));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -52,6 +52,13 @@ describe("ConfigMenu", () => {
     expect(screen.getByRole("button", { name: "General" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Accounts" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Categories" })).toBeTruthy();
+  });
+
+  test("marks the open tab as pressed", () => {
+    render(<ConfigMenu {...defaultProps} configTab="accounts" />);
+
+    expect(screen.getByRole("button", { name: "Accounts" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "General" }).getAttribute("aria-pressed")).toBe("false");
   });
 
   test("calls onTabChange when tab is clicked", () => {

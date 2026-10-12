@@ -8,11 +8,11 @@ import { TokenInputView } from './components/TokenInputView.jsx';
 import { BudgetSelectionView } from './components/BudgetSelectionView.jsx';
 import { ConfigMenu } from './components/ConfigMenu.jsx';
 import { MainView } from './components/MainView.jsx';
-import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
+import { PageHeader } from './components/PageHeader.jsx';
 
 const CONFIG_PREFIX = 'ynabReimbursement_';
 
-const App = ({ historyUrl }) => {
+const App = () => {
   const [accessToken, setAccessToken] = useLocalStorage('accessToken', '', { prefix: CONFIG_PREFIX });
   const [selectedBudgetId, setSelectedBudgetId] = useLocalStorage('selectedBudgetId', '', { prefix: CONFIG_PREFIX });
   const [budgets, setBudgets] = useLocalStorage('budgets', [], { prefix: CONFIG_PREFIX });
@@ -251,43 +251,23 @@ const App = ({ historyUrl }) => {
   };
 
   return (
-    <div className="p-2 sm:p-4 text-gray-900 dark:text-gray-100">
-      <nav className="flex items-center gap-3 text-sm text-gray-400 mb-2">
-        <a
-          href="../"
-          className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
-          ← Home
-        </a>
-        {historyUrl && (
-          <a
-            href={historyUrl}
-            target="_blank"
-            rel="noopener"
-            className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            history
-          </a>
-        )}
-        <ThemeToggle className="ml-auto" />
-      </nav>
-
+    <div className="flex flex-col gap-8">
       {isLoading && (
-        <div className="fixed top-0 inset-x-0 bg-blue-500 text-white text-center py-1 text-sm">
+        <p role="status" className="label fixed top-0 inset-x-0 z-40 m-0 py-1 text-center bg-accent text-bg">
           Loading data from YNAB...
-        </div>
+        </p>
       )}
 
       {successMessage && (
-        <div className="fixed top-0 inset-x-0 bg-green-500 text-white text-center py-2 text-sm">
+        <p role="status" className="label fixed top-0 inset-x-0 z-40 m-0 py-1 text-center bg-ok text-bg">
           {successMessage}
-        </div>
+        </p>
       )}
 
+      {currentView !== 'main' && <PageHeader />}
+
       {error && (
-        <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          <p>{error}</p>
-        </div>
+        <p role="alert" className="pixel-panel border-danger text-danger p-3 m-0">{error}</p>
       )}
 
       {currentView === 'tokenInput' && (
@@ -355,4 +335,4 @@ const App = ({ historyUrl }) => {
 
 const container = document.getElementById('app');
 const root = createRoot(container);
-root.render(<App historyUrl={container.dataset.historyUrl} />);
+root.render(<App />);

@@ -8,5 +8,6 @@
     "finance"
   ],
   "category": "finance",
-  "icon": "file-spreadsheet"
+  "icon": "file-spreadsheet",
+  "dither": "ui"
 }
