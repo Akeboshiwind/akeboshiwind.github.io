@@ -1,0 +1,1 @@
+const e=t=>(t/1e3).toFixed(2),o=t=>new Date(t).toLocaleDateString("en-US",{month:"long",year:"numeric"}),a=()=>{const t=new Date;return`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-01`};export{o as f,a as g,e as m};
