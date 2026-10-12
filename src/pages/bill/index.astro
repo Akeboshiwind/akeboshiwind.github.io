@@ -1,6 +1,9 @@
 ---
-import AppLayout from '../../layouts/AppLayout.astro';
+import Layout from '../../layouts/Layout.astro';
 ---
-<AppLayout title="Bill Splitter | By the Rocks">
+<Layout title="Bill Splitter" description="Split bills fairly between people with different meal costs.">
+  <h1 class="page-title mt-6 mb-2">Bill Splitter</h1>
+  <p class="page-sub mt-0 mb-8">Split bills fairly between people with different meal costs.</p>
+  <div id="app"></div>
   <script>import './_app/app.jsx';</script>
-</AppLayout>
+</Layout>

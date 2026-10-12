@@ -1,6 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 
+const field = 'bg-transparent border border-border px-2 py-1 text-heading outline-none focus:border-accent';
+const amount = 'font-pixel text-pixel-md tabular-nums';
+const button = 'label px-3 py-1.5 border cursor-pointer whitespace-nowrap';
+const primaryButton = `${button} border-accent bg-accent text-bg hover:bg-transparent hover:text-accent`;
+const dangerButton = `${button} border-red-600 text-red-600 hover:bg-red-600 hover:text-bg dark:border-red-400 dark:text-red-400 dark:hover:bg-red-400`;
+const errorText = 'text-red-600 dark:text-red-400';
+const chip = 'label px-2 py-1 border min-h-[36px] sm:min-h-0';
+const chipOn = 'border-accent bg-accent text-bg cursor-pointer';
+const chipOff = 'border-border text-text hover:border-accent hover:text-accent cursor-pointer';
+
+const Section = ({ title, action, children }) => (
+  <section className="mb-10">
+    <h2 className="label flex items-center gap-3 text-heading mb-3">
+      <span className="shrink-0">{title}</span>
+      <span data-dither="fade-x" className="flex-1 h-[6px]" aria-hidden="true" />
+      {action}
+    </h2>
+    {children}
+  </section>
+);
+
+const Disclosure = ({ open, onClick }) => (
+  <button onClick={onClick} aria-expanded={open} className="label text-link hover:text-accent cursor-pointer shrink-0">
+    {open ? '▼ Hide' : '▶ Show'}
+  </button>
+);
+
 const Component = () => {
   const loadFromLocalStorage = (key, defaultValue) => {
     try {
@@ -232,42 +259,36 @@ Here's an example of the expected format with sample data:
     setTax(0); setServiceCharge(0); setServiceChargeMode('%'); setExpandedSummary({});
   };
 
+  const showHome = currency !== homeCurrency && exchangeRate !== 1;
+  const money = (amount) => `${currency}${amount.toFixed(2)}`;
+  const home = (amount) => showHome && <span className="text-text opacity-60 ml-1">({homeCurrency}{convertToHomeCurrency(amount).toFixed(2)})</span>;
+  const allocationMatches = parseFloat(allocatedTotal) === parseFloat(billTotal);
+
   return (
-    <div className="p-2 sm:p-4 max-w-4xl mx-auto text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800">
-      <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded text-sm">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <p><strong>Instructions:</strong></p>
-              <button onClick={resetData} className="sm:hidden px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs">Reset</button>
-            </div>
-            <ol className="list-decimal pl-5 space-y-1">
-              <li>Scan a receipt or use the default items</li>
-              <li>Claude will detect the currency from your receipt</li>
-              <li>Edit item names and prices as needed</li>
-              <li>Adjust currency settings if needed</li>
-              <li>Click on person buttons to assign people to items</li>
-              <li>When 2+ people are assigned, click <strong>Split</strong></li>
-              <li>Adjust percentages to customize the split</li>
-            </ol>
-            <p className="mt-2 text-xs italic">All changes are automatically saved.</p>
-          </div>
-          <button onClick={resetData} className="hidden sm:block px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm">Reset Data</button>
+    <div className="text-text">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-8 text-sm">
+        <div>
+          <ol className="list-decimal marker:text-accent marker:font-pixel pl-5 space-y-1">
+            <li>Scan a receipt or use the default items</li>
+            <li>Claude will detect the currency from your receipt</li>
+            <li>Edit item names and prices as needed</li>
+            <li>Adjust currency settings if needed</li>
+            <li>Click on person buttons to assign people to items</li>
+            <li>When 2+ people are assigned, click <strong className="text-heading">Split</strong></li>
+            <li>Adjust percentages to customize the split</li>
+          </ol>
+          <p className="label opacity-60 mt-3">All changes are automatically saved.</p>
         </div>
+        <button onClick={resetData} className={`${dangerButton} self-start shrink-0`}>Reset data</button>
       </div>
 
-      <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-3 sm:p-4 rounded">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
-          <h3 className="font-semibold">Scan Receipt with Claude</h3>
-          <button onClick={() => navigator.clipboard.writeText(claudePromptText)} className="self-start bg-blue-500 hover:bg-blue-600 text-white px-3 sm:px-4 py-1 sm:py-2 rounded text-sm w-full sm:w-auto">Copy Prompt</button>
-        </div>
-        <p className="mb-2 text-sm">Visit <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">claude.ai</a>, upload your receipt image, and paste the prompt below:</p>
-        <div className="bg-white dark:bg-gray-700 p-3 rounded border border-gray-300 dark:border-gray-600 mb-1 text-sm whitespace-pre-wrap font-mono text-xs max-h-24 overflow-y-auto">{claudePromptText}</div>
-      </div>
+      <Section title="Scan receipt with Claude" action={<button onClick={() => navigator.clipboard.writeText(claudePromptText)} className={primaryButton}>Copy prompt</button>}>
+        <p className="mb-2 text-sm">Visit <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="text-link underline">claude.ai</a>, upload your receipt image, and paste the prompt below:</p>
+        <div className="bg-code-bg text-code-text p-3 font-pixel text-pixel whitespace-pre-wrap max-h-24 overflow-y-auto">{claudePromptText}</div>
+      </Section>
 
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-2">Enter Claude Response</h2>
-        <textarea className="w-full border dark:border-gray-600 p-2 mb-2 rounded dark:bg-gray-700 font-mono text-sm" rows="1" placeholder='{"items": [...], "currency": "£"}'
+      <Section title="Enter Claude response">
+        <textarea className={`${field} w-full font-pixel text-pixel block`} rows="1" placeholder='{"items": [...], "currency": "£"}'
           onChange={(e) => {
             try {
               const data = JSON.parse(e.target.value.trim());
@@ -282,184 +303,159 @@ Here's an example of the expected format with sample data:
               } else setProcessingError('Invalid format');
             } catch { setProcessingError('Invalid JSON'); }
           }} />
-        {processingError && <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded text-sm"><strong>Error:</strong> {processingError}</div>}
-      </div>
+        {processingError && <p className={`label mt-2 ${errorText}`}>Error: {processingError}</p>}
+      </Section>
 
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Manage People</h2>
-          <button onClick={() => setShowPeopleSettings(!showPeopleSettings)} className="text-blue-500 hover:text-blue-700 text-sm">{showPeopleSettings ? 'Hide ▲' : 'Show ▼'}</button>
-        </div>
-        {!showPeopleSettings && <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded flex flex-wrap gap-1 text-sm"><span className="font-medium mr-2">People:</span>{people.map((p,i) => <span key={i} className="bg-white dark:bg-gray-800 rounded-full px-2 py-1 text-xs">{p}</span>)}</div>}
+      <Section title="People" action={<Disclosure open={showPeopleSettings} onClick={() => setShowPeopleSettings(!showPeopleSettings)} />}>
+        {!showPeopleSettings && <div className="flex flex-wrap gap-1">{people.map((p,i) => <span key={i} className={`${chip} border-border`}>{p}</span>)}</div>}
         {showPeopleSettings && (
-          <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded">
-            <div className="flex flex-wrap gap-2 mb-2">
+          <div>
+            <div className="flex flex-wrap gap-1 mb-3">
               {people.map((person, i) => (
-                <div key={i} className="flex items-center bg-white dark:bg-gray-800 rounded-full px-3 py-1">
-                  <span className="mr-2">{person}</span>
-                  <button onClick={() => { setPeople(people.filter((_,idx) => idx !== i)); }} className="text-red-500">×</button>
-                </div>
+                <span key={i} className={`${chip} border-border inline-flex items-center gap-2`}>
+                  {person}
+                  <button onClick={() => { setPeople(people.filter((_,idx) => idx !== i)); }} className={`${errorText} hover:opacity-70`} aria-label={`Remove ${person}`}>×</button>
+                </span>
               ))}
             </div>
-            <div className="flex items-center">
-              <input type="text" placeholder="Add person" className="border dark:border-gray-600 p-2 rounded mr-2 dark:bg-gray-700 flex-grow"
+            <div className="flex items-stretch gap-2">
+              <input type="text" placeholder="Add person" className={`${field} flex-grow`}
                 onKeyDown={(e) => { if (e.key === 'Enter' && e.target.value.trim() && !people.includes(e.target.value.trim())) { setPeople([...people, e.target.value.trim()]); e.target.value = ''; }}} />
-              <button onClick={(e) => { const input = e.target.previousSibling; if (input.value.trim() && !people.includes(input.value.trim())) { setPeople([...people, input.value.trim()]); input.value = ''; }}} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded">Add</button>
+              <button onClick={(e) => { const input = e.target.previousSibling; if (input.value.trim() && !people.includes(input.value.trim())) { setPeople([...people, input.value.trim()]); input.value = ''; }}} className={primaryButton}>Add</button>
             </div>
           </div>
         )}
-      </div>
+      </Section>
 
-      <div className="mb-6 overflow-x-auto">
-        <h2 className="text-lg font-semibold mb-2">Assign Items</h2>
-        <table className="w-full border-collapse text-sm">
-          <thead><tr className="bg-gray-100 dark:bg-gray-700"><th className="border dark:border-gray-600 p-1 sm:p-2 text-left">Item</th><th className="border dark:border-gray-600 p-1 sm:p-2 text-right">Price ({currency})</th><th className="border dark:border-gray-600 p-1 sm:p-2">Assigned To</th><th className="border dark:border-gray-600 p-1 sm:p-2 text-center w-20">Actions</th></tr></thead>
-          <tbody>
-            {expandedItems.map((item) => {
-              const totalPercent = getTotalPercentForItem(item.uniqueId);
-              const isComplete = totalPercent === 100;
-              const isOver = totalPercent > 100;
-              const assignees = itemAssignments[item.uniqueId] || [];
-              const isFirst = item.uniqueId.endsWith('-0');
-              const orig = items.find(i => i.id === item.id);
-              return (
-                <React.Fragment key={item.uniqueId}>
-                  <tr className={`${isComplete ? 'bg-green-50 dark:bg-green-900/20' : ''} ${isOver ? 'bg-red-50 dark:bg-red-900/20' : ''} hover:bg-gray-50 dark:hover:bg-gray-700`}>
-                    <td className="border dark:border-gray-600 p-1 sm:p-2">
-                      <div>
-                        <div className="flex items-center">
-                          {isFirst ? <input type="text" value={orig.name} onChange={(e) => updateItemName(orig.id, e.target.value)} className="w-full border dark:border-gray-500 p-1 rounded dark:bg-gray-600" /> : <span>{item.name}</span>}
-                          {item.originalQuantity > 1 && <span className="ml-1 whitespace-nowrap">({parseInt(item.uniqueId.split('-')[1]) + 1}/{item.originalQuantity})</span>}
-                        </div>
-                        {item.translation && <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.translation}</div>}
-                      </div>
-                    </td>
-                    <td className="border dark:border-gray-600 p-1 sm:p-2">
-                      {isFirst ? <input type="number" min="0" step="0.01" value={orig.price} onChange={(e) => updateItemPrice(orig.id, e.target.value)} className="w-20 border dark:border-gray-500 p-1 rounded text-right dark:bg-gray-600" /> : <span className="text-right block">{item.price.toFixed(2)}</span>}
-                    </td>
-                    <td className="border dark:border-gray-600 p-1 sm:p-2">
-                      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1.5 sm:gap-1"><button onClick={() => toggleAllPeople(item.uniqueId)} className={`w-full sm:w-auto px-3 sm:px-2 py-1.5 sm:py-1 text-sm sm:text-xs rounded-full font-semibold min-h-[36px] sm:min-h-0 ${assignees.length === people.length ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'}`}>All</button>{people.map(p => <button key={p} onClick={() => togglePersonAssignment(item.uniqueId, p)} className={`w-full sm:w-auto px-3 sm:px-2 py-1.5 sm:py-1 text-sm sm:text-xs rounded-full min-h-[36px] sm:min-h-0 ${assignees.includes(p) ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'}`}>{p}</button>)}</div>
-                    </td>
-                    <td className="border dark:border-gray-600 p-1 sm:p-2 text-center">
-                      <button onClick={() => toggleExpandedRow(item.uniqueId)} disabled={!canItemBeSplit(item.uniqueId)} className={`px-2 py-1 rounded text-xs ${canItemBeSplit(item.uniqueId) ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'} ${expandedRows[item.uniqueId] ? 'bg-blue-700' : ''}`}>{expandedRows[item.uniqueId] ? 'Hide' : 'Split'}</button>
-                    </td>
-                  </tr>
-                  {expandedRows[item.uniqueId] && canItemBeSplit(item.uniqueId) && (
-                    <tr className="bg-gray-50 dark:bg-gray-800">
-                      <td colSpan="4" className="p-2 sm:p-4 border dark:border-gray-600">
-                        <div className="bg-white dark:bg-gray-700 p-2 sm:p-4 rounded shadow">
-                          <h4 className="font-semibold text-sm mb-3">Adjust Split</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>{assignees.map(p => <div key={p} className="flex items-center mb-2"><span className="mr-2 w-24">{p}</span><input type="number" min="0" max="100" value={personShares[item.uniqueId]?.[p] || 0} onChange={(e) => handleShareChange(item.uniqueId, p, e.target.value)} className="w-20 p-2 text-right border dark:border-gray-500 dark:bg-gray-600 rounded" /><span className="ml-1">%</span></div>)}</div>
-                            <div>
-                              <div className={`text-lg mb-2 ${isComplete ? 'text-green-600' : isOver ? 'text-red-600' : 'text-yellow-600'}`}>Total: {totalPercent}%</div>
-                              <button onClick={() => { const ns = { ...personShares }; ns[item.uniqueId] = createEqualSplit(assignees); setPersonShares(ns); }} className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded">Equal Split</button>
+      <Section title="Assign items">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead><tr className="label text-heading pixel-line"><th className="p-1 sm:p-2 font-normal text-left">Item</th><th className="p-1 sm:p-2 font-normal text-right">Price ({currency})</th><th className="p-1 sm:p-2 font-normal text-left">Assigned to</th><th className="p-1 sm:p-2 font-normal w-16"><span className="sr-only">Split</span></th></tr></thead>
+            <tbody>
+              {expandedItems.map((item) => {
+                const totalPercent = getTotalPercentForItem(item.uniqueId);
+                const isComplete = totalPercent === 100;
+                const isOver = totalPercent > 100;
+                const assignees = itemAssignments[item.uniqueId] || [];
+                const isFirst = item.uniqueId.endsWith('-0');
+                const orig = items.find(i => i.id === item.id);
+                const marker = isOver ? 'text-red-600 dark:text-red-400' : isComplete ? 'text-accent' : 'text-transparent';
+                return (
+                  <React.Fragment key={item.uniqueId}>
+                    <tr className="pixel-line align-top">
+                      <td className="p-1 sm:p-2">
+                        <div className="flex items-start gap-1.5">
+                          <span className={`${marker} font-pixel text-pixel leading-[30px]`} aria-hidden="true">■</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center">
+                              {isFirst ? <input type="text" value={orig.name} onChange={(e) => updateItemName(orig.id, e.target.value)} className={`${field} w-full`} /> : <span className="leading-[30px] text-heading">{item.name}</span>}
+                              {item.originalQuantity > 1 && <span className="ml-1 whitespace-nowrap font-pixel text-pixel opacity-70">{parseInt(item.uniqueId.split('-')[1]) + 1}/{item.originalQuantity}</span>}
                             </div>
+                            {item.translation && <div className="label opacity-60 mt-0.5 normal-case tracking-normal">{item.translation}</div>}
                           </div>
                         </div>
                       </td>
+                      <td className="p-1 sm:p-2 text-right">
+                        {isFirst ? <input type="number" min="0" step="0.01" value={orig.price} onChange={(e) => updateItemPrice(orig.id, e.target.value)} className={`${field} ${amount} w-20 text-right`} /> : <span className={`${amount} block leading-[30px]`}>{item.price.toFixed(2)}</span>}
+                      </td>
+                      <td className="p-1 sm:p-2">
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1"><button onClick={() => toggleAllPeople(item.uniqueId)} className={`${chip} ${assignees.length === people.length ? chipOn : chipOff}`}>All</button>{people.map(p => <button key={p} onClick={() => togglePersonAssignment(item.uniqueId, p)} className={`${chip} ${assignees.includes(p) ? chipOn : chipOff}`}>{p}</button>)}</div>
+                      </td>
+                      <td className="p-1 sm:p-2 text-center">
+                        <button onClick={() => toggleExpandedRow(item.uniqueId)} disabled={!canItemBeSplit(item.uniqueId)} className={`${chip} ${expandedRows[item.uniqueId] ? chipOn : canItemBeSplit(item.uniqueId) ? chipOff : 'border-border opacity-30 cursor-not-allowed'}`}>{expandedRows[item.uniqueId] ? 'Hide' : 'Split'}</button>
+                      </td>
                     </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Tax & Service Charge</h2>
-          <button onClick={() => setShowTaxSettings(!showTaxSettings)} className="text-blue-500 hover:text-blue-700 text-sm">{showTaxSettings ? 'Hide ▲' : 'Show ▼'}</button>
+                    {expandedRows[item.uniqueId] && canItemBeSplit(item.uniqueId) && (
+                      <tr className="pixel-line">
+                        <td colSpan="4" className="p-2 sm:p-4 bg-code-bg">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>{assignees.map(p => <div key={p} className="flex items-center mb-2"><span className="mr-2 w-24 truncate">{p}</span><input type="number" min="0" max="100" value={personShares[item.uniqueId]?.[p] || 0} onChange={(e) => handleShareChange(item.uniqueId, p, e.target.value)} className={`${field} ${amount} w-20 text-right`} /><span className="ml-1 font-pixel">%</span></div>)}</div>
+                            <div className="flex flex-col items-start gap-2">
+                              <div className={`font-pixel text-pixel-lg ${isComplete ? 'text-accent' : isOver ? errorText : 'opacity-70'}`}>Total {totalPercent}%</div>
+                              <button onClick={() => { const ns = { ...personShares }; ns[item.uniqueId] = createEqualSplit(assignees); setPersonShares(ns); }} className={primaryButton}>Equal split</button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-        {!showTaxSettings && <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded text-sm"><span className="font-medium">Tax: {currency}{tax.toFixed(2)}</span><span className="ml-3">Service: {serviceChargeMode === '%' ? `${serviceCharge}%` : `${currency}${serviceCharge.toFixed(2)}`}{serviceChargeMode === '%' && serviceCharge > 0 ? ` (${currency}${serviceChargeAmount.toFixed(2)})` : ''}</span></div>}
+      </Section>
+
+      <Section title="Tax & service charge" action={<Disclosure open={showTaxSettings} onClick={() => setShowTaxSettings(!showTaxSettings)} />}>
+        {!showTaxSettings && <p className="label"><span>Tax {money(tax)}</span><span className="ml-4">Service {serviceChargeMode === '%' ? `${serviceCharge}%` : money(serviceCharge)}{serviceChargeMode === '%' && serviceCharge > 0 ? ` (${money(serviceChargeAmount)})` : ''}</span></p>}
         {showTaxSettings && (
-          <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Tax ({currency})</label>
-              <input type="number" min="0" step="0.01" value={tax} onChange={(e) => setTax(parseFloat(e.target.value) || 0)} className="w-32 p-2 border dark:border-gray-600 rounded dark:bg-gray-700" />
+              <label className="label block mb-1">Tax ({currency})</label>
+              <input type="number" min="0" step="0.01" value={tax} onChange={(e) => setTax(parseFloat(e.target.value) || 0)} className={`${field} ${amount} w-32`} />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Service Charge</label>
-              <div className="flex items-center gap-2">
-                <input type="number" min="0" step="0.01" value={serviceCharge} onChange={(e) => setServiceCharge(parseFloat(e.target.value) || 0)} className="w-32 p-2 border dark:border-gray-600 rounded dark:bg-gray-700" />
-                <select value={serviceChargeMode} onChange={(e) => setServiceChargeMode(e.target.value)} className="p-2 border dark:border-gray-600 rounded dark:bg-gray-700">
+              <label className="label block mb-1">Service charge</label>
+              <div className="flex items-stretch gap-2">
+                <input type="number" min="0" step="0.01" value={serviceCharge} onChange={(e) => setServiceCharge(parseFloat(e.target.value) || 0)} className={`${field} ${amount} w-32`} />
+                <select value={serviceChargeMode} onChange={(e) => setServiceChargeMode(e.target.value)} className={`${field} ${amount}`}>
                   <option value="%">%</option>
                   <option value="fixed">{currency}</option>
                 </select>
               </div>
-              {serviceChargeMode === '%' && serviceCharge > 0 && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">= {currency}{serviceChargeAmount.toFixed(2)}</p>}
+              {serviceChargeMode === '%' && serviceCharge > 0 && <p className="label opacity-60 mt-1">= {money(serviceChargeAmount)}</p>}
             </div>
           </div>
         )}
-      </div>
+      </Section>
 
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Currency Settings</h2>
-          <button onClick={() => setShowCurrencySettings(!showCurrencySettings)} className="text-blue-500 hover:text-blue-700 text-sm">{showCurrencySettings ? 'Hide ▲' : 'Show ▼'}</button>
-        </div>
-        {!showCurrencySettings && <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded text-sm"><span className="font-medium">Bill Currency: {currency}</span>{currency !== homeCurrency && exchangeRate !== 1 && <span> → Home: {homeCurrency} (Rate: {exchangeRate})</span>}</div>}
+      <Section title="Currency" action={<Disclosure open={showCurrencySettings} onClick={() => setShowCurrencySettings(!showCurrencySettings)} />}>
+        {!showCurrencySettings && <p className="label"><span>Bill currency {currency}</span>{showHome && <span> → home {homeCurrency} (rate {exchangeRate})</span>}</p>}
         {showCurrencySettings && (
-          <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div><label className="block text-sm font-medium mb-1">Bill Currency</label><select value={currency} onChange={(e) => setCurrency(e.target.value)} className="p-2 border dark:border-gray-600 rounded dark:bg-gray-700"><option value="£">£ GBP</option><option value="€">€ EUR</option><option value="$">$ USD</option><option value="¥">¥ JPY</option></select></div>
-            <div><label className="block text-sm font-medium mb-1">Home Currency</label><select value={homeCurrency} onChange={(e) => setHomeCurrency(e.target.value)} className="p-2 border dark:border-gray-600 rounded dark:bg-gray-700"><option value="£">£ GBP</option><option value="€">€ EUR</option><option value="$">$ USD</option><option value="¥">¥ JPY</option></select></div>
-            <div><label className="block text-sm font-medium mb-1">Bill Total in Home Currency ({homeCurrency})</label><input type="number" min="0" step="0.01" value={parseFloat((parseFloat(billTotal) * exchangeRate).toFixed(2))} onChange={(e) => { const homeAmount = parseFloat(e.target.value); const total = parseFloat(billTotal); if (total > 0 && homeAmount >= 0) setExchangeRate(parseFloat((homeAmount / total).toFixed(6))); }} className="w-32 p-2 border dark:border-gray-600 rounded dark:bg-gray-700" /></div>
-            <div><label className="block text-sm font-medium mb-1">Exchange Rate</label><input type="number" min="0" step="0.01" value={exchangeRate} onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 1)} className="w-32 p-2 border dark:border-gray-600 rounded dark:bg-gray-700" /></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label className="label block mb-1">Bill currency</label><select value={currency} onChange={(e) => setCurrency(e.target.value)} className={`${field} ${amount}`}><option value="£">£ GBP</option><option value="€">€ EUR</option><option value="$">$ USD</option><option value="¥">¥ JPY</option></select></div>
+            <div><label className="label block mb-1">Home currency</label><select value={homeCurrency} onChange={(e) => setHomeCurrency(e.target.value)} className={`${field} ${amount}`}><option value="£">£ GBP</option><option value="€">€ EUR</option><option value="$">$ USD</option><option value="¥">¥ JPY</option></select></div>
+            <div><label className="label block mb-1">Bill total in home currency ({homeCurrency})</label><input type="number" min="0" step="0.01" value={parseFloat((parseFloat(billTotal) * exchangeRate).toFixed(2))} onChange={(e) => { const homeAmount = parseFloat(e.target.value); const total = parseFloat(billTotal); if (total > 0 && homeAmount >= 0) setExchangeRate(parseFloat((homeAmount / total).toFixed(6))); }} className={`${field} ${amount} w-32`} /></div>
+            <div><label className="label block mb-1">Exchange rate</label><input type="number" min="0" step="0.01" value={exchangeRate} onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 1)} className={`${field} ${amount} w-32`} /></div>
           </div>
         )}
-      </div>
+      </Section>
 
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-2">Summary</h2>
-        <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="p-2 bg-white dark:bg-gray-800 rounded">
-            <h3 className="font-semibold text-sm mb-2">Per Person</h3>
+      <Section title="Summary">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+          <div>
+            <h3 className="label text-heading mb-1">Per person</h3>
             {people.map((p,i) => {
               const breakdown = calculatePersonTotal(p);
-              const totalStr = breakdown.total.toFixed(2);
-              const homeTotal = convertToHomeCurrency(breakdown.total).toFixed(2);
               const hasExtras = tax > 0 || serviceChargeAmount > 0;
               const isExpanded = expandedSummary[p];
-              const showHome = currency !== homeCurrency && exchangeRate !== 1;
               return <div key={i}>
-                <div className={`flex justify-between py-1 border-b dark:border-gray-700 ${hasExtras ? 'cursor-pointer' : ''}`} onClick={() => hasExtras && setExpandedSummary(prev => ({ ...prev, [p]: !prev[p] }))}>
-                  <span className="flex items-center gap-1">{hasExtras && <span className="text-base text-gray-400">{isExpanded ? '▾' : '▸'}</span>}{p}:</span>
-                  <span className="font-semibold">{currency}{totalStr}{showHome && <span className="text-gray-500 ml-1 text-sm">({homeCurrency}{homeTotal})</span>}</span>
+                <div className={`flex justify-between items-baseline py-1.5 pixel-line ${hasExtras ? 'cursor-pointer' : ''}`} onClick={() => hasExtras && setExpandedSummary(prev => ({ ...prev, [p]: !prev[p] }))}>
+                  <span className="flex items-center gap-1.5 text-heading">{hasExtras && <span className="text-accent text-[0.7em]">{isExpanded ? '▼' : '▶'}</span>}{p}</span>
+                  <span className={`${amount} text-heading`}>{money(breakdown.total)}{home(breakdown.total)}</span>
                 </div>
-                {isExpanded && <div className="pl-4 py-1 text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
-                  <div className="flex justify-between"><span>Items:</span><span>{currency}{breakdown.items.toFixed(2)}{showHome && <span className="ml-1">({homeCurrency}{convertToHomeCurrency(breakdown.items).toFixed(2)})</span>}</span></div>
-                  {tax > 0 && <div className="flex justify-between"><span>Tax:</span><span>{currency}{breakdown.tax.toFixed(2)}{showHome && <span className="ml-1">({homeCurrency}{convertToHomeCurrency(breakdown.tax).toFixed(2)})</span>}</span></div>}
-                  {serviceChargeAmount > 0 && <div className="flex justify-between"><span>Service:</span><span>{currency}{breakdown.service.toFixed(2)}{showHome && <span className="ml-1">({homeCurrency}{convertToHomeCurrency(breakdown.service).toFixed(2)})</span>}</span></div>}
+                {isExpanded && <div className={`pl-4 py-1 space-y-0.5 ${amount} opacity-70`}>
+                  <div className="flex justify-between"><span>Items</span><span>{money(breakdown.items)}{home(breakdown.items)}</span></div>
+                  {tax > 0 && <div className="flex justify-between"><span>Tax</span><span>{money(breakdown.tax)}{home(breakdown.tax)}</span></div>}
+                  {serviceChargeAmount > 0 && <div className="flex justify-between"><span>Service</span><span>{money(breakdown.service)}{home(breakdown.service)}</span></div>}
                 </div>}
               </div>;
             })}
           </div>
-          <div className="p-2 bg-white dark:bg-gray-800 rounded">
-            <h3 className="font-semibold text-sm mb-2">Bill Total</h3>
-            {(() => { const showHome = currency !== homeCurrency && exchangeRate !== 1; return <>
-              <div className="flex justify-between py-1 border-b dark:border-gray-700 text-sm"><span>Subtotal:</span><span>{currency}{billSubtotal.toFixed(2)}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(billSubtotal).toFixed(2)})</span>}</span></div>
-              {tax > 0 && <div className="flex justify-between py-1 border-b dark:border-gray-700 text-sm"><span>Tax:</span><span>{currency}{tax.toFixed(2)}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(tax).toFixed(2)})</span>}</span></div>}
-              {serviceChargeAmount > 0 && <div className="flex justify-between py-1 border-b dark:border-gray-700 text-sm"><span>Service:</span><span>{currency}{serviceChargeAmount.toFixed(2)}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(serviceChargeAmount).toFixed(2)})</span>}</span></div>}
-              <div className="flex justify-between py-1 border-b dark:border-gray-700"><span className="font-bold">Total:</span><span className="font-bold">{currency}{billTotal}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(parseFloat(billTotal)).toFixed(2)})</span>}</span></div>
-              <div className="flex justify-between py-1"><span className={parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600' : 'text-green-600'}>Allocated:</span><span className={parseFloat(allocatedTotal) !== parseFloat(billTotal) ? 'text-red-600' : 'text-green-600'}>{currency}{allocatedTotal}{showHome && <span className="text-gray-500 ml-1 text-sm font-normal">({homeCurrency}{convertToHomeCurrency(parseFloat(allocatedTotal)).toFixed(2)})</span>}</span></div>
-            </>; })()}
+          <div>
+            <h3 className="label text-heading mb-1">Bill total</h3>
+            <div className="flex justify-between items-baseline py-1.5 pixel-line"><span>Subtotal</span><span className={amount}>{money(billSubtotal)}{home(billSubtotal)}</span></div>
+            {tax > 0 && <div className="flex justify-between items-baseline py-1.5 pixel-line"><span>Tax</span><span className={amount}>{money(tax)}{home(tax)}</span></div>}
+            {serviceChargeAmount > 0 && <div className="flex justify-between items-baseline py-1.5 pixel-line"><span>Service</span><span className={amount}>{money(serviceChargeAmount)}{home(serviceChargeAmount)}</span></div>}
+            <div className="flex justify-between items-baseline py-1.5 text-heading"><span className="label">Total</span><span className="font-pixel text-pixel-lg">{currency}{billTotal}{home(parseFloat(billTotal))}</span></div>
+            <hr className="my-1" />
+            <div className={`flex justify-between items-baseline py-1.5 ${allocationMatches ? 'text-accent' : errorText}`}><span className="label">Allocated</span><span className={amount}>{currency}{allocatedTotal}{home(parseFloat(allocatedTotal))}</span></div>
           </div>
         </div>
-      </div>
+      </Section>
     </div>
   );
 };
 
-const App = () => (
-  <div className="max-w-4xl mx-auto p-4">
-    <header className="mb-4">
-      <a href="../" className="text-blue-600 dark:text-blue-400 hover:underline">&larr; Home</a>
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2">Bill Splitter</h1>
-    </header>
-    <Component />
-  </div>
-);
-
 const mount = document.getElementById('app');
-if (mount) createRoot(mount).render(<App />);
+if (mount) createRoot(mount).render(<Component />);
