@@ -1,0 +1,98 @@
+---
+import PixelAppLayout from '../../layouts/PixelAppLayout.astro';
+import SectionLabel from '../../components/pixel/SectionLabel.astro';
+import Icon from '../../components/pixel/Icon.astro';
+
+const themes = ['light', 'dark'];
+const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent', 'danger'];
+---
+<PixelAppLayout title="Pixel Kit" wide>
+  <main class="w-full max-w-[1100px] mx-auto flex flex-col gap-6">
+    <header class="flex flex-col gap-2">
+      <h1 class="page-title">Pixel Kit</h1>
+      <p class="page-sub">
+        The classes and components the pixel-styled tools and posts are drawn from, in both themes.
+        Classes live in <code>src/styles/theme.css</code>, components in <code>src/components/pixel/</code>.
+      </p>
+    </header>
+
+    <div class="grid gap-4 md:grid-cols-2">
+      {themes.map((theme) => (
+        <section data-theme={theme} class="pixel-panel bg-bg text-text p-4 flex flex-col gap-2">
+          <p class="label opacity-60">{theme}</p>
+
+          <SectionLabel class="mt-4 mb-2">Type</SectionLabel>
+          <p class="page-title">.page-title</p>
+          <p class="page-sub">.page-sub</p>
+          <p class="label">.label</p>
+
+          <SectionLabel class="mt-4 mb-2">Section label</SectionLabel>
+          <p class="label opacity-60">&lt;SectionLabel&gt; · .section-label .section-fade</p>
+
+          <SectionLabel class="mt-4 mb-2">Buttons</SectionLabel>
+          <div class="flex flex-wrap gap-2">
+            <button class="pixel-button">Default</button>
+            <button class="pixel-button" data-variant="primary">Primary</button>
+            <button class="pixel-button" data-variant="danger">Danger</button>
+            <button class="pixel-button" disabled>Disabled</button>
+          </div>
+          <p class="label opacity-60">.pixel-button · data-variant="primary" | "danger"</p>
+
+          <SectionLabel class="mt-4 mb-2">Chips</SectionLabel>
+          <div class="flex flex-wrap gap-1">
+            <span class="pixel-chip">Static</span>
+            <button class="pixel-chip" aria-pressed="false">Off</button>
+            <button class="pixel-chip" aria-pressed="true">Pressed</button>
+            <button class="pixel-chip" aria-expanded="true">Expanded</button>
+            <button class="pixel-chip" disabled>Disabled</button>
+          </div>
+          <p class="label opacity-60">.pixel-chip · on when aria-pressed or aria-expanded is "true"</p>
+
+          <SectionLabel class="mt-4 mb-2">Fields</SectionLabel>
+          <div class="flex flex-wrap gap-2">
+            <input class="pixel-field" placeholder="Text" />
+            <select class="pixel-field font-pixel text-pixel-md"><option>£ GBP</option><option>€ EUR</option></select>
+          </div>
+          <textarea class="pixel-field w-full font-pixel text-pixel" rows="2" placeholder="Textarea"></textarea>
+          <p class="label opacity-60">.pixel-field</p>
+
+          <SectionLabel class="mt-4 mb-2">Checkbox</SectionLabel>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2"><input type="checkbox" class="pixel-check" /> Off</label>
+            <label class="flex items-center gap-2"><input type="checkbox" class="pixel-check" checked /> On</label>
+          </div>
+          <p class="label opacity-60">.pixel-check</p>
+
+          <SectionLabel class="mt-4 mb-2">Panel</SectionLabel>
+          <div class="pixel-panel bg-code-bg p-3">A bordered box for a toolbar, a badge or a sidebar.</div>
+          <p class="label opacity-60">.pixel-panel</p>
+
+          <SectionLabel class="mt-4 mb-2">Icons</SectionLabel>
+          <div class="flex gap-3 text-heading">
+            <Icon name="lock" />
+            <Icon name="heart" />
+            <Icon name="brush" />
+            <Icon name="grid-3x3" class="w-8 h-8 text-accent" />
+          </div>
+          <p class="label opacity-60">&lt;Icon&gt; · .pixel-icon</p>
+
+          <SectionLabel class="mt-4 mb-2">Rules</SectionLabel>
+          <div class="pixel-line h-0.5"></div>
+          <p class="label opacity-60">.pixel-line</p>
+          <hr class="my-4" />
+          <p class="label opacity-60">&lt;hr&gt;</p>
+
+          <SectionLabel class="mt-4 mb-2">Colours</SectionLabel>
+          <div class="grid grid-cols-4 gap-2">
+            {swatches.map((name) => (
+              <div class="flex flex-col gap-1">
+                <span class="pixel-panel h-8" style={`background: var(--${name})`}></span>
+                <span class="label opacity-60">--{name}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  </main>
+</PixelAppLayout>
