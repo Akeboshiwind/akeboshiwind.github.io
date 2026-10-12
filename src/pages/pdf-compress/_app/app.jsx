@@ -183,7 +183,7 @@ export function App() {
                   value={p.id}
                   checked={p.id === preset}
                   onChange={() => setPreset(p.id)}
-                  className="pixel-check mt-0.5"
+                  className="pixel-radio mt-0.5"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="label text-heading">{p.label}</div>
