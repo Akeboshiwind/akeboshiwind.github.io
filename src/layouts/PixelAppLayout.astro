@@ -8,10 +8,17 @@ import DissolveKeyframes from '../components/DissolveKeyframes.astro';
 import { PAGE_BACKGROUND } from '../lib/accents.js';
 import { historyFromPagePath } from '../lib/history.js';
 
-const { title } = Astro.props;
+interface Props {
+  title: string;
+  /** Span the window instead of the notes' 720px column, for an app whose content is a canvas. */
+  wide?: boolean;
+}
+
+const { title, wide = false } = Astro.props;
 const historyUrl = historyFromPagePath(Astro.url.pathname);
+const column = wide ? '' : 'max-w-[720px] mx-auto';
 ---
-<AppShell title={title} bodyClass="flex flex-col min-h-screen w-full max-w-[720px] mx-auto p-4 gap-4 font-sans text-text bg-bg [&>#app]:flex-1 [&>#app]:flex [&>#app]:flex-col">
+<AppShell title={title} bodyClass={`flex flex-col min-h-screen w-full ${column} p-4 gap-4 font-sans text-text bg-bg [&>#app]:flex-1 [&>#app]:flex [&>#app]:flex-col`}>
   <Fragment slot="head">
     <DissolveKeyframes />
     <meta name="theme-color" content={PAGE_BACKGROUND} />
