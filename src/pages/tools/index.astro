@@ -58,7 +58,7 @@ const grouped = CATEGORIES.map(cat => {
   <p class="page-sub mt-0 mb-4">Search or scroll. {works.length} things across {grouped.length} categories.</p>
 
   <label class="relative flex items-center gap-2 mb-6 border border-border px-3 py-2 focus-within:border-accent transition-colors">
-    <Icon name="search" class="w-4 h-4 opacity-50" />
+    <Icon name="search" class="w-3 h-3 opacity-50" />
     <input
       id="tools-search"
       type="search"
@@ -72,7 +72,7 @@ const grouped = CATEGORIES.map(cat => {
 
   <section id="pinned-section" class="hidden mb-8" data-pinned-section>
     <h2 class="label flex items-center gap-2 text-heading mt-0 mb-2 pb-2 pixel-line">
-      <Icon name="pin" class="w-4 h-4" />
+      <Icon name="pin" class="w-3 h-3" />
       <span>Pinned</span>
     </h2>
     <ul id="pinned-list" class="flex flex-col gap-1 list-none p-0 m-0"></ul>
@@ -85,7 +85,7 @@ const grouped = CATEGORIES.map(cat => {
         data-category={cat.id}
       >
         <h2 class="label flex items-center gap-2 text-heading mt-0 mb-2 pb-2 pixel-line">
-          <Icon name={cat.icon} class="w-4 h-4" />
+          <Icon name={cat.icon} class="w-3 h-3" />
           <span>{cat.name}</span>
         </h2>
 
@@ -114,7 +114,7 @@ const grouped = CATEGORIES.map(cat => {
                   class="flex items-center justify-center w-9 h-9 shrink-0 border border-border text-text no-underline hover:bg-accent hover:text-bg hover:border-accent transition-colors"
                   aria-label={work.data.title}
                 >
-                  {work.data.icon && <Icon name={work.data.icon} class="w-5 h-5" />}
+                  {work.data.icon && <Icon name={work.data.icon} class="w-6 h-6" />}
                 </a>
 
                 <div class="flex flex-col justify-center min-w-0 flex-1">
@@ -141,7 +141,12 @@ const grouped = CATEGORIES.map(cat => {
                   aria-label={`Pin ${work.data.title}`}
                   class="pin-btn absolute top-1 right-0 flex items-center justify-center w-6 h-6 text-text cursor-pointer"
                 >
-                  <Icon name="pin" class="w-3.5 h-3.5" />
+                  <span class="relative w-3 h-3">
+                    <svg class="pin-fill absolute inset-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M6 4h12v12H6zM6 16h4v2H6zm8 0h4v2h-4zM6 18h2v2H6zm10 0h2v2h-2z" />
+                    </svg>
+                    <Icon name="pin" class="absolute inset-0 w-3 h-3" />
+                  </span>
                 </button>
               </li>
             );
@@ -154,16 +159,22 @@ const grouped = CATEGORIES.map(cat => {
   <style>
     .pin-btn {
       opacity: 0.25;
-      transition: opacity 0.15s, color 0.15s, transform 0.15s;
+      transition: opacity 0.15s, color 0.15s;
     }
     .pin-btn:hover,
     .pin-btn:focus-visible {
       opacity: 0.7;
     }
+    .pin-fill {
+      display: none;
+      shape-rendering: crispEdges;
+    }
     .tool-row[data-pinned="true"] .pin-btn {
       opacity: 1;
-      color: var(--color-link);
-      transform: rotate(45deg);
+      color: var(--color-accent);
+    }
+    .tool-row[data-pinned="true"] .pin-fill {
+      display: block;
     }
     .tool-row[data-pinned="true"] .pin-btn:hover {
       opacity: 0.85;

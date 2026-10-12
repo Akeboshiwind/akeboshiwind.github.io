@@ -1,4 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { defineEcConfig } from 'astro-expressive-code';
+
+// Resolved through node_modules, not relative to this file: MDX <Code> loads this config from a bundled chunk in dist/.
+const copySvg = readFileSync(createRequire(import.meta.url).resolve('pixelarticons/svg/copy.svg'), 'utf8');
 
 export default defineEcConfig({
   themes: ['github-light', 'github-dark'],
@@ -20,6 +25,7 @@ export default defineEcConfig({
       inlineButtonBackground: 'var(--accent)',
       inlineButtonBorder: 'var(--border)',
       inlineButtonBorderOpacity: '1',
+      copyIcon: `url("data:image/svg+xml,${encodeURIComponent(copySvg)}")`,
     },
   },
 });

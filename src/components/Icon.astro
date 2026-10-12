@@ -6,10 +6,34 @@ const load = (modules: Record<string, string>) =>
     svg,
   ]));
 
-const LUCIDE = load(import.meta.glob<string>(
-  '../../node_modules/lucide-static/icons/*.svg',
+const PIXEL = load(import.meta.glob<string>(
+  '../../node_modules/pixelarticons/svg/*.svg',
   { query: '?raw', import: 'default', eager: true }
 ));
+
+const LUCIDE_ALIASES: Record<string, string> = {
+  'arrow-right-left': 'arrows-horizontal',
+  'arrow-up-down': 'arrows-vertical',
+  'columns-2': 'layout',
+  'dumbbell': 'human-arms-up',
+  'file-code': 'code',
+  'file-spreadsheet': 'grid-3x3',
+  'flower': 'leaf',
+  'gamepad-2': 'gamepad',
+  'graduation-cap': 'pencil',
+  'heart-handshake': 'hand',
+  'heart-pulse': 'heart',
+  'image-down': 'download',
+  'layers': 'files',
+  'list-ordered': 'bulletlist',
+  'lock-open': 'unlock',
+  'message-circle': 'message',
+  'microscope': 'eye',
+  'pin': 'bookmark',
+  'swords': 'sword',
+  'utensils-crossed': 'cake',
+  'wrench': 'tools',
+};
 
 interface Props {
   name: string;
@@ -17,8 +41,16 @@ interface Props {
 }
 
 const { name, class: className = 'w-5 h-5' } = Astro.props;
-const svg = LUCIDE[name];
-if (!svg) throw new Error(`[Icon] unknown icon "${name}": not a lucide-static name`);
+const svg = PIXEL[LUCIDE_ALIASES[name] ?? name];
+if (!svg) throw new Error(`[Icon] unknown icon "${name}": not a pixelarticons name or a key of LUCIDE_ALIASES`);
 ---
 
-<span class={`inline-flex items-center justify-center ${className}`} set:html={svg} />
+<span class={`pixel-icon inline-flex items-center justify-center ${className}`} set:html={svg} />
+
+<style>
+  .pixel-icon :global(svg) {
+    width: 100%;
+    height: 100%;
+    shape-rendering: crispEdges;
+  }
+</style>
