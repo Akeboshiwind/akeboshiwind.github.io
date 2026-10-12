@@ -25,7 +25,7 @@ src/
     sorting-comparator/
     christmas/
     ...              # All SPAs at top level
-  layouts/           # Layout.astro for notes, PixelAppLayout.astro for SPAs (AppLayout.astro for older ones)
+  layouts/           # Layout.astro for notes, PixelAppLayout.astro for SPAs (on AppShell.astro)
   components/        # Reusable components
     pixel/           # The pixel kit's components (see Pixel UI)
   styles/            # theme.css (pixel theme + kit classes), global.css (notes' prose)
@@ -55,6 +55,7 @@ Tools and posts draw their UI from one kit. **Read both locations before styling
 - **Classes** — `src/styles/theme.css`, `@layer components`. They work unchanged in `.astro`, `.jsx`, `.md` and `.mdx`.
 - **Components** — `src/components/pixel/`. Each is an `.astro` and `.jsx` pair: Astro pages here cannot render `.jsx` (no `@astrojs/react`), and React apps cannot import `.astro`. The pair carries no styling of its own; that lives in the classes.
 - **Catalogue** — `/kit/` (`src/pages/kit/index.astro`) shows everything in both themes. `src/lib/pixel-kit.test.js` fails until a new class or component is on it.
+- **Colours** — tokens only. `src/lib/pixel-colours.test.js` fails when a page on `PixelAppLayout` uses a Tailwind palette class, a `dark:` variant or a hex colour. A value that must leave CSS (a canvas, a library option) is a `PAGE_*` constant in `src/lib/accents.js`.
 
 ## Apps
 
@@ -62,7 +63,7 @@ All apps are built through Astro's Vite pipeline — no separate build step need
 
 - **React apps** (.jsx) use `@vitejs/plugin-react` and `PixelAppLayout` — **strongly recommended for new apps**
 - **Squint apps** (.cljs) are compiled by `plugins/vite-plugin-squint.js` — deprecated, new apps should use React
-- **Standalone apps** (christmas, chat-wrapped) have bespoke structures and don't use `AppLayout`
+- **Standalone apps** (christmas, chat-wrapped, heartgold-battle-prep, coffee-merge, bridal-skincare) have bespoke designs and don't use `PixelAppLayout`
 
 ### Building a new React app
 
