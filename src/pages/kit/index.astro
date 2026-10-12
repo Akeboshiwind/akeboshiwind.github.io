@@ -77,6 +77,11 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
           <input type="range" class="pixel-range" min="0" max="100" value="70" aria-label="Disabled range" disabled />
           <p class="label opacity-60">.pixel-range · input[type=range]</p>
 
+          <SectionLabel class="mt-4 mb-2">Progress</SectionLabel>
+          <progress class="pixel-progress" value="40" max="100" aria-label="Determinate progress"></progress>
+          <progress class="pixel-progress" aria-label="Indeterminate progress"></progress>
+          <p class="label opacity-60">.pixel-progress · &lt;progress&gt;, a stepping block while it has no value</p>
+
           <SectionLabel class="mt-4 mb-2">File</SectionLabel>
           <FileDrop accept="image/*">Drop a file or click to choose</FileDrop>
           <label class="pixel-file" data-dragover>Drag-over</label>

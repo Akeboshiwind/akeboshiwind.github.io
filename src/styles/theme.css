@@ -243,6 +243,49 @@
     background: var(--accent);
   }
 
+  .pixel-progress {
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 12px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    color: var(--accent);
+  }
+
+  .pixel-progress::-webkit-progress-bar {
+    background: transparent;
+  }
+
+  .pixel-progress::-webkit-progress-value {
+    background: var(--accent);
+  }
+
+  .pixel-progress::-moz-progress-bar {
+    background: var(--accent);
+  }
+
+  /* Without a value: a third-width block steps across, drawn on the element itself since neither engine paints its bar pseudo here. */
+  .pixel-progress:indeterminate {
+    background: linear-gradient(var(--accent), var(--accent)) no-repeat -50% 0 / 33% 100%, var(--bg);
+    animation: pixel-progress-sweep 1.2s steps(12) infinite;
+  }
+
+  .pixel-progress:indeterminate::-moz-progress-bar {
+    background: transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pixel-progress:indeterminate {
+      animation: none;
+      background-position: 50% 0;
+    }
+  }
+
+  @keyframes pixel-progress-sweep {
+    to { background-position: 150% 0; }
+  }
+
   .section-label {
     display: flex;
     align-items: center;
