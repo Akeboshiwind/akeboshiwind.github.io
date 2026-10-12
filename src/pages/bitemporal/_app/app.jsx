@@ -24,6 +24,13 @@ import {
   isTextEntry,
 } from './model.js';
 import { SectionLabel } from '../../../components/pixel/SectionLabel.jsx';
+import { Icon } from '../../../components/pixel/Icon.jsx';
+import cursorIcon from 'pixelarticons/svg/cursor-minimal.svg?raw';
+import squareIcon from 'pixelarticons/svg/square.svg?raw';
+import circleIcon from 'pixelarticons/svg/circle.svg?raw';
+import searchIcon from 'pixelarticons/svg/search.svg?raw';
+import reloadIcon from 'pixelarticons/svg/reload.svg?raw';
+import closeIcon from 'pixelarticons/svg/close.svg?raw';
 
 const ABLY_API_KEY = 'Vr1zhQ.IsKO2g:nY_BkeBtmxQxs0W_MYZNkx-34cZBzzNLOrrAARrygfQ';
 const GLOBAL_CHANNEL = 'global';
@@ -463,25 +470,6 @@ function commitRoomCodeEdit() {
   store.update({ roomCodeInput: null });
 }
 
-// Paths from pixelarticons (https://pixelarticons.com/), drawn on a 24-unit grid.
-const ICONS = {
-  cursor: 'M6 4h2v16H6zm2 0h2v2H8zm2 2h2v2h-2zm2 2h2v2h-2zm2 2h2v2h-2zm2 2h2v2h-2zm-8 6h2v2H8zm2-2h2v2h-2zm2-2h6v2h-6z',
-  square: 'M2 4h2v16H2zm2 16h16v2H4zM20 4h2v16h-2zM4 2h16v2H4z',
-  circle: 'M6 2h12v2H6zm0 18h12v2H6zM2 6h2v12H2zm18 0h2v12h-2zm-2-2h2v2h-2zm0 14h2v2h-2zM4 4h2v2H4zm0 14h2v2H4z',
-  search:
-    'M22 22h-2v-2h2v2Zm-2-2h-2v-2h2v2Zm-6-2H6v-2h8v2Zm4 0h-2v-2h2v2ZM6 16H4v-2h2v2Zm10 0h-2v-2h2v2ZM4 14H2V6h2v8Zm14 0h-2V6h2v8ZM6 6H4V4h2v2Zm10 0h-2V4h2v2Zm-2-2H6V2h8v2Z',
-  reload:
-    'M16 4h2v6h-2zm-2-2h2v2h-2zm0 2h2v8h-2zM4 8H2v5h2zM4 6h16v2H4zm4 14H6v-6h2zm2 2H8v-2h2zm0-2H8v-8h2zm10-4h2v-5h-2zM20 18H4v-2h16z',
-  close:
-    'M7 19H5V17H7V19ZM19 19H17V17H19V19ZM9 15V17H7V15H9ZM17 17H15V15H17V17ZM11 15H9V13H11V15ZM15 15H13V13H15V15ZM13 13H11V11H13V13ZM11 11H9V9H11V11ZM15 11H13V9H15V11ZM9 9H7V7H9V9ZM17 9H15V7H17V9ZM7 7H5V5H7V7ZM19 7H17V5H19V7Z',
-};
-
-const Icon = ({ name, size }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d={ICONS[name]} />
-  </svg>
-);
-
 const CONNECTION_LABELS = {
   initialized: 'Connecting...',
   connecting: 'Connecting...',
@@ -554,7 +542,7 @@ function ContextMenu({ menu, events }) {
       )}
       <div className="pixel-line h-0.5 my-2" />
       <button
-        className="w-full text-left label text-red-600 hover:bg-red-600 hover:text-bg px-1 py-1 cursor-pointer"
+        className="w-full text-left label text-danger hover:bg-danger hover:text-bg px-1 py-1 cursor-pointer"
         onClick={() => {
           deleteSelected(menu);
           closeContextMenu();
@@ -567,10 +555,10 @@ function ContextMenu({ menu, events }) {
 }
 
 const TOOLS = [
-  ['select', 'Select', 'cursor'],
-  ['rectangle', 'Rectangle', 'square'],
-  ['point', 'Point', 'circle'],
-  ['zoom', 'Zoom overlay (shared)', 'search'],
+  ['select', 'Select', cursorIcon],
+  ['rectangle', 'Rectangle', squareIcon],
+  ['point', 'Point', circleIcon],
+  ['zoom', 'Zoom overlay (shared)', searchIcon],
 ];
 
 const Toolbar = ({ current }) => (
@@ -584,7 +572,7 @@ const Toolbar = ({ current }) => (
         title={title}
         onClick={() => store.update({ tool })}
       >
-        <Icon name={icon} size={24} />
+        <Icon svg={icon} className="w-6 h-6" />
       </button>
     ))}
   </div>
@@ -596,7 +584,7 @@ const Option = ({ checked, onChange, synced, children }) => (
     <span>{children}</span>
     {synced && (
       <span className="opacity-60" title="Synced to room">
-        <Icon name="reload" size={12} />
+        <Icon svg={reloadIcon} className="w-3 h-3" />
       </span>
     )}
   </label>
@@ -606,13 +594,13 @@ const SavedStateCard = ({ saved }) => (
   <div className="relative group cursor-pointer" onClick={() => loadSavedState(saved)}>
     <img src={saved.thumbnail} className="pixel-panel w-full hover:border-accent" />
     <button
-      className="absolute -top-2 -right-2 w-5 h-5 bg-heading text-bg hover:bg-red-600 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
+      className="absolute -top-2 -right-2 w-5 h-5 bg-heading text-bg hover:bg-danger flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
       onClick={(e) => {
         e.stopPropagation();
         deleteSavedState(saved.id);
       }}
     >
-      <Icon name="close" size={12} />
+      <Icon svg={closeIcon} className="w-3 h-3" />
     </button>
   </div>
 );
