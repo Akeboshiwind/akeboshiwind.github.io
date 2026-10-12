@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant pref-light (&:where([data-theme-pref="light"] *));
+@custom-variant pref-dark (&:where([data-theme-pref="dark"] *));
+@custom-variant pref-auto (&:where(:root:not([data-theme-pref="light"], [data-theme-pref="dark"]) *));
 
 @theme inline {
   --color-border: var(--border);
