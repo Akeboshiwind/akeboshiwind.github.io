@@ -732,7 +732,11 @@ import Favicons from '../components/Favicons.astro';
     </div><!-- /testDetailView -->
   </div>
 
-  <script is:inline>
+  <script>
+    import { loadData, saveData as store, findTest, createTest, addEntry, updateEntry, deleteEntry, testSummary, toLocalInputValue, parseEntryInput } from './test-reader/_app/store.js';
+    import { sampleSpan, readLine, lineRatio, dragCrop, dragMarker } from './test-reader/_app/analysis.js';
+    import { graphWindow, inWindow, yMax as topScore, formatRange, plotArea, xOf, yOf, hitTest, GRAPH_PADDING, GRAPH_DAYS, PAGE_DAYS } from './test-reader/_app/graph.js';
+
     // DOM elements - List view
     const testListView = document.getElementById('testListView');
     const testList = document.getElementById('testList');
@@ -803,51 +807,19 @@ import Favicons from '../components/Favicons.astro';
     let currentScore = 0;
     let editingIndex = -1; // index of entry being edited
 
-    // Data storage - new model
-    const STORAGE_KEY = 'testReaderData';
     let appData = loadData();
     let currentTestId = null;
     let testData = []; // current test's data
     let graphOffset = 0;
-    let graphPadding = { top: 20, right: 10, bottom: 40, left: 35 };
 
-    function loadData() {
-      // Try new format first
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-
-      // Migrate from old format
-      const oldData = localStorage.getItem('ovulationTests');
-      if (oldData) {
-        const migratedData = {
-          tests: [{
-            id: generateId(),
-            name: 'Migrated Data',
-            createdAt: new Date().toISOString(),
-            data: JSON.parse(oldData)
-          }]
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(migratedData));
-        localStorage.removeItem('ovulationTests');
-        return migratedData;
-      }
-
-      // Fresh start
-      return { tests: [] };
-    }
-
-    function saveData() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-    }
-
-    function generateId() {
-      return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    function commit(data) {
+      appData = data;
+      store(appData);
+      testData = getCurrentTest().data;
     }
 
     function getCurrentTest() {
-      return appData.tests.find(t => t.id === currentTestId);
+      return findTest(appData, currentTestId);
     }
 
     // Initialize
@@ -879,14 +851,10 @@ import Favicons from '../components/Favicons.astro';
       }
 
       testList.innerHTML = appData.tests.map(test => {
-        const entryCount = test.data.length;
-        const lastEntry = test.data.length > 0
-          ? new Date(test.data[test.data.length - 1].timestamp).toLocaleDateString()
-          : 'No entries';
         return `
           <div class="test-item" data-id="${test.id}">
             <div class="test-item-name">${escapeHtml(test.name)}</div>
-            <div class="test-item-meta">${entryCount} entries · Last: ${lastEntry}</div>
+            <div class="test-item-meta">${testSummary(test)}</div>
           </div>
         `;
       }).join('');
@@ -940,14 +908,9 @@ import Favicons from '../components/Favicons.astro';
         return;
       }
 
-      const newTest = {
-        id: generateId(),
-        name: name,
-        createdAt: new Date().toISOString(),
-        data: []
-      };
-      appData.tests.push(newTest);
-      saveData();
+      const { data, test: newTest } = createTest(appData, name);
+      appData = data;
+      store(appData);
 
       createTestForm.style.display = 'none';
       createTestBtn.style.display = 'block';
@@ -1082,13 +1045,9 @@ import Favicons from '../components/Favicons.astro';
         const rect = canvasContainer.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const x = clientX - rect.left;
-        const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
-
-        if (activeCropHandle === 'left') {
-          cropLeftPercent = Math.min(percent, 100 - cropRightPercent - 10);
-        } else {
-          cropRightPercent = Math.min(100 - percent, 100 - cropLeftPercent - 10);
-        }
+        const crop = dragCrop(activeCropHandle, (x / rect.width) * 100, { left: cropLeftPercent, right: cropRightPercent });
+        cropLeftPercent = crop.left;
+        cropRightPercent = crop.right;
 
         updateCropHandles();
         calculateScore();
@@ -1122,7 +1081,7 @@ import Favicons from '../components/Favicons.astro';
       const rect = canvasContainer.getBoundingClientRect();
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const y = clientY - rect.top;
-      const percent = Math.max(5, Math.min(95, (y / rect.height) * 100));
+      const percent = dragMarker((y / rect.height) * 100);
 
       activeMarker.style.top = percent + '%';
       calculateScore();
@@ -1151,68 +1110,14 @@ import Favicons from '../components/Favicons.astro';
       const testY = getY(markers.test);
       const baseY = getY(markers.base);
 
-      // Sample horizontal strip (within crop bounds)
-      const cropLeftPx = Math.round(canvas.width * (cropLeftPercent / 100));
-      const cropRightPx = Math.round(canvas.width * (cropRightPercent / 100));
-      const croppedWidth = canvas.width - cropLeftPx - cropRightPx;
-      if (croppedWidth < 10) return; // too narrow to sample
+      const span = sampleSpan(canvas.width, cropLeftPercent, cropRightPercent);
+      if (!span) return;
 
-      const startX = cropLeftPx + Math.round(croppedWidth * 0.1);
-      const endX = canvas.width - cropRightPx - Math.round(croppedWidth * 0.1);
-      const sampleWidth = Math.max(1, endX - startX);
-      if (sampleWidth < 1 || startX < 0 || startX >= canvas.width) return;
+      const controlColor = readLine(ctx, span, controlY, canvas.height);
+      const testColor = readLine(ctx, span, testY, canvas.height);
+      const baseColor = readLine(ctx, span, baseY, canvas.height);
 
-      const sampleStrip = (y) => {
-        // Sample 3 rows and average for noise reduction
-        let r = 0, g = 0, b = 0;
-        const rows = [-1, 0, 1];
-        let count = 0;
-
-        for (const dy of rows) {
-          const sy = Math.max(0, Math.min(canvas.height - 1, y + dy));
-          const imageData = ctx.getImageData(startX, sy, sampleWidth, 1).data;
-
-          for (let i = 0; i < imageData.length; i += 4) {
-            r += imageData[i];
-            g += imageData[i + 1];
-            b += imageData[i + 2];
-            count++;
-          }
-        }
-
-        return {
-          r: r / count,
-          g: g / count,
-          b: b / count
-        };
-      };
-
-      const controlColor = sampleStrip(controlY);
-      const testColor = sampleStrip(testY);
-      const baseColor = sampleStrip(baseY);
-
-      // Calculate intensity relative to base
-      // For LH tests, we're looking at how much darker/more saturated the line is
-      // Using inverse of lightness as "intensity" (darker = more intense)
-      const getIntensity = (color, base) => {
-        // Calculate how much the color differs from base (whiter = less intense)
-        const colorLightness = (color.r + color.g + color.b) / 3;
-        const baseLightness = (base.r + base.g + base.b) / 3;
-
-        // Intensity is how much darker than base
-        // Normalized so base=0 intensity, pure black = max intensity
-        const intensity = Math.max(0, baseLightness - colorLightness);
-        return intensity;
-      };
-
-      const controlIntensity = getIntensity(controlColor, baseColor);
-      const testIntensity = getIntensity(testColor, baseColor);
-
-      // Ratio: test / control
-      let ratio = 0;
-      if (controlIntensity > 5) { // Minimum threshold to avoid division issues
-        ratio = testIntensity / controlIntensity;
-      }
+      const { controlIntensity, testIntensity, ratio } = lineRatio(controlColor, testColor, baseColor);
 
       // Update UI
       document.getElementById('scoreValue').textContent = ratio.toFixed(2);
@@ -1240,16 +1145,10 @@ import Favicons from '../components/Favicons.astro';
 
     // Save button
     saveBtn.addEventListener('click', () => {
-      const entry = {
+      commit(addEntry(appData, currentTestId, {
         score: currentScore,
         timestamp: new Date().toISOString()
-      };
-      testData.push(entry);
-      const test = getCurrentTest();
-      if (test) {
-        test.data = testData;
-        saveData();
-      }
+      }));
       showGraphView();
     });
 
@@ -1269,9 +1168,7 @@ import Favicons from '../components/Favicons.astro';
     // Manual entry button
     manualEntryBtn.addEventListener('click', () => {
       // Set default date to now
-      const now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-      manualDate.value = now.toISOString().slice(0, 16);
+      manualDate.value = toLocalInputValue(new Date());
       manualScore.value = '0.5';
 
       manualEntry.style.display = 'block';
@@ -1281,29 +1178,13 @@ import Favicons from '../components/Favicons.astro';
 
     // Manual save
     manualSaveBtn.addEventListener('click', () => {
-      const score = parseFloat(manualScore.value);
-      if (isNaN(score) || score <= 0) {
-        alert('Score must be greater than 0');
+      const input = parseEntryInput(manualScore.value, manualDate.value);
+      if (input.error) {
+        alert(input.error);
         return;
       }
 
-      const dateVal = manualDate.value;
-      if (!dateVal) {
-        alert('Please select a date and time');
-        return;
-      }
-
-      const entry = {
-        score: score,
-        timestamp: new Date(dateVal).toISOString(),
-        manual: true
-      };
-      testData.push(entry);
-      const test = getCurrentTest();
-      if (test) {
-        test.data = testData;
-        saveData();
-      }
+      commit(addEntry(appData, currentTestId, { ...input, manual: true }));
 
       manualEntry.style.display = 'none';
       newTestBtn.style.display = 'block';
@@ -1321,51 +1202,8 @@ import Favicons from '../components/Favicons.astro';
     // Graph click to edit
     graphCanvas.addEventListener('click', (e) => {
       const rect = graphCanvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
-
-      const w = rect.width;
-      const h = rect.height;
-      const graphW = w - graphPadding.left - graphPadding.right;
-      const graphH = h - graphPadding.top - graphPadding.bottom;
-
-      // Calculate date range (same as drawGraph)
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 1 - graphOffset);
-      endDate.setHours(0, 0, 0, 0);
-      const startDate = new Date(endDate);
-      startDate.setDate(startDate.getDate() - 29);
-      const endOfEndDate = new Date(endDate);
-      endOfEndDate.setHours(23, 59, 59, 999);
-
-      // Calculate yMax (same as drawGraph)
-      const rangeData = testData.filter(entry => {
-        const d = new Date(entry.timestamp);
-        return d >= startDate && d <= endOfEndDate;
-      });
-      const maxScore = rangeData.length > 0 ? Math.max(...rangeData.map(e => e.score)) : 0;
-      const yMax = Math.max(1, maxScore);
-
-      // Find clicked point
-      const clickRadius = 15;
-      let clickedIndex = -1;
-
-      for (let i = 0; i < testData.length; i++) {
-        const entry = testData[i];
-        const d = new Date(entry.timestamp);
-        if (d < startDate || d > endOfEndDate) continue;
-
-        const daysDiff = (d - startDate) / (1000 * 60 * 60 * 24);
-        const px = graphPadding.left + (daysDiff / 29) * graphW;
-        const py = graphPadding.top + graphH - (entry.score / yMax) * graphH;
-
-        const dist = Math.sqrt((clickX - px) ** 2 + (clickY - py) ** 2);
-        if (dist < clickRadius) {
-          clickedIndex = i;
-          break;
-        }
-      }
+      const clickedIndex = hitTest(testData, graphWindow(new Date(), graphOffset), rect.width, rect.height,
+        e.clientX - rect.left, e.clientY - rect.top);
 
       if (clickedIndex >= 0) {
         openEditForm(clickedIndex);
@@ -1378,9 +1216,7 @@ import Favicons from '../components/Favicons.astro';
 
       // Populate form
       editScore.value = entry.score.toFixed(2);
-      const d = new Date(entry.timestamp);
-      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-      editDate.value = d.toISOString().slice(0, 16);
+      editDate.value = toLocalInputValue(entry.timestamp);
 
       // Show edit form, hide buttons
       editEntry.style.display = 'block';
@@ -1391,25 +1227,13 @@ import Favicons from '../components/Favicons.astro';
 
     // Edit save
     editSaveBtn.addEventListener('click', () => {
-      const score = parseFloat(editScore.value);
-      if (isNaN(score) || score <= 0) {
-        alert('Score must be greater than 0');
+      const input = parseEntryInput(editScore.value, editDate.value);
+      if (input.error) {
+        alert(input.error);
         return;
       }
 
-      const dateVal = editDate.value;
-      if (!dateVal) {
-        alert('Please select a date and time');
-        return;
-      }
-
-      testData[editingIndex].score = score;
-      testData[editingIndex].timestamp = new Date(dateVal).toISOString();
-      const test = getCurrentTest();
-      if (test) {
-        test.data = testData;
-        saveData();
-      }
+      commit(updateEntry(appData, currentTestId, editingIndex, input));
 
       editEntry.style.display = 'none';
       newTestBtn.style.display = 'block';
@@ -1429,12 +1253,7 @@ import Favicons from '../components/Favicons.astro';
     // Edit delete
     editDeleteBtn.addEventListener('click', () => {
       if (confirm('Delete this test result?')) {
-        testData.splice(editingIndex, 1);
-        const test = getCurrentTest();
-        if (test) {
-          test.data = testData;
-          saveData();
-        }
+        commit(deleteEntry(appData, currentTestId, editingIndex));
 
         editEntry.style.display = 'none';
         newTestBtn.style.display = 'block';
@@ -1446,12 +1265,12 @@ import Favicons from '../components/Favicons.astro';
 
     // Graph navigation
     prevBtn.addEventListener('click', () => {
-      graphOffset += 15;
+      graphOffset += PAGE_DAYS;
       drawGraph();
     });
 
     nextBtn.addEventListener('click', () => {
-      graphOffset = Math.max(0, graphOffset - 15);
+      graphOffset = Math.max(0, graphOffset - PAGE_DAYS);
       drawGraph();
     });
 
@@ -1486,48 +1305,31 @@ import Favicons from '../components/Favicons.astro';
 
       const w = rect.width;
       const h = rect.height;
-      const padding = { top: 20, right: 10, bottom: 40, left: 35 };
-      const graphW = w - padding.left - padding.right;
-      const graphH = h - padding.top - padding.bottom;
+      const padding = GRAPH_PADDING;
+      const area = plotArea(w, h);
+      const graphW = area.w;
+      const graphH = area.h;
 
       // Clear
       graphCtx.fillStyle = '#252542';
       graphCtx.fillRect(0, 0, w, h);
 
-      // Calculate date range - end at tomorrow, go back 30 days
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 1 - graphOffset); // tomorrow
-      endDate.setHours(0, 0, 0, 0);
-
-      const startDate = new Date(endDate);
-      startDate.setDate(startDate.getDate() - 29); // 30 days total
-
-      // Update date range display
-      const formatDate = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-      dateRangeSpan.textContent = `${formatDate(startDate)} – ${formatDate(endDate)}`;
+      const win = graphWindow(new Date(), graphOffset);
+      const startDate = win.start;
+      dateRangeSpan.textContent = formatRange(win);
 
       // Disable next button if at today
       nextBtn.disabled = graphOffset === 0;
 
-      // Filter data to this range (include all of endDate day)
-      const endOfEndDate = new Date(endDate);
-      endOfEndDate.setHours(23, 59, 59, 999);
-
-      const rangeData = testData.filter(entry => {
-        const d = new Date(entry.timestamp);
-        return d >= startDate && d <= endOfEndDate;
-      });
-
-      // Calculate Y-axis max: at least 1, or higher if data exceeds 1
-      const maxScore = rangeData.length > 0 ? Math.max(...rangeData.map(e => e.score)) : 0;
-      const yMax = Math.max(1, maxScore);
+      const rangeData = testData.filter(entry => inWindow(entry, win));
+      const yMax = topScore(rangeData);
 
       // Draw vertical grid lines for each day
       graphCtx.font = '10px -apple-system, sans-serif';
       graphCtx.textAlign = 'center';
 
-      for (let i = 0; i < 30; i++) {
-        const x = padding.left + (i / 29) * graphW;
+      for (let i = 0; i < GRAPH_DAYS; i++) {
+        const x = padding.left + (i / (GRAPH_DAYS - 1)) * graphW;
         const d = new Date(startDate);
         d.setDate(d.getDate() + i);
 
@@ -1566,15 +1368,8 @@ import Favicons from '../components/Favicons.astro';
         // Sort by timestamp
         rangeData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        const getX = (timestamp) => {
-          const d = new Date(timestamp);
-          const daysDiff = (d - startDate) / (1000 * 60 * 60 * 24);
-          return padding.left + (daysDiff / 29) * graphW;
-        };
-
-        const getY = (score) => {
-          return padding.top + graphH - (score / yMax) * graphH;
-        };
+        const getX = (timestamp) => xOf(timestamp, win, area);
+        const getY = (score) => yOf(score, yMax, area);
 
         // Draw line
         graphCtx.strokeStyle = '#f472b6';
