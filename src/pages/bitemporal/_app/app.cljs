@@ -755,10 +755,31 @@
 
 ;; >> Components
 
+(def button-class
+  "label px-2 py-1 border-2 border-border text-text hover:border-accent hover:text-accent cursor-pointer")
+
+(def primary-button-class
+  "label px-2 py-1 border-2 border-accent bg-accent text-bg hover:bg-transparent hover:text-accent cursor-pointer")
+
+;; Paths from pixelarticons (https://pixelarticons.com/), drawn on a 24-unit grid.
+(def icons
+  {:cursor "M6 4h2v16H6zm2 0h2v2H8zm2 2h2v2h-2zm2 2h2v2h-2zm2 2h2v2h-2zm2 2h2v2h-2zm-8 6h2v2H8zm2-2h2v2h-2zm2-2h6v2h-6z"
+   :square "M2 4h2v16H2zm2 16h16v2H4zM20 4h2v16h-2zM4 2h16v2H4z"
+   :circle "M6 2h12v2H6zm0 18h12v2H6zM2 6h2v12H2zm18 0h2v12h-2zm-2-2h2v2h-2zm0 14h2v2h-2zM4 4h2v2H4zm0 14h2v2H4z"
+   :search "M22 22h-2v-2h2v2Zm-2-2h-2v-2h2v2Zm-6-2H6v-2h8v2Zm4 0h-2v-2h2v2ZM6 16H4v-2h2v2Zm10 0h-2v-2h2v2ZM4 14H2V6h2v8Zm14 0h-2V6h2v8ZM6 6H4V4h2v2Zm10 0h-2V4h2v2Zm-2-2H6V2h8v2Z"
+   :reload "M16 4h2v6h-2zm-2-2h2v2h-2zm0 2h2v8h-2zM4 8H2v5h2zM4 6h16v2H4zm4 14H6v-6h2zm2 2H8v-2h2zm0-2H8v-8h2zm10-4h2v-5h-2zM20 18H4v-2h16z"
+   :close "M7 19H5V17H7V19ZM19 19H17V17H19V19ZM9 15V17H7V15H9ZM17 17H15V15H17V17ZM11 15H9V13H11V15ZM15 15H13V13H15V15ZM13 13H11V11H13V13ZM11 11H9V9H11V11ZM15 11H13V9H15V11ZM9 9H7V7H9V9ZM17 9H15V7H17V9ZM7 7H5V5H7V7ZM19 7H17V5H19V7Z"})
+
+(defn icon
+  ([name size] (icon name size nil))
+  ([name size attrs]
+   [:svg (merge {:width size :height size :viewBox "0 0 24 24" :fill "currentColor"} attrs)
+    [:path {:d (get icons name)}]]))
+
 (defn connection-pill []
   (let [status (ably/connection-status)]
     (when (not= status "connected")
-      [:div {:class "fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-yellow-500 text-white text-sm font-medium rounded-full shadow-lg animate-pulse z-10"}
+      [:div {:class "fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-heading text-bg label animate-pulse z-10"}
        (case status
          "initialized" "Connecting..."
          "connecting" "Connecting..."
@@ -771,9 +792,9 @@
 
 (defn presence-indicator []
   (let [{:keys [room-count global-count]} @state]
-    [:div {:class "fixed bottom-4 right-4 px-3 py-2 bg-white rounded-lg shadow-md text-sm text-gray-600 z-10"}
+    [:div {:class "fixed bottom-4 right-4 px-3 py-2 bg-bg border-2 border-border label text-text z-10"}
      [:span {:class "inline-flex items-center gap-2"}
-      [:span {:class "w-2 h-2 bg-green-500 rounded-full"}]
+      [:span {:class "w-2 h-2 bg-accent"}]
       (str room-count "/" global-count " online")]]))
 
 (defn toggle-grid! []
@@ -910,81 +931,56 @@
         all-open? (and has-events?
                        (every? #(nil? (:_valid_to (nth events %))) target-indices))]
     (when open
-      [:div {:class "fixed bg-white rounded-lg shadow-xl border border-gray-200 p-2 z-50"
+      [:div {:class "fixed bg-bg border-2 border-heading p-2 z-50"
              :style {:left (str x "px")
                      :top (str y "px")}}
        ;; Color swatches row
        [:div {:class "flex gap-1 items-center"}
         (for [color preset-colors]
           [:button {:key (rgb->css color)
-                    :class "w-6 h-6 rounded border border-gray-300 hover:scale-110 transition-transform cursor-pointer"
+                    :class "w-6 h-6 border-2 border-transparent hover:border-heading cursor-pointer"
                     :style {:background-color (rgb->css color)}
                     :on-click #(set-all-colors! target-indices target-point-indices color)}])
         [:input {:type "color"
-                 :class "w-6 h-6 rounded cursor-pointer border-0 p-0"
+                 :class "w-6 h-6 cursor-pointer border-0 p-0"
                  :on-change #(set-all-colors! target-indices target-point-indices (hex->rgb (.-value (.-target %))))}]]
        ;; Open checkbox (only for events)
        (when has-events?
          [:div
           ;; Separator
-          [:div {:class "h-px bg-gray-200 my-2"}]
-          [:label {:class "flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none px-1"}
+          [:div {:class "pixel-line h-0.5 my-2"}]
+          [:label {:class "flex items-center gap-2 label text-text cursor-pointer select-none px-1"}
            [:input {:type "checkbox"
                     :checked all-open?
                     :on-change #(toggle-events-open! target-indices (not all-open?))
-                    :class "w-4 h-4 cursor-pointer"}]
+                    :class "w-4 h-4 accent-accent cursor-pointer"}]
            "Open"]])
        ;; Separator
-       [:div {:class "h-px bg-gray-200 my-2"}]
+       [:div {:class "pixel-line h-0.5 my-2"}]
        ;; Delete button
-       [:button {:class "w-full text-left text-sm text-red-600 hover:bg-red-50 px-1 py-1 rounded cursor-pointer"
+       [:button {:class "w-full text-left label text-red-600 hover:bg-red-600 hover:text-bg px-1 py-1 cursor-pointer"
                  :on-click #(delete-all-selected! target-indices target-point-indices)}
         "Delete"]])))
 
 (defn set-tool! [tool]
   (swap! state assoc :current-tool tool))
 
+(defn tool-button [current-tool tool title icon-name]
+  [:button {:class (str "w-8 h-8 flex items-center justify-center cursor-pointer "
+                        (if (= current-tool tool)
+                          "bg-accent text-bg"
+                          "text-text hover:text-accent"))
+            :title title
+            :on-click #(set-tool! tool)}
+   (icon icon-name 24)])
+
 (defn toolbar []
   (let [current-tool (:current-tool @state)]
-    [:div {:class "absolute top-2 left-2 bg-white rounded-lg shadow-lg border border-gray-200 p-1 flex flex-col gap-1 z-10"}
-     ;; Select tool
-     [:button {:class (str "w-8 h-8 rounded flex items-center justify-center transition-colors "
-                           (if (= current-tool :select)
-                             "bg-blue-500 text-white"
-                             "hover:bg-gray-100 text-gray-600"))
-               :title "Select"
-               :on-click #(set-tool! :select)}
-      [:svg {:width "16" :height "16" :viewBox "0 0 24 24" :fill "none" :stroke "currentColor" :stroke-width "2"}
-       [:path {:d "M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"}]
-       [:path {:d "M13 13l6 6"}]]]
-     ;; Rectangle tool
-     [:button {:class (str "w-8 h-8 rounded flex items-center justify-center transition-colors "
-                           (if (= current-tool :rectangle)
-                             "bg-blue-500 text-white"
-                             "hover:bg-gray-100 text-gray-600"))
-               :title "Rectangle"
-               :on-click #(set-tool! :rectangle)}
-      [:svg {:width "16" :height "16" :viewBox "0 0 24 24" :fill "none" :stroke "currentColor" :stroke-width "2"}
-       [:rect {:x "3" :y "3" :width "18" :height "18" :rx "2"}]]]
-     ;; Point tool
-     [:button {:class (str "w-8 h-8 rounded flex items-center justify-center transition-colors "
-                           (if (= current-tool :point)
-                             "bg-blue-500 text-white"
-                             "hover:bg-gray-100 text-gray-600"))
-               :title "Point"
-               :on-click #(set-tool! :point)}
-      [:svg {:width "16" :height "16" :viewBox "0 0 24 24" :fill "none" :stroke "currentColor" :stroke-width "2"}
-       [:circle {:cx "12" :cy "12" :r "4"}]]]
-     ;; Zoom tool (shared dotted overlay rectangle)
-     [:button {:class (str "w-8 h-8 rounded flex items-center justify-center transition-colors "
-                           (if (= current-tool :zoom)
-                             "bg-blue-500 text-white"
-                             "hover:bg-gray-100 text-gray-600"))
-               :title "Zoom overlay (shared)"
-               :on-click #(set-tool! :zoom)}
-      [:svg {:width "16" :height "16" :viewBox "0 0 24 24" :fill "none" :stroke "currentColor" :stroke-width "2" :stroke-linecap "round" :stroke-linejoin "round"}
-       [:circle {:cx "11" :cy "11" :r "7"}]
-       [:path {:d "m20 20-3.5-3.5"}]]]]))
+    [:div {:class "absolute top-2 left-2 bg-bg border-2 border-border p-1 flex flex-col gap-1 z-10"}
+     (tool-button current-tool :select "Select" :cursor)
+     (tool-button current-tool :rectangle "Rectangle" :square)
+     (tool-button current-tool :point "Point" :circle)
+     (tool-button current-tool :zoom "Zoom overlay (shared)" :search)]))
 
 (defn toggle-auto-select! []
   (swap! state update :auto-select not))
@@ -1117,25 +1113,36 @@
            :on-click #(load-saved-state! saved-state)}
      ;; Thumbnail
      [:img {:src thumbnail
-            :class "w-full rounded border border-gray-600 hover:border-blue-400 transition-colors"}]
+            :class "w-full border-2 border-border hover:border-accent"}]
      ;; Delete button (top-right corner)
-     [:button {:class "absolute -top-2 -right-2 w-5 h-5 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+     [:button {:class "absolute -top-2 -right-2 w-5 h-5 bg-heading text-bg hover:bg-red-600 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
                :on-click (fn [e]
                            (.stopPropagation e)
                            (delete-saved-state! id))}
-      [:svg {:width "10" :height "10" :viewBox "0 0 24 24" :fill "none" :stroke "white" :stroke-width "3"}
-       [:path {:d "M18 6L6 18M6 6l12 12"}]]]]))
+      (icon :close 12)]]))
+
+(defn option [checked on-change text synced?]
+  [:label {:class "flex items-center gap-2 cursor-pointer"}
+   [:input {:type "checkbox"
+            :checked checked
+            :on-change on-change
+            :class "w-4 h-4 accent-accent"}]
+   [:span text]
+   (when synced?
+     [:span {:class "opacity-60" :title "Synced to room"}
+      (icon :reload 12)])])
 
 (defn side-panel []
   (let [saved-states (:saved-states @state)]
-    [:div {:class "w-64 bg-gray-800 text-white p-4 flex flex-col h-full"}
-     [:h1 {:class "text-xl font-bold mb-4"} "Bitemporal Visualizer"]
+    [:div {:class "w-72 bg-code-bg text-text border-r-2 border-border p-4 flex flex-col h-full font-pixel text-pixel-md"}
+     [:a {:href "../" :class "label opacity-70 hover:opacity-100 hover:text-accent mb-2"} "← Home"]
+     [:h1 {:class "page-title mb-4"} "Bitemporal Visualizer"]
      ;; Room section
-     [:div {:class "mb-6 p-3 bg-gray-700 rounded-lg"}
-      [:div {:class "text-xs text-gray-400 mb-1"} "Room"]
+     [:div {:class "mb-4 p-3 border-2 border-border"}
+      [:div {:class "label opacity-70 mb-1"} "Room"]
       [:div {:class "flex items-center gap-2"}
        [:input {:type "text"
-                :class "font-mono text-lg tracking-wider bg-transparent text-white w-24 px-1 -mx-1 py-0 rounded border border-transparent hover:border-gray-500 focus:border-blue-400 focus:outline-none cursor-text"
+                :class "font-pixel text-pixel-lg tracking-wider bg-transparent text-heading w-28 px-1 -mx-1 py-0 border-2 border-transparent hover:border-border focus:border-accent focus:outline-none cursor-text"
                 :title "Click to change room"
                 :max-length 6
                 :spell-check "false"
@@ -1158,119 +1165,72 @@
                                  (do (swap! state assoc :room-code-input nil)
                                      (.blur (.-target e)))))}]
        (let [copied? (:share-copied @state)]
-         [:button {:class (str "px-2 py-1 text-xs rounded cursor-pointer transition-colors w-16 text-center "
-                               (if copied?
-                                 "bg-green-600 hover:bg-green-600 text-white"
-                                 "bg-gray-600 hover:bg-gray-500"))
+         [:button {:class (str (if copied? primary-button-class button-class) " w-20 text-center")
                    :title "Copy shareable link to this room"
                    :on-click share-room-url!}
           (if copied? "Copied!" "Share")])]]
      ;; Options
-     [:div {:class "flex flex-col gap-2 mb-4"}
-      [:label {:class "flex items-center gap-2 cursor-pointer"}
-       [:input {:type "checkbox"
-                :checked (:show-grid @state)
-                :on-change toggle-grid!
-                :class "w-4 h-4"}]
-       [:span "Grid"]]
-      [:label {:class "flex items-center gap-2 cursor-pointer"}
-       [:input {:type "checkbox"
-                :checked (:auto-select @state)
-                :on-change toggle-auto-select!
-                :class "w-4 h-4"}]
-       [:span "Auto-select after draw"]]
-      [:label {:class "flex items-center gap-2 cursor-pointer"}
-       [:input {:type "checkbox"
-                :checked (:show-vt-eq-st @state)
-                :on-change toggle-vt-eq-st!
-                :class "w-4 h-4"}]
-       [:span "vt = st"]]]
+     [:div {:class "flex flex-col gap-2"}
+      (option (:show-grid @state) toggle-grid! "Grid" false)
+      (option (:auto-select @state) toggle-auto-select! "Auto-select after draw" false)
+      (option (:show-vt-eq-st @state) toggle-vt-eq-st! "vt = st" false)]
 
-     ;; Divider
-     [:div {:class "h-px bg-gray-600 my-4"}]
+     [:hr {:class "my-4"}]
 
      ;; Synced Settings section
-     [:div {:class "mb-4"}
-      [:div {:class "text-xs text-gray-400 mb-2"} "Room Settings"]
+     [:div
+      [:div {:class "label opacity-70 mb-2"} "Room Settings"]
       [:div {:class "flex flex-col gap-2"}
-       [:label {:class "flex items-center gap-2 cursor-pointer"}
-        [:input {:type "checkbox"
-                 :checked (:snap-to-grid @state)
-                 :on-change toggle-snap-to-grid!
-                 :class "w-4 h-4"}]
-        [:span "Snap to grid"]
-        ;; Sync icon
-        [:svg {:class "w-3.5 h-3.5 text-gray-400"
-               :viewBox "0 0 24 24"
-               :fill "none"
-               :stroke "currentColor"
-               :stroke-width "2"
-               :title "Synced to room"}
-         [:path {:d "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"}]]]
-       [:label {:class "flex items-center gap-2 cursor-pointer"}
-        [:input {:type "checkbox"
-                 :checked (:show-ticks @state)
-                 :on-change toggle-show-ticks!
-                 :class "w-4 h-4"}]
-        [:span "Axis ticks"]
-        ;; Sync icon
-        [:svg {:class "w-3.5 h-3.5 text-gray-400"
-               :viewBox "0 0 24 24"
-               :fill "none"
-               :stroke "currentColor"
-               :stroke-width "2"
-               :title "Synced to room"}
-         [:path {:d "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"}]]]]]
+       (option (:snap-to-grid @state) toggle-snap-to-grid! "Snap to grid" true)
+       (option (:show-ticks @state) toggle-show-ticks! "Axis ticks" true)]]
 
-     ;; Divider
-     [:div {:class "h-px bg-gray-600 my-4"}]
+     [:hr {:class "my-4"}]
 
      ;; DML Export section
-     [:div {:class "mb-4"}
-      [:div {:class "text-xs text-gray-400 mb-2"} "DML Export"]
+     [:div
+      [:div {:class "label opacity-70 mb-2"} "DML Export"]
       [:div {:class "flex flex-col gap-2"}
        [:div {:class "flex items-center gap-2"}
-        [:label {:class "text-sm text-gray-300 w-12"} "Start"]
+        [:label {:class "label w-12"} "Start"]
         [:input {:type "date"
                  :value (:dml-start-date @state)
                  :on-change #(swap! state assoc :dml-start-date (.-value (.-target %)))
-                 :class "flex-1 px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded text-white"}]]
+                 :class "flex-1 px-2 py-1 font-pixel text-pixel bg-bg border-2 border-border text-heading focus:border-accent focus:outline-none"}]]
        [:div {:class "flex items-center gap-2"}
-        [:label {:class "text-sm text-gray-300 w-12"} "End"]
+        [:label {:class "label w-12"} "End"]
         [:input {:type "date"
                  :value (:dml-end-date @state)
                  :on-change #(swap! state assoc :dml-end-date (.-value (.-target %)))
-                 :class "flex-1 px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded text-white"}]]
-       [:button {:class "w-full px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 rounded cursor-pointer mt-1"
+                 :class "flex-1 px-2 py-1 font-pixel text-pixel bg-bg border-2 border-border text-heading focus:border-accent focus:outline-none"}]]
+       [:button {:class (str primary-button-class " w-full mt-1")
                  :on-click copy-dml!}
         "Copy DML"]]]
 
-     ;; Divider
-     [:div {:class "h-px bg-gray-600 my-4"}]
+     [:hr {:class "my-4"}]
 
      ;; Saved States section
      [:div {:class "flex-1 flex flex-col min-h-0"}
       [:div {:class "flex items-center justify-between mb-3"}
-       [:span {:class "text-sm font-medium text-gray-300"} "Saved States"]
-       [:button {:class "px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 rounded cursor-pointer"
+       [:span {:class "label opacity-70"} "Saved States"]
+       [:button {:class primary-button-class
                  :on-click save-current-state!}
         "Save"]]
       ;; Scrollable list of saved states
-      [:div {:class "flex-1 overflow-y-auto"}
+      [:div {:class "flex-1 overflow-y-auto pt-2 pr-2"}
        (if (seq saved-states)
          [:div {:class "grid grid-cols-2 gap-2"}
           (for [s saved-states]
             [:div {:key (:id s)}
              [saved-state-card s]])]
-         [:div {:class "text-xs text-gray-500 text-center py-4"}
+         [:div {:class "label opacity-50 text-center py-4"}
           "No saved states yet"])]]]))
 
 (defn main-canvas []
-  [:div {:class "flex-1 bg-gray-100 p-4"}
-   [:div {:class "relative w-full h-full bg-white rounded-lg shadow-md overflow-hidden"}
+  [:div {:class "flex-1 bg-bg p-4"}
+   [:div {:class "relative w-full h-full overflow-hidden"}
     [:div {:class "absolute inset-0 left-5"}
      [:canvas {:on-render canvas-lifecycle
-               :class "w-full h-full"}]]
+               :class "w-full h-full [image-rendering:pixelated]"}]]
     [toolbar]]])
 
 (defn app []
@@ -1394,8 +1354,17 @@
 
 ;; >> Init
 
+(defn repaint-canvas! []
+  (when-let [canvas-el @canvas-ref]
+    (render-canvas! canvas-el)))
+
 (defn init! []
   (render)
+  ;; The canvas reads its colours from the theme's CSS variables, which ThemeInit sets as attributes on <html>.
+  (.observe (js/MutationObserver. repaint-canvas!)
+            js/document.documentElement
+            #js {:attributes true :attributeFilter #js ["data-theme" "style"]})
+  (.then (js/document.fonts.load (:font canvas/config)) repaint-canvas!)
   (ably/init! ABLY_API_KEY)
   ;; Global presence
   (ably/enter-presence! GLOBAL_CHANNEL)
