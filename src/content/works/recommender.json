@@ -9,5 +9,6 @@
     "ai"
   ],
   "category": "ai",
-  "icon": "list-ordered"
+  "icon": "list-ordered",
+  "dither": "ui"
 }

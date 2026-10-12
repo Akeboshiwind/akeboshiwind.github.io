@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
+import { Sheet } from '../../../../components/pixel/Sheet.jsx';
 import { buildFullPrompt } from '../api.js';
+
+const Block = ({ title, children }) => (
+  <div>
+    <h3 className="label opacity-70 mb-2">{title}</h3>
+    <pre className="bg-code-bg text-code-text font-pixel text-pixel whitespace-pre-wrap break-words p-3 leading-relaxed">{children}</pre>
+  </div>
+);
 
 export const PromptModal = ({ list, onClose }) => {
   const { system, user } = buildFullPrompt(list);
@@ -12,45 +20,15 @@ export const PromptModal = ({ list, onClose }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleBackdropClick = e => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
   return (
-    <div
-      className="fixed inset-0 bg-black/50 dark:bg-black/60 flex items-center justify-center p-4 z-[60]"
-      onClick={handleBackdropClick}
-    >
-      <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl shadow-xl max-h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Current prompt</h2>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleCopy}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-            >
-              {copied ? 'Copied!' : 'Copy'}
-            </button>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        <div className="overflow-y-auto flex-1 p-6 space-y-5 min-h-0">
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">System</h3>
-            <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono bg-gray-50 dark:bg-gray-900 rounded-xl p-4 leading-relaxed">{system}</pre>
-          </div>
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">User</h3>
-            <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono bg-gray-50 dark:bg-gray-900 rounded-xl p-4 leading-relaxed">{user}</pre>
-          </div>
-        </div>
+    <Sheet title="Current prompt" onClose={onClose} className="sm:max-w-2xl">
+      <div className="min-h-0 overflow-y-auto overscroll-contain flex flex-col gap-4">
+        <Block title="System">{system}</Block>
+        <Block title="User">{user}</Block>
       </div>
-    </div>
+      <button onClick={handleCopy} className="pixel-button w-full py-2 shrink-0" data-variant="primary">
+        {copied ? 'Copied!' : 'Copy'}
+      </button>
+    </Sheet>
   );
 };

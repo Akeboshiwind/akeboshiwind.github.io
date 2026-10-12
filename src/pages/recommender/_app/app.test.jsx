@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
 import { App } from './app.jsx';
 
 const KEY = 'sk-ant-api03-test';
@@ -60,6 +61,10 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+});
+
+test('sits on PixelAppLayout, whose app bar carries the home link', () => {
+  expect(readFileSync('src/pages/recommender/index.astro', 'utf8')).toContain("import PixelAppLayout from '../../layouts/PixelAppLayout.astro'");
 });
 
 describe('storage contract', () => {
@@ -428,6 +433,18 @@ describe('import / export', () => {
 
     expect(screen.getByText('Board Games')).toBeTruthy();
     expect(screen.queryByText('Sci-Fi Books')).toBeNull();
+    expect(storedLists()).toEqual(incoming);
+  });
+
+  test('a chosen .json file fills the import, which still asks to confirm', async () => {
+    openImportExport();
+    const incoming = [{ id: 'list-9', name: 'Board Games', description: 'Co-op', createdAt: 1, recommendations: [] }];
+    const file = new File([JSON.stringify(incoming)], 'lists.json', { type: 'application/json' });
+    fireEvent.change(screen.getByLabelText(/Or choose a \.json file/), { target: { files: [file] } });
+
+    await waitFor(() => expect(screen.getByPlaceholderText('[{"id": "...", "name": "...", ...}]').value).toBe(JSON.stringify(incoming)));
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm Import' }));
     expect(storedLists()).toEqual(incoming);
   });
 });

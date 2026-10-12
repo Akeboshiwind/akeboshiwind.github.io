@@ -12,7 +12,7 @@ import { SettingsModal } from './components/SettingsModal.jsx';
 import { HistoryModal } from './components/HistoryModal.jsx';
 import { ImportExportModal } from './components/ImportExportModal.jsx';
 
-export const App = ({ historyUrl }) => {
+export const App = () => {
   const [apiKey, setApiKey] = useLocalStorage('anthropic_apiKey', '');
   const [lists, setLists] = useLocalStorage('recommender_lists', []);
 
@@ -227,7 +227,6 @@ export const App = ({ historyUrl }) => {
           onCreateList={() => setShowCreateList(true)}
           onChangeApiKey={() => setApiKey('')}
           onOpenImportExport={() => setShowImportExport(true)}
-          historyUrl={historyUrl}
         />
       )}
 
@@ -303,4 +302,4 @@ export const App = ({ historyUrl }) => {
 };
 
 const container = document.getElementById('app');
-if (container) createRoot(container).render(<App historyUrl={container.dataset.historyUrl} />);
+if (container) createRoot(container).render(<App />);
