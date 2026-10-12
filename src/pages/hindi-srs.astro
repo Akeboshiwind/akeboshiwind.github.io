@@ -773,238 +773,15 @@ import Favicons from '../components/Favicons.astro';
         </div>
     </div>
 
-    <script is:inline>
-        // Hindi letters data — vowels + consonants
-        const LETTERS = [
-            // Vowels
-            { char: 'अ', roman: 'a', hint: 'like "u" in "but"' },
-            { char: 'आ', roman: 'ā', hint: 'like "a" in "father"' },
-            { char: 'इ', roman: 'i', hint: 'like "i" in "bit"' },
-            { char: 'ई', roman: 'ī', hint: 'like "ee" in "feet"' },
-            { char: 'उ', roman: 'u', hint: 'like "u" in "put"' },
-            { char: 'ऊ', roman: 'ū', hint: 'like "oo" in "boot"' },
-            { char: 'ए', roman: 'e', hint: 'like "ay" in "say"' },
-            { char: 'ऐ', roman: 'ai', hint: 'like "ai" in "fair"' },
-            { char: 'ओ', roman: 'o', hint: 'like "o" in "go"' },
-            { char: 'औ', roman: 'au', hint: 'like "au" in "autumn"' },
-            { char: 'ऋ', roman: 'ṛ', hint: 'like "ri" in "crisp"' },
-
-            // Consonants - Velars
-            { char: 'क', roman: 'ka', hint: 'like "k" in "skip"' },
-            { char: 'ख', roman: 'kha', hint: 'aspirated "k"' },
-            { char: 'ग', roman: 'ga', hint: 'like "g" in "go"' },
-            { char: 'घ', roman: 'gha', hint: 'aspirated "g"' },
-            { char: 'ङ', roman: 'ṅa', hint: 'like "ng" in "sing"' },
-
-            // Palatals
-            { char: 'च', roman: 'ca', hint: 'like "ch" in "church"' },
-            { char: 'छ', roman: 'cha', hint: 'aspirated "ch"' },
-            { char: 'ज', roman: 'ja', hint: 'like "j" in "jump"' },
-            { char: 'झ', roman: 'jha', hint: 'aspirated "j"' },
-            { char: 'ञ', roman: 'ña', hint: 'like "ny" in "canyon"' },
-
-            // Retroflexes
-            { char: 'ट', roman: 'ṭa', hint: 'retroflex "t" (tongue curled back)' },
-            { char: 'ठ', roman: 'ṭha', hint: 'aspirated retroflex "t" (tongue curled back)' },
-            { char: 'ड', roman: 'ḍa', hint: 'retroflex "d" (tongue curled back)' },
-            { char: 'ढ', roman: 'ḍha', hint: 'aspirated retroflex "d" (tongue curled back)' },
-            { char: 'ण', roman: 'ṇa', hint: 'retroflex "n" (tongue curled back)' },
-
-            // Dentals
-            { char: 'त', roman: 'ta', hint: 'dental "t" (tongue on teeth)' },
-            { char: 'थ', roman: 'tha', hint: 'aspirated dental "t" (tongue on teeth)' },
-            { char: 'द', roman: 'da', hint: 'dental "d" (tongue on teeth)' },
-            { char: 'ध', roman: 'dha', hint: 'aspirated dental "d" (tongue on teeth)' },
-            { char: 'न', roman: 'na', hint: 'dental "n" (tongue on teeth)' },
-
-            // Labials
-            { char: 'प', roman: 'pa', hint: 'like "p" in "spin"' },
-            { char: 'फ', roman: 'pha', hint: 'aspirated "p"' },
-            { char: 'ब', roman: 'ba', hint: 'like "b" in "bat"' },
-            { char: 'भ', roman: 'bha', hint: 'aspirated "b"' },
-            { char: 'म', roman: 'ma', hint: 'like "m" in "mom"' },
-
-            // Semivowels
-            { char: 'य', roman: 'ya', hint: 'like "y" in "yes"' },
-            { char: 'र', roman: 'ra', hint: 'flapped "r" (like "tt" in American "butter")' },
-            { char: 'ल', roman: 'la', hint: 'like "l" in "let"' },
-            { char: 'व', roman: 'va', hint: 'like "v" or "w"' },
-
-            // Sibilants & Aspirate
-            { char: 'श', roman: 'śa', hint: 'like "sh" in "ship"' },
-            { char: 'ष', roman: 'ṣa', hint: 'retroflex "sh" (tongue curled back)' },
-            { char: 'स', roman: 'sa', hint: 'like "s" in "sun"' },
-            { char: 'ह', roman: 'ha', hint: 'like "h" in "hat"' },
-
-            // Additional
-            { char: 'क्ष', roman: 'kṣa', hint: '"k" + "sh"' },
-            { char: 'त्र', roman: 'tra', hint: '"t" + "r"' },
-            { char: 'ज्ञ', roman: 'jña', hint: 'varies by region' },
-        ];
-
-        const STORAGE_KEY = 'hindi-srs-progress';
-        const SETTINGS_KEY = 'hindi-srs-settings';
-
-        function getDefaultSettings() {
-            return {
-                maxLearningCards: 10
-            };
-        }
-
-        function migrateSettings(settings) {
-            // Migrate from old daily-counter format
-            if ('newCardsPerDay' in settings) {
-                settings.maxLearningCards = settings.newCardsPerDay;
-                delete settings.newCardsPerDay;
-                delete settings.lastNewCardsDate;
-                delete settings.newCardsToday;
-            }
-            return settings;
-        }
-
-        function loadSettings() {
-            try {
-                const saved = localStorage.getItem(SETTINGS_KEY);
-                if (saved) {
-                    let settings = { ...getDefaultSettings(), ...JSON.parse(saved) };
-                    settings = migrateSettings(settings);
-                    saveSettings(settings);
-                    return settings;
-                }
-            } catch (e) {
-                console.error('Failed to load settings:', e);
-            }
-            return getDefaultSettings();
-        }
-
-        function saveSettings(settings) {
-            try {
-                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-            } catch (e) {
-                console.error('Failed to save settings:', e);
-            }
-        }
-
-        // SM-2 inspired algorithm
-        function getDefaultCard(letter) {
-            return {
-                ...letter,
-                interval: 0,        // days until next review
-                ease: 2.5,          // ease factor
-                reps: 0,            // successful reps
-                lapses: 0,          // times forgotten
-                due: Date.now(),    // when due
-                state: 'new'        // new | learning | review
-            };
-        }
-
-        function loadProgress() {
-            try {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                if (saved) {
-                    return JSON.parse(saved);
-                }
-            } catch (e) {
-                console.error('Failed to load progress:', e);
-            }
-            return LETTERS.map(getDefaultCard);
-        }
-
-        function saveProgress(cards) {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
-            } catch (e) {
-                console.error('Failed to save progress:', e);
-            }
-        }
-
-        function scheduleCard(card, rating) {
-            const now = Date.now();
-            const day = 24 * 60 * 60 * 1000;
-            const minute = 60 * 1000;
-
-            let newCard = { ...card };
-
-            if (rating === 0) { // Again
-                newCard.lapses++;
-                newCard.reps = 0;
-                newCard.interval = 0;
-                newCard.ease = Math.max(1.3, newCard.ease - 0.2);
-                newCard.due = now;
-                newCard.state = 'learning';
-            } else if (rating === 1) { // Hard
-                if (newCard.state === 'new' || newCard.state === 'learning') {
-                    newCard.interval = 0;
-                    newCard.due = now + 6 * minute;
-                    newCard.state = 'learning';
-                } else {
-                    newCard.interval = Math.max(1, newCard.interval * 1.2);
-                    newCard.ease = Math.max(1.3, newCard.ease - 0.15);
-                    newCard.due = now + newCard.interval * day;
-                }
-                newCard.reps++;
-            } else if (rating === 2) { // Good
-                if (newCard.state === 'new') {
-                    newCard.interval = 0;
-                    newCard.due = now + 10 * minute;
-                    newCard.state = 'learning';
-                } else if (newCard.state === 'learning') {
-                    newCard.interval = 1;
-                    newCard.due = now + day;
-                    newCard.state = 'review';
-                } else {
-                    newCard.interval = newCard.interval * newCard.ease;
-                    newCard.due = now + newCard.interval * day;
-                }
-                newCard.reps++;
-            } else if (rating === 3) { // Easy
-                if (newCard.state === 'new' || newCard.state === 'learning') {
-                    newCard.interval = 4;
-                    newCard.due = now + 4 * day;
-                    newCard.state = 'review';
-                } else {
-                    newCard.interval = newCard.interval * newCard.ease * 1.3;
-                    newCard.ease = Math.min(3.0, newCard.ease + 0.15);
-                    newCard.due = now + newCard.interval * day;
-                }
-                newCard.reps++;
-            }
-
-            return newCard;
-        }
-
-        // Fisher-Yates shuffle
-        function shuffle(array) {
-            const arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
-        }
+    <script>
+        import { scheduleCard, buildQueue as queueFor, formatInterval, formatTimeToDue, getUpcomingCards } from './hindi-srs/_app/srs.js';
+        import { newDeck, loadProgress, saveProgress, loadSettings, saveSettings } from './hindi-srs/_app/storage.js';
 
         // Queue of cards to show (randomized)
         let cardQueue = [];
 
         function buildQueue(cards, settings) {
-            const now = Date.now();
-
-            // Collect due cards
-            const dueCards = cards.filter(c => c.due <= now && c.state !== 'new');
-
-            // Count active learning cards
-            const learningCount = cards.filter(c => c.state === 'learning').length;
-
-            // Introduce new cards only if under the learning card threshold
-            let newCards = [];
-            const remainingSlots = settings.maxLearningCards - learningCount;
-            if (remainingSlots > 0) {
-                const allNew = cards.filter(c => c.state === 'new');
-                newCards = shuffle(allNew).slice(0, remainingSlots);
-            }
-
-            // Combine and shuffle
-            cardQueue = shuffle([...dueCards, ...newCards]);
+            cardQueue = queueFor(cards, settings);
         }
 
         function getNextCard(cards, settings) {
@@ -1015,37 +792,6 @@ import Favicons from '../components/Favicons.astro';
 
             // Return next card from queue (or null if still empty)
             return cardQueue.shift() || null;
-        }
-
-        function formatInterval(card, rating) {
-            const scheduled = scheduleCard(card, rating);
-            const diff = scheduled.due - Date.now();
-            const minutes = Math.round(diff / (60 * 1000));
-            const hours = Math.round(diff / (60 * 60 * 1000));
-            const days = Math.round(diff / (24 * 60 * 60 * 1000));
-
-            if (minutes < 60) return `${Math.max(1, minutes)}m`;
-            if (hours < 24) return `${hours}h`;
-            return `${days}d`;
-        }
-
-        function formatTimeToDue(card) {
-            const diff = card.due - Date.now();
-            if (diff <= 0) return 'now';
-            const minutes = Math.round(diff / (60 * 1000));
-            const hours = Math.round(diff / (60 * 60 * 1000));
-            const days = Math.round(diff / (24 * 60 * 60 * 1000));
-
-            if (minutes < 60) return `${Math.max(1, minutes)}m`;
-            if (hours < 24) return `${hours}h`;
-            return `${days}d`;
-        }
-
-        function getUpcomingCards(cards, count = 10) {
-            return [...cards]
-                .filter(c => c.state !== 'new')
-                .sort((a, b) => a.due - b.due)
-                .slice(0, count);
         }
 
         // State
@@ -1281,7 +1027,7 @@ import Favicons from '../components/Favicons.astro';
 
         resetBtn.addEventListener('click', () => {
             if (confirm('Reset all progress? This cannot be undone.')) {
-                cards = LETTERS.map(getDefaultCard);
+                cards = newDeck();
                 saveProgress(cards);
                 updateStats();
                 updateLetterGrid();

@@ -1,0 +1,57 @@
+export const LETTERS = [
+  { char: 'अ', roman: 'a', hint: 'like "u" in "but"' },
+  { char: 'आ', roman: 'ā', hint: 'like "a" in "father"' },
+  { char: 'इ', roman: 'i', hint: 'like "i" in "bit"' },
+  { char: 'ई', roman: 'ī', hint: 'like "ee" in "feet"' },
+  { char: 'उ', roman: 'u', hint: 'like "u" in "put"' },
+  { char: 'ऊ', roman: 'ū', hint: 'like "oo" in "boot"' },
+  { char: 'ए', roman: 'e', hint: 'like "ay" in "say"' },
+  { char: 'ऐ', roman: 'ai', hint: 'like "ai" in "fair"' },
+  { char: 'ओ', roman: 'o', hint: 'like "o" in "go"' },
+  { char: 'औ', roman: 'au', hint: 'like "au" in "autumn"' },
+  { char: 'ऋ', roman: 'ṛ', hint: 'like "ri" in "crisp"' },
+
+  { char: 'क', roman: 'ka', hint: 'like "k" in "skip"' },
+  { char: 'ख', roman: 'kha', hint: 'aspirated "k"' },
+  { char: 'ग', roman: 'ga', hint: 'like "g" in "go"' },
+  { char: 'घ', roman: 'gha', hint: 'aspirated "g"' },
+  { char: 'ङ', roman: 'ṅa', hint: 'like "ng" in "sing"' },
+
+  { char: 'च', roman: 'ca', hint: 'like "ch" in "church"' },
+  { char: 'छ', roman: 'cha', hint: 'aspirated "ch"' },
+  { char: 'ज', roman: 'ja', hint: 'like "j" in "jump"' },
+  { char: 'झ', roman: 'jha', hint: 'aspirated "j"' },
+  { char: 'ञ', roman: 'ña', hint: 'like "ny" in "canyon"' },
+
+  { char: 'ट', roman: 'ṭa', hint: 'retroflex "t" (tongue curled back)' },
+  { char: 'ठ', roman: 'ṭha', hint: 'aspirated retroflex "t" (tongue curled back)' },
+  { char: 'ड', roman: 'ḍa', hint: 'retroflex "d" (tongue curled back)' },
+  { char: 'ढ', roman: 'ḍha', hint: 'aspirated retroflex "d" (tongue curled back)' },
+  { char: 'ण', roman: 'ṇa', hint: 'retroflex "n" (tongue curled back)' },
+
+  { char: 'त', roman: 'ta', hint: 'dental "t" (tongue on teeth)' },
+  { char: 'थ', roman: 'tha', hint: 'aspirated dental "t" (tongue on teeth)' },
+  { char: 'द', roman: 'da', hint: 'dental "d" (tongue on teeth)' },
+  { char: 'ध', roman: 'dha', hint: 'aspirated dental "d" (tongue on teeth)' },
+  { char: 'न', roman: 'na', hint: 'dental "n" (tongue on teeth)' },
+
+  { char: 'प', roman: 'pa', hint: 'like "p" in "spin"' },
+  { char: 'फ', roman: 'pha', hint: 'aspirated "p"' },
+  { char: 'ब', roman: 'ba', hint: 'like "b" in "bat"' },
+  { char: 'भ', roman: 'bha', hint: 'aspirated "b"' },
+  { char: 'म', roman: 'ma', hint: 'like "m" in "mom"' },
+
+  { char: 'य', roman: 'ya', hint: 'like "y" in "yes"' },
+  { char: 'र', roman: 'ra', hint: 'flapped "r" (like "tt" in American "butter")' },
+  { char: 'ल', roman: 'la', hint: 'like "l" in "let"' },
+  { char: 'व', roman: 'va', hint: 'like "v" or "w"' },
+
+  { char: 'श', roman: 'śa', hint: 'like "sh" in "ship"' },
+  { char: 'ष', roman: 'ṣa', hint: 'retroflex "sh" (tongue curled back)' },
+  { char: 'स', roman: 'sa', hint: 'like "s" in "sun"' },
+  { char: 'ह', roman: 'ha', hint: 'like "h" in "hat"' },
+
+  { char: 'क्ष', roman: 'kṣa', hint: '"k" + "sh"' },
+  { char: 'त्र', roman: 'tra', hint: '"t" + "r"' },
+  { char: 'ज्ञ', roman: 'jña', hint: 'varies by region' },
+];
