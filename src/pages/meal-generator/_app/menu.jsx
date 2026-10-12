@@ -1,76 +1,37 @@
 import { useEffect, useRef, useState } from 'react';
+import { Icon } from '../../../components/pixel/Icon.jsx';
+import menuSvg from 'pixelarticons/svg/menu.svg?raw';
 import { MEALS } from './meals.js';
-import { Sheet, MealSwatch, MealNote } from './sheet.jsx';
-
-const THEMES = [
-  { id: 'auto', label: 'Auto' },
-  { id: 'light', label: 'Light' },
-  { id: 'dark', label: 'Dark' },
-];
-
-// ThemeInit puts the stored preference on <html> before paint; `__setTheme`
-// is its setter, shared with the rest of the site.
-const readPref = () =>
-  (typeof document !== 'undefined' && document.documentElement.dataset.themePref) || 'auto';
-
-const ThemeChoice = () => {
-  const [pref, setPref] = useState(readPref);
-
-  const choose = next => {
-    window.__setTheme?.(next);
-    setPref(next);
-  };
-
-  return (
-    <div className="px-3 py-2.5">
-      <div className="mb-1.5 text-[11px] uppercase tracking-wider text-gray-400">Theme</div>
-      <div role="radiogroup" aria-label="Theme" className="flex gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
-        {THEMES.map(theme => (
-          <button
-            key={theme.id}
-            type="button"
-            role="radio"
-            aria-checked={pref === theme.id}
-            onClick={() => choose(theme.id)}
-            className={`flex-1 cursor-pointer rounded-md px-2 py-1 text-sm transition-colors ${
-              pref === theme.id
-                ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
-                : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-            }`}
-          >
-            {theme.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
+import { MealSheet, MealSwatch, MealNote } from './sheet.jsx';
 
 const MealsDialog = ({ slots, onClose }) => {
   const inPalette = new Map(slots.map(slot => [slot.id, slot]));
 
   return (
-    <Sheet title="All meals" onClose={onClose}>
+    <MealSheet title="All meals" onClose={onClose}>
       {MEALS.map(meal => {
         const slot = inPalette.get(meal.id);
         return (
           <li key={meal.id} className="flex items-center gap-3 px-2 py-1.5">
             <MealSwatch hue={meal.hue} />
-            <span className="flex-1 truncate text-sm text-gray-900 dark:text-gray-100">{meal.name}</span>
+            <span className="flex-1 truncate text-heading">{meal.name}</span>
             {slot && <MealNote>{slot.locked ? 'locked' : 'in this set'}</MealNote>}
           </li>
         );
       })}
-    </Sheet>
+    </MealSheet>
   );
 };
 
-// The corner menu: theme, the meals the generator draws from, and the one
-// action that doesn't belong on a single band.
+const item = 'label w-full px-3 py-2 text-left enabled:cursor-pointer enabled:hover:text-accent disabled:opacity-40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent';
+
 export function Menu({ slots, onOpenChange, onUnlockAll, anyLocked }) {
   const [open, setOpen] = useState(false);
   const [showMeals, setShowMeals] = useState(false);
   const wrapper = useRef(null);
+  // The sheet gives focus back to its opener, but the item that opened it
+  // went with the popover; the menu button stands in.
+  const menuButton = useRef(null);
   const isOpen = open || showMeals;
 
   // The palette's keyboard shortcuts stand down while this is up.
@@ -94,21 +55,19 @@ export function Menu({ slots, onOpenChange, onUnlockAll, anyLocked }) {
   return (
     <div ref={wrapper} className="relative shrink-0">
       {open && (
-        <div className="absolute right-0 bottom-full z-20 mb-2 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-800 dark:bg-gray-900">
-          <ThemeChoice />
-          <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+        <div className="pixel-panel absolute right-0 bottom-full z-20 mb-2 flex w-48 flex-col bg-bg py-1">
           <button
             type="button"
             onClick={() => { onUnlockAll?.(); setOpen(false); }}
             disabled={!anyLocked}
-            className="w-full px-3 py-2 text-left text-sm text-gray-700 transition-colors enabled:cursor-pointer enabled:hover:bg-gray-100 disabled:opacity-40 dark:text-gray-200 dark:enabled:hover:bg-gray-800"
+            className={item}
           >
             Unlock all
           </button>
           <button
             type="button"
             onClick={() => { setShowMeals(true); setOpen(false); }}
-            className="w-full cursor-pointer px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+            className={item}
           >
             All meals
           </button>
@@ -118,20 +77,21 @@ export function Menu({ slots, onOpenChange, onUnlockAll, anyLocked }) {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
+        ref={menuButton}
         aria-label="Menu"
         aria-haspopup="menu"
         aria-expanded={open}
-        className="cursor-pointer rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+        className="pixel-button flex h-10 items-center"
       >
-        <svg
-          width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          strokeWidth="2" strokeLinecap="round" aria-hidden="true"
-        >
-          <path d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+        <Icon svg={menuSvg} />
       </button>
 
-      {showMeals && <MealsDialog slots={slots} onClose={() => setShowMeals(false)} />}
+      {showMeals && (
+        <MealsDialog
+          slots={slots}
+          onClose={() => { setShowMeals(false); menuButton.current?.focus(); }}
+        />
+      )}
     </div>
   );
 }

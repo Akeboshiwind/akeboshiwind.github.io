@@ -1,0 +1,25 @@
+---
+// The markup only: opening, closing and holding focus are the page's script's job, as Sheet.jsx does them.
+import Icon from './Icon.astro';
+
+interface Props {
+  title: string;
+  class?: string;
+}
+
+const { title, class: className = '' } = Astro.props;
+const titleId = `sheet-${Math.random().toString(36).slice(2, 10)}`;
+---
+
+<div class:list={['pixel-scrim', className]}>
+  <div role="dialog" aria-modal="true" aria-labelledby={titleId} tabindex="-1" class="pixel-sheet">
+    <header class="section-label">
+      <h2 id={titleId}>{title}</h2>
+      <span data-dither="fade-x" class="section-fade" aria-hidden="true"></span>
+      <button type="button" aria-label="Close" class="pixel-button">
+        <Icon name="close" class="w-4 h-4" />
+      </button>
+    </header>
+    <slot />
+  </div>
+</div>

@@ -8,5 +8,6 @@
     "food"
   ],
   "category": "utilities",
-  "icon": "utensils-crossed"
+  "icon": "utensils-crossed",
+  "dither": "ui"
 }
