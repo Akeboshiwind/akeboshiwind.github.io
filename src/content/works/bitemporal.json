@@ -5,8 +5,7 @@
   "description": "Interactive visualization of bitemporal data concepts.",
   "pinned": true,
   "tags": [
-    "visualization",
-    "clojure"
+    "visualization"
   ],
   "category": "learning",
   "icon": "clock"
