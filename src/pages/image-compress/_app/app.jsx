@@ -46,7 +46,7 @@ function formatSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
 }
 
-function App({ historyUrl }) {
+export function App({ historyUrl }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
@@ -212,4 +212,4 @@ function App({ historyUrl }) {
 }
 
 const mount = document.getElementById('app');
-createRoot(mount).render(<App historyUrl={mount.dataset.historyUrl} />);
+if (mount) createRoot(mount).render(<App historyUrl={mount.dataset.historyUrl} />);
