@@ -426,21 +426,14 @@ function paint(el, seed, width, height) {
   if (shape === 'image') requestAnimationFrame(() => { el.parentElement.dataset.ready = ''; });
 }
 
-const REVEALED_ON_TOUCH = 2;
-
 function revealer() {
   if (!matchMedia('(hover: none)').matches) return () => {};
-  const visible = new Set();
-  const observer = new IntersectionObserver((entries) => {
-    for (const { target, isIntersecting } of entries) {
-      if (isIntersecting) visible.add(target);
-      else visible.delete(target);
-    }
-    const topmost = [...visible]
-      .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)
-      .slice(0, REVEALED_ON_TOUCH);
-    for (const el of [...visible, ...entries.map((e) => e.target)]) el.toggleAttribute('data-revealed', topmost.includes(el));
-  }, { threshold: 0.75 });
+  const observer = new IntersectionObserver(
+    (entries) => entries.forEach(({ target, isIntersecting }) => {
+      target.toggleAttribute('data-revealed', isIntersecting);
+    }),
+    { rootMargin: '-35% 0px -35% 0px' },
+  );
   return (el) => observer.observe(el);
 }
 
