@@ -2,6 +2,7 @@
 import PixelAppLayout from '../../layouts/PixelAppLayout.astro';
 import SectionLabel from '../../components/pixel/SectionLabel.astro';
 import Icon from '../../components/pixel/Icon.astro';
+import FileDrop from '../../components/pixel/FileDrop.astro';
 
 const themes = ['light', 'dark'];
 const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent', 'danger', 'ok', 'warn'];
@@ -62,6 +63,16 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
             <label class="flex items-center gap-2"><input type="checkbox" class="pixel-check" checked /> On</label>
           </div>
           <p class="label opacity-60">.pixel-check</p>
+
+          <SectionLabel class="mt-4 mb-2">Range</SectionLabel>
+          <input type="range" class="pixel-range" min="0" max="100" value="40" aria-label="Range" />
+          <input type="range" class="pixel-range" min="0" max="100" value="70" aria-label="Disabled range" disabled />
+          <p class="label opacity-60">.pixel-range · input[type=range]</p>
+
+          <SectionLabel class="mt-4 mb-2">File</SectionLabel>
+          <FileDrop accept="image/*">Drop a file or click to choose</FileDrop>
+          <label class="pixel-file" data-dragover>Drag-over</label>
+          <p class="label opacity-60">&lt;FileDrop&gt; · .pixel-file · accent on hover, focus and data-dragover</p>
 
           <SectionLabel class="mt-4 mb-2">Panel</SectionLabel>
           <div class="pixel-panel bg-code-bg p-3">A bordered box for a toolbar, a badge or a sidebar.</div>
