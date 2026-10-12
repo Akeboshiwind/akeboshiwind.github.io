@@ -7,5 +7,6 @@
     "tool"
   ],
   "category": "fun",
-  "icon": "message-circle"
+  "icon": "message-circle",
+  "dither": "ui"
 }
