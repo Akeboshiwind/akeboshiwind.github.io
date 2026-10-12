@@ -9,6 +9,9 @@ import squint from './plugins/vite-plugin-squint.js';
 export default defineConfig({
   site: 'https://bythe.rocks',
   trailingSlash: 'always',
+  build: {
+    inlineStylesheets: 'always',
+  },
   integrations: [
     expressiveCode(),
     mdx(),
