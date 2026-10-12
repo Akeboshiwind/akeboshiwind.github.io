@@ -1132,13 +1132,21 @@
      [:span {:class "opacity-60" :title "Synced to room"}
       (icon :reload 12)])])
 
+(defn section-label
+  ([text] (section-label text nil))
+  ([text after]
+   [:h2 {:class "label flex items-center gap-3 text-heading mt-6 mb-2"}
+    [:span {:class "shrink-0"} text]
+    [:span {:data-dither "fade-x" :class "flex-1 h-[6px]" :aria-hidden "true"}]
+    after]))
+
 (defn side-panel []
   (let [saved-states (:saved-states @state)]
     [:div {:class "w-72 bg-code-bg text-text border-r-2 border-border p-4 flex flex-col h-full font-pixel text-pixel-md"}
      [:a {:href "../" :class "label opacity-70 hover:opacity-100 hover:text-accent mb-2"} "← Home"]
      [:h1 {:class "page-title mb-4"} "Bitemporal Visualizer"]
      ;; Room section
-     [:div {:class "mb-4 p-3 border-2 border-border"}
+     [:div {:class "p-3 border-2 border-border"}
       [:div {:class "label opacity-70 mb-1"} "Room"]
       [:div {:class "flex items-center gap-2"}
        [:input {:type "text"
@@ -1169,26 +1177,20 @@
                    :title "Copy shareable link to this room"
                    :on-click share-room-url!}
           (if copied? "Copied!" "Share")])]]
-     ;; Options
+     (section-label "View")
      [:div {:class "flex flex-col gap-2"}
       (option (:show-grid @state) toggle-grid! "Grid" false)
       (option (:auto-select @state) toggle-auto-select! "Auto-select after draw" false)
       (option (:show-vt-eq-st @state) toggle-vt-eq-st! "vt = st" false)]
 
-     [:hr {:class "my-4"}]
-
-     ;; Synced Settings section
+     (section-label "Room Settings")
      [:div
-      [:div {:class "label opacity-70 mb-2"} "Room Settings"]
       [:div {:class "flex flex-col gap-2"}
        (option (:snap-to-grid @state) toggle-snap-to-grid! "Snap to grid" true)
        (option (:show-ticks @state) toggle-show-ticks! "Axis ticks" true)]]
 
-     [:hr {:class "my-4"}]
-
-     ;; DML Export section
+     (section-label "DML Export")
      [:div
-      [:div {:class "label opacity-70 mb-2"} "DML Export"]
       [:div {:class "flex flex-col gap-2"}
        [:div {:class "flex items-center gap-2"}
         [:label {:class "label w-12"} "Start"]
@@ -1206,15 +1208,11 @@
                  :on-click copy-dml!}
         "Copy DML"]]]
 
-     [:hr {:class "my-4"}]
-
-     ;; Saved States section
+     (section-label "Saved States"
+                    [:button {:class primary-button-class
+                              :on-click save-current-state!}
+                     "Save"])
      [:div {:class "flex-1 flex flex-col min-h-0"}
-      [:div {:class "flex items-center justify-between mb-3"}
-       [:span {:class "label opacity-70"} "Saved States"]
-       [:button {:class primary-button-class
-                 :on-click save-current-state!}
-        "Save"]]
       ;; Scrollable list of saved states
       [:div {:class "flex-1 overflow-y-auto pt-2 pr-2"}
        (if (seq saved-states)
