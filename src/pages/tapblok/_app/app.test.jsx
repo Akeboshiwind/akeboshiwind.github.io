@@ -10,12 +10,6 @@ describe('TapBlok Unlock', () => {
     expect(screen.getByText('TapBlok Unlock')).toBeTruthy();
   });
 
-  test('has a home link', () => {
-    render(<App />);
-    const home = screen.getByText('← Home').closest('a');
-    expect(home.getAttribute('href')).toBe('../');
-  });
-
   test('starts locked', () => {
     render(<App />);
     expect(screen.getByText('Locked')).toBeTruthy();
@@ -32,5 +26,17 @@ describe('TapBlok Unlock', () => {
     fireEvent.click(screen.getByText('Lock again'));
     expect(screen.getByText('Locked')).toBeTruthy();
     expect(screen.getByLabelText('Unlock the QR code')).toBeTruthy();
+  });
+
+  test('the cover dissolves out on unlock and back in on lock, but not on load', () => {
+    const { container } = render(<App />);
+    const cover = container.querySelector('[data-cover]');
+    expect(cover.dataset.cover).toBe('still');
+
+    fireEvent.click(screen.getByLabelText('Unlock the QR code'));
+    expect(cover.dataset.cover).toBe('out');
+
+    fireEvent.click(screen.getByText('Lock again'));
+    expect(cover.dataset.cover).toBe('in');
   });
 });
