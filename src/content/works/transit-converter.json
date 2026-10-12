@@ -8,5 +8,6 @@
     "clojure"
   ],
   "category": "utilities",
-  "icon": "arrow-right-left"
+  "icon": "arrow-right-left",
+  "dither": "ui"
 }
