@@ -22,9 +22,9 @@ const Section = ({ title, action, children }) => (
   </section>
 );
 
-const Disclosure = ({ open, onClick }) => (
-  <button onClick={onClick} aria-expanded={open} className="label text-link hover:text-accent cursor-pointer shrink-0">
-    {open ? '▼ Hide' : '▶ Show'}
+const EditToggle = ({ open, onClick }) => (
+  <button onClick={onClick} aria-expanded={open} className={open ? primaryButton : `${button} border-border text-text hover:border-accent hover:text-accent`}>
+    {open ? 'Done' : 'Edit'}
   </button>
 );
 
@@ -306,7 +306,7 @@ Here's an example of the expected format with sample data:
         {processingError && <p className={`label mt-2 ${errorText}`}>Error: {processingError}</p>}
       </Section>
 
-      <Section title="People" action={<Disclosure open={showPeopleSettings} onClick={() => setShowPeopleSettings(!showPeopleSettings)} />}>
+      <Section title="People" action={<EditToggle open={showPeopleSettings} onClick={() => setShowPeopleSettings(!showPeopleSettings)} />}>
         {!showPeopleSettings && <div className="flex flex-wrap gap-1">{people.map((p,i) => <span key={i} className={`${chip} border-border`}>{p}</span>)}</div>}
         {showPeopleSettings && (
           <div>
@@ -386,7 +386,7 @@ Here's an example of the expected format with sample data:
         </div>
       </Section>
 
-      <Section title="Tax & service charge" action={<Disclosure open={showTaxSettings} onClick={() => setShowTaxSettings(!showTaxSettings)} />}>
+      <Section title="Tax & service charge" action={<EditToggle open={showTaxSettings} onClick={() => setShowTaxSettings(!showTaxSettings)} />}>
         {!showTaxSettings && <p className="label"><span>Tax {money(tax)}</span><span className="ml-4">Service {serviceChargeMode === '%' ? `${serviceCharge}%` : money(serviceCharge)}{serviceChargeMode === '%' && serviceCharge > 0 ? ` (${money(serviceChargeAmount)})` : ''}</span></p>}
         {showTaxSettings && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -409,7 +409,7 @@ Here's an example of the expected format with sample data:
         )}
       </Section>
 
-      <Section title="Currency" action={<Disclosure open={showCurrencySettings} onClick={() => setShowCurrencySettings(!showCurrencySettings)} />}>
+      <Section title="Currency" action={<EditToggle open={showCurrencySettings} onClick={() => setShowCurrencySettings(!showCurrencySettings)} />}>
         {!showCurrencySettings && <p className="label"><span>Bill currency {currency}</span>{showHome && <span> → home {homeCurrency} (rate {exchangeRate})</span>}</p>}
         {showCurrencySettings && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
