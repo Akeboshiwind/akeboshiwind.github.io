@@ -59,14 +59,13 @@ describe('Markdown Preview', () => {
     expect(code.textContent).toBe('const answer = 42;\n');
   });
 
-  // markedHighlight was registered after the mermaid renderer, so its code renderer wins and mermaid never sees the block.
-  test.fails('a mermaid block is handed to mermaid with its source', () => {
+  test('a mermaid block is handed to mermaid with its source', () => {
     render(<App />);
     write('```mermaid\ngraph TD; A-->B\n```');
     preview();
     expect(mermaidRun).toHaveBeenCalledTimes(1);
     const [{ nodes }] = mermaidRun.mock.calls[0];
-    expect([...nodes].map((n) => n.textContent)).toEqual(['graph TD; A-->B\n']);
+    expect([...nodes].map((n) => n.textContent)).toEqual(['graph TD; A-->B']);
   });
 
   test('rendered HTML is sanitised', () => {

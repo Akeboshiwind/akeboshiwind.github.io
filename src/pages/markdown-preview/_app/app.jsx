@@ -9,6 +9,19 @@ import { useLocalStorage } from '../../../lib/useLocalStorage.js';
 import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
 import './typography.css';
 
+marked.use(
+  markedHighlight({
+    emptyLangClass: 'hljs',
+    langPrefix: 'hljs language-',
+    highlight(code, lang) {
+      if (lang === 'mermaid') return code;
+      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+      return hljs.highlight(code, { language }).value;
+    },
+  }),
+);
+
+// marked tries the last-registered renderer first, so this must come after markedHighlight.
 marked.use({
   gfm: true,
   renderer: {
@@ -24,20 +37,6 @@ marked.use({
     },
   },
 });
-
-// Syntax highlighting for fenced code blocks, mirroring GitHub. The mermaid
-// renderer above short-circuits `mermaid` blocks before this runs.
-marked.use(
-  markedHighlight({
-    emptyLangClass: 'hljs',
-    langPrefix: 'hljs language-',
-    highlight(code, lang) {
-      if (lang === 'mermaid') return code;
-      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-      return hljs.highlight(code, { language }).value;
-    },
-  }),
-);
 
 mermaid.initialize({ startOnLoad: false });
 
