@@ -1,29 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+import { SectionLabel } from '../../../components/pixel/SectionLabel.jsx';
 
-const field = 'bg-transparent border border-border px-2 py-1 text-heading outline-none focus:border-accent';
 const amount = 'font-pixel text-pixel-md tabular-nums';
-const button = 'label px-3 py-1.5 border cursor-pointer whitespace-nowrap';
-const primaryButton = `${button} border-accent bg-accent text-bg hover:bg-transparent hover:text-accent`;
-const dangerButton = `${button} border-red-600 text-red-600 hover:bg-red-600 hover:text-bg dark:border-red-400 dark:text-red-400 dark:hover:bg-red-400`;
-const errorText = 'text-red-600 dark:text-red-400';
-const chip = 'label px-2 py-1 border min-h-[36px] sm:min-h-0';
-const chipOn = 'border-accent bg-accent text-bg cursor-pointer';
-const chipOff = 'border-border text-text hover:border-accent hover:text-accent cursor-pointer';
+const chip = 'pixel-chip min-h-[36px] sm:min-h-0';
 
 const Section = ({ title, action, children }) => (
   <section className="mb-10">
-    <h2 className="label flex items-center gap-3 text-heading mb-3">
-      <span className="shrink-0">{title}</span>
-      <span data-dither="fade-x" className="flex-1 h-[6px]" aria-hidden="true" />
-      {action}
-    </h2>
+    <SectionLabel className="mb-3" action={action}>{title}</SectionLabel>
     {children}
   </section>
 );
 
 const EditToggle = ({ open, onClick }) => (
-  <button onClick={onClick} aria-expanded={open} className={open ? primaryButton : `${button} border-border text-text hover:border-accent hover:text-accent`}>
+  <button onClick={onClick} aria-expanded={open} className="pixel-button" data-variant={open ? 'primary' : undefined}>
     {open ? 'Done' : 'Edit'}
   </button>
 );
@@ -281,16 +271,16 @@ Here's an example of the expected format with sample data:
           </ol>
           <p className="label opacity-60 mt-3">All changes are automatically saved.</p>
         </div>
-        <button onClick={resetData} className={`${dangerButton} self-start shrink-0`}>Reset data</button>
+        <button onClick={resetData} className="pixel-button self-start shrink-0" data-variant="danger">Reset data</button>
       </div>
 
-      <Section title="Scan receipt with Claude" action={<button onClick={() => navigator.clipboard.writeText(claudePromptText)} className={primaryButton}>Copy prompt</button>}>
+      <Section title="Scan receipt with Claude" action={<button onClick={() => navigator.clipboard.writeText(claudePromptText)} className="pixel-button" data-variant="primary">Copy prompt</button>}>
         <p className="mb-2 text-sm">Visit <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="text-link underline">claude.ai</a>, upload your receipt image, and paste the prompt below:</p>
         <div className="bg-code-bg text-code-text p-3 font-pixel text-pixel whitespace-pre-wrap max-h-24 overflow-y-auto">{claudePromptText}</div>
       </Section>
 
       <Section title="Enter Claude response">
-        <textarea className={`${field} w-full font-pixel text-pixel block`} rows="1" placeholder='{"items": [...], "currency": "£"}'
+        <textarea className="pixel-field w-full font-pixel text-pixel block" rows="1" placeholder='{"items": [...], "currency": "£"}'
           onChange={(e) => {
             try {
               const data = JSON.parse(e.target.value.trim());
@@ -305,25 +295,25 @@ Here's an example of the expected format with sample data:
               } else setProcessingError('Invalid format');
             } catch { setProcessingError('Invalid JSON'); }
           }} />
-        {processingError && <p className={`label mt-2 ${errorText}`}>Error: {processingError}</p>}
+        {processingError && <p className="label mt-2 text-danger">Error: {processingError}</p>}
       </Section>
 
       <Section title="People" action={<EditToggle open={showPeopleSettings} onClick={() => setShowPeopleSettings(!showPeopleSettings)} />}>
-        {!showPeopleSettings && <div className="flex flex-wrap gap-1">{people.map((p,i) => <span key={i} className={`${chip} border-border`}>{p}</span>)}</div>}
+        {!showPeopleSettings && <div className="flex flex-wrap gap-1">{people.map((p,i) => <span key={i} className={chip}>{p}</span>)}</div>}
         {showPeopleSettings && (
           <div>
             <div className="flex flex-wrap gap-1 mb-3">
               {people.map((person, i) => (
-                <span key={i} className={`${chip} border-border inline-flex items-center gap-2`}>
+                <span key={i} className={`${chip} inline-flex items-center gap-2`}>
                   {person}
-                  <button onClick={() => { setPeople(people.filter((_,idx) => idx !== i)); }} className={`${errorText} hover:opacity-70`} aria-label={`Remove ${person}`}>×</button>
+                  <button onClick={() => { setPeople(people.filter((_,idx) => idx !== i)); }} className="text-danger hover:opacity-70" aria-label={`Remove ${person}`}>×</button>
                 </span>
               ))}
             </div>
             <div className="flex items-stretch gap-2">
-              <input type="text" placeholder="Add person" className={`${field} flex-grow`}
+              <input type="text" placeholder="Add person" className="pixel-field flex-grow"
                 onKeyDown={(e) => { if (e.key === 'Enter' && e.target.value.trim() && !people.includes(e.target.value.trim())) { setPeople([...people, e.target.value.trim()]); e.target.value = ''; }}} />
-              <button onClick={(e) => { const input = e.target.previousSibling; if (input.value.trim() && !people.includes(input.value.trim())) { setPeople([...people, input.value.trim()]); input.value = ''; }}} className={primaryButton}>Add</button>
+              <button onClick={(e) => { const input = e.target.previousSibling; if (input.value.trim() && !people.includes(input.value.trim())) { setPeople([...people, input.value.trim()]); input.value = ''; }}} className="pixel-button" data-variant="primary">Add</button>
             </div>
           </div>
         )}
@@ -341,7 +331,7 @@ Here's an example of the expected format with sample data:
                 const assignees = itemAssignments[item.uniqueId] || [];
                 const isFirst = item.uniqueId.endsWith('-0');
                 const orig = items.find(i => i.id === item.id);
-                const marker = isOver ? 'text-red-600 dark:text-red-400' : isComplete ? 'text-accent' : 'text-transparent';
+                const marker = isOver ? 'text-danger' : isComplete ? 'text-accent' : 'text-transparent';
                 return (
                   <React.Fragment key={item.uniqueId}>
                     <tr className="pixel-line align-top">
@@ -350,7 +340,7 @@ Here's an example of the expected format with sample data:
                           <span className={`${marker} font-pixel text-pixel leading-[30px]`} aria-hidden="true">■</span>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center">
-                              {isFirst ? <input type="text" value={orig.name} onChange={(e) => updateItemName(orig.id, e.target.value)} className={`${field} w-full`} /> : <span className="leading-[30px] text-heading">{item.name}</span>}
+                              {isFirst ? <input type="text" value={orig.name} onChange={(e) => updateItemName(orig.id, e.target.value)} className="pixel-field w-full" /> : <span className="leading-[30px] text-heading">{item.name}</span>}
                               {item.originalQuantity > 1 && <span className="ml-1 whitespace-nowrap font-pixel text-pixel opacity-70">{parseInt(item.uniqueId.split('-')[1]) + 1}/{item.originalQuantity}</span>}
                             </div>
                             {item.translation && <div className="label opacity-60 mt-0.5 normal-case tracking-normal">{item.translation}</div>}
@@ -358,23 +348,23 @@ Here's an example of the expected format with sample data:
                         </div>
                       </td>
                       <td className="p-1 sm:p-2 text-right">
-                        {isFirst ? <input type="number" min="0" step="0.01" value={orig.price} onChange={(e) => updateItemPrice(orig.id, e.target.value)} className={`${field} ${amount} w-20 text-right`} /> : <span className={`${amount} block leading-[30px]`}>{item.price.toFixed(2)}</span>}
+                        {isFirst ? <input type="number" min="0" step="0.01" value={orig.price} onChange={(e) => updateItemPrice(orig.id, e.target.value)} className={`pixel-field ${amount} w-20 text-right`} /> : <span className={`${amount} block leading-[30px]`}>{item.price.toFixed(2)}</span>}
                       </td>
                       <td className="p-1 sm:p-2">
-                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1"><button onClick={() => toggleAllPeople(item.uniqueId)} className={`${chip} ${assignees.length === people.length ? chipOn : chipOff}`}>All</button>{people.map(p => <button key={p} onClick={() => togglePersonAssignment(item.uniqueId, p)} className={`${chip} ${assignees.includes(p) ? chipOn : chipOff}`}>{p}</button>)}</div>
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1"><button onClick={() => toggleAllPeople(item.uniqueId)} aria-pressed={assignees.length === people.length} className={chip}>All</button>{people.map(p => <button key={p} onClick={() => togglePersonAssignment(item.uniqueId, p)} aria-pressed={assignees.includes(p)} className={chip}>{p}</button>)}</div>
                       </td>
                       <td className="p-1 sm:p-2 text-center">
-                        <button onClick={() => toggleExpandedRow(item.uniqueId)} disabled={!canItemBeSplit(item.uniqueId)} className={`${chip} ${expandedRows[item.uniqueId] ? chipOn : canItemBeSplit(item.uniqueId) ? chipOff : 'border-border opacity-50 cursor-not-allowed'}`}>{expandedRows[item.uniqueId] ? 'Hide' : 'Split'}</button>
+                        <button onClick={() => toggleExpandedRow(item.uniqueId)} disabled={!canItemBeSplit(item.uniqueId)} aria-expanded={!!expandedRows[item.uniqueId]} className={chip}>{expandedRows[item.uniqueId] ? 'Hide' : 'Split'}</button>
                       </td>
                     </tr>
                     {expandedRows[item.uniqueId] && canItemBeSplit(item.uniqueId) && (
                       <tr className="pixel-line">
                         <td colSpan="4" className="p-2 sm:p-4 bg-code-bg">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>{assignees.map(p => <div key={p} className="flex items-center mb-2"><span className="mr-2 w-24 truncate">{p}</span><input type="number" min="0" max="100" value={personShares[item.uniqueId]?.[p] || 0} onChange={(e) => handleShareChange(item.uniqueId, p, e.target.value)} className={`${field} ${amount} w-20 text-right`} /><span className="ml-1 font-pixel">%</span></div>)}</div>
+                            <div>{assignees.map(p => <div key={p} className="flex items-center mb-2"><span className="mr-2 w-24 truncate">{p}</span><input type="number" min="0" max="100" value={personShares[item.uniqueId]?.[p] || 0} onChange={(e) => handleShareChange(item.uniqueId, p, e.target.value)} className={`pixel-field ${amount} w-20 text-right`} /><span className="ml-1 font-pixel">%</span></div>)}</div>
                             <div className="flex flex-col items-start gap-2">
-                              <div className={`font-pixel text-pixel-lg ${isComplete ? 'text-accent' : isOver ? errorText : 'opacity-70'}`}>Total {totalPercent}%</div>
-                              <button onClick={() => { const ns = { ...personShares }; ns[item.uniqueId] = createEqualSplit(assignees); setPersonShares(ns); }} className={primaryButton}>Equal split</button>
+                              <div className={`font-pixel text-pixel-lg ${isComplete ? 'text-accent' : isOver ? 'text-danger' : 'opacity-70'}`}>Total {totalPercent}%</div>
+                              <button onClick={() => { const ns = { ...personShares }; ns[item.uniqueId] = createEqualSplit(assignees); setPersonShares(ns); }} className="pixel-button" data-variant="primary">Equal split</button>
                             </div>
                           </div>
                         </td>
@@ -394,13 +384,13 @@ Here's an example of the expected format with sample data:
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="label block mb-1">Tax ({currency})</label>
-              <input type="number" min="0" step="0.01" value={tax} onChange={(e) => setTax(parseFloat(e.target.value) || 0)} className={`${field} ${amount} w-32`} />
+              <input type="number" min="0" step="0.01" value={tax} onChange={(e) => setTax(parseFloat(e.target.value) || 0)} className={`pixel-field ${amount} w-32`} />
             </div>
             <div>
               <label className="label block mb-1">Service charge</label>
               <div className="flex items-stretch gap-2">
-                <input type="number" min="0" step="0.01" value={serviceCharge} onChange={(e) => setServiceCharge(parseFloat(e.target.value) || 0)} className={`${field} ${amount} w-32`} />
-                <select value={serviceChargeMode} onChange={(e) => setServiceChargeMode(e.target.value)} className={`${field} ${amount}`}>
+                <input type="number" min="0" step="0.01" value={serviceCharge} onChange={(e) => setServiceCharge(parseFloat(e.target.value) || 0)} className={`pixel-field ${amount} w-32`} />
+                <select value={serviceChargeMode} onChange={(e) => setServiceChargeMode(e.target.value)} className={`pixel-field ${amount}`}>
                   <option value="%">%</option>
                   <option value="fixed">{currency}</option>
                 </select>
@@ -415,10 +405,10 @@ Here's an example of the expected format with sample data:
         {!showCurrencySettings && <p className="label"><span>Bill currency {currency}</span>{showHome && <span> → home {homeCurrency} (rate {exchangeRate})</span>}</p>}
         {showCurrencySettings && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label className="label block mb-1">Bill currency</label><select value={currency} onChange={(e) => setCurrency(e.target.value)} className={`${field} ${amount}`}><option value="£">£ GBP</option><option value="€">€ EUR</option><option value="$">$ USD</option><option value="¥">¥ JPY</option></select></div>
-            <div><label className="label block mb-1">Home currency</label><select value={homeCurrency} onChange={(e) => setHomeCurrency(e.target.value)} className={`${field} ${amount}`}><option value="£">£ GBP</option><option value="€">€ EUR</option><option value="$">$ USD</option><option value="¥">¥ JPY</option></select></div>
-            <div><label className="label block mb-1">Bill total in home currency ({homeCurrency})</label><input type="number" min="0" step="0.01" value={parseFloat((parseFloat(billTotal) * exchangeRate).toFixed(2))} onChange={(e) => { const homeAmount = parseFloat(e.target.value); const total = parseFloat(billTotal); if (total > 0 && homeAmount >= 0) setExchangeRate(parseFloat((homeAmount / total).toFixed(6))); }} className={`${field} ${amount} w-32`} /></div>
-            <div><label className="label block mb-1">Exchange rate</label><input type="number" min="0" step="0.01" value={exchangeRate} onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 1)} className={`${field} ${amount} w-32`} /></div>
+            <div><label className="label block mb-1">Bill currency</label><select value={currency} onChange={(e) => setCurrency(e.target.value)} className={`pixel-field ${amount}`}><option value="£">£ GBP</option><option value="€">€ EUR</option><option value="$">$ USD</option><option value="¥">¥ JPY</option></select></div>
+            <div><label className="label block mb-1">Home currency</label><select value={homeCurrency} onChange={(e) => setHomeCurrency(e.target.value)} className={`pixel-field ${amount}`}><option value="£">£ GBP</option><option value="€">€ EUR</option><option value="$">$ USD</option><option value="¥">¥ JPY</option></select></div>
+            <div><label className="label block mb-1">Bill total in home currency ({homeCurrency})</label><input type="number" min="0" step="0.01" value={parseFloat((parseFloat(billTotal) * exchangeRate).toFixed(2))} onChange={(e) => { const homeAmount = parseFloat(e.target.value); const total = parseFloat(billTotal); if (total > 0 && homeAmount >= 0) setExchangeRate(parseFloat((homeAmount / total).toFixed(6))); }} className={`pixel-field ${amount} w-32`} /></div>
+            <div><label className="label block mb-1">Exchange rate</label><input type="number" min="0" step="0.01" value={exchangeRate} onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 1)} className={`pixel-field ${amount} w-32`} /></div>
           </div>
         )}
       </Section>
@@ -450,7 +440,7 @@ Here's an example of the expected format with sample data:
             {tax > 0 && <div className="flex justify-between items-baseline py-1.5 pixel-line"><span>Tax</span><span className={amount}>{money(tax)}{home(tax)}</span></div>}
             {serviceChargeAmount > 0 && <div className="flex justify-between items-baseline py-1.5 pixel-line"><span>Service</span><span className={amount}>{money(serviceChargeAmount)}{home(serviceChargeAmount)}</span></div>}
             <div className="flex justify-between items-baseline py-1.5 pixel-line text-heading"><span className="label">Total</span><span className="font-pixel text-pixel-lg">{currency}{billTotal}{home(parseFloat(billTotal))}</span></div>
-            <div className={`flex justify-between items-baseline py-1.5 ${allocationMatches ? 'text-accent' : errorText}`}><span className="label">Allocated</span><span className={amount}>{currency}{allocatedTotal}{home(parseFloat(allocatedTotal))}</span></div>
+            <div className={`flex justify-between items-baseline py-1.5 ${allocationMatches ? 'text-accent' : 'text-danger'}`}><span className="label">Allocated</span><span className={amount}>{currency}{allocatedTotal}{home(parseFloat(allocatedTotal))}</span></div>
           </div>
         </div>
       </Section>
