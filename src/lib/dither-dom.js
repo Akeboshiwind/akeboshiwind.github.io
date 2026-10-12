@@ -105,8 +105,6 @@ export function ditherAll(root = document) {
   root.querySelectorAll(SELECTOR).forEach(track);
   root.addEventListener('pointerover', markTouched);
   root.addEventListener('focusin', markTouched);
-  // iOS Safari only applies :active to elements under a touchstart listener.
-  root.addEventListener('touchstart', () => {}, { passive: true });
   new MutationObserver((records) => records.forEach(({ addedNodes }) => addedNodes.forEach((node) => {
     if (node.nodeType !== 1) return;
     if (node.matches(SELECTOR)) track(node);

@@ -109,7 +109,6 @@
   .dither-img {
     position: relative;
     background: var(--bg);
-    -webkit-touch-callout: none;
   }
 
   .dither-img [data-dither] {
@@ -128,12 +127,14 @@
   }
 
   /* The keyframes are generated from dissolveFrames() by DissolveKeyframes.astro. */
-  .dither-img:is(:hover, :focus-visible, :active) img {
-    animation: undither 0.24s step-end both;
-  }
+  @media (hover: hover) {
+    .dither-img:is(:hover, :focus-visible) img {
+      animation: undither 0.10s step-end both;
+    }
 
-  .dither-img[data-touched]:not(:hover, :focus-visible, :active) img {
-    animation: redither 0.24s step-end both;
+    .dither-img[data-touched]:not(:hover, :focus-visible) img {
+      animation: redither 0.10s step-end both;
+    }
   }
 
   .pixel-line {
