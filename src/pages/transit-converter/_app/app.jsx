@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { useState } from 'react';
 import transit from 'transit-js';
-import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
+import { SectionLabel } from '../../../components/pixel/SectionLabel.jsx';
 
 const reader = transit.reader('json');
 
@@ -25,7 +25,7 @@ function toJson(value) {
   return value;
 }
 
-function App({ historyUrl }) {
+function App() {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState(null);
   const [error, setError] = useState(null);
@@ -42,66 +42,39 @@ function App({ historyUrl }) {
   };
 
   return (
-    <div className="flex flex-col h-screen p-4 gap-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <nav className="flex items-center gap-3 text-sm text-gray-400">
-        <a
-          href="../"
-          className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
-          ← Home
-        </a>
-        {historyUrl && (
-          <a
-            href={historyUrl}
-            target="_blank"
-            rel="noopener"
-            className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            history
-          </a>
-        )}
-        <ThemeToggle className="ml-auto" />
-      </nav>
+    <div className="text-text">
+      <h1 className="page-title mt-4 mb-2">Transit → JSON</h1>
+      <p className="page-sub mt-0 mb-8">Convert Transit format data to JSON.</p>
 
-      <h1 className="text-xl font-semibold">Transit → JSON</h1>
-
-      <div className="flex flex-col flex-1 gap-3 min-h-0 md:flex-row">
+      <section className="mb-8">
+        <SectionLabel className="mb-3">Transit</SectionLabel>
         <textarea
-          className="flex-1 w-full resize-none rounded-lg p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+          className="pixel-field w-full block resize-y font-pixel text-pixel"
+          rows={8}
           placeholder={'Paste Transit-encoded data here...\n\ne.g. ["^ ","name","Alice","age",30]'}
           value={input}
           onChange={e => setInput(e.target.value)}
           spellCheck={false}
         />
+        <button onClick={handleConvert} className="pixel-button w-full sm:w-auto mt-3" data-variant="primary">
+          Convert
+        </button>
+      </section>
 
-        <div className="flex-1 min-h-0 flex flex-col gap-2">
-          {error && (
-            <div className="rounded-lg p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 text-sm font-mono">
-              {error}
-            </div>
-          )}
-          {output !== null ? (
-            <pre className="flex-1 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-mono overflow-auto dark:text-gray-100">
-              {output}
-            </pre>
-          ) : (
-            <div className="flex-1 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-400 dark:text-gray-500 flex items-center justify-center">
-              JSON output will appear here
-            </div>
-          )}
-        </div>
-      </div>
-
-      <button
-        onClick={handleConvert}
-        className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 font-medium transition-colors"
-      >
-        Convert
-      </button>
+      <section className="mb-8">
+        <SectionLabel className="mb-3">JSON</SectionLabel>
+        {error && (
+          <p className="pixel-panel border-danger text-danger font-pixel text-pixel p-3 mb-3 break-words">{error}</p>
+        )}
+        {output !== null ? (
+          <pre className="bg-code-bg text-code-text font-pixel text-pixel p-3 overflow-auto max-h-[60vh]">{output}</pre>
+        ) : (
+          <p className="label opacity-60 bg-code-bg p-6 text-center">JSON output will appear here</p>
+        )}
+      </section>
     </div>
   );
 }
 
 const mount = document.getElementById('app');
-const root = createRoot(mount);
-root.render(<App historyUrl={mount.dataset.historyUrl} />);
+createRoot(mount).render(<App />);
