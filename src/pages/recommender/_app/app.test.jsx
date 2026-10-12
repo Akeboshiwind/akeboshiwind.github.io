@@ -138,7 +138,7 @@ describe('API key', () => {
     seed();
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    fireEvent.click(screen.getByRole('button', { name: 'API Key' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'API Key' }));
 
     expect(screen.getByPlaceholderText('sk-ant-api03-...')).toBeTruthy();
     expect(JSON.parse(localStorage.getItem('anthropic_apiKey'))).toBe('');
@@ -264,7 +264,7 @@ describe('recommendations', () => {
 
 const openListMenu = item => {
   fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-  fireEvent.click(screen.getByRole('button', { name: item }));
+  fireEvent.click(screen.getByRole('menuitem', { name: item }));
 };
 
 describe('history', () => {
@@ -393,7 +393,7 @@ describe('import / export', () => {
     seed();
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Import / Export' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Import / Export' }));
   };
 
   test('export shows every list as JSON and copies it', async () => {

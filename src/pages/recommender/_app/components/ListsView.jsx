@@ -5,7 +5,7 @@ import { SectionLabel } from '../../../../components/pixel/SectionLabel.jsx';
 import settingsSvg from 'pixelarticons/svg/sliders.svg?raw';
 import clipboardSvg from 'pixelarticons/svg/clipboard-note.svg?raw';
 import { PageTitle } from './PageTitle.jsx';
-import { Popover } from './Popover.jsx';
+import { Menu } from '../../../../components/pixel/Menu.jsx';
 
 const ListCard = ({ list, onClick }) => {
   const phase = getPhase(list);
@@ -44,10 +44,11 @@ export const ListsView = ({ lists, onSelectList, onCreateList, onChangeApiKey, o
   <div className="text-text">
     <PageTitle
       action={
-        <Popover
+        <Menu
           label="Settings"
           icon={settingsSvg}
-          items={[['API Key', onChangeApiKey], ['Import / Export', onOpenImportExport]]}
+          triggerClassName="h-9"
+          items={[{ label: 'API Key', onSelect: onChangeApiKey }, { label: 'Import / Export', onSelect: onOpenImportExport }]}
         />
       }
     />
