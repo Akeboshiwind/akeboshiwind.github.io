@@ -1,0 +1,31 @@
+---
+import '../styles/pixel-app.css';
+import AppShell from './AppShell.astro';
+import AccentToggle from '../components/AccentToggle.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
+import DitherScript from '../components/DitherScript.astro';
+import DissolveKeyframes from '../components/DissolveKeyframes.astro';
+import { PAGE_BACKGROUND } from '../lib/accents.js';
+import { historyFromPagePath } from '../lib/history.js';
+
+const { title } = Astro.props;
+const historyUrl = historyFromPagePath(Astro.url.pathname);
+---
+<AppShell title={title} bodyClass="flex flex-col min-h-screen p-4 gap-4 font-sans text-text bg-bg [&>#app]:flex-1 [&>#app]:flex [&>#app]:flex-col">
+  <Fragment slot="head">
+    <DissolveKeyframes />
+    <meta name="theme-color" content={PAGE_BACKGROUND} />
+    <link rel="preload" href="/fonts/DepartureMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <slot name="head" />
+  </Fragment>
+  <nav slot="before-app" class="label flex items-center gap-4 text-text">
+    <a href="../" class="hover:text-accent">← Home</a>
+    {historyUrl && <a href={historyUrl} target="_blank" rel="noopener" class="hover:text-accent">History</a>}
+    <span class="ml-auto flex items-center gap-2">
+      <AccentToggle />
+      <ThemeToggle />
+    </span>
+  </nav>
+  <slot />
+  <DitherScript />
+</AppShell>
