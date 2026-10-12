@@ -16,9 +16,9 @@ function workUrl(work: { id: string; data: { url?: string } }) {
   return work.data.url || `${base}${work.id.replace('.json', '')}/`;
 }
 
-function screenshot(work: { id: string }) {
-  const key = `../assets/works/${work.id.replace('.json', '')}.png`;
-  return screenshots[key]?.default;
+function thumbnail(work: { id: string }) {
+  const src = screenshots[`../assets/works/${work.id.replace('.json', '')}.png`]?.default;
+  return src && { src };
 }
 
 const allItems = [
@@ -35,7 +35,7 @@ const allItems = [
     stage: work.data.stage,
     description: work.data.description,
     date: work.data.updated ?? work.data.published,
-    image: screenshot(work),
+    image: thumbnail(work),
     pinned: work.data.pinned,
   })),
 ];

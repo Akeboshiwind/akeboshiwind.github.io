@@ -1,5 +1,5 @@
 ---
-import { Image } from 'astro:assets';
+import Thumb from '../../components/Thumb.astro';
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import Icon from '../../components/Icon.astro';
@@ -125,16 +125,14 @@ const grouped = CATEGORIES.map(cat => {
                 </div>
 
                 {img && (
-                  <a href={url} class="block w-12 h-12 shrink-0 rounded overflow-hidden">
-                    <Image
-                      src={img}
-                      alt={`Screenshot of ${work.data.title}`}
-                      class="w-full h-full object-cover object-center"
-                      loading="lazy"
-                      widths={[96, 192]}
-                      sizes="48px"
-                    />
-                  </a>
+                  <Thumb
+                    href={url}
+                    image={img}
+                    alt={`Screenshot of ${work.data.title}`}
+                    widths={[96, 192]}
+                    sizes="48px"
+                    class="w-12 h-12 shrink-0 rounded overflow-hidden"
+                  />
                 )}
 
                 <button
