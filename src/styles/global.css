@@ -2,7 +2,7 @@
 @plugin "@tailwindcss/typography";
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-@theme {
+@theme inline {
   --color-border: var(--border);
   --color-link: var(--link);
   --color-link-visited: var(--link-visited);
@@ -15,7 +15,7 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-:root {
+:root, [data-theme="light"] {
   --bg: #fff;
   --text: #444;
   --heading: #222;
