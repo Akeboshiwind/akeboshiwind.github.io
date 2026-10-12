@@ -1,6 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
+import imageIcon from 'pixelarticons/svg/image.svg?raw';
+import swapIcon from 'pixelarticons/svg/arrows-horizontal.svg?raw';
+import backIcon from 'pixelarticons/svg/arrow-left.svg?raw';
+import adjustIcon from 'pixelarticons/svg/sliders.svg?raw';
+import handleIcon from 'pixelarticons/svg/chevrons-horizontal.svg?raw';
+import { FileDrop } from '../../../components/pixel/FileDrop.jsx';
+import { Icon } from '../../../components/pixel/Icon.jsx';
 
 const MAX_DIM = 2000;
 const QUALITY = 0.85;
@@ -49,146 +55,70 @@ function saveStored(data) {
 }
 
 function ImageSlot({ label, value, onImage }) {
-  const [dragOver, setDragOver] = useState(false);
-  const inputRef = useRef(null);
-
   const processFile = async (file) => {
     if (!file || !file.type.startsWith('image/')) return;
     const dataUrl = await compressImage(file);
     onImage(dataUrl);
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragOver(false);
-    processFile(e.dataTransfer.files?.[0]);
-  };
-
-  if (value) {
-    return (
-      <div>
-        <label className="block text-sm font-medium mb-2">{label}</label>
-        <div
-          className={`relative border-2 rounded-lg overflow-hidden aspect-video bg-white dark:bg-gray-800 group ${
-            dragOver
-              ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-              : 'border-gray-200 dark:border-gray-700'
-          }`}
-          onDrop={handleDrop}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-        >
-          <img src={value} alt={label} className="w-full h-full object-contain" />
-          {dragOver && (
-            <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
-              <span className="text-white text-sm font-medium bg-blue-600 px-3 py-1 rounded">
-                Drop to replace
-              </span>
-            </div>
-          )}
-          <button
-            onClick={() => inputRef.current?.click()}
-            className="absolute bottom-2 right-2 text-xs px-2 py-1 rounded bg-black/50 text-white sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-          >
-            Tap to replace
-          </button>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => processFile(e.target.files?.[0])}
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      <label className="block text-sm font-medium mb-2">{label}</label>
-      <div
-        onDrop={handleDrop}
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-        onDragLeave={() => setDragOver(false)}
-        onClick={() => inputRef.current?.click()}
-        className={`relative border-2 border-dashed rounded-lg overflow-hidden aspect-video flex items-center justify-center bg-white dark:bg-gray-800 transition-colors cursor-pointer ${
-          dragOver
-            ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-        }`}
+    <div className="min-w-0">
+      <div className="label mb-2">{label}</div>
+      <FileDrop
+        accept="image/*"
+        onFiles={(files) => processFile(files[0])}
+        className="group aspect-video overflow-hidden"
       >
-        <span className="text-gray-400 text-sm text-center px-4">
-          Drop an image here or click to upload
-        </span>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => processFile(e.target.files?.[0])}
-        />
-      </div>
+        {value ? (
+          <>
+            <img src={value} alt={label} className="absolute inset-0 w-full h-full object-contain" />
+            <span className="absolute inset-0 hidden group-data-dragover:flex items-center justify-center bg-bg/80 text-accent">
+              Drop to replace
+            </span>
+            <span className="absolute bottom-0 right-0 px-2 py-1 bg-bg border-t-2 border-l-2 border-border sm:opacity-0 sm:group-hover:opacity-100">
+              Tap to replace
+            </span>
+          </>
+        ) : (
+          <>
+            <Icon svg={imageIcon} className="w-8 h-8" />
+            <span>Drop an image here or click to upload</span>
+          </>
+        )}
+      </FileDrop>
     </div>
   );
 }
 
 function UploadScreen({ image1, image2, onImage, onSwap, onCompare }) {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <nav className="flex items-center gap-3 text-sm text-gray-400">
-          <a
-            href="../"
-            className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            ← Home
-          </a>
-          {historyUrl && (
-            <a
-              href={historyUrl}
-              target="_blank"
-              rel="noopener"
-              className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              history
-            </a>
-          )}
-          <ThemeToggle className="ml-auto" />
-        </nav>
+    <div className="text-text">
+      <h1 className="page-title mt-4 mb-2">Image Compare</h1>
+      <p className="page-sub mt-0 mb-8">Lay two images over each other and drag a divider across to compare them. Everything stays in your browser.</p>
 
-        <h1 className="text-2xl font-bold mt-4 mb-6">Image Compare</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 items-end">
+        <ImageSlot label="Image 1" value={image1} onImage={(v) => onImage('image1', v)} />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 items-end">
-          <ImageSlot label="Image 1" value={image1} onImage={(v) => onImage('image1', v)} />
+        {image1 && image2 && (
+          <div className="flex justify-center sm:col-span-2 sm:order-3 -my-2 sm:my-0">
+            <button onClick={onSwap} className="pixel-button flex items-center gap-2" title="Swap images">
+              <Icon svg={swapIcon} className="w-4 h-4" />
+              Swap
+            </button>
+          </div>
+        )}
 
-          {image1 && image2 && (
-            <div className="flex justify-center sm:col-span-2 sm:order-3 -my-2 sm:my-0">
-              <button
-                onClick={onSwap}
-                className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
-                title="Swap images"
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 5h10M10 2l3 3-3 3" />
-                  <path d="M13 11H3M6 8l-3 3 3 3" />
-                </svg>
-                Swap
-              </button>
-            </div>
-          )}
-
-          <ImageSlot label="Image 2" value={image2} onImage={(v) => onImage('image2', v)} />
-        </div>
-
-        <button
-          disabled={!image1 || !image2}
-          onClick={onCompare}
-          className="w-full py-3 px-6 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          Compare
-        </button>
+        <ImageSlot label="Image 2" value={image2} onImage={(v) => onImage('image2', v)} />
       </div>
+
+      <button
+        disabled={!image1 || !image2}
+        onClick={onCompare}
+        className="pixel-button w-full py-2"
+        data-variant="primary"
+      >
+        Compare
+      </button>
     </div>
   );
 }
@@ -415,28 +345,24 @@ function CompareScreen({ image1, image2, transform1, transform2, onTransformChan
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col">
-      <div className="px-4 py-3 flex items-center justify-between">
-        <button
-          onClick={onBack}
-          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 transition-colors"
-        >
-          ← Back
+    <div className="flex-1 flex flex-col gap-4 text-text">
+      <div className="flex items-center justify-between gap-2">
+        <button onClick={onBack} className="pixel-button flex items-center gap-2">
+          <Icon svg={backIcon} className="w-4 h-4" />
+          Back
         </button>
         {mode === 'locked' && (
-          <button
-            onClick={() => setMode('adjusting')}
-            className="text-sm px-3 py-1.5 rounded border border-gray-600 text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors"
-          >
+          <button onClick={() => setMode('adjusting')} className="pixel-button flex items-center gap-2">
+            <Icon svg={adjustIcon} className="w-4 h-4" />
             Adjust
           </button>
         )}
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center min-h-0">
         <div
           ref={containerRef}
-          className={`relative select-none touch-none overflow-hidden ${
+          className={`relative select-none touch-none overflow-hidden border-2 border-border ${
             mode === 'locked' ? 'cursor-ew-resize' : 'cursor-grab active:cursor-grabbing'
           }`}
           style={{ maxWidth: '100%', maxHeight: mode === 'adjusting' ? '65vh' : '80vh' }}
@@ -477,74 +403,62 @@ function CompareScreen({ image1, image2, transform1, transform2, onTransformChan
             className="absolute top-0 bottom-0 z-10 pointer-events-none"
             style={{ left: `${sliderPos}%`, transform: 'translateX(-50%)' }}
           >
-            <div className="w-0.5 h-full bg-white" style={{ boxShadow: '0 0 4px rgba(0,0,0,0.5)' }} />
-            <div
-              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-white flex items-center justify-center"
-              style={{ boxShadow: '0 0 6px rgba(0,0,0,0.4)' }}
-            >
-              <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
-                <path d="M5 3L2 8L5 13" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M11 3L14 8L11 13" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+            <div className="w-0.5 h-full bg-accent" />
+            <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 bg-bg border-2 border-accent text-accent flex items-center justify-center">
+              <Icon svg={handleIcon} className="w-5 h-5" />
             </div>
           </div>
 
-          {/* Adjusting mode indicator */}
           {mode === 'adjusting' && (
-            <div className="absolute top-2 left-2 z-20 text-xs px-2 py-1 rounded bg-blue-600/80 text-white">
+            <div className="label absolute top-0 left-0 z-20 px-2 py-1 bg-accent text-bg">
               Adjusting Image {activeNum}
             </div>
           )}
         </div>
       </div>
 
-      {/* Adjust toolbar */}
       {mode === 'adjusting' && (
-        <div className="px-4 py-3 border-t border-gray-700 space-y-3">
+        <div className="pixel-panel p-4 flex flex-col gap-4">
           <div className="flex items-center gap-3">
-            <label className="text-xs text-gray-400 shrink-0 w-12">Rotate</label>
+            <label htmlFor="rotate" className="label shrink-0 w-14">Rotate</label>
             <input
+              id="rotate"
               type="range"
               min="-180"
               max="180"
               value={activeTransform.rotation}
               onChange={(e) => handleRotation(Number(e.target.value))}
-              className="flex-1 accent-blue-500"
+              className="pixel-range flex-1 min-w-0"
             />
-            <span className="text-xs text-gray-400 w-10 text-right tabular-nums">{activeTransform.rotation}°</span>
+            <span className="font-pixel text-pixel tabular-nums w-12 text-right">{activeTransform.rotation}°</span>
           </div>
 
           <div className="flex items-center gap-3">
-            <label className="text-xs text-gray-400 shrink-0 w-12">Zoom</label>
+            <label htmlFor="zoom" className="label shrink-0 w-14">Zoom</label>
             <input
+              id="zoom"
               type="range"
               min="25"
               max="400"
               value={Math.round(activeTransform.scale * 100)}
               onChange={(e) => handleScale(Number(e.target.value))}
-              className="flex-1 accent-blue-500"
+              className="pixel-range flex-1 min-w-0"
             />
-            <span className="text-xs text-gray-400 w-10 text-right tabular-nums">{Math.round(activeTransform.scale * 100)}%</span>
+            <span className="font-pixel text-pixel tabular-nums w-12 text-right">{Math.round(activeTransform.scale * 100)}%</span>
           </div>
 
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <button
               onClick={() => onTransformChange(activeImage, { ...DEFAULT_TRANSFORM })}
-              className="text-xs px-3 py-1.5 rounded border border-gray-600 text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors"
+              className="pixel-button"
             >
               Reset
             </button>
             <div className="flex gap-2">
-              <button
-                onClick={() => setActiveImage(otherImage)}
-                className="text-xs px-3 py-1.5 rounded border border-gray-600 text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors"
-              >
+              <button onClick={() => setActiveImage(otherImage)} className="pixel-button">
                 Switch to Image {otherNum}
               </button>
-              <button
-                onClick={() => setMode('locked')}
-                className="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-              >
+              <button onClick={() => setMode('locked')} className="pixel-button" data-variant="primary">
                 Lock
               </button>
             </div>
@@ -555,7 +469,7 @@ function CompareScreen({ image1, image2, transform1, transform2, onTransformChan
   );
 }
 
-function App({ historyUrl }) {
+export function App() {
   const [view, setView] = useState('upload');
   const [data, setData] = useState(loadStored);
 
@@ -615,4 +529,4 @@ function App({ historyUrl }) {
 }
 
 const mount = document.getElementById('app');
-createRoot(mount).render(<App historyUrl={mount.dataset.historyUrl} />);
+if (mount) createRoot(mount).render(<App />);
