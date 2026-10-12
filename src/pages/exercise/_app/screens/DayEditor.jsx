@@ -283,7 +283,6 @@ function CircuitRow({ item, pool, canUp, canDown, onMoveUp, onMoveDown, onEditCi
                   canDown={childCanDown}
                   onUp={() => onMoveChild(child.id, -1)}
                   onDown={() => onMoveChild(child.id, +1)}
-                  small
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-heading truncate">{ex?.name ?? child.exerciseId}</p>
@@ -309,8 +308,7 @@ function CircuitRow({ item, pool, canUp, canDown, onMoveUp, onMoveDown, onEditCi
   );
 }
 
-function MoveArrows({ canUp, canDown, onUp, onDown, small }) {
-  const sizeClass = small ? 'w-6 h-5' : 'w-7 h-7';
+function MoveArrows({ canUp, canDown, onUp, onDown }) {
   return (
     <div className="flex flex-col gap-0.5 flex-shrink-0">
       <button
@@ -318,7 +316,7 @@ function MoveArrows({ canUp, canDown, onUp, onDown, small }) {
         onClick={onUp}
         disabled={!canUp}
         aria-label="Move up"
-        className={`${sizeClass} flex items-center justify-center hover:text-accent disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-text`}
+        className="pixel-icon-button"
       >
         <Icon svg={upSvg} className="w-4 h-4" />
       </button>
@@ -327,7 +325,7 @@ function MoveArrows({ canUp, canDown, onUp, onDown, small }) {
         onClick={onDown}
         disabled={!canDown}
         aria-label="Move down"
-        className={`${sizeClass} flex items-center justify-center hover:text-accent disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-text`}
+        className="pixel-icon-button"
       >
         <Icon svg={downSvg} className="w-4 h-4" />
       </button>
@@ -341,7 +339,7 @@ function EditButton({ onClick }) {
       type="button"
       onClick={onClick}
       aria-label="Edit"
-      className="p-2 hover:text-accent"
+      className="pixel-icon-button"
     >
       <Icon svg={pencilSvg} className="w-4 h-4" />
     </button>
@@ -354,7 +352,8 @@ function RemoveButton({ onClick }) {
       type="button"
       onClick={onClick}
       aria-label="Remove"
-      className="p-2 hover:text-danger"
+      className="pixel-icon-button"
+      data-variant="danger"
     >
       <Icon svg={trashSvg} className="w-4 h-4" />
     </button>

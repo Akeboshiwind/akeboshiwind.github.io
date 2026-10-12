@@ -36,7 +36,7 @@ export function CircuitBlock({
             type="button"
             onClick={onEditCircuit}
             aria-label="Edit circuit"
-            className="flex-shrink-0 -m-1 p-1 hover:text-accent"
+            className="pixel-icon-button -m-1"
           >
             <Icon svg={pencilSvg} />
           </button>
@@ -104,7 +104,7 @@ export function CircuitBlock({
                     type="button"
                     onClick={() => onOpenActions(child.id)}
                     aria-label="Edit exercise"
-                    className="flex-shrink-0 p-1 hover:text-accent"
+                    className="pixel-icon-button"
                   >
                     <Icon svg={moreSvg} className="w-4 h-4" />
                   </button>
