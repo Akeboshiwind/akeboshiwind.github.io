@@ -19,21 +19,21 @@ interface Props {
 const { items, showImages = true } = Astro.props;
 ---
 
-<div class="flex flex-col gap-1.5 mt-6">
+<div class="flex flex-col gap-2 mt-3">
   {items.map(item => (
     <div class="flex flex-row items-stretch overflow-hidden">
       <div class="flex flex-col justify-center py-1 min-w-0 flex-1">
         <div class="flex items-baseline gap-2 flex-wrap">
-          {item.stage && <a href="/stages/" class="text-xs italic opacity-60 capitalize no-underline hover:underline">A {item.stage}:</a>}
-          <h2 class="text-xs font-semibold m-0 whitespace-nowrap"><a href={item.url} class="text-link visited:text-link-visited no-underline hover:underline">{item.title}</a></h2>
+          {item.stage && <a href="/stages/" class="label text-accent no-underline hover:underline">{item.stage}</a>}
+          <h2 class="font-pixel text-pixel-md font-normal m-0"><a href={item.url} class="text-heading no-underline hover:text-link hover:underline decoration-accent decoration-2 underline-offset-4">{item.title}</a></h2>
           {item.date && (
-            <time datetime={item.date.toISOString().split('T')[0]} class="font-mono text-xs opacity-50">
+            <time datetime={item.date.toISOString().split('T')[0]} class="label opacity-50">
               {item.date.toISOString().split('T')[0]}
             </time>
           )}
         </div>
         {item.description && (
-          <p class="text-xs m-0 mt-0.5 text-text leading-snug opacity-80">{item.description}</p>
+          <p class="font-pixel text-pixel m-0 mt-1 text-text leading-normal opacity-80">{item.description}</p>
         )}
       </div>
       {showImages && item.image && (
@@ -43,7 +43,7 @@ const { items, showImages = true } = Astro.props;
           alt={`Screenshot of ${item.title}`}
           widths={[200, 360]}
           sizes="100px"
-          class="w-[72px] h-[80px] min-w-[72px] max-sm:w-[56px] max-sm:h-[64px] max-sm:min-w-[56px] ml-3 rounded overflow-hidden"
+          class="w-[72px] h-[80px] min-w-[72px] max-sm:w-[56px] max-sm:h-[64px] max-sm:min-w-[56px] ml-3"
         />
       )}
     </div>

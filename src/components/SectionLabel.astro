@@ -6,6 +6,6 @@ interface Props {
 const { class: className = '' } = Astro.props;
 ---
 
-<h2 class:list={['text-sm font-semibold text-heading mt-6 mb-1 uppercase tracking-wide opacity-60', className]}>
-  <slot />
+<h2 class:list={['label flex items-center gap-3 text-heading mt-8 mb-1', className]}>
+  <span class="flex items-center gap-2 shrink-0"><slot /></span>
 </h2>

@@ -14,18 +14,18 @@ const tabs = [
 ];
 ---
 
-<nav class="border-b border-border mb-2" aria-label="Sections">
-  <ul class="flex gap-1 list-none p-0 m-0 -mb-px">
+<nav class="pixel-line mb-2" aria-label="Sections">
+  <ul class="flex gap-1 list-none p-0 m-0">
     {tabs.map(tab => (
       <li>
         <a
           href={tab.href}
           aria-current={active === tab.id ? 'page' : undefined}
           class:list={[
-            'block px-3 py-2 text-sm no-underline border-b-2 transition-colors hover:no-underline',
+            'label block px-3 py-2 no-underline hover:no-underline',
             active === tab.id
-              ? 'border-link text-heading font-semibold'
-              : 'border-transparent text-text opacity-60 hover:opacity-100 hover:border-border',
+              ? 'bg-accent text-bg'
+              : 'text-text opacity-60 hover:opacity-100 hover:text-link',
           ]}
         >{tab.label}</a>
       </li>

@@ -5,53 +5,90 @@
 @custom-variant pref-dark (&:where([data-theme-pref="dark"] *));
 @custom-variant pref-auto (&:where(:root:not([data-theme-pref="light"], [data-theme-pref="dark"]) *));
 
+@font-face {
+  font-family: "Departure Mono";
+  src: url("/fonts/DepartureMono-Regular.woff2") format("woff2");
+  font-display: block;
+}
+
 @theme inline {
   --color-border: var(--border);
   --color-link: var(--link);
-  --color-link-visited: var(--link-visited);
   --color-text: var(--text);
   --color-heading: var(--heading);
   --color-bg: var(--bg);
+  --color-accent: var(--accent);
   --color-code-bg: var(--code-bg);
   --color-code-text: var(--code-text);
   --font-sans: Verdana, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-pixel: "Departure Mono", ui-monospace, monospace;
+  --font-mono: var(--font-pixel);
+  /* Departure Mono is drawn on an 11px grid; sizes off it blur. */
+  --text-pixel: 11px;
+  --text-pixel-md: 15px;
+  --text-pixel-lg: 22px;
 }
 
 :root, [data-theme="light"] {
-  --bg: #fff;
-  --text: #444;
-  --heading: #222;
-  --link: #3273dc;
-  --link-visited: #8b6fcb;
-  --code-bg: #f2f2f2;
-  --code-text: #222;
-  --border: #ddd;
+  --bg: #f1efe8;
+  --text: #3b3a36;
+  --heading: #1c1b19;
+  --accent: #e5501c;
+  --link: #b23b0e;
+  --code-bg: #e6e3d9;
+  --code-text: #1c1b19;
+  --border: #d3cfc3;
 }
 
 [data-theme="dark"] {
-  --bg: #01242e;
-  --text: #ddd;
-  --heading: #eee;
-  --link: #8cc2dd;
-  --link-visited: #8b6fcb;
-  --code-bg: #000;
-  --code-text: #ddd;
-  --border: #444;
+  --bg: #232321;
+  --text: #cfccc3;
+  --heading: #efece4;
+  --accent: #ff6a33;
+  --link: #ff8c5e;
+  --code-bg: #191917;
+  --code-text: #e6e3d9;
+  --border: #3d3c38;
+}
+
+@layer base {
+  ::selection {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  hr {
+    border: 0;
+    height: 10px;
+    margin: 2.5em 0;
+    background: linear-gradient(90deg, var(--accent) 50%, transparent 0) center / 4px 2px repeat-x;
+  }
 }
 
 @layer components {
   .page-title {
-    font-size: var(--text-2xl);
-    line-height: var(--text-2xl--line-height);
-    font-weight: var(--font-weight-bold);
+    font-family: var(--font-pixel);
+    font-size: var(--text-pixel-lg);
+    font-weight: 400;
     color: var(--heading);
   }
 
   .page-sub {
-    font-size: var(--text-sm);
-    line-height: var(--text-sm--line-height);
+    font-family: var(--font-pixel);
+    font-size: var(--text-pixel);
     opacity: 0.7;
+  }
+
+  .label {
+    font-family: var(--font-pixel);
+    font-size: var(--text-pixel);
+    line-height: 1.4;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .pixel-line {
+    background: linear-gradient(90deg, var(--border) 50%, transparent 0) bottom / 4px 2px repeat-x;
   }
 }
 
@@ -65,15 +102,37 @@
   --tw-prose-pre-bg: var(--code-bg);
   --tw-prose-pre-code: var(--code-text);
   --tw-prose-quotes: var(--text);
-  --tw-prose-quote-borders: var(--border);
-  --tw-prose-counters: var(--text);
-  --tw-prose-bullets: var(--text);
+  --tw-prose-quote-borders: var(--accent);
+  --tw-prose-counters: var(--accent);
+  --tw-prose-bullets: var(--accent);
+}
+
+/* Prose overrides stay un-layered: the typography plugin emits into @layer utilities, which would beat any lower layer. */
+.prose :where(hr) {
+  border: 0;
+  margin: 2.5em 0;
+}
+
+.prose :where(h1, h2, h3, h4) {
+  font-family: var(--font-pixel);
+  font-weight: 400;
+}
+
+.prose :where(ul > li)::marker {
+  content: "■  ";
+  font-size: 0.7em;
+}
+
+.prose :where(blockquote) {
+  border-left: 0;
+  padding-left: 1.25em;
+  background: linear-gradient(var(--accent) 50%, transparent 0) left / 2px 4px repeat-y;
+  font-style: normal;
 }
 
 /* Details/Summary */
 .prose details {
   border: 1px solid var(--border);
-  border-radius: 0.375rem;
   padding: 0;
   margin: 1em 0;
 }
@@ -81,7 +140,7 @@
 .prose details summary {
   cursor: pointer;
   padding: 0.6em 1em;
-  font-weight: 500;
+  font-family: var(--font-pixel);
   list-style: none;
   display: flex;
   align-items: center;
@@ -89,11 +148,12 @@
 }
 
 .prose details summary::before {
-  content: "›";
+  content: "▶";
   display: inline-block;
-  font-size: 1.2em;
+  font-size: 0.8em;
   line-height: 1;
-  transition: transform 0.15s ease;
+  color: var(--accent);
+  transition: transform 0.15s steps(2);
 }
 
 .prose details[open] summary::before {
@@ -113,7 +173,13 @@
 }
 
 .prose details :where(.expressive-code) {
-  border-radius: 0 0 0.375rem 0.375rem;
   margin: 0;
   overflow: hidden;
+}
+
+.prose .expressive-code {
+  margin: 2em 0;
+  background:
+    linear-gradient(90deg, var(--border) 50%, transparent 0) top / 4px 2px repeat-x,
+    linear-gradient(90deg, var(--border) 50%, transparent 0) bottom / 4px 2px repeat-x;
 }

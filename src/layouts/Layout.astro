@@ -38,7 +38,8 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   <link rel="manifest" href="/site.webmanifest" />
   <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
   <meta name="msapplication-TileColor" content="#da532c" />
-  <meta name="theme-color" content="#ffffff" />
+  <meta name="theme-color" content="#f1efe8" />
+  <link rel="preload" href="/fonts/DepartureMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
 
   <!-- SEO -->
   <title>{pageTitle}</title>
@@ -63,8 +64,8 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   <main>
     <slot />
   </main>
-  <footer class="mt-12 py-4 text-center text-sm text-text opacity-70">
-    <p>&copy; {new Date().getFullYear()} By the Rocks</p>
+  <footer class="mt-16">
+    <p class="label text-center text-text opacity-70 my-4">&copy; {new Date().getFullYear()} By the Rocks</p>
   </footer>
 </body>
 </html>
