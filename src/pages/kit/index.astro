@@ -65,6 +65,13 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
           </div>
           <p class="label opacity-60">.pixel-check</p>
 
+          <SectionLabel class="mt-4 mb-2">Radio</SectionLabel>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2"><input type="radio" name={`kit-radio-${theme}`} class="pixel-radio" /> Off</label>
+            <label class="flex items-center gap-2"><input type="radio" name={`kit-radio-${theme}`} class="pixel-radio" checked /> On</label>
+          </div>
+          <p class="label opacity-60">.pixel-radio · input[type=radio], a filled square rather than a tick</p>
+
           <SectionLabel class="mt-4 mb-2">Range</SectionLabel>
           <input type="range" class="pixel-range" min="0" max="100" value="40" aria-label="Range" />
           <input type="range" class="pixel-range" min="0" max="100" value="70" aria-label="Disabled range" disabled />
