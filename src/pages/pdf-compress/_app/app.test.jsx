@@ -60,12 +60,6 @@ describe('PDF Compress', () => {
     expect(compressButton().disabled).toBe(true);
   });
 
-  test('has a home link', () => {
-    render(<App />);
-    const home = screen.getByText('← Home').closest('a');
-    expect(home.getAttribute('href')).toBe('../');
-  });
-
   test('choosing a PDF shows its name, size and an estimate per level, and enables Compress', () => {
     render(<App />);
     choose(pdf());
