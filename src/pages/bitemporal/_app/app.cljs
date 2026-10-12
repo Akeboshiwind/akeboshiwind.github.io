@@ -1142,8 +1142,7 @@
 
 (defn side-panel []
   (let [saved-states (:saved-states @state)]
-    [:div {:class "w-72 bg-code-bg text-text border-r-2 border-border p-4 flex flex-col h-full font-pixel text-pixel-md"}
-     [:a {:href "../" :class "label opacity-70 hover:opacity-100 hover:text-accent mb-2"} "← Home"]
+    [:div {:class "w-72 shrink-0 bg-code-bg text-text border-2 border-border p-4 flex flex-col min-h-0 overflow-y-auto font-pixel text-pixel-md"}
      [:h1 {:class "page-title mb-4"} "Bitemporal Visualizer"]
      ;; Room section
      [:div {:class "p-3 border-2 border-border"}
@@ -1224,7 +1223,7 @@
           "No saved states yet"])]]]))
 
 (defn main-canvas []
-  [:div {:class "flex-1 bg-bg p-4"}
+  [:div {:class "flex-1 min-w-0"}
    [:div {:class "relative w-full h-full overflow-hidden"}
     [:div {:class "absolute inset-0 left-5"}
      [:canvas {:on-render canvas-lifecycle
@@ -1232,7 +1231,7 @@
     [toolbar]]])
 
 (defn app []
-  [:div {:class "h-screen flex"}
+  [:div {:class "flex-1 flex gap-4 min-h-0"}
    [side-panel]
    [main-canvas]
    [presence-indicator]
