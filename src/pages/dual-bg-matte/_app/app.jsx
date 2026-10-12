@@ -426,7 +426,7 @@ export function App() {
   const [whitePreview, setWhitePreview] = useState(null);
   const [blackPreview, setBlackPreview] = useState(null);
   const [error, setError] = useState(null);
-  const [helpOpen, setHelpOpen] = useState(true);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [view, setView] = useState('result');
   const [downloading, setDownloading] = useState(false);
 

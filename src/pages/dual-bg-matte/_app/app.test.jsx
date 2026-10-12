@@ -117,8 +117,10 @@ describe('Dual-Background Matte', () => {
     }
   });
 
-  test('shows help by default and can hide it', () => {
+  test('hides help by default, and Help opens and hides it', () => {
     render(<App />);
+    expect(screen.queryByText('How this works')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Help' }));
     expect(screen.getByText('How this works')).toBeTruthy();
     fireEvent.click(screen.getByText('Hide help'));
     expect(screen.queryByText('How this works')).toBeNull();
@@ -234,6 +236,7 @@ describe('Dual-Background Matte', () => {
 
   test('the help panel closes from its own close button', () => {
     render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Help' }));
     fireEvent.click(screen.getByRole('button', { name: 'Close help' }));
     expect(screen.queryByText('How this works')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Help' }));
