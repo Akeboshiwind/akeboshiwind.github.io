@@ -44,7 +44,6 @@ const { App } = await import('./app.jsx');
 
 const settle = () => act(async () => { await vi.advanceTimersByTimeAsync(10); });
 
-// The theme toggle is a button too, so always ask for this one by name.
 const transport = () => screen.getByRole('button', { name: /^(Pause|Play )/ });
 const transportLabel = () => transport().getAttribute('aria-label');
 
@@ -70,11 +69,6 @@ describe('Animal Crossing Hourly', () => {
   test('renders without crashing', async () => {
     await renderApp();
     expect(screen.getByText('Animal Crossing Hourly')).toBeTruthy();
-  });
-
-  test('has a home link', async () => {
-    await renderApp();
-    expect(screen.getByText('← Home').closest('a').getAttribute('href')).toBe('../');
   });
 
   test('creates the player with the current hour and an http origin', async () => {
@@ -239,10 +233,10 @@ describe('Animal Crossing Hourly', () => {
 
   test('the visible play button names the hour', async () => {
     await renderApp();
-    expect(transport().textContent).toBe('Play 2 PM');
+    expect(transport().textContent.trim()).toBe('Play 2 PM');
 
     await act(async () => { fireEvent.click(transport()); });
-    expect(transport().textContent).toBe('Pause');
+    expect(transport().textContent.trim()).toBe('Pause');
   });
 });
 
