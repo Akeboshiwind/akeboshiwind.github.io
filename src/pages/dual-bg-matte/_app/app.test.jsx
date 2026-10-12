@@ -102,10 +102,19 @@ describe('Dual-Background Matte', () => {
     expect(screen.getByText('Dual-Background Matte')).toBeTruthy();
   });
 
-  test('has a home link', () => {
+  test('the chosen view is the pressed one', () => {
     render(<App />);
-    const home = screen.getByText('← Home').closest('a');
-    expect(home.getAttribute('href')).toBe('../');
+    const pressed = () => screen.getAllByRole('button', { pressed: true }).map((b) => b.textContent);
+    expect(pressed()).toEqual(['Result']);
+    fireEvent.click(screen.getByRole('button', { name: 'Difference' }));
+    expect(pressed()).toEqual(['Difference']);
+  });
+
+  test('each slider is named by its label', () => {
+    render(<App />);
+    for (const name of ['Nudge X', 'Nudge Y', 'Snap to transparent below', 'Snap to opaque above', 'Edge softness']) {
+      expect(screen.getByRole('slider', { name })).toBeTruthy();
+    }
   });
 
   test('shows help by default and can hide it', () => {

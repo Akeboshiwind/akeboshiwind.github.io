@@ -8,5 +8,6 @@
     "images"
   ],
   "category": "images",
-  "icon": "layers"
+  "icon": "layers",
+  "dither": "ui"
 }

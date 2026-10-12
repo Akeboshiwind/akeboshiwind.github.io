@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
+import imageIcon from 'pixelarticons/svg/image.svg?raw';
+import closeIcon from 'pixelarticons/svg/close.svg?raw';
+import downloadIcon from 'pixelarticons/svg/download.svg?raw';
+import { FileDrop } from '../../../components/pixel/FileDrop.jsx';
+import { Icon } from '../../../components/pixel/Icon.jsx';
+import { SectionLabel } from '../../../components/pixel/SectionLabel.jsx';
 
 const PREVIEW_MAX_DIM = 1024;
 const RECOMPUTE_DEBOUNCE_MS = 80;
@@ -12,6 +17,9 @@ const DEFAULTS = {
   highSnap: 0.95,
   gamma: 1.0,
 };
+
+const CHECKERBOARD =
+  'bg-[conic-gradient(var(--border)_25%,var(--bg)_0_50%,var(--border)_0_75%,var(--bg)_0)] bg-size-[16px_16px]';
 
 const VIEWS = [
   { id: 'result', label: 'Result' },
@@ -123,9 +131,6 @@ function computeMatte(white, black, { dx, dy, lowSnap, highSnap, gamma }) {
 }
 
 // Convert a precomputed matte into an ImageData for the requested view.
-// 'result' returns RGBA with real alpha; the canvas-draw step paints a
-// checkerboard behind it. The other views return fully opaque diagnostic
-// imagery that can be putImageData'd directly.
 function renderView(matte, view) {
   const { alpha, fg, diff, width: w, height: h } = matte;
   const N = w * h;
@@ -258,32 +263,9 @@ function alphaStats(alpha) {
 }
 
 function drawMatteToCanvas(canvas, matte, view) {
-  const { width: w, height: h } = matte;
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
-
-  if (view === 'result') {
-    const cell = 12;
-    for (let y = 0; y < h; y += cell) {
-      for (let x = 0; x < w; x += cell) {
-        const dark = (((x / cell) | 0) + ((y / cell) | 0)) % 2 === 0;
-        ctx.fillStyle = dark ? '#cccccc' : '#ffffff';
-        ctx.fillRect(x, y, cell, cell);
-      }
-    }
-    const data = renderView(matte, 'result');
-    // putImageData replaces alpha; round-trip via a temp canvas so drawImage
-    // composites the RGBA over the checker we just painted.
-    const tmp = document.createElement('canvas');
-    tmp.width = w;
-    tmp.height = h;
-    tmp.getContext('2d').putImageData(data, 0, 0);
-    ctx.drawImage(tmp, 0, 0);
-    return;
-  }
-
-  ctx.putImageData(renderView(matte, view), 0, 0);
+  canvas.width = matte.width;
+  canvas.height = matte.height;
+  canvas.getContext('2d').putImageData(renderView(matte, view), 0, 0);
 }
 
 function buildDownloadBlob(whiteFull, blackFull, params) {
@@ -304,44 +286,35 @@ function buildDownloadBlob(whiteFull, blackFull, params) {
   return new Promise((resolve) => c.toBlob((b) => resolve(b), 'image/png'));
 }
 
-function FilePicker({ id, label, fileName, onPick }) {
+function FilePicker({ label, fileName, onPick }) {
   return (
-    <label
-      htmlFor={id}
-      className="flex flex-col gap-1 p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 transition-colors min-h-[60px]"
-    >
-      <span className="text-sm font-medium">{label}</span>
-      <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+    <FileDrop accept="image/*" onFiles={(files) => onPick(files[0] ?? null)} className="min-w-0">
+      <Icon svg={imageIcon} className="w-6 h-6" />
+      <span>{label}</span>
+      <span className="font-sans text-xs normal-case tracking-normal opacity-70 max-w-full truncate">
         {fileName ? fileName : 'Tap to choose…'}
       </span>
-      <input
-        id={id}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => onPick(e.target.files?.[0] || null)}
-      />
-    </label>
+    </FileDrop>
   );
 }
 
-function Slider({ label, value, min, max, step, onChange, format }) {
+function Slider({ id, label, value, min, max, step, onChange, format }) {
   const display = format ? format(value) : String(value);
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex justify-between items-center text-sm">
-        <span className="font-medium">{label}</span>
-        <span className="tabular-nums text-gray-600 dark:text-gray-300">{display}</span>
+    <div className="flex flex-col gap-2">
+      <div className="flex justify-between items-baseline gap-2">
+        <label htmlFor={id} className="label">{label}</label>
+        <span className="font-pixel text-pixel tabular-nums text-heading">{display}</span>
       </div>
       <input
+        id={id}
         type="range"
         min={min}
         max={max}
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-blue-600"
-        style={{ minHeight: '44px', touchAction: 'pan-y' }}
+        className="pixel-range touch-pan-y"
       />
     </div>
   );
@@ -350,20 +323,19 @@ function Slider({ label, value, min, max, step, onChange, format }) {
 function HelpPanel({ open, onClose }) {
   if (!open) return null;
   return (
-    <div className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-4 text-sm leading-relaxed space-y-3">
-      <div className="flex justify-between items-start gap-3">
-        <h2 className="text-base font-semibold">How this works</h2>
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 text-xl leading-none cursor-pointer px-2"
-          aria-label="Close help"
-        >
-          ×
-        </button>
-      </div>
+    <div className="pixel-panel p-4 text-sm leading-relaxed space-y-4 [&_strong]:text-heading">
+      <SectionLabel
+        action={
+          <button type="button" onClick={onClose} className="pixel-button p-1" aria-label="Close help">
+            <Icon svg={closeIcon} className="w-4 h-4" />
+          </button>
+        }
+      >
+        How this works
+      </SectionLabel>
 
       <div>
-        <h3 className="font-semibold">What this does</h3>
+        <h3 className="label text-heading mb-1">What this does</h3>
         <p>
           Turns two AI-generated images into one transparent PNG that keeps soft
           edges and partial transparency (glass, smoke, hair) — things a normal
@@ -372,7 +344,7 @@ function HelpPanel({ open, onClose }) {
       </div>
 
       <div>
-        <h3 className="font-semibold">What you need</h3>
+        <h3 className="label text-heading mb-1">What you need</h3>
         <p>
           The same image generated twice from your AI tool, identical in every
           way except the background:
@@ -392,7 +364,7 @@ function HelpPanel({ open, onClose }) {
       </div>
 
       <div>
-        <h3 className="font-semibold">How to use it</h3>
+        <h3 className="label text-heading mb-1">How to use it</h3>
         <ol className="list-decimal pl-5 mt-1 space-y-1">
           <li>Upload both images.</li>
           <li>
@@ -426,7 +398,7 @@ function HelpPanel({ open, onClose }) {
       </div>
 
       <div>
-        <h3 className="font-semibold">Tips</h3>
+        <h3 className="label text-heading mb-1">Tips</h3>
         <ul className="list-disc pl-5 mt-1 space-y-1">
           <li>
             If alignment is hopeless no matter what you nudge, regenerate the
@@ -446,7 +418,7 @@ function HelpPanel({ open, onClose }) {
   );
 }
 
-export function App({ historyUrl }) {
+export function App() {
   const [whiteFile, setWhiteFile] = useState(null);
   const [blackFile, setBlackFile] = useState(null);
   const [whiteImg, setWhiteImg] = useState(null);
@@ -562,190 +534,121 @@ export function App({ historyUrl }) {
   const ready = whitePreview && blackPreview && !mismatch;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <div className="max-w-2xl mx-auto px-3 pt-3 pb-4 flex flex-col gap-3">
-        <nav className="flex items-center gap-3 text-sm text-gray-400">
-          <a
-            href="../"
-            className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            ← Home
-          </a>
-          {historyUrl && (
-            <a
-              href={historyUrl}
-              target="_blank"
-              rel="noopener"
-              className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              history
-            </a>
-          )}
-          <ThemeToggle className="ml-auto" />
-        </nav>
-
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Dual-Background Matte</h1>
-          <button
-            type="button"
-            onClick={() => setHelpOpen((v) => !v)}
-            className="text-sm px-3 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
-          >
-            {helpOpen ? 'Hide help' : 'Help'}
-          </button>
+    <div className="text-text w-full max-w-[1200px] mx-auto flex flex-col gap-6">
+      <header className="flex items-start justify-between gap-4 mt-4">
+        <div>
+          <h1 className="page-title mb-2">Dual-Background Matte</h1>
+          <p className="page-sub m-0">
+            Two renders of one image, on white and on black, make one transparent PNG with its soft edges intact.
+          </p>
         </div>
-
-        <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
-
-        <div className="grid grid-cols-1 gap-2">
-          <FilePicker
-            id="white-file"
-            label="Photo on white background"
-            fileName={whiteFile?.name}
-            onPick={setWhiteFile}
-          />
-          <FilePicker
-            id="black-file"
-            label="Photo on black background"
-            fileName={blackFile?.name}
-            onPick={setBlackFile}
-          />
-        </div>
-
-        {error && (
-          <div className="rounded border border-red-400 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200 px-3 py-2 text-sm">
-            {error}
-          </div>
-        )}
-        {mismatch && (
-          <div className="rounded border border-red-400 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200 px-3 py-2 text-sm">
-            {mismatch}
-          </div>
-        )}
-
-        <div
-          className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
-          style={{ maxHeight: '55vh', minHeight: '220px' }}
+        <button
+          type="button"
+          onClick={() => setHelpOpen((v) => !v)}
+          aria-expanded={helpOpen}
+          className="pixel-chip shrink-0 min-h-[36px] sm:min-h-0"
         >
-          {ready ? (
-            <canvas
-              ref={canvasRef}
-              className="block w-full h-auto max-h-[55vh] object-contain"
+          {helpOpen ? 'Hide help' : 'Help'}
+        </button>
+      </header>
+
+      <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
+        <section className="flex flex-col gap-4 min-w-0 lg:col-start-2 lg:row-start-1">
+          <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
+            <FilePicker
+              label="Photo on white background"
+              fileName={whiteFile?.name}
+              onPick={setWhiteFile}
             />
-          ) : (
-            <div className="px-4 py-12 text-center text-gray-500 text-sm">
-              Upload both images to see the matte preview.
-            </div>
-          )}
-        </div>
-
-        <div
-          className="-mx-3 px-3 overflow-x-auto"
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
-          <div className="flex gap-2 w-max pb-1">
-            {VIEWS.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                onClick={() => setView(v.id)}
-                className={
-                  'px-3 py-2 rounded-full text-sm whitespace-nowrap border cursor-pointer transition-colors min-h-[40px] ' +
-                  (view === v.id
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700')
-                }
-              >
-                {v.label}
-              </button>
-            ))}
+            <FilePicker
+              label="Photo on black background"
+              fileName={blackFile?.name}
+              onPick={setBlackFile}
+            />
           </div>
-        </div>
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400 tabular-nums">
-          <span>
-            Opaque:{' '}
-            <strong className="text-gray-800 dark:text-gray-200">
-              {stats.opaquePct.toFixed(1)}%
-            </strong>
-          </span>
-          <span>
-            Transparent:{' '}
-            <strong className="text-gray-800 dark:text-gray-200">
-              {stats.transparentPct.toFixed(1)}%
-            </strong>
-          </span>
-          <span>
-            Partial:{' '}
-            <strong className="text-gray-800 dark:text-gray-200">
-              {stats.partialPct.toFixed(1)}%
-            </strong>
-          </span>
-        </div>
+          {error && (
+            <p role="alert" className="pixel-panel border-danger text-danger text-sm px-3 py-2 m-0">{error}</p>
+          )}
+          {mismatch && (
+            <p role="alert" className="pixel-panel border-danger text-danger text-sm px-3 py-2 m-0">{mismatch}</p>
+          )}
+        </section>
 
-        <div className="flex flex-col gap-4 mt-1">
-          <Slider
-            label="Nudge X"
-            value={dx}
-            min={-20}
-            max={20}
-            step={1}
-            onChange={setDx}
-            format={(v) => `${v} px`}
-          />
-          <Slider
-            label="Nudge Y"
-            value={dy}
-            min={-20}
-            max={20}
-            step={1}
-            onChange={setDy}
-            format={(v) => `${v} px`}
-          />
-          <Slider
-            label="Snap to transparent below"
-            value={lowSnap}
-            min={0}
-            max={0.4}
-            step={0.01}
-            onChange={setLowSnap}
-            format={(v) => v.toFixed(2)}
-          />
-          <Slider
-            label="Snap to opaque above"
-            value={highSnap}
-            min={0.6}
-            max={1.0}
-            step={0.01}
-            onChange={setHighSnap}
-            format={(v) => v.toFixed(2)}
-          />
-          <Slider
-            label="Edge softness"
-            value={gamma}
-            min={0.5}
-            max={2.0}
-            step={0.05}
-            onChange={setGamma}
-            format={(v) => v.toFixed(2)}
-          />
+        <section className="flex flex-col gap-3 min-w-0 lg:col-start-1 lg:row-start-1 lg:row-span-3">
+          <div className="pixel-panel bg-code-bg flex items-center justify-center p-2 min-h-[220px]">
+            {ready ? (
+              <canvas
+                ref={canvasRef}
+                className={
+                  'block max-w-full max-h-[55vh] lg:max-h-[70vh] w-auto h-auto' +
+                  (view === 'result' ? ' ' + CHECKERBOARD : '')
+                }
+              />
+            ) : (
+              <p className="label opacity-60 text-center px-4 py-12">
+                Upload both images to see the matte preview.
+              </p>
+            )}
+          </div>
 
-          <button
-            type="button"
-            onClick={reset}
-            className="self-start text-sm px-3 py-2 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
-          >
-            Reset controls
-          </button>
-        </div>
+          <div className="-mx-4 px-4 overflow-x-auto sm:mx-0 sm:px-0 sm:overflow-visible">
+            <div className="flex gap-1 w-max sm:w-auto sm:flex-wrap pb-1">
+              {VIEWS.map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setView(v.id)}
+                  aria-pressed={view === v.id}
+                  className="pixel-chip min-h-[36px] sm:min-h-0"
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        <div className="sticky bottom-0 -mx-3 px-3 pt-3 pb-3 mt-2 bg-gray-50/85 dark:bg-gray-900/85 backdrop-blur supports-[backdrop-filter]:backdrop-blur border-t border-gray-200 dark:border-gray-700">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 font-pixel text-pixel tabular-nums">
+            <span>
+              Opaque:{' '}
+              <strong className="font-normal text-heading">{stats.opaquePct.toFixed(1)}%</strong>
+            </span>
+            <span>
+              Transparent:{' '}
+              <strong className="font-normal text-heading">{stats.transparentPct.toFixed(1)}%</strong>
+            </span>
+            <span>
+              Partial:{' '}
+              <strong className="font-normal text-heading">{stats.partialPct.toFixed(1)}%</strong>
+            </span>
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-4 min-w-0 lg:col-start-2 lg:row-start-2">
+          <SectionLabel>Controls</SectionLabel>
+          <div className="flex flex-col gap-5">
+            <Slider id="nudge-x" label="Nudge X" value={dx} min={-20} max={20} step={1} onChange={setDx} format={(v) => `${v} px`} />
+            <Slider id="nudge-y" label="Nudge Y" value={dy} min={-20} max={20} step={1} onChange={setDy} format={(v) => `${v} px`} />
+            <Slider id="low-snap" label="Snap to transparent below" value={lowSnap} min={0} max={0.4} step={0.01} onChange={setLowSnap} format={(v) => v.toFixed(2)} />
+            <Slider id="high-snap" label="Snap to opaque above" value={highSnap} min={0.6} max={1.0} step={0.01} onChange={setHighSnap} format={(v) => v.toFixed(2)} />
+            <Slider id="gamma" label="Edge softness" value={gamma} min={0.5} max={2.0} step={0.05} onChange={setGamma} format={(v) => v.toFixed(2)} />
+            <button type="button" onClick={reset} className="pixel-button self-start">
+              Reset controls
+            </button>
+          </div>
+        </section>
+
+        <div className="sticky bottom-0 -mx-4 px-4 py-3 bg-bg border-t-2 border-border lg:static lg:col-start-2 lg:row-start-3 lg:m-0 lg:p-0 lg:border-0">
           <button
             type="button"
             onClick={handleDownload}
             disabled={!ready || downloading}
-            className="w-full py-3 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+            className="pixel-button w-full py-2 flex items-center justify-center gap-2"
+            data-variant="primary"
           >
+            <Icon svg={downloadIcon} className="w-4 h-4" />
             {downloading ? 'Rendering full-resolution PNG…' : 'Download transparent PNG'}
           </button>
         </div>
@@ -755,4 +658,4 @@ export function App({ historyUrl }) {
 }
 
 const mount = typeof document !== 'undefined' ? document.getElementById('app') : null;
-if (mount) createRoot(mount).render(<App historyUrl={mount.dataset.historyUrl} />);
+if (mount) createRoot(mount).render(<App />);
