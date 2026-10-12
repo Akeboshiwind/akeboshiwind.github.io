@@ -1,0 +1,143 @@
+<!DOCTYPE html><html lang="en"> <head><style>:root{--accent-light:#e5501c;--link-light:#b23b0e;--accent-dark:#ff6a33;--link-dark:#ff8c5e}</style><script>(() => {
+const c3 = (n) => +n.toFixed(3);
+
+/** Light and dark `--accent`/`--link` for an OKLCH hue, at the lightness each theme's background needs. */
+const fromHue = (hue, chroma = 0.19) => ({
+  light: { accent: `oklch(0.62 ${chroma} ${hue})`, link: `oklch(0.47 ${c3(chroma * 0.85)} ${hue})` },
+  dark: { accent: `oklch(0.72 ${c3(chroma * 0.9)} ${hue})`, link: `oklch(0.80 ${c3(chroma * 0.7)} ${hue})` },
+});
+
+const DEFAULT_ACCENT = 'orange';
+
+/** The light theme's page colour, for the places outside CSS that need it: theme-color and the icon set. */
+const PAGE_BACKGROUND = '#f1efe8';
+
+const HUES = [
+  ['Red', 25], ['Vermilion', 40], ['Amber', 70], ['Ochre', 90], ['Olive', 120], ['Green', 150],
+  ['Teal', 185], ['Cyan', 215], ['Blue', 255], ['Indigo', 280], ['Violet', 305], ['Magenta', 335],
+];
+
+const ACCENTS = [
+  {
+    id: DEFAULT_ACCENT,
+    name: 'Orange',
+    light: { accent: '#e5501c', link: '#b23b0e' },
+    dark: { accent: '#ff6a33', link: '#ff8c5e' },
+  },
+  ...HUES.map(([name, hue]) => ({ id: `h${hue}`, name, ...fromHue(hue) })),
+];
+
+/**
+ * A random accent id other than `current`; an unknown `current` counts as the default.
+ *
+ * @param {string} current
+ * @param {() => number} [random] uniform in [0, 1)
+ */
+function nextAccent(current, random = Math.random) {
+  const from = ACCENTS.some((a) => a.id === current) ? current : DEFAULT_ACCENT;
+  const others = ACCENTS.filter((a) => a.id !== from);
+  return others[Math.floor(random() * others.length)].id;
+}
+
+const [L, M, R] = [5, 10, 15];
+
+/** Pip corners for die faces 1–6 (face n is `DICE_FACES[n - 1]`); each pip is 4×4 on a 24-unit icon. */
+const DICE_FACES = [
+  [[M, M]],
+  [[L, L], [R, R]],
+  [[L, L], [M, M], [R, R]],
+  [[L, L], [R, L], [L, R], [R, R]],
+  [[L, L], [R, L], [M, M], [L, R], [R, R]],
+  [[L, L], [R, L], [L, M], [R, M], [L, R], [R, R]],
+];
+
+const DEFAULT_FACE = 5;
+
+const isFace = (face) => Number.isInteger(face) && face >= 1 && face <= DICE_FACES.length;
+
+/**
+ * A random die face other than `current`, for the re-roll button.
+ *
+ * @param {number} current
+ * @param {() => number} [random] uniform in [0, 1)
+ */
+function nextFace(current, random = Math.random) {
+  const others = DICE_FACES.map((_, i) => i + 1).filter((f) => f !== current);
+  return others[Math.floor(random() * others.length)];
+}
+
+/**
+ * The remembered accent and dice face from their stored form; each part that is missing or invalid
+ * falls back to its default independently.
+ *
+ * @param {string | null} raw as written by `serialiseChoice`
+ * @returns {{ id: string, face: number }}
+ */
+function parseChoice(raw) {
+  let stored = null;
+  try { stored = JSON.parse(raw); } catch {}
+  const { id, face } = stored && typeof stored === 'object' ? stored : {};
+  return {
+    id: ACCENTS.some((a) => a.id === id) ? id : DEFAULT_ACCENT,
+    face: isFace(face) ? face : DEFAULT_FACE,
+  };
+}
+
+/** @param {{ id: string, face: number }} choice */
+const serialiseChoice = ({ id, face }) => JSON.stringify({ id, face });
+
+
+
+const ACCENT_VARS = [
+  ['--accent-light', 'light', 'accent'],
+  ['--link-light', 'light', 'link'],
+  ['--accent-dark', 'dark', 'accent'],
+  ['--link-dark', 'dark', 'link'],
+];
+
+/**
+ * Applies the remembered theme and accent to <html> before first paint, keeps them in step with other tabs,
+ * and installs `window.__setTheme(pref)` and `window.__setAccent({ id, face })` for the toggles.
+ */
+function initTheme() {
+  const root = document.documentElement;
+  const dark = window.matchMedia('(prefers-color-scheme: dark)');
+  const get = (key) => { try { return localStorage.getItem(key); } catch { return null; } };
+  const set = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
+
+  const readTheme = () => {
+    const pref = get('theme');
+    return pref === 'light' || pref === 'dark' ? pref : 'auto';
+  };
+  const applyTheme = (pref) => {
+    root.dataset.themePref = pref;
+    root.dataset.theme = pref === 'auto' ? (dark.matches ? 'dark' : 'light') : pref;
+  };
+  const applyAccent = ({ id, face }) => {
+    const accent = ACCENTS.find((a) => a.id === id);
+    root.dataset.accent = id;
+    root.dataset.accentFace = String(face);
+    for (const [name, theme, key] of ACCENT_VARS) root.style.setProperty(name, accent[theme][key]);
+  };
+
+  root.classList.add('js');
+  applyTheme(readTheme());
+  applyAccent(parseChoice(get('accent')));
+
+  dark.addEventListener('change', () => applyTheme(readTheme()));
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'theme') applyTheme(readTheme());
+    if (e.key === 'accent') applyAccent(parseChoice(get('accent')));
+  });
+  window.__setTheme = (pref) => {
+    set('theme', pref);
+    applyTheme(pref);
+  };
+  window.__setAccent = (choice) => {
+    set('accent', serialiseChoice(choice));
+    applyAccent(choice);
+  };
+}
+
+initTheme();
+})();</script><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Chat</title><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=d2f361b1"><link rel="icon" type="image/svg+xml" href="/favicon.svg?v=d2f361b1"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=d2f361b1"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=d2f361b1"><link rel="shortcut icon" href="/favicon.ico?v=d2f361b1"><link rel="manifest" href="/site.webmanifest?v=d2f361b1"><link rel="mask-icon" href="/safari-pinned-tab.svg?v=d2f361b1" color="#e5501c"><meta name="msapplication-TileColor" content="#f1efe8"><meta name="msapplication-config" content="/browserconfig.xml?v=d2f361b1"><link rel="stylesheet" href="/pr-preview/pr-74/_astro/index.BilqW0ts.css"></head> <body class="bg-gray-50 dark:bg-gray-900 min-h-screen"> <div id="app" data-history-url="https://github.com/akeboshiwind/akeboshiwind.github.io/commits/pixel-retheme-tidy/src/pages/chat"></div>  <script type="module" src="/pr-preview/pr-74/_astro/index.astro_astro_type_script_index_0_lang.qb2LbKci.js"></script>  </body></html>
