@@ -8,5 +8,6 @@
     "pdf"
   ],
   "category": "utilities",
-  "icon": "file-text"
+  "icon": "file-text",
+  "dither": "ui"
 }
