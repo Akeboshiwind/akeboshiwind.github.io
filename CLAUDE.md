@@ -53,12 +53,12 @@ All apps are built through Astro's Vite pipeline — no separate build step need
 
 - **React apps** (.jsx) use `@vitejs/plugin-react` and `AppLayout` — **strongly recommended for new apps**
 - **Squint apps** (.cljs) are compiled by `plugins/vite-plugin-squint.js` — deprecated, new apps should use React
-- **Standalone apps** (bitemporal, christmas, chat-wrapped) have bespoke structures and don't use `AppLayout`
+- **Standalone apps** (christmas, chat-wrapped) have bespoke structures and don't use `AppLayout`
 
 ### Building a new React app
 
 1. Run `npm run new-tool <slug> "<Title>"` — scaffolds index.astro, app.jsx, hooks.js, and works entry
-2. Study 2-3 existing React apps for patterns (NOT bitemporal/christmas/chat-wrapped — those are bespoke)
+2. Study 2-3 existing React apps for patterns (NOT christmas/chat-wrapped — those are bespoke)
 3. Add a screenshot at `src/assets/works/<slug>.png` for the front page card
 4. Fill in the description in the generated works JSON
 5. Set `category` and `icon` in the works JSON (defaults to `utilities` / `wrench`). Categories: finance, health, ai, images, utilities, fun, learning, talks, personal. `icon` is a [pixelarticons](https://pixelarticons.com/) name, or a [lucide](https://lucide.dev/icons/) name mapped in `LUCIDE_ALIASES` in `Icon.astro` (any other name fails the build).
