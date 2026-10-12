@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BottomSheet } from './BottomSheet.jsx';
+import { Field as LabelledField, inputClass } from './Field.jsx';
 
 export function ExerciseActionsSheet({ open, onClose, item, exercise, pool, onUpdate, onSwap, onRemove }) {
   const [view, setView] = useState('menu'); // 'menu' | 'edit' | 'swap'
@@ -54,7 +55,7 @@ function Menu({ item, onEdit, onSwap, onAddSet, onRemoveSet, onRemove }) {
   const isExercise = item.kind === 'reps-exercise' || item.kind === 'timed-exercise' || item.kind === 'continuous-exercise';
   const hasSets = item.kind === 'reps-exercise' || item.kind === 'timed-exercise';
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-2">
       {isExercise && <Action label="Edit" onClick={onEdit} />}
       {isExercise && <Action label="Swap exercise" onClick={onSwap} />}
       {hasSets && <Action label="Add a set" onClick={onAddSet} />}
@@ -69,12 +70,8 @@ function Action({ label, onClick, danger }) {
     <button
       type="button"
       onClick={onClick}
-      className={[
-        'text-left px-3 py-3 rounded-md text-sm font-medium transition-colors',
-        danger
-          ? 'text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
-          : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700',
-      ].join(' ')}
+      data-variant={danger ? 'danger' : undefined}
+      className="pixel-button text-left px-3 py-3"
     >
       {label}
     </button>
@@ -119,8 +116,8 @@ function EditForm({ item, onSave, onCancel }) {
         <Field label="Weight / band" value={weight} onChange={setWeight} type="text" />
       ) : null}
       <div className="flex gap-2 justify-end pt-2">
-        <button type="button" onClick={onCancel} className="px-3 py-2 rounded-md text-sm border border-gray-300 dark:border-gray-600">Cancel</button>
-        <button type="submit" className="px-3 py-2 rounded-md text-sm bg-emerald-600 text-white">Save</button>
+        <button type="button" onClick={onCancel} className="pixel-button py-2">Cancel</button>
+        <button type="submit" data-variant="primary" className="pixel-button py-2">Save</button>
       </div>
     </form>
   );
@@ -128,16 +125,15 @@ function EditForm({ item, onSave, onCancel }) {
 
 function Field({ label, value, onChange, type = 'number' }) {
   return (
-    <label className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
-      {label}
+    <LabelledField label={label}>
       <input
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
         inputMode={type === 'number' ? 'numeric' : 'text'}
-        className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-base"
+        className={inputClass}
       />
-    </label>
+    </LabelledField>
   );
 }
 
@@ -163,26 +159,26 @@ function SwapList({ item, pool, onPick, onCancel }) {
         placeholder="Search exercises…"
         value={q}
         onChange={e => setQ(e.target.value)}
-        className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-base"
+        className={inputClass}
       />
-      <ul className="flex flex-col gap-1 max-h-80 overflow-y-auto">
+      <ul className="flex flex-col">
         {filtered.map(p => (
           <li key={p.id}>
             <button
               type="button"
               onClick={() => onPick(p.id)}
-              className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="pixel-line w-full text-left px-1 py-2 hover:text-accent"
             >
-              <p className="font-medium text-sm">{p.name}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{poolDescriptor(p)}</p>
+              <p className="text-sm text-heading">{p.name}</p>
+              <p className="label opacity-70">{poolDescriptor(p)}</p>
             </button>
           </li>
         ))}
         {filtered.length === 0 && (
-          <li className="px-3 py-2 text-sm text-gray-500">No matches.</li>
+          <li className="px-1 py-2 text-sm opacity-70">No matches.</li>
         )}
       </ul>
-      <button type="button" onClick={onCancel} className="self-end text-sm text-gray-500 underline">Cancel</button>
+      <button type="button" onClick={onCancel} className="pixel-button self-end">Cancel</button>
     </div>
   );
 }

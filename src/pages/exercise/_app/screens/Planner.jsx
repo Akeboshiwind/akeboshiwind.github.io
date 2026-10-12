@@ -1,28 +1,19 @@
 import { useState } from 'react';
 import { DAYS, DAY_NAMES, totalUnits } from '../store.js';
 import { GenerateRoutineSheet } from '../components/GenerateRoutineSheet.jsx';
+import { ScreenHeader } from '../components/ScreenHeader.jsx';
 
 export function Planner({ state, setState, navigate }) {
   const [generateOpen, setGenerateOpen] = useState(false);
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-4">
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-        >
-          ← Today
-        </button>
-        <h1 className="text-2xl font-semibold flex-1 text-center">Week template</h1>
-        <span className="w-12" />
-      </div>
+      <ScreenHeader backLabel="← Today" onBack={() => navigate('/')} title="Week template" />
 
       <button
         type="button"
         onClick={() => setGenerateOpen(true)}
-        className="w-full mb-4 py-2.5 rounded-md border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-medium text-sm hover:bg-emerald-500/10"
+        className="pixel-button w-full mb-4 py-2"
       >
         Generate routine with Claude
       </button>
@@ -36,16 +27,16 @@ export function Planner({ state, setState, navigate }) {
               <button
                 type="button"
                 onClick={() => navigate(`/planner/${d}`)}
-                className="w-full text-left rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+                className="pixel-panel w-full text-left p-3 hover:border-accent"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold">{DAY_NAMES[d]}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                    <p className="font-pixel text-pixel-md text-heading">{DAY_NAMES[d]}</p>
+                    <p className="text-sm opacity-70 truncate mt-0.5">
                       {day.rest ? 'Rest day' : (day.focus || 'No focus set')}
                     </p>
                   </div>
-                  <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
+                  <span className="label opacity-70 flex-shrink-0">
                     {day.rest ? '—' : `${day.items.filter(i => i.kind !== 'section').length} items`}
                   </span>
                 </div>
@@ -55,26 +46,26 @@ export function Planner({ state, setState, navigate }) {
         })}
       </ul>
 
-      <div className="mt-6 flex flex-col gap-2 text-sm">
+      <nav className="mt-6 flex flex-col gap-2">
         <a
           href="#/pool"
-          className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 underline-offset-2 hover:underline"
+          className="label hover:text-accent"
         >
           Edit exercise pool →
         </a>
         <a
           href="#/history"
-          className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 underline-offset-2 hover:underline"
+          className="label hover:text-accent"
         >
           History →
         </a>
         <a
           href="#/settings"
-          className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 underline-offset-2 hover:underline"
+          className="label hover:text-accent"
         >
           Settings →
         </a>
-      </div>
+      </nav>
 
       <GenerateRoutineSheet
         open={generateOpen}

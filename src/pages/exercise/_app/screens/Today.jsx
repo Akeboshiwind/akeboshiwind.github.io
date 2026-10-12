@@ -66,15 +66,15 @@ export function Today({ state, setState, today }) {
   const editingCircuit = editingCircuitId ? findItem(editingCircuitId) : null;
 
   return (
-    <>
+    <div className="pb-28">
       <DayJumper viewDay={viewDay} onChange={setViewDay} />
 
       <header className="mb-4 text-center">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm">
           {day.rest ? 'Rest day' : day.focus}
         </p>
         {!day.rest && total > 0 && (
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          <p className="label opacity-70 mt-1">
             {done} / {total} done
             {viewDay !== today && ` · viewing ${DAY_NAMES[viewDay]}`}
           </p>
@@ -83,7 +83,7 @@ export function Today({ state, setState, today }) {
           <button
             type="button"
             onClick={() => setViewDay(today)}
-            className="mt-2 text-xs text-emerald-700 dark:text-emerald-300 underline-offset-2 hover:underline"
+            className="label mt-2 text-accent hover:underline"
           >
             ← Back to today ({DAY_NAMES[today]})
           </button>
@@ -148,7 +148,8 @@ export function Today({ state, setState, today }) {
               <button
                 type="button"
                 onClick={handleFinish}
-                className="w-full py-3 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors"
+                data-variant="primary"
+                className="pixel-button w-full py-3"
               >
                 Finish workout
               </button>
@@ -185,21 +186,21 @@ export function Today({ state, setState, today }) {
           setEditingCircuitId(null);
         }}
       />
-    </>
+    </div>
   );
 }
 
 function ActiveBanner({ activeDay, onResume, onDiscard }) {
   return (
-    <div className="rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/30 p-3 mb-4 text-sm">
-      <p className="text-amber-900 dark:text-amber-200">
+    <div className="pixel-panel border-warn p-3 mb-4 text-sm">
+      <p className="text-warn">
         Workout in progress on {DAY_NAMES[activeDay]}.
       </p>
-      <div className="mt-2 flex gap-3">
-        <button onClick={onResume} className="underline text-amber-900 dark:text-amber-200">
+      <div className="mt-2 flex gap-2">
+        <button onClick={onResume} className="pixel-button">
           Go to {DAY_NAMES[activeDay]}
         </button>
-        <button onClick={onDiscard} className="underline text-amber-900 dark:text-amber-200">
+        <button onClick={onDiscard} data-variant="danger" className="pixel-button">
           Discard
         </button>
       </div>
@@ -214,11 +215,12 @@ function StartBanner({ viewDay, today, onStart }) {
       <button
         type="button"
         onClick={onStart}
-        className="w-full py-3 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors"
+        data-variant="primary"
+        className="pixel-button w-full py-3"
       >
         {label}
       </button>
-      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+      <p className="label mt-2 opacity-70 text-center">
         Sets unlock once a session is running.
       </p>
     </div>
@@ -228,15 +230,15 @@ function StartBanner({ viewDay, today, onStart }) {
 function SessionBanner({ startedAt, onCancel }) {
   const seconds = useElapsedSeconds(startedAt);
   return (
-    <div className="rounded-lg border border-emerald-300/60 bg-emerald-50 dark:bg-emerald-500/10 dark:border-emerald-500/30 p-3 mb-4 flex items-center justify-between gap-3">
-      <div className="text-sm text-emerald-900 dark:text-emerald-200">
-        <span className="font-medium">Session in progress</span>
-        <span className="ml-2 tabular-nums">{formatElapsed(seconds)}</span>
+    <div className="pixel-panel border-ok p-3 mb-4 flex items-center justify-between gap-3">
+      <div className="text-ok flex items-baseline gap-2">
+        <span className="label">Session in progress</span>
+        <span className="pixel-num">{formatElapsed(seconds)}</span>
       </div>
       <button
         type="button"
         onClick={onCancel}
-        className="text-sm underline text-emerald-900 dark:text-emerald-200 underline-offset-2 hover:no-underline"
+        className="pixel-button"
       >
         Cancel
       </button>
@@ -263,9 +265,9 @@ function formatElapsed(totalSec) {
 
 function RestDay() {
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 text-center">
-      <p className="text-lg font-medium mb-2">Rest day</p>
-      <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+    <div className="pixel-panel p-6 text-center">
+      <p className="font-pixel text-pixel-md text-heading mb-2">Rest day</p>
+      <p className="text-sm opacity-80 leading-relaxed">
         Light walk, gentle stretching, sleep, hydration. Your body adapts on rest days — trust the process.
       </p>
     </div>

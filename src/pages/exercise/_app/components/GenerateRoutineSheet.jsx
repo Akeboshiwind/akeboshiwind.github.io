@@ -72,7 +72,7 @@ function Input({ brief, setBrief, raw, setRaw, promptText, onCopy, copied, onPre
   return (
     <div className="flex flex-col gap-4">
       <section className="text-sm">
-        <p className="text-gray-700 dark:text-gray-300 mb-2">
+        <p className="mb-2">
           1. (Optional) Tell Claude what you want — goals, equipment changes, intensity, time available.
           The current pool, plan, and last 4 weeks of history are included automatically.
         </p>
@@ -81,29 +81,30 @@ function Input({ brief, setBrief, raw, setRaw, promptText, onCopy, copied, onPre
           onChange={e => setBrief(e.target.value)}
           rows={3}
           placeholder="e.g. Drop one strength day, add a 20-min run on Saturday. Keep weights light."
-          className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm resize-y"
+          className="pixel-field w-full text-base resize-y"
         />
       </section>
 
       <section className="text-sm">
-        <p className="text-gray-700 dark:text-gray-300 mb-2">
-          2. Copy the prompt and paste it into <a href="https://claude.ai" target="_blank" rel="noopener" className="text-emerald-700 dark:text-emerald-300 underline">claude.ai</a>.
+        <p className="mb-2">
+          2. Copy the prompt and paste it into <a href="https://claude.ai" target="_blank" rel="noopener" className="text-link underline">claude.ai</a>.
         </p>
         <button
           type="button"
           onClick={onCopy}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium"
+          data-variant="primary"
+          className="pixel-button py-2"
         >
-          {copied ? '✓ Copied' : 'Copy prompt'}
+          {copied ? 'Copied' : 'Copy prompt'}
         </button>
         <details className="mt-3">
-          <summary className="text-xs text-gray-500 cursor-pointer">Show prompt ({promptText.length.toLocaleString()} chars)</summary>
-          <pre className="mt-2 max-h-48 overflow-auto bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 text-xs whitespace-pre-wrap font-mono rounded">{promptText}</pre>
+          <summary className="label opacity-70 cursor-pointer hover:text-accent">Show prompt ({promptText.length.toLocaleString()} chars)</summary>
+          <pre className="mt-2 max-h-48 overflow-auto bg-code-bg text-code-text p-3 font-pixel text-pixel whitespace-pre-wrap">{promptText}</pre>
         </details>
       </section>
 
       <section className="text-sm">
-        <p className="text-gray-700 dark:text-gray-300 mb-2">
+        <p className="mb-2">
           3. Paste Claude's JSON reply below.
         </p>
         <textarea
@@ -113,19 +114,20 @@ function Input({ brief, setBrief, raw, setRaw, promptText, onCopy, copied, onPre
           placeholder='```json
 { "pool": [...], "days": {...} }
 ```'
-          className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm font-mono resize-y"
+          className="pixel-field w-full font-pixel text-base resize-y"
         />
       </section>
 
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400 break-words">{error}</p>
+        <p className="label text-danger normal-case tracking-normal break-words">{error}</p>
       )}
 
       <button
         type="button"
         onClick={onPreview}
         disabled={!raw.trim()}
-        className="w-full py-3 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold"
+        data-variant="primary"
+        className="pixel-button w-full py-3"
       >
         Preview changes
       </button>
@@ -139,34 +141,34 @@ function Preview({ summary, onBack, onApply }) {
   return (
     <div className="flex flex-col gap-4">
       <section>
-        <h3 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+        <h3 className="label opacity-70 mb-2">
           Exercise pool
         </h3>
         <ul className="text-sm space-y-1">
           <li>
-            <span className="text-emerald-700 dark:text-emerald-300">+ {newExercises.length} new</span>
+            <span className="text-ok">+ {newExercises.length} new</span>
             {newExercises.length > 0 && (
-              <span className="text-gray-500 dark:text-gray-400"> · {trim(newExercises)}</span>
+              <span className="opacity-70"> · {trim(newExercises)}</span>
             )}
           </li>
           <li>
-            <span className="text-amber-700 dark:text-amber-300">↻ {updatedExercises.length} updated</span>
+            <span className="text-warn">↻ {updatedExercises.length} updated</span>
             {updatedExercises.length > 0 && (
-              <span className="text-gray-500 dark:text-gray-400"> · {trim(updatedExercises)}</span>
+              <span className="opacity-70"> · {trim(updatedExercises)}</span>
             )}
           </li>
         </ul>
       </section>
 
       <section>
-        <h3 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+        <h3 className="label opacity-70 mb-2">
           Week template ({days.length}/7 days replaced)
         </h3>
         <ul className="text-sm space-y-1">
           {days.map(({ day, exercises }) => (
-            <li key={day} className="flex justify-between gap-3">
+            <li key={day} className="pixel-line flex justify-between gap-3 py-1">
               <span>{DAY_NAMES[day]}</span>
-              <span className="text-gray-500 dark:text-gray-400">
+              <span className="opacity-70">
                 {exercises === 0 ? 'rest' : `${exercises} items`}
               </span>
             </li>
@@ -174,7 +176,7 @@ function Preview({ summary, onBack, onApply }) {
         </ul>
       </section>
 
-      <p className="text-xs text-gray-500 dark:text-gray-400">
+      <p className="text-sm opacity-70">
         Any in-progress workout will be cleared. Existing pool exercises not in the import are kept.
       </p>
 
@@ -182,14 +184,15 @@ function Preview({ summary, onBack, onApply }) {
         <button
           type="button"
           onClick={onBack}
-          className="flex-1 py-3 rounded-md border border-gray-300 dark:border-gray-600 font-medium"
+          className="pixel-button flex-1 py-3"
         >
           Back
         </button>
         <button
           type="button"
           onClick={onApply}
-          className="flex-1 py-3 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+          data-variant="primary"
+          className="pixel-button flex-1 py-3"
         >
           Apply changes
         </button>

@@ -1,33 +1,23 @@
 import { DAY_NAMES, totalUnits, completedUnits } from '../store.js';
+import { SectionLabel } from '../../../../components/pixel/SectionLabel.jsx';
+import { ScreenHeader } from '../components/ScreenHeader.jsx';
 
 export function History({ state, navigate }) {
   const groups = groupByWeek(state.history);
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-4">
-        <button
-          type="button"
-          onClick={() => navigate('/planner')}
-          className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-        >
-          ← Back
-        </button>
-        <h1 className="text-2xl font-semibold flex-1 text-center">History</h1>
-        <span className="w-12" />
-      </div>
+      <ScreenHeader backLabel="← Back" onBack={() => navigate('/planner')} title="History" />
 
       {state.history.length === 0 && (
-        <p className="text-sm text-gray-500 text-center py-12">
+        <p className="text-sm opacity-70 text-center py-12">
           No completed workouts yet. Finish a session to log it here.
         </p>
       )}
 
       {groups.map(([label, entries]) => (
         <section key={label} className="mb-6">
-          <h2 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-            {label}
-          </h2>
+          <SectionLabel className="mb-2">{label}</SectionLabel>
           <ul className="space-y-2">
             {entries.map(entry => {
               const total = totalUnits(entry.snapshot);
@@ -37,17 +27,17 @@ export function History({ state, navigate }) {
                   <button
                     type="button"
                     onClick={() => navigate(`/history/${encodeURIComponent(entry.id)}`)}
-                    className="w-full text-left rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 hover:border-gray-300 dark:hover:border-gray-600"
+                    className="pixel-panel w-full text-left p-3 hover:border-accent"
                   >
                     <div className="flex items-baseline justify-between gap-3">
-                      <p className="font-medium text-sm">
+                      <p className="text-sm text-heading">
                         {prettyDate(entry.date)} · {DAY_NAMES[entry.day]}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+                      <p className="pixel-num flex-shrink-0">
                         {done}/{total}
                       </p>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                    <p className="text-sm opacity-70 mt-0.5 truncate">
                       {[entry.focus, formatDuration(entry)].filter(Boolean).join(' · ')}
                     </p>
                   </button>

@@ -47,36 +47,30 @@ export function TimerBar({ phases, onDismiss }) {
   return (
     <div
       role="status"
-      className={[
-        'fixed inset-x-0 bottom-0 z-30 border-t shadow-lg',
-        done
-          ? 'bg-emerald-500 border-emerald-600 text-white'
-          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100',
-      ].join(' ')}
+      className={`fixed inset-x-0 bottom-0 z-20 border-t-2 bg-bg ${done ? 'border-ok' : 'border-border'}`}
     >
-      {/* Progress bar */}
-      <div className={`h-1 ${done ? 'bg-emerald-300' : 'bg-gray-100 dark:bg-gray-700'}`}>
+      <div className="h-1 bg-border">
         <div
-          className={`h-full transition-[width] duration-1000 ease-linear ${done ? 'bg-white' : 'bg-emerald-500'}`}
+          className={`h-full transition-[width] duration-1000 ease-linear ${done ? 'bg-ok' : 'bg-accent'}`}
           style={{ width: `${Math.min(100, Math.max(0, progress * 100))}%` }}
         />
       </div>
 
-      <div className="px-4 py-3 flex items-center gap-3 max-w-xl mx-auto">
+      <div className="px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center gap-3 max-w-[720px] mx-auto">
         <div className="flex-1 min-w-0">
-          <p className="text-xs uppercase tracking-wider opacity-75">
+          <p className={`label truncate ${done ? 'text-ok' : 'opacity-70'}`}>
             {phaseLabel}
             {!done && phases.length > 1 && (
               <span className="ml-2">{phaseIdx + 1} / {phases.length}</span>
             )}
           </p>
-          <p className="text-2xl font-mono tabular-nums">{formatRemaining(remaining)}</p>
+          <p className={`font-pixel text-pixel-lg tabular-nums ${done ? 'text-ok' : 'text-heading'}`}>{formatRemaining(remaining)}</p>
         </div>
         {!done && (
           <button
             type="button"
             onClick={() => setPaused(p => !p)}
-            className="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="pixel-button py-2"
             aria-label={paused ? 'Resume' : 'Pause'}
           >
             {paused ? 'Resume' : 'Pause'}
@@ -85,12 +79,8 @@ export function TimerBar({ phases, onDismiss }) {
         <button
           type="button"
           onClick={onDismiss}
-          className={[
-            'px-3 py-2 rounded-md text-sm font-medium border',
-            done
-              ? 'border-white/40 hover:bg-white/10'
-              : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700',
-          ].join(' ')}
+          data-variant={done ? 'primary' : undefined}
+          className="pixel-button py-2"
         >
           {done ? 'Close' : 'Cancel'}
         </button>
