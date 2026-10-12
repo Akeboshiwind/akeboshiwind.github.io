@@ -40,6 +40,21 @@
   --border: #444;
 }
 
+@layer components {
+  .page-title {
+    font-size: var(--text-2xl);
+    line-height: var(--text-2xl--line-height);
+    font-weight: var(--font-weight-bold);
+    color: var(--heading);
+  }
+
+  .page-sub {
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+    opacity: 0.7;
+  }
+}
+
 /* Map theme colours to prose — these are variable assignments, not element styles */
 .prose {
   --tw-prose-body: var(--text);
