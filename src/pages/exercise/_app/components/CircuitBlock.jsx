@@ -36,7 +36,7 @@ export function CircuitBlock({
             type="button"
             onClick={onEditCircuit}
             aria-label="Edit circuit"
-            className="flex-shrink-0 -m-1 p-1 hover:text-accent"
+            className="pixel-icon-button -m-1"
           >
             <Icon svg={pencilSvg} />
           </button>
@@ -75,7 +75,8 @@ export function CircuitBlock({
               <div className={`flex items-center gap-2 border-2 p-2 ${done ? 'border-ok' : 'border-border'}`}>
                 <input
                   type="checkbox"
-                  className="pixel-check checked:border-ok checked:bg-ok disabled:cursor-not-allowed disabled:opacity-50"
+                  className="pixel-check disabled:cursor-not-allowed disabled:opacity-50"
+                  data-variant="ok"
                   checked={done}
                   disabled={disabled}
                   onChange={() => onToggleChild(i)}
@@ -103,7 +104,7 @@ export function CircuitBlock({
                     type="button"
                     onClick={() => onOpenActions(child.id)}
                     aria-label="Edit exercise"
-                    className="flex-shrink-0 p-1 hover:text-accent"
+                    className="pixel-icon-button"
                   >
                     <Icon svg={moreSvg} className="w-4 h-4" />
                   </button>

@@ -22,7 +22,7 @@ export function ExerciseCard({ item, exercise, completed, onToggle, onStartTimer
             type="button"
             onClick={onOpenActions}
             aria-label="Edit exercise"
-            className="flex-shrink-0 -m-1 p-1 hover:text-accent"
+            className="pixel-icon-button -m-1"
           >
             <Icon svg={moreSvg} />
           </button>

@@ -5,7 +5,7 @@ import moreSvg from 'pixelarticons/svg/more-vertical.svg?raw';
 import noteSvg from 'pixelarticons/svg/note.svg?raw';
 import checkSvg from 'pixelarticons/svg/check-double.svg?raw';
 import hourglassSvg from 'pixelarticons/svg/hourglass.svg?raw';
-import { Popover } from './Popover.jsx';
+import { Menu } from '../../../../components/pixel/Menu.jsx';
 
 const RecommendationCard = ({ rec, onSeen }) => (
   <li>
@@ -50,10 +50,11 @@ export const RecommendationsView = ({
         <button onClick={onBack} className="pixel-button">
           ← Back
         </button>
-        <Popover
+        <Menu
           label="Menu"
           icon={moreSvg}
-          items={[['Settings', onOpenSettings], ['History', onOpenHistory]]}
+          triggerClassName="h-9"
+          items={[{ label: 'Settings', onSelect: onOpenSettings }, { label: 'History', onSelect: onOpenHistory }]}
         />
       </div>
 

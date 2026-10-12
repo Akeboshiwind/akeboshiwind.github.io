@@ -71,7 +71,8 @@ export function App() {
 
       <form
         onSubmit={(e) => { e.preventDefault(); send(); }}
-        className="sticky bottom-0 flex items-stretch gap-2 -mx-4 px-4 py-3 bg-bg border-t-2 border-border"
+        data-position="sticky"
+        className="pixel-bar flex items-stretch gap-2"
       >
         <textarea
           ref={textareaRef}

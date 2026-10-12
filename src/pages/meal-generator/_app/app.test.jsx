@@ -78,7 +78,7 @@ describe('Meal Generator', () => {
     fireEvent.click(lockButton(bands()[2]));
 
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Unlock all' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Unlock all' }));
 
     expect(bands().map(b => lockButton(b).getAttribute('aria-pressed'))).toEqual(Array(SLOT_COUNT).fill('false'));
     expect(names()).toEqual(meals);
@@ -89,7 +89,7 @@ describe('Meal Generator', () => {
     render(<App />);
     const item = () => {
       fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-      return screen.getByRole('button', { name: 'Unlock all' });
+      return screen.getByRole('menuitem', { name: 'Unlock all' });
     };
 
     expect(item().disabled).toBe(true);
@@ -309,7 +309,7 @@ describe('Meal Generator', () => {
   test('the menu reaches the meal list', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-    fireEvent.click(screen.getByRole('button', { name: 'All meals' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'All meals' }));
     const dialog = screen.getByRole('dialog', { name: 'All meals' });
     expect(within(dialog).getAllByText('in this set')).toHaveLength(SLOT_COUNT);
   });

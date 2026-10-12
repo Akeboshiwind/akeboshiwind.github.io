@@ -190,46 +190,44 @@ function ChunkCard({ chunk, number, playing, onPlay, onRetry }) {
 function PlayerBar({ session }) {
   const { hasAudio, playing, position, total, rate, waiting } = session;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-10 bg-bg border-t-2 border-border">
-      <div className="max-w-[720px] mx-auto p-4 flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <button type="button" className="pixel-button" title="Back 15 seconds" disabled={!hasAudio} onClick={() => session.skip(-15)}>-15s</button>
-          <button
-            type="button"
-            className="pixel-button px-3"
-            data-variant="primary"
-            aria-label={playing ? 'Pause' : 'Play'}
-            disabled={!hasAudio}
-            onClick={session.togglePlay}
-          >
-            <Icon svg={playing ? pauseIcon : playIcon} className="w-5 h-5" />
-          </button>
-          <button type="button" className="pixel-button" title="Forward 30 seconds" disabled={!hasAudio} onClick={() => session.skip(30)}>+30s</button>
-          <select
-            aria-label="Speed"
-            className="pixel-field ml-auto"
-            value={String(rate)}
-            onChange={(e) => session.setRate(parseFloat(e.target.value))}
-          >
-            {SPEEDS.map((s) => <option key={s} value={s}>{s}x</option>)}
-          </select>
-        </div>
-        <div className="flex items-center gap-3">
-          <input
-            type="range"
-            aria-label="Position"
-            className="pixel-range flex-1"
-            min="0"
-            max="100"
-            step="any"
-            value={total > 0 ? (position / total) * 100 : 0}
-            disabled={!hasAudio}
-            onChange={(e) => session.seekFraction(Number(e.target.value) / 100)}
-          />
-          <span className="pixel-num">{formatTime(position)} / {formatTime(total)}</span>
-        </div>
-        {waiting && <p className="label text-warn">Waiting for more audio to generate...</p>}
+    <div className="pixel-bar flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" className="pixel-button" title="Back 15 seconds" disabled={!hasAudio} onClick={() => session.skip(-15)}>-15s</button>
+        <button
+          type="button"
+          className="pixel-button px-3"
+          data-variant="primary"
+          aria-label={playing ? 'Pause' : 'Play'}
+          disabled={!hasAudio}
+          onClick={session.togglePlay}
+        >
+          <Icon svg={playing ? pauseIcon : playIcon} className="w-5 h-5" />
+        </button>
+        <button type="button" className="pixel-button" title="Forward 30 seconds" disabled={!hasAudio} onClick={() => session.skip(30)}>+30s</button>
+        <select
+          aria-label="Speed"
+          className="pixel-field ml-auto"
+          value={String(rate)}
+          onChange={(e) => session.setRate(parseFloat(e.target.value))}
+        >
+          {SPEEDS.map((s) => <option key={s} value={s}>{s}x</option>)}
+        </select>
       </div>
+      <div className="flex items-center gap-3">
+        <input
+          type="range"
+          aria-label="Position"
+          className="pixel-range flex-1"
+          min="0"
+          max="100"
+          step="any"
+          value={total > 0 ? (position / total) * 100 : 0}
+          disabled={!hasAudio}
+          onChange={(e) => session.seekFraction(Number(e.target.value) / 100)}
+        />
+        <span className="pixel-num">{formatTime(position)} / {formatTime(total)}</span>
+      </div>
+      {waiting && <p className="label text-warn">Waiting for more audio to generate...</p>}
     </div>
   );
 }

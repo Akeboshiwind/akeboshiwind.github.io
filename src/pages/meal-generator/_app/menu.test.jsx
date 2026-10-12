@@ -16,9 +16,9 @@ const slots = [
 const openMenu = () => fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
 const openMeals = () => {
   openMenu();
-  fireEvent.click(screen.getByRole('button', { name: 'All meals' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'All meals' }));
 };
-const menuItems = () => screen.queryByRole('button', { name: 'All meals' });
+const menuItems = () => screen.queryByRole('menuitem', { name: 'All meals' });
 
 describe('Menu', () => {
   test('starts closed', () => {
@@ -34,8 +34,8 @@ describe('Menu', () => {
     openMenu();
 
     expect(screen.getByRole('button', { name: 'Menu' }).getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getByRole('button', { name: 'Unlock all' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'All meals' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'Unlock all' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'All meals' })).toBeTruthy();
 
     openMenu();
     expect(menuItems()).toBeNull();
@@ -63,7 +63,7 @@ describe('Menu', () => {
     test('is offered, and disabled when nothing is locked', () => {
       render(<Menu slots={slots.map(s => ({ ...s, locked: false }))} anyLocked={false} />);
       openMenu();
-      expect(screen.getByRole('button', { name: 'Unlock all' }).disabled).toBe(true);
+      expect(screen.getByRole('menuitem', { name: 'Unlock all' }).disabled).toBe(true);
     });
 
     test('runs and closes the menu when something is locked', () => {
@@ -71,7 +71,7 @@ describe('Menu', () => {
       render(<Menu slots={slots} anyLocked onUnlockAll={onUnlockAll} />);
       openMenu();
 
-      const item = screen.getByRole('button', { name: 'Unlock all' });
+      const item = screen.getByRole('menuitem', { name: 'Unlock all' });
       expect(item.disabled).toBe(false);
       fireEvent.click(item);
 
@@ -157,7 +157,7 @@ describe('Menu', () => {
 
     // The popover closes as the dialog opens — still open, as far as the app
     // is concerned.
-    fireEvent.click(screen.getByRole('button', { name: 'All meals' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'All meals' }));
     expect(onOpenChange).toHaveBeenLastCalledWith(true);
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));

@@ -149,15 +149,13 @@ const AddItemForm = ({ onSave, onCancel }) => {
   );
 };
 
-const iconButton = 'p-1 cursor-pointer opacity-70 hover:opacity-100 focus-visible:outline-2 focus-visible:outline-accent';
-
 const ItemActions = ({ rec, onEdit, onReview, onDelete }) => (
-  <div className="flex items-center gap-1 mt-1 -ml-1">
-    <button onClick={() => onEdit(rec.id)} aria-label="Edit" title="Edit" className={`${iconButton} hover:text-accent`}>
+  <div className="flex items-center gap-1 mt-1 -ml-2">
+    <button onClick={() => onEdit(rec.id)} aria-label="Edit" title="Edit" className="pixel-icon-button">
       <Icon svg={pencilSvg} className="w-4 h-4" />
     </button>
     {rec.status === 'pending' && (
-      <button onClick={() => onReview(rec.id)} aria-label="Mark as seen" title="Mark as seen" className={`${iconButton} hover:text-ok`}>
+      <button onClick={() => onReview(rec.id)} aria-label="Mark as seen" title="Mark as seen" className="pixel-icon-button" data-variant="ok">
         <Icon svg={checkSvg} className="w-4 h-4" />
       </button>
     )}
@@ -167,7 +165,8 @@ const ItemActions = ({ rec, onEdit, onReview, onDelete }) => (
       }}
       aria-label="Delete"
       title="Delete"
-      className={`${iconButton} hover:text-danger`}
+      className="pixel-icon-button"
+      data-variant="danger"
     >
       <Icon svg={trashSvg} className="w-4 h-4" />
     </button>

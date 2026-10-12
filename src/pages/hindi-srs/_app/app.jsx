@@ -228,16 +228,7 @@ export function App() {
         </div>
       </div>
 
-      <div
-        role="progressbar"
-        aria-label="Cards in review"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(progress)}
-        className="pixel-panel h-3"
-      >
-        <div className="h-full bg-accent" style={{ width: `${progress}%` }} />
-      </div>
+      <progress aria-label="Cards in review" value={progress} max={100} className="pixel-progress" />
 
       {settingsOpen ? (
         <Settings

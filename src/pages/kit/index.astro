@@ -4,6 +4,7 @@ import SectionLabel from '../../components/pixel/SectionLabel.astro';
 import Icon from '../../components/pixel/Icon.astro';
 import FileDrop from '../../components/pixel/FileDrop.astro';
 import Sheet from '../../components/pixel/Sheet.astro';
+import Menu from '../../components/pixel/Menu.astro';
 
 const themes = ['light', 'dark'];
 const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent', 'danger', 'ok', 'warn'];
@@ -40,6 +41,16 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
           </div>
           <p class="label opacity-60">.pixel-button · data-variant="primary" | "danger"</p>
 
+          <SectionLabel class="mt-4 mb-2">Icon buttons</SectionLabel>
+          <div class="flex flex-wrap gap-1">
+            <button class="pixel-icon-button" aria-label="Edit"><Icon name="pencil" class="w-4 h-4" /></button>
+            <button class="pixel-icon-button" data-variant="ok" aria-label="Mark done"><Icon name="check" class="w-4 h-4" /></button>
+            <button class="pixel-icon-button" data-variant="danger" aria-label="Delete"><Icon name="trash" class="w-4 h-4" /></button>
+            <button class="pixel-icon-button" aria-label="More"><Icon name="more-horizontal" class="w-5 h-5" /></button>
+            <button class="pixel-icon-button" aria-label="Disabled" disabled><Icon name="arrow-up" class="w-4 h-4" /></button>
+          </div>
+          <p class="label opacity-60">.pixel-icon-button · no border, at least 32px square · accent on hover, data-variant="danger" | "ok" swaps the hover colour</p>
+
           <SectionLabel class="mt-4 mb-2">Chips</SectionLabel>
           <div class="flex flex-wrap gap-1">
             <span class="pixel-chip">Static</span>
@@ -62,13 +73,26 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
           <div class="flex gap-4">
             <label class="flex items-center gap-2"><input type="checkbox" class="pixel-check" /> Off</label>
             <label class="flex items-center gap-2"><input type="checkbox" class="pixel-check" checked /> On</label>
+            <label class="flex items-center gap-2"><input type="checkbox" class="pixel-check" data-variant="ok" checked /> Done</label>
           </div>
-          <p class="label opacity-60">.pixel-check</p>
+          <p class="label opacity-60">.pixel-check · data-variant="ok" fills --ok when checked</p>
+
+          <SectionLabel class="mt-4 mb-2">Radio</SectionLabel>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2"><input type="radio" name={`kit-radio-${theme}`} class="pixel-radio" /> Off</label>
+            <label class="flex items-center gap-2"><input type="radio" name={`kit-radio-${theme}`} class="pixel-radio" checked /> On</label>
+          </div>
+          <p class="label opacity-60">.pixel-radio · input[type=radio], a filled square rather than a tick</p>
 
           <SectionLabel class="mt-4 mb-2">Range</SectionLabel>
           <input type="range" class="pixel-range" min="0" max="100" value="40" aria-label="Range" />
           <input type="range" class="pixel-range" min="0" max="100" value="70" aria-label="Disabled range" disabled />
           <p class="label opacity-60">.pixel-range · input[type=range]</p>
+
+          <SectionLabel class="mt-4 mb-2">Progress</SectionLabel>
+          <progress class="pixel-progress" value="40" max="100" aria-label="Determinate progress"></progress>
+          <progress class="pixel-progress" aria-label="Indeterminate progress"></progress>
+          <p class="label opacity-60">.pixel-progress · &lt;progress&gt;, a stepping block while it has no value</p>
 
           <SectionLabel class="mt-4 mb-2">File</SectionLabel>
           <FileDrop accept="image/*">Drop a file or click to choose</FileDrop>
@@ -100,6 +124,23 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
             </Sheet>
           </div>
           <p class="label opacity-60">&lt;Sheet&gt; · .pixel-scrim .pixel-sheet · from the bottom edge on phones, centred from sm</p>
+
+          <SectionLabel class="mt-4 mb-2">Bottom bar</SectionLabel>
+          <div class="pixel-panel relative h-32 overflow-hidden">
+            <p class="p-3">The page above the bar.</p>
+            <div class="pixel-bar absolute flex items-center gap-2">
+              <span class="flex-1 pixel-num">02:15</span>
+              <button class="pixel-button">Pause</button>
+              <button class="pixel-button" data-variant="primary">Save</button>
+            </div>
+          </div>
+          <p class="label opacity-60">.pixel-bar · fixed to the bottom edge, content in the 720px column, clear of the home indicator · data-position="sticky" for the end of a form</p>
+
+          <SectionLabel class="mt-4 mb-2">Menu</SectionLabel>
+          <div class="flex justify-end items-start h-44">
+            <Menu label="Options" icon="more-vertical" items={['Rename', 'Export', 'Delete']} open />
+          </div>
+          <p class="label opacity-60">&lt;Menu&gt; · .pixel-menu .pixel-menu-trigger .pixel-menu-list .pixel-menu-item · arrow keys move, Escape, Tab, a choice or a press outside close · side="top" opens upward</p>
 
           <SectionLabel class="mt-4 mb-2">Icons</SectionLabel>
           <div class="flex gap-3 text-heading">
