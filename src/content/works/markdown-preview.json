@@ -7,5 +7,6 @@
     "tool"
   ],
   "category": "utilities",
-  "icon": "file-code"
+  "icon": "file-code",
+  "dither": "ui"
 }

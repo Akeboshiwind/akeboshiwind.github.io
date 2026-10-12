@@ -1,0 +1,54 @@
+/* global.css maps only the prose colours notes use; a preview can also hold tables and task lists. */
+.markdown-preview {
+  --tw-prose-th-borders: var(--border);
+  --tw-prose-td-borders: var(--border);
+  --tw-prose-hr: var(--border);
+  --tw-prose-captions: var(--text);
+}
+
+.markdown-preview li:has(> input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.markdown-preview pre.mermaid {
+  background: transparent;
+  padding: 0;
+}
+
+.markdown-preview .hljs-comment,
+.markdown-preview .hljs-code,
+.markdown-preview .hljs-formula,
+.markdown-preview .hljs-quote {
+  color: var(--code-text);
+  opacity: 0.6;
+}
+
+.markdown-preview :is(.hljs-keyword, .hljs-doctag, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-meta .hljs-keyword, .hljs-deletion) {
+  color: var(--danger);
+}
+
+.markdown-preview :is(.hljs-title, .hljs-section, .hljs-name, .hljs-selector-tag, .hljs-selector-pseudo) {
+  color: var(--accent);
+}
+
+.markdown-preview :is(.hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta, .hljs-number, .hljs-operator, .hljs-variable, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id) {
+  color: var(--link);
+}
+
+.markdown-preview :is(.hljs-string, .hljs-regexp, .hljs-addition, .hljs-meta .hljs-string) {
+  color: var(--ok);
+}
+
+.markdown-preview :is(.hljs-built_in, .hljs-symbol, .hljs-bullet) {
+  color: var(--warn);
+}
+
+.markdown-preview .hljs-emphasis {
+  font-style: italic;
+}
+
+.markdown-preview .hljs-strong {
+  font-weight: bold;
+}

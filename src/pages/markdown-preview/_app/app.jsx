@@ -6,9 +6,22 @@ import hljs from 'highlight.js/lib/common';
 import mermaid from 'mermaid';
 import DOMPurify from 'dompurify';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
-import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
-import './typography.css';
+import '../../../styles/global.css';
+import './preview.css';
 
+marked.use(
+  markedHighlight({
+    emptyLangClass: 'hljs',
+    langPrefix: 'hljs language-',
+    highlight(code, lang) {
+      if (lang === 'mermaid') return code;
+      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+      return hljs.highlight(code, { language }).value;
+    },
+  }),
+);
+
+// marked tries the last-registered renderer first, so this must come after markedHighlight.
 marked.use({
   gfm: true,
   renderer: {
@@ -25,23 +38,20 @@ marked.use({
   },
 });
 
-// Syntax highlighting for fenced code blocks, mirroring GitHub. The mermaid
-// renderer above short-circuits `mermaid` blocks before this runs.
-marked.use(
-  markedHighlight({
-    emptyLangClass: 'hljs',
-    langPrefix: 'hljs language-',
-    highlight(code, lang) {
-      if (lang === 'mermaid') return code;
-      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-      return hljs.highlight(code, { language }).value;
-    },
-  }),
+// The classes a note's <article> carries in [...slug].astro, so the preview reads like a note.
+const NOTE_PROSE = `markdown-preview prose prose-sm font-sans max-w-none leading-relaxed
+  prose-a:no-underline prose-a:hover:underline
+  prose-code:font-mono prose-code:bg-code-bg prose-code:text-code-text prose-code:px-1 prose-code:rounded-none prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
+  prose-pre:font-mono prose-pre:rounded-none`;
+
+const Heading = () => (
+  <>
+    <h1 className="page-title mt-4 mb-2">Markdown Preview</h1>
+    <p className="page-sub mt-0 mb-6">Write GitHub Flavoured Markdown, with Mermaid diagrams. Saved as you type.</p>
+  </>
 );
 
-mermaid.initialize({ startOnLoad: false });
-
-function App({ historyUrl }) {
+export function App() {
   const [text, setText] = useLocalStorage('markdown-preview:text', '');
   const [view, setView] = useState('editor');
   const previewRef = useRef(null);
@@ -50,43 +60,25 @@ function App({ historyUrl }) {
     if (view === 'preview' && previewRef.current) {
       const html = marked.parse(text);
       previewRef.current.innerHTML = DOMPurify.sanitize(html);
+      previewRef.current.querySelectorAll('input[type="checkbox"]').forEach((box) => box.classList.add('pixel-check'));
+      const dark = document.documentElement.dataset.theme === 'dark';
+      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral' });
       mermaid.run({ nodes: previewRef.current.querySelectorAll('.mermaid') });
     }
   }, [view]);
 
   if (view === 'editor') {
     return (
-      <div className="flex flex-col h-screen p-4 gap-3 bg-white dark:bg-gray-900">
-        <nav className="flex items-center gap-3 text-sm text-gray-400">
-          <a
-            href="../"
-            className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            ← Home
-          </a>
-          {historyUrl && (
-            <a
-              href={historyUrl}
-              target="_blank"
-              rel="noopener"
-              className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              history
-            </a>
-          )}
-          <ThemeToggle className="ml-auto" />
-        </nav>
+      <div className="flex flex-1 flex-col gap-3">
+        <Heading />
         <textarea
-          className="flex-1 w-full resize-none rounded-lg p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+          className="pixel-field flex-1 min-h-[50vh] w-full resize-none p-3 font-mono text-sm"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Write GitHub Flavoured Markdown here..."
           spellCheck={false}
         />
-        <button
-          className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 font-medium transition-colors"
-          onClick={() => setView('preview')}
-        >
+        <button className="pixel-button w-full py-2" data-variant="primary" onClick={() => setView('preview')}>
           Preview
         </button>
       </div>
@@ -94,21 +86,15 @@ function App({ historyUrl }) {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 p-6">
-      <button
-        className="mb-6 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 font-medium transition-colors"
-        onClick={() => setView('editor')}
-      >
+    <div className="flex flex-col">
+      <Heading />
+      <button className="pixel-button self-start mb-6" onClick={() => setView('editor')}>
         ← Back
       </button>
-      <div
-        ref={previewRef}
-        className="markdown-body max-w-4xl mx-auto"
-      />
+      <div ref={previewRef} className={NOTE_PROSE} />
     </div>
   );
 }
 
 const mount = document.getElementById('app');
-const root = createRoot(mount);
-root.render(<App historyUrl={mount.dataset.historyUrl} />);
+if (mount) createRoot(mount).render(<App />);
