@@ -2,6 +2,10 @@
 @import "./theme.css";
 @plugin "@tailwindcss/typography";
 
+@view-transition {
+  navigation: auto;
+}
+
 /* Map theme colours to prose — these are variable assignments, not element styles */
 .prose {
   --tw-prose-body: var(--text);
