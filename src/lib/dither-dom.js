@@ -1,4 +1,36 @@
-import { dither, rng, shapes } from './dither.js';
+import { dither, imageDensity, rng, shapes } from './dither.js';
+
+const IMAGE_TONES = { ui: 'equalise', image: 'paper' };
+
+const watched = new WeakSet();
+
+function imageField(el, cols, rows, repaint) {
+  const img = el.parentElement.querySelector('img');
+  if (!img) return null;
+  if (!watched.has(img)) {
+    watched.add(img);
+    img.addEventListener('load', repaint);
+  }
+  if (!img.complete || !img.naturalWidth) return null;
+  // naturalWidth is density-corrected for srcset candidates, but drawImage's source rect is in bitmap pixels,
+  // so crop with the destination rect, which only depends on the aspect ratio.
+  const s = Math.max(cols / img.naturalWidth, rows / img.naturalHeight);
+  const [dw, dh] = [img.naturalWidth * s, img.naturalHeight * s];
+  const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  ctx.canvas.width = cols;
+  ctx.canvas.height = rows;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, (cols - dw) / 2, (rows - dh) / 2, dw, dh);
+  return imageDensity(ctx.getImageData(0, 0, cols, rows).data, cols, rows, { tone: IMAGE_TONES[el.dataset.ditherKind] });
+}
+
+function imageShape(el, seed) {
+  const repaint = () => {
+    const box = el.getBoundingClientRect();
+    paint(el, seed, box.width, box.height);
+  };
+  return { method: 'atkinson', make: (cols, rows) => imageField(el, cols, rows, repaint) };
+}
 
 function maskUrl(mask, cols, rows, scale) {
   const cells = document.createElement('canvas');
@@ -25,7 +57,7 @@ function paint(el, seed, width, height) {
   const rows = Math.ceil(height / px);
   if (!cols || !rows) return;
 
-  const { method, make } = shapes[shape] ?? {};
+  const { method, make } = shape === 'image' ? imageShape(el, seed) : shapes[shape] ?? {};
   const random = rng(seed);
   const density = make?.(cols, rows, random);
   if (!density) return;
@@ -39,6 +71,18 @@ function paint(el, seed, width, height) {
     maskSize: size, webkitMaskSize: size,
   });
   el.dataset.dithered = '';
+  if (shape === 'image') requestAnimationFrame(() => { el.parentElement.dataset.ready = ''; });
+}
+
+function revealer() {
+  if (!matchMedia('(hover: none)').matches) return () => {};
+  const observer = new IntersectionObserver(
+    (entries) => entries.forEach(({ target, isIntersecting }) => {
+      target.toggleAttribute('data-revealed', isIntersecting);
+    }),
+    { rootMargin: '-35% 0px -35% 0px' },
+  );
+  return (el) => observer.observe(el);
 }
 
 const SELECTOR = 'hr, [data-dither]';
@@ -48,6 +92,7 @@ export function ditherAll(root = document) {
   let nextSeed = 1;
   const seeds = new WeakMap();
   const sizes = new WeakMap();
+  const reveal = revealer();
   const resizes = new ResizeObserver((entries) => {
     for (const { target, borderBoxSize: [box] } of entries) {
       const [width, height] = [box.inlineSize, box.blockSize];
@@ -65,6 +110,7 @@ export function ditherAll(root = document) {
     const seed = Number.parseInt(el.dataset.seed ?? '', 10);
     seeds.set(el, Number.isNaN(seed) ? inOrder : seed);
     resizes.observe(el);
+    if (el.dataset.dither === 'image') reveal(el.parentElement);
   };
   root.querySelectorAll(SELECTOR).forEach(track);
   new MutationObserver((records) => records.forEach(({ addedNodes }) => addedNodes.forEach((node) => {

@@ -105,6 +105,33 @@
     visibility: hidden;
   }
 
+  .dither-img {
+    position: relative;
+    background: var(--bg);
+  }
+
+  .dither-img [data-dither] {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Without JS nothing paints the overlay, so the screenshot only starts hidden when the script will run. */
+  .js .dither-img img {
+    opacity: 0;
+  }
+
+  .dither-img[data-ready] :is(img, [data-dither]) {
+    transition: opacity 0.25s steps(4);
+  }
+
+  .dither-img:is(:hover, :focus-visible, [data-revealed]) img {
+    opacity: 1;
+  }
+
+  .dither-img:is(:hover, :focus-visible, [data-revealed]) [data-dither] {
+    opacity: 0;
+  }
+
   .pixel-line {
     background: linear-gradient(90deg, var(--border) 50%, transparent 0) bottom / 4px 2px repeat-x;
   }

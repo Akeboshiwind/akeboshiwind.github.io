@@ -9,5 +9,6 @@
     "tool"
   ],
   "category": "personal",
-  "icon": "heart-handshake"
+  "icon": "heart-handshake",
+  "dither": "image"
 }

@@ -1,5 +1,5 @@
 ---
-import Thumb from './Thumb.astro';
+import DitherThumb from './DitherThumb.astro';
 import type { ImageMetadata } from 'astro';
 
 interface CardItem {
@@ -8,7 +8,7 @@ interface CardItem {
   stage?: 'scribble' | 'draft' | 'tale';
   description?: string;
   date?: Date;
-  image?: { src: ImageMetadata };
+  image?: { src: ImageMetadata; dither: 'ui' | 'image' };
 }
 
 interface Props {
@@ -37,10 +37,11 @@ const { items, showImages = true } = Astro.props;
         )}
       </div>
       {showImages && item.image && (
-        <Thumb
+        <DitherThumb
           href={item.url}
           image={item.image.src}
           alt={`Screenshot of ${item.title}`}
+          dither={item.image.dither}
           widths={[200, 360]}
           sizes="100px"
           class="w-[72px] h-[80px] min-w-[72px] max-sm:w-[56px] max-sm:h-[64px] max-sm:min-w-[56px] ml-3"

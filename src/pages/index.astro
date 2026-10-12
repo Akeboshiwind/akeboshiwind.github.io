@@ -16,9 +16,9 @@ function workUrl(work: { id: string; data: { url?: string } }) {
   return work.data.url || `${base}${work.id.replace('.json', '')}/`;
 }
 
-function thumbnail(work: { id: string }) {
+function thumbnail(work: { id: string; data: { dither: 'ui' | 'image' } }) {
   const src = screenshots[`../assets/works/${work.id.replace('.json', '')}.png`]?.default;
-  return src && { src };
+  return src && { src, dither: work.data.dither };
 }
 
 const allItems = [

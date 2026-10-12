@@ -6,14 +6,16 @@ interface Props {
   href: string;
   image: ImageMetadata;
   alt: string;
+  dither: 'ui' | 'image';
   widths: number[];
   sizes: string;
   class?: string;
 }
 
-const { href, image, alt, widths, sizes, class: className = '' } = Astro.props;
+const { href, image, alt, dither, widths, sizes, class: className = '' } = Astro.props;
 ---
 
-<a href={href} class:list={['block border border-border', className]}>
+<a href={href} class:list={['dither-img block border border-border', className]}>
   <Image src={image} alt={alt} class="w-full h-full object-cover object-center" loading="lazy" widths={widths} sizes={sizes} />
+  <span data-dither="image" data-dither-kind={dither} data-px="1" aria-hidden="true"></span>
 </a>

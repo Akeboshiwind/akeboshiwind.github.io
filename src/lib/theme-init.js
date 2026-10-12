@@ -17,6 +17,7 @@ export function initTheme() {
     root.dataset.theme = pref === 'auto' ? (dark.matches ? 'dark' : 'light') : pref;
   };
 
+  root.classList.add('js');
   applyTheme(readTheme());
 
   dark.addEventListener('change', () => applyTheme(readTheme()));

@@ -61,6 +61,10 @@ All apps are built through Astro's Vite pipeline — no separate build step need
 3. Add a screenshot at `src/assets/works/<slug>.png` for the front page card
 4. Fill in the description in the generated works JSON
 5. Set `category` and `icon` in the works JSON (defaults to `utilities` / `wrench`). Categories: finance, health, ai, images, utilities, fun, learning, talks, personal. `icon` is a [pixelarticons](https://pixelarticons.com/) name, or a [lucide](https://lucide.dev/icons/) name mapped in `LUCIDE_ALIASES` in `Icon.astro` (any other name fails the build).
+6. Set `dither` in the works JSON to match the screenshot (the scaffold writes `"ui"`). The card shows the screenshot dithered in the accent colour until hovered:
+   - `"ui"` — app UI: panels, text, buttons. Equalised so layout and colour blocks stay distinct.
+   - `"image"` — mainly a picture, photo or illustration (e.g. `animal-crossing-hourly`, `wedding-celebration`). Treats near-white as empty page so the picture isn't flattened.
+   The tone for each value is `IMAGE_TONES` in `src/lib/dither-dom.js`.
 
 Key conventions the scaffold already sets up:
 - `AppLayout` provides Tailwind, HTML shell, and `<div id="app">` mount point
@@ -73,7 +77,7 @@ Key conventions the scaffold already sets up:
 ## Code Style
 
 - **Note frontmatter**: YAML with title, stage, date, tags
-- **Work entries**: JSON with title, stage, date, description, tags, optional url
+- **Work entries**: JSON with title, stage, date, description, tags, optional url, `dither` (`ui` | `image`, default `ui`)
 - **Components**: Use `<CodeBlock>` and `<Admonition>` in MDX files
 
 ## Tech Stack

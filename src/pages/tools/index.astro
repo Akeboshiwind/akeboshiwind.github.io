@@ -1,5 +1,5 @@
 ---
-import Thumb from '../../components/Thumb.astro';
+import DitherThumb from '../../components/DitherThumb.astro';
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import Icon from '../../components/Icon.astro';
@@ -125,10 +125,11 @@ const grouped = CATEGORIES.map(cat => {
                 </div>
 
                 {img && (
-                  <Thumb
+                  <DitherThumb
                     href={url}
                     image={img}
                     alt={`Screenshot of ${work.data.title}`}
+                    dither={work.data.dither}
                     widths={[96, 192]}
                     sizes="48px"
                     class="w-12 h-12 shrink-0 overflow-hidden"

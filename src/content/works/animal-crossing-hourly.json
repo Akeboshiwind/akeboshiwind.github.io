@@ -8,5 +8,6 @@
     "music"
   ],
   "category": "fun",
-  "icon": "music"
+  "icon": "music",
+  "dither": "image"
 }
