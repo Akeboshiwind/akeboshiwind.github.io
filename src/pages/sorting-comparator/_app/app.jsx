@@ -516,7 +516,7 @@ const ResultsScreen = ({ algoKey, sorted, comparisons, onTryAnother, onSortAgain
 
 const DEFAULT_ITEMS = ['23', '7', '45', '12', '89', '34', '56', '1', '78', '90'];
 
-const App = ({ historyUrl }) => {
+export const App = ({ historyUrl }) => {
   const [screen, setScreen] = useState('select'); // 'select' | 'sorting' | 'results'
   const [items, setItems] = useState(DEFAULT_ITEMS);
   const [configText, setConfigText] = useState(DEFAULT_ITEMS.join('\n'));
@@ -620,5 +620,4 @@ const App = ({ historyUrl }) => {
 };
 
 const container = document.getElementById('app');
-const root = createRoot(container);
-root.render(<App historyUrl={container.dataset.historyUrl} />);
+if (container) createRoot(container).render(<App historyUrl={container.dataset.historyUrl} />);
