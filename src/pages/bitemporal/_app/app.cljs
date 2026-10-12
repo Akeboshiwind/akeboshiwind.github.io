@@ -953,7 +953,7 @@
            [:input {:type "checkbox"
                     :checked all-open?
                     :on-change #(toggle-events-open! target-indices (not all-open?))
-                    :class "w-4 h-4 accent-accent cursor-pointer"}]
+                    :class "pixel-check"}]
            "Open"]])
        ;; Separator
        [:div {:class "pixel-line h-0.5 my-2"}]
@@ -1126,7 +1126,7 @@
    [:input {:type "checkbox"
             :checked checked
             :on-change on-change
-            :class "w-4 h-4 accent-accent"}]
+            :class "pixel-check"}]
    [:span text]
    (when synced?
      [:span {:class "opacity-60" :title "Synced to room"}
