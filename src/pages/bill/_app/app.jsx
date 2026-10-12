@@ -1,38 +1,5 @@
----
-// Bill Splitter - standalone React app
----
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Bill Splitter | By the Rocks</title>
-  <meta name="description" content="Split bills easily with friends" />
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-  <link rel="shortcut icon" href="/favicon.ico" />
-
-  <script src="https://cdn.tailwindcss.com" is:inline></script>
-  <script is:inline>
-    tailwind.config = { darkMode: 'media' }
-  </script>
-
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" is:inline></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" is:inline></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js" is:inline></script>
-</head>
-<body class="bg-white dark:bg-gray-900">
-  <div class="max-w-4xl mx-auto p-4">
-    <header class="mb-4">
-      <a href={import.meta.env.BASE_URL} class="text-blue-600 dark:text-blue-400 hover:underline">&larr; Home</a>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2">Bill Splitter</h1>
-    </header>
-    <div id="root"></div>
-  </div>
-
-  <script type="text/babel" is:inline>
-const { useState, useEffect } = React;
+import React, { useState, useEffect } from 'react';
+import { createRoot } from 'react-dom/client';
 
 const Component = () => {
   const loadFromLocalStorage = (key, defaultValue) => {
@@ -484,8 +451,15 @@ Here's an example of the expected format with sample data:
   );
 };
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<Component />);
-  </script>
-</body>
-</html>
+const App = () => (
+  <div className="max-w-4xl mx-auto p-4">
+    <header className="mb-4">
+      <a href="../" className="text-blue-600 dark:text-blue-400 hover:underline">&larr; Home</a>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2">Bill Splitter</h1>
+    </header>
+    <Component />
+  </div>
+);
+
+const mount = document.getElementById('app');
+if (mount) createRoot(mount).render(<App />);
