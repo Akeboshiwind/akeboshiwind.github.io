@@ -1,6 +1,8 @@
 import { createRoot } from 'react-dom/client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ThemeToggle } from '../../../components/ThemeToggle.jsx';
+import { Icon } from '../../../components/pixel/Icon.jsx';
+import playIcon from 'pixelarticons/svg/play.svg?raw';
+import pauseIcon from 'pixelarticons/svg/pause.svg?raw';
 import { TRACK_SECONDS, embedOrigin, formatOffset, trackFor } from './tracks.js';
 import { canSeek, errorMessage, loadYouTubeApi } from './player.js';
 
@@ -13,7 +15,7 @@ const ENDED = 0;
 // isn't audible every few seconds.
 const DRIFT_TOLERANCE = 2;
 
-export function App({ historyUrl }) {
+export function App() {
   const hostRef = useRef(null);
   const playerRef = useRef(null);
   const loadedIdRef = useRef(null);
@@ -148,101 +150,68 @@ export function App({ historyUrl }) {
   });
 
   return (
-    <div className="flex flex-col min-h-screen p-4 gap-4 text-gray-900 dark:text-gray-100">
-      <nav className="flex items-center gap-3 text-sm text-gray-400">
-        <a
-          href="../"
-          className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
-          ← Home
-        </a>
-        {historyUrl && (
-          <a
-            href={historyUrl}
-            target="_blank"
-            rel="noopener"
-            className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            history
-          </a>
-        )}
-        <ThemeToggle className="ml-auto" />
-      </nav>
-
-      <div className="w-full max-w-3xl mx-auto flex flex-col gap-4">
-        <header className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold">Animal Crossing Hourly</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Scruffy's hour-long <em>Taking Root</em> mixes, played at the point
-            your clock is at.
-          </p>
-        </header>
-
-        <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black">
-          <div ref={hostRef} className="absolute inset-0 [&>iframe]:w-full [&>iframe]:h-full" />
-          {status === 'loading' && (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
-              Loading the player…
-            </div>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={toggle}
-          disabled={status !== 'ready'}
-          aria-label={playing ? 'Pause' : `Play ${track.label} in sync`}
-          className="w-full flex items-center justify-center gap-3 py-4 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-        >
-          <Icon playing={playing} />
-          {playing ? 'Pause' : `Play ${track.label}`}
-        </button>
-
-        <dl className="grid grid-cols-3 gap-3 text-center text-sm">
-          <Stat label="Local time" value={clock} />
-          <Stat label="Hour" value={track.label} />
-          <Stat
-            label="Position"
-            value={`${formatOffset(track.offset)} / ${formatOffset(TRACK_SECONDS)}`}
-          />
-        </dl>
-
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          {playing
-            ? 'Playing in sync — the video is nudged back whenever it drifts, and rolls over to the next hour on its own.'
-            : 'Paused. Hitting play jumps back to wherever the clock has got to.'}
+    <div className="flex flex-col gap-4">
+      <header>
+        <h1 className="page-title mt-4 mb-2">Animal Crossing Hourly</h1>
+        <p className="page-sub mt-0 mb-4">
+          Scruffy's hour-long <em>Taking Root</em> mixes, played at the point
+          your clock is at.
         </p>
+      </header>
 
-        {error && (
-          <div className="rounded-lg p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 text-sm">
-            {error}
+      <div className="pixel-panel relative w-full aspect-video overflow-hidden bg-code-bg">
+        <div ref={hostRef} className="absolute inset-0 [&>iframe]:w-full [&>iframe]:h-full" />
+        {status === 'loading' && (
+          <div className="label absolute inset-0 flex items-center justify-center text-code-text opacity-70">
+            Loading the player…
           </div>
         )}
       </div>
+
+      <button
+        type="button"
+        onClick={toggle}
+        disabled={status !== 'ready'}
+        aria-label={playing ? 'Pause' : `Play ${track.label} in sync`}
+        className="pixel-button w-full flex items-center justify-center gap-3 py-3"
+        data-variant="primary"
+      >
+        <Icon svg={playing ? pauseIcon : playIcon} />
+        {playing ? 'Pause' : `Play ${track.label}`}
+      </button>
+
+      <dl className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+        <Stat label="Local time" value={clock} />
+        <Stat label="Hour" value={track.label} />
+        <Stat
+          label="Position"
+          value={`${formatOffset(track.offset)} / ${formatOffset(TRACK_SECONDS)}`}
+        />
+      </dl>
+
+      <p className="text-sm opacity-70">
+        {playing
+          ? 'Playing in sync — the video is nudged back whenever it drifts, and rolls over to the next hour on its own.'
+          : 'Paused. Hitting play jumps back to wherever the clock has got to.'}
+      </p>
+
+      {error && (
+        <div className="pixel-panel border-danger text-danger p-3 text-sm">
+          {error}
+        </div>
+      )}
     </div>
   );
 }
 
 function Stat({ label, value }) {
   return (
-    <div className="rounded-lg py-2 px-1 bg-gray-100 dark:bg-gray-800">
-      <dt className="text-xs text-gray-500 dark:text-gray-400">{label}</dt>
-      <dd className="font-mono tabular-nums">{value}</dd>
+    <div className="pixel-panel py-2 px-1">
+      <dt className="label opacity-70">{label}</dt>
+      <dd className="pixel-num text-pixel sm:text-pixel-md text-heading">{value}</dd>
     </div>
   );
 }
 
-function Icon({ playing }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      {playing ? (
-        <path d="M7 4h4v16H7zM13 4h4v16h-4z" />
-      ) : (
-        <path d="M6 4l14 8-14 8z" />
-      )}
-    </svg>
-  );
-}
-
 const mount = document.getElementById('app');
-if (mount) createRoot(mount).render(<App historyUrl={mount.dataset.historyUrl} />);
+if (mount) createRoot(mount).render(<App />);

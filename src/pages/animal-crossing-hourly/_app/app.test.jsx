@@ -44,7 +44,6 @@ const { App } = await import('./app.jsx');
 
 const settle = () => act(async () => { await vi.advanceTimersByTimeAsync(10); });
 
-// The theme toggle is a button too, so always ask for this one by name.
 const transport = () => screen.getByRole('button', { name: /^(Pause|Play )/ });
 const transportLabel = () => transport().getAttribute('aria-label');
 
@@ -70,11 +69,6 @@ describe('Animal Crossing Hourly', () => {
   test('renders without crashing', async () => {
     await renderApp();
     expect(screen.getByText('Animal Crossing Hourly')).toBeTruthy();
-  });
-
-  test('has a home link', async () => {
-    await renderApp();
-    expect(screen.getByText('← Home').closest('a').getAttribute('href')).toBe('../');
   });
 
   test('creates the player with the current hour and an http origin', async () => {
@@ -193,5 +187,73 @@ describe('Animal Crossing Hourly', () => {
     await act(async () => { player.opts.events.onError({ data: 153, target: player }); });
 
     expect(screen.getByText(/rejected this page as an embed origin/)).toBeTruthy();
+  });
+
+  test('pressing play clears an error the player raised', async () => {
+    const player = await renderApp();
+    await act(async () => { player.opts.events.onError({ data: 153, target: player }); });
+    await act(async () => { fireEvent.click(transport()); });
+
+    expect(screen.queryByText(/rejected this page as an embed origin/)).toBeNull();
+  });
+
+  test('says the player is loading and keeps play disabled until it is ready', async () => {
+    render(<App />);
+    expect(screen.getByText('Loading the player…')).toBeTruthy();
+    expect(transport().disabled).toBe(true);
+
+    await settle();
+    expect(screen.queryByText('Loading the player…')).toBeNull();
+    expect(transport().disabled).toBe(false);
+  });
+
+  test('shows the local time, the hour and the position under labels', async () => {
+    await renderApp();
+    const stat = (label) => screen.getByText(label).nextElementSibling.textContent;
+
+    expect(stat('Local time')).toMatch(/14:30:20|02:30:20/);
+    expect(stat('Hour')).toBe('2 PM');
+    expect(stat('Position')).toBe('30:20 / 60:00');
+  });
+
+  test('the clock readout ticks forward each second', async () => {
+    await renderApp();
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+
+    expect(screen.getByText('30:21 / 60:00')).toBeTruthy();
+  });
+
+  test('the line under the stats says whether it is playing in sync or paused', async () => {
+    await renderApp();
+    expect(screen.getByText(/^Paused\. Hitting play jumps back/)).toBeTruthy();
+
+    await act(async () => { fireEvent.click(transport()); });
+    expect(screen.getByText(/^Playing in sync/)).toBeTruthy();
+  });
+
+  test('the visible play button names the hour', async () => {
+    await renderApp();
+    expect(transport().textContent.trim()).toBe('Play 2 PM');
+
+    await act(async () => { fireEvent.click(transport()); });
+    expect(transport().textContent.trim()).toBe('Pause');
+  });
+});
+
+describe('when the YouTube API fails to load', () => {
+  test('shows the failure and leaves play disabled', async () => {
+    vi.resetModules();
+    vi.doMock('./player.js', async (importOriginal) => ({
+      ...(await importOriginal()),
+      loadYouTubeApi: () => Promise.reject(new Error('Could not load the YouTube player.')),
+    }));
+    const { App: Failing } = await import('./app.jsx');
+
+    render(<Failing />);
+    await settle();
+
+    expect(screen.getByText('Could not load the YouTube player.')).toBeTruthy();
+    expect(transport().disabled).toBe(true);
+    vi.doUnmock('./player.js');
   });
 });
