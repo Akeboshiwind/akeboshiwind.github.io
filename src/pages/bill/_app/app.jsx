@@ -321,8 +321,8 @@ Here's an example of the expected format with sample data:
 
       <Section title="Assign items">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead><tr className="label text-heading pixel-line"><th className="p-1 sm:p-2 font-normal text-left">Item</th><th className="p-1 sm:p-2 font-normal text-right">Price ({currency})</th><th className="p-1 sm:p-2 font-normal text-left">Assigned to</th><th className="p-1 sm:p-2 font-normal w-16"><span className="sr-only">Split</span></th></tr></thead>
+          <table className="pixel-table text-sm">
+            <thead><tr><th>Item</th><th className="text-right">Price ({currency})</th><th>Assigned to</th><th className="w-16"><span className="sr-only">Split</span></th></tr></thead>
             <tbody>
               {expandedItems.map((item) => {
                 const totalPercent = getTotalPercentForItem(item.uniqueId);
@@ -334,8 +334,8 @@ Here's an example of the expected format with sample data:
                 const marker = isOver ? 'text-danger' : isComplete ? 'text-accent' : 'text-transparent';
                 return (
                   <React.Fragment key={item.uniqueId}>
-                    <tr className="pixel-line align-top">
-                      <td className="p-1 sm:p-2">
+                    <tr className="align-top">
+                      <td>
                         <div className="flex items-start gap-1.5">
                           <span className={`${marker} font-pixel text-pixel leading-[30px]`} aria-hidden="true">■</span>
                           <div className="min-w-0 flex-1">
@@ -347,18 +347,18 @@ Here's an example of the expected format with sample data:
                           </div>
                         </div>
                       </td>
-                      <td className="p-1 sm:p-2 text-right">
+                      <td className="text-right">
                         {isFirst ? <input type="number" min="0" step="0.01" value={orig.price} onChange={(e) => updateItemPrice(orig.id, e.target.value)} className={`pixel-field ${amount} w-20 text-right`} /> : <span className={`${amount} block leading-[30px]`}>{item.price.toFixed(2)}</span>}
                       </td>
-                      <td className="p-1 sm:p-2">
+                      <td>
                         <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1"><button onClick={() => toggleAllPeople(item.uniqueId)} aria-pressed={assignees.length === people.length} className={chip}>All</button>{people.map(p => <button key={p} onClick={() => togglePersonAssignment(item.uniqueId, p)} aria-pressed={assignees.includes(p)} className={chip}>{p}</button>)}</div>
                       </td>
-                      <td className="p-1 sm:p-2 text-center">
+                      <td className="text-center">
                         <button onClick={() => toggleExpandedRow(item.uniqueId)} disabled={!canItemBeSplit(item.uniqueId)} aria-expanded={!!expandedRows[item.uniqueId]} className={chip}>{expandedRows[item.uniqueId] ? 'Hide' : 'Split'}</button>
                       </td>
                     </tr>
                     {expandedRows[item.uniqueId] && canItemBeSplit(item.uniqueId) && (
-                      <tr className="pixel-line">
+                      <tr>
                         <td colSpan="4" className="p-2 sm:p-4 bg-code-bg">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>{assignees.map(p => <div key={p} className="flex items-center mb-2"><span className="mr-2 w-24 truncate">{p}</span><input type="number" min="0" max="100" value={personShares[item.uniqueId]?.[p] || 0} onChange={(e) => handleShareChange(item.uniqueId, p, e.target.value)} className={`pixel-field ${amount} w-20 text-right`} /><span className="ml-1 font-pixel">%</span></div>)}</div>
