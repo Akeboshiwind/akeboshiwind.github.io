@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { upsertPoolEntry, deletePoolEntry } from '../store.js';
+import { Field, inputClass } from '../components/Field.jsx';
 import { ScreenHeader } from '../components/ScreenHeader.jsx';
 
 const EMPTY_REPS = {
@@ -29,8 +30,8 @@ export function PoolEditor({ state, setState, exerciseId, navigate }) {
   if (!isNew && !existing) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Exercise not found.</p>
-        <button onClick={() => navigate('/pool')} className="mt-2 text-sm underline">
+        <p className="opacity-70">Exercise not found.</p>
+        <button onClick={() => navigate('/pool')} className="pixel-button mt-2">
           Back to pool
         </button>
       </div>
@@ -123,7 +124,7 @@ function Form({ initial, isNew, onSave, onDelete }) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
-      <Field label="Name" required>
+      <Field label="Name *">
         <input
           type="text"
           value={name}
@@ -133,30 +134,27 @@ function Form({ initial, isNew, onSave, onDelete }) {
         />
       </Field>
 
-      <Field label="Type">
+      <fieldset className="flex flex-col gap-1">
+        <legend className="label mb-1">Type</legend>
         <div className="flex gap-2">
           {['reps', 'timed', 'continuous'].map(k => (
             <button
               key={k}
               type="button"
               onClick={() => onChangeKind(k)}
-              className={[
-                'px-3 py-1.5 rounded-md text-sm border',
-                kind === k
-                  ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600',
-              ].join(' ')}
+              aria-pressed={kind === k}
+              className="pixel-chip py-1"
             >
               {k}
             </button>
           ))}
         </div>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-sm opacity-70 mt-1">
           {kind === 'reps' && 'Sets × reps with rest between sets.'}
           {kind === 'timed' && 'Sets × duration (e.g. plank 3 × 30s).'}
           {kind === 'continuous' && 'A single block of time (e.g. cardio 15 min).'}
         </p>
-      </Field>
+      </fieldset>
 
       <Field label="Description">
         <textarea
@@ -212,9 +210,9 @@ function Form({ initial, isNew, onSave, onDelete }) {
       <Field label="Tags">
         <div className="flex flex-wrap gap-2 mb-2">
           {tags.map(t => (
-            <span key={t} className="inline-flex items-center gap-1 px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-xs">
+            <span key={t} className="pixel-chip inline-flex items-center gap-2">
               {t}
-              <button type="button" onClick={() => setTags(tags.filter(x => x !== t))} aria-label={`Remove ${t}`} className="text-gray-500 hover:text-red-600">×</button>
+              <button type="button" onClick={() => setTags(tags.filter(x => x !== t))} aria-label={`Remove ${t}`} className="hover:text-danger">×</button>
             </span>
           ))}
         </div>
@@ -227,28 +225,17 @@ function Form({ initial, isNew, onSave, onDelete }) {
             placeholder="Add a tag…"
             className={inputClass + ' flex-1'}
           />
-          <button type="button" onClick={addTag} className="px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600">Add</button>
+          <button type="button" onClick={addTag} className="pixel-button">Add</button>
         </div>
       </Field>
 
-      <div className="flex gap-2 pt-2 sticky bottom-0 bg-gray-50 dark:bg-gray-900 -mx-4 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-        <button type="submit" className="flex-1 py-3 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">Save</button>
+      <div className="flex gap-2 sticky bottom-0 bg-bg -mx-4 px-4 py-3 border-t-2 border-border">
+        <button type="submit" data-variant="primary" className="pixel-button flex-1 py-3">Save</button>
         {onDelete && (
-          <button type="button" onClick={onDelete} className="px-4 py-3 rounded-md border border-red-500/40 text-red-700 dark:text-red-400 font-medium">Delete</button>
+          <button type="button" onClick={onDelete} data-variant="danger" className="pixel-button px-4 py-3">Delete</button>
         )}
       </div>
     </form>
-  );
-}
-
-const inputClass = 'w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-base';
-
-function Field({ label, required, children }) {
-  return (
-    <label className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
-      <span>{label}{required && ' *'}</span>
-      {children}
-    </label>
   );
 }
 
