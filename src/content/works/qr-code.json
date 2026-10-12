@@ -7,5 +7,6 @@
     "tool"
   ],
   "category": "utilities",
-  "icon": "qr-code"
+  "icon": "qr-code",
+  "dither": "ui"
 }

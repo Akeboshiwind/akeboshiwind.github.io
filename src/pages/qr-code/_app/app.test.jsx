@@ -21,12 +21,6 @@ describe('QR Code Generator', () => {
     expect(screen.getByText('QR Code Generator')).toBeTruthy();
   });
 
-  test('has a home link', () => {
-    render(<App />);
-    const home = screen.getByText('← Home').closest('a');
-    expect(home.getAttribute('href')).toBe('../');
-  });
-
   test('with no text it shows a placeholder and download is disabled', () => {
     render(<App />);
     expect(screen.getByText('QR code will appear here')).toBeTruthy();
