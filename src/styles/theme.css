@@ -432,6 +432,25 @@
     color: var(--bg);
   }
 
+  /* The inline padding lines its content up with PixelAppLayout's 720px column, whose own padding is 1rem. */
+  .pixel-bar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 20;
+    padding: 0.75rem max(1rem, calc((100% - 720px) / 2 + 1rem)) max(0.75rem, env(safe-area-inset-bottom));
+    border-top: 2px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  /* In flow at the end of the column: the negative margin cancels the column's 1rem so the border spans it. */
+  .pixel-bar[data-position="sticky"] {
+    position: sticky;
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+  }
+
   .pixel-menu {
     position: relative;
     flex-shrink: 0;

@@ -125,6 +125,17 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
           </div>
           <p class="label opacity-60">&lt;Sheet&gt; · .pixel-scrim .pixel-sheet · from the bottom edge on phones, centred from sm</p>
 
+          <SectionLabel class="mt-4 mb-2">Bottom bar</SectionLabel>
+          <div class="pixel-panel relative h-32 overflow-hidden">
+            <p class="p-3">The page above the bar.</p>
+            <div class="pixel-bar absolute flex items-center gap-2">
+              <span class="flex-1 pixel-num">02:15</span>
+              <button class="pixel-button">Pause</button>
+              <button class="pixel-button" data-variant="primary">Save</button>
+            </div>
+          </div>
+          <p class="label opacity-60">.pixel-bar · fixed to the bottom edge, content in the 720px column, clear of the home indicator · data-position="sticky" for the end of a form</p>
+
           <SectionLabel class="mt-4 mb-2">Menu</SectionLabel>
           <div class="flex justify-end items-start h-44">
             <Menu label="Options" icon="more-vertical" items={['Rename', 'Export', 'Delete']} open />
