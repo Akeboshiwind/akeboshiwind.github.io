@@ -3,6 +3,7 @@ import PixelAppLayout from '../../layouts/PixelAppLayout.astro';
 import SectionLabel from '../../components/pixel/SectionLabel.astro';
 import Icon from '../../components/pixel/Icon.astro';
 import FileDrop from '../../components/pixel/FileDrop.astro';
+import Sheet from '../../components/pixel/Sheet.astro';
 
 const themes = ['light', 'dark'];
 const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent', 'danger', 'ok', 'warn'];
@@ -90,6 +91,15 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
           </div>
           <p class="pixel-num">£1,203.19</p>
           <p class="label opacity-60">.pixel-table · .pixel-num, 11px inside a table on phones</p>
+
+          <SectionLabel class="mt-4 mb-2">Sheet</SectionLabel>
+          <div class="pixel-panel relative h-56 overflow-hidden">
+            <p class="p-3">The page behind the scrim.</p>
+            <Sheet title="Choose a meal" class="absolute">
+              <ul class="flex flex-col gap-1"><li>Pasta</li><li>Rajma</li><li>Sambar</li></ul>
+            </Sheet>
+          </div>
+          <p class="label opacity-60">&lt;Sheet&gt; · .pixel-scrim .pixel-sheet · from the bottom edge on phones, centred from sm</p>
 
           <SectionLabel class="mt-4 mb-2">Icons</SectionLabel>
           <div class="flex gap-3 text-heading">

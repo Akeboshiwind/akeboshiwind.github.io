@@ -250,6 +250,47 @@
     height: 6px;
   }
 
+  .pixel-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+  }
+
+  .pixel-sheet {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+    max-height: 80dvh;
+    padding: 1rem;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .pixel-sheet:focus {
+    outline: none;
+  }
+
+  .pixel-sheet > .section-label {
+    flex-shrink: 0;
+  }
+
+  @media (width >= 40rem) {
+    .pixel-scrim {
+      align-items: center;
+      padding: 1.5rem;
+    }
+
+    .pixel-sheet {
+      max-width: 28rem;
+    }
+  }
+
   .pixel-icon {
     display: inline-flex;
     align-items: center;
