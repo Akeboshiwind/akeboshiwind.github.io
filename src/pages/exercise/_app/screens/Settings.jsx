@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { seedPool, seedTemplate } from '../seed.js';
+import { SectionLabel } from '../../../../components/pixel/SectionLabel.jsx';
 import { ScreenHeader } from '../components/ScreenHeader.jsx';
 
 export function Settings({ state, setState, navigate }) {
@@ -62,11 +63,11 @@ export function Settings({ state, setState, navigate }) {
       <ScreenHeader backLabel="← Back" onBack={() => navigate('/planner')} title="Settings" />
 
       <Section title="Backup">
+        <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={onPickFile} />
         <Action label="Export as JSON" description="Download your pool, template, and history." onClick={exportJson} />
         <Action label="Import from JSON" description="Replace your data from a previous export." onClick={() => fileRef.current?.click()} />
-        <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={onPickFile} />
         {importError && (
-          <p className="text-sm text-red-600 dark:text-red-400 mt-2">{importError}</p>
+          <p className="text-sm text-danger px-4 py-3">{importError}</p>
         )}
       </Section>
 
@@ -90,7 +91,7 @@ export function Settings({ state, setState, navigate }) {
         />
       </Section>
 
-      <p className="text-xs text-gray-500 dark:text-gray-400 mt-8 text-center">
+      <p className="label opacity-70 mt-8 text-center">
         Stored locally in this browser. Use Export regularly if you don't want to lose it.
       </p>
     </>
@@ -100,10 +101,8 @@ export function Settings({ state, setState, navigate }) {
 function Section({ title, children }) {
   return (
     <section className="mb-6">
-      <h2 className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-        {title}
-      </h2>
-      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+      <SectionLabel className="mb-2">{title}</SectionLabel>
+      <div className="pixel-panel divide-y-2 divide-border">
         {children}
       </div>
     </section>
@@ -115,16 +114,11 @@ function Action({ label, description, onClick, danger }) {
     <button
       type="button"
       onClick={onClick}
-      className={[
-        'w-full text-left px-4 py-3 transition-colors',
-        danger
-          ? 'text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
-          : 'hover:bg-gray-50 dark:hover:bg-gray-700/50',
-      ].join(' ')}
+      className={`w-full text-left px-4 py-3 ${danger ? 'text-danger hover:bg-danger hover:text-bg' : 'hover:text-accent'}`}
     >
-      <p className="font-medium text-sm">{label}</p>
+      <p className="label">{label}</p>
       {description && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>
+        <p className="text-sm opacity-70 mt-0.5">{description}</p>
       )}
     </button>
   );

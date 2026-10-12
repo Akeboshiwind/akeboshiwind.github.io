@@ -11,8 +11,8 @@ export function HistoryDetail({ state, entryId, navigate }) {
   if (!entry) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Not found.</p>
-        <button onClick={() => navigate('/history')} className="mt-2 text-sm underline">
+        <p className="opacity-70">Not found.</p>
+        <button onClick={() => navigate('/history')} className="pixel-button mt-2">
           Back to history
         </button>
       </div>
@@ -28,8 +28,8 @@ export function HistoryDetail({ state, entryId, navigate }) {
       <ScreenHeader backLabel="← History" onBack={() => navigate('/history')} title={DAY_NAMES[entry.day]} />
 
       <header className="mb-4 text-center">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{entry.focus}</p>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+        <p className="text-sm">{entry.focus}</p>
+        <p className="label opacity-70 mt-1">
           {[prettyDate(entry.date), `${done}/${total} done`, formatDuration(entry)].filter(Boolean).join(' · ')}
         </p>
       </header>
