@@ -133,7 +133,7 @@ function ImageSlot({ label, value, onImage }) {
   );
 }
 
-function UploadScreen({ image1, image2, onImage, onSwap, onCompare }) {
+function UploadScreen({ historyUrl, image1, image2, onImage, onSwap, onCompare }) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <div className="max-w-2xl mx-auto px-4 py-8">
@@ -555,7 +555,7 @@ function CompareScreen({ image1, image2, transform1, transform2, onTransformChan
   );
 }
 
-function App({ historyUrl }) {
+export function App({ historyUrl }) {
   const [view, setView] = useState('upload');
   const [data, setData] = useState(loadStored);
 
@@ -605,6 +605,7 @@ function App({ historyUrl }) {
 
   return (
     <UploadScreen
+      historyUrl={historyUrl}
       image1={data.image1}
       image2={data.image2}
       onImage={handleImage}
@@ -615,4 +616,4 @@ function App({ historyUrl }) {
 }
 
 const mount = document.getElementById('app');
-createRoot(mount).render(<App historyUrl={mount.dataset.historyUrl} />);
+if (mount) createRoot(mount).render(<App historyUrl={mount.dataset.historyUrl} />);
