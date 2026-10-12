@@ -8,5 +8,6 @@
     "learning"
   ],
   "category": "learning",
-  "icon": "languages"
+  "icon": "languages",
+  "dither": "ui"
 }
