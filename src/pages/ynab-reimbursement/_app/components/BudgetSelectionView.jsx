@@ -1,4 +1,5 @@
 import React from 'react';
+import { SectionLabel } from '../../../../components/pixel/SectionLabel.jsx';
 
 export const BudgetSelectionView = ({
   isLoading,
@@ -7,43 +8,34 @@ export const BudgetSelectionView = ({
   onLogout,
   onBudgetSelect
 }) => (
-  <div className="max-w-md mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-    <h2 className="text-xl font-bold mb-4">Select Your Budget</h2>
+  <section>
+    <SectionLabel className="mb-3">Select Your Budget</SectionLabel>
 
     {isLoading ? (
-      <p>Loading budgets...</p>
+      <p className="label">Loading budgets...</p>
     ) : error ? (
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-        <p>{error}</p>
-        <button
-          onClick={onLogout}
-          className="mt-2 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded text-sm"
-        >
+      <div className="pixel-panel border-danger p-3 flex flex-col items-start gap-2">
+        <p className="text-danger m-0">{error}</p>
+        <button onClick={onLogout} className="pixel-button" data-variant="danger">
           Logout
         </button>
       </div>
     ) : budgets.length === 0 ? (
       <p>No budgets found for this account.</p>
     ) : (
-      <div className="space-y-2">
+      <ul className="flex flex-col gap-2 m-0 p-0 list-none">
         {budgets.map(budget => (
-          <div
-            key={budget.id}
-            onClick={() => onBudgetSelect(budget.id)}
-            className="cursor-pointer p-3 border border-gray-200 rounded hover:bg-blue-50
-                       dark:border-gray-700 dark:hover:bg-blue-900/20"
-          >
-            {budget.name}
-          </div>
+          <li key={budget.id}>
+            <button onClick={() => onBudgetSelect(budget.id)} className="pixel-button w-full text-left py-2">
+              {budget.name}
+            </button>
+          </li>
         ))}
-      </div>
+      </ul>
     )}
 
-    <button
-      onClick={onLogout}
-      className="mt-4 text-sm text-gray-500 hover:text-gray-700"
-    >
+    <button onClick={onLogout} className="pixel-button mt-4">
       Use a different token
     </button>
-  </div>
+  </section>
 );

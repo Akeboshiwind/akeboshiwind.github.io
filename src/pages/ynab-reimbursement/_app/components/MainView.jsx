@@ -1,5 +1,32 @@
 import React from 'react';
 import { milliunitsToDisplayAmount, formatMonth, getCurrentMonth } from '../utils.js';
+import { SectionLabel } from '../../../../components/pixel/SectionLabel.jsx';
+import { Icon } from '../../../../components/pixel/Icon.jsx';
+import { PageHeader } from './PageHeader.jsx';
+import slidersIcon from 'pixelarticons/svg/sliders.svg?raw';
+import reloadIcon from 'pixelarticons/svg/reload.svg?raw';
+import warningIcon from 'pixelarticons/svg/warning-diamond.svg?raw';
+
+const Row = ({ label, children }) => (
+  <div className="flex justify-between items-baseline gap-4 py-1.5 pixel-line">
+    <span>{label}</span>
+    <span className="pixel-num">{children}</span>
+  </div>
+);
+
+const Note = ({ children }) => (
+  <p className="label opacity-60 normal-case tracking-normal mt-2 mb-0">{children}</p>
+);
+
+const Warnings = ({ title, children }) => (
+  <section className="pixel-panel border-warn p-3">
+    <h2 className="label text-warn flex items-center gap-2 mt-0 mb-2">
+      <Icon svg={warningIcon} className="w-4 h-4" />
+      {title}
+    </h2>
+    {children}
+  </section>
+);
 
 export const MainView = ({
   reimbursementData,
@@ -27,6 +54,8 @@ export const MainView = ({
     warnings: transactionWarnings
   } = reimbursementData;
 
+  const money = (milliunits) => `${currencySymbol}${milliunitsToDisplayAmount(milliunits)}`;
+
   const hisTotal = hisTotalShared + hisTotalForHer;
   const herTotal = herTotalShared + herTotalForHim;
   const total = hisTotal + herTotal;
@@ -53,293 +82,192 @@ export const MainView = ({
     onMonthChange(exists ? currentMonth : availableMonths[0].month);
   };
 
+  const groups = Object.entries(
+    categorySummary.reduce((acc, cat) => {
+      if (!acc[cat.groupId]) {
+        acc[cat.groupId] = { groupName: cat.groupName, categories: [] };
+      }
+      acc[cat.groupId].categories.push(cat);
+      return acc;
+    }, {})
+  );
+
+  const balanced = reimbursementAmount === 0;
+
   return (
-    <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-md">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">YNAB Reimbursement Report</h1>
-        <button
-          onClick={onOpenConfig}
-          className="p-2 text-gray-500 hover:text-gray-700"
-          aria-label="Open Configuration"
-        >
-          ⚙️
-        </button>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        action={
+          <button onClick={onOpenConfig} className="pixel-button mt-4" aria-label="Open Configuration">
+            <Icon svg={slidersIcon} className="w-4 h-4" />
+          </button>
+        }
+      />
 
       {warnings.length > 0 && (
-        <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-900/50">
-          <h2 className="text-lg font-semibold text-yellow-700 dark:text-yellow-400 mb-2">
-            ⚠️ Configuration Warnings
-          </h2>
-          <p className="mb-2 text-sm">
-            Please fix the following issues before calculations can be performed:
-          </p>
-          <ul className="list-disc pl-5 space-y-1 text-sm">
+        <Warnings title="Configuration Warnings">
+          <p className="mt-0 mb-2">Please fix the following issues before calculations can be performed:</p>
+          <ul className="flex flex-col gap-2 m-0 p-0 list-none">
             {warnings.map((warning, index) => (
-              <li key={index}>
-                {warning.message}{' '}
+              <li key={index} className="flex justify-between items-baseline gap-4">
+                <span>{warning.message}</span>
                 <button
                   onClick={() => {
                     onOpenConfig();
                     onOpenConfigTab(warning.tabToFix);
                   }}
-                  className="text-blue-500 hover:underline"
+                  className="pixel-button"
                 >
                   Fix
                 </button>
               </li>
             ))}
           </ul>
-        </div>
+        </Warnings>
       )}
 
       {warnings.length === 0 && transactionWarnings.length > 0 && (
-        <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-900/50">
-          <h2 className="text-lg font-semibold text-yellow-700 dark:text-yellow-400 mb-2">
-            ⚠️ Transaction Warnings
-          </h2>
-          <p className="mb-2 text-sm">
-            Some transactions have issues that need to be fixed directly in YNAB:
-          </p>
-          <ul className="list-disc pl-5 space-y-1 text-sm">
+        <Warnings title="Transaction Warnings">
+          <p className="mt-0 mb-2">Some transactions have issues that need to be fixed directly in YNAB:</p>
+          <ul className="flex flex-col gap-2 m-0 p-0 list-none">
             {transactionWarnings.map((warning, index) => (
-              <li key={index} className="mb-2">
+              <li key={index}>
                 <div>{warning.message}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  {warning.details}
-                </div>
+                <Note>{warning.details}</Note>
               </li>
             ))}
           </ul>
-        </div>
+        </Warnings>
       )}
 
-      <div className="mb-6 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
-        <div className="flex justify-between items-center">
-          <button
-            onClick={goToPreviousMonth}
-            disabled={isLastMonth}
-            className={`px-3 py-1 ${
-              isLastMonth
-                ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
-                : 'bg-blue-500 hover:bg-blue-600 text-white'
-            } rounded`}
-          >
-            ← Prev
-          </button>
-
-          <div className="text-center">
-            <h2 className="text-xl font-semibold">{formatMonth(selectedMonth)}</h2>
-          </div>
-
-          <div className="flex">
-            <button
-              onClick={goToCurrentMonth}
-              disabled={availableMonths.length === 0 || isCurrentMonth}
-              className={`px-3 py-1 ${
-                availableMonths.length === 0 || isCurrentMonth
-                  ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
-                  : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500'
-              } rounded mr-2`}
-            >
-              Current
-            </button>
-            <button
-              onClick={goToNextMonth}
-              disabled={isFirstMonth}
-              className={`px-3 py-1 ${
-                isFirstMonth
-                  ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              } rounded`}
-            >
-              Next →
-            </button>
-          </div>
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <button onClick={goToPreviousMonth} disabled={isLastMonth} className="pixel-button">← Prev</button>
+          <h2 className="flex-1 text-center font-pixel text-pixel-md text-heading m-0">{formatMonth(selectedMonth)}</h2>
+          <button onClick={goToNextMonth} disabled={isFirstMonth} className="pixel-button">Next →</button>
         </div>
-
-        <div className="mt-4 flex justify-center">
+        <div className="flex justify-center gap-2">
+          <button
+            onClick={goToCurrentMonth}
+            disabled={availableMonths.length === 0 || isCurrentMonth}
+            className="pixel-button"
+          >
+            Current
+          </button>
           <button
             onClick={onFetchTransactions}
-            className="bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded flex items-center"
+            className="pixel-button flex items-center gap-2"
+            data-variant="primary"
             disabled={!selectedBudgetId || !selectedMonth}
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
+            <Icon svg={reloadIcon} className="w-4 h-4" />
             Import Transactions
           </button>
         </div>
-      </div>
+      </section>
 
       {warnings.length === 0 ? (
-        <>
-          {transactions.length === 0 ? (
-            <div className="text-center p-8 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-6">
-              <p className="text-lg mb-4">No transactions imported yet</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Click the "Import Transactions" button above to load transactions for the selected month.
+        transactions.length === 0 ? (
+          <div className="pixel-panel p-6 text-center">
+            <p className="label text-heading mt-0 mb-2">No transactions imported yet</p>
+            <p className="m-0">Click the "Import Transactions" button above to load transactions for the selected month.</p>
+          </div>
+        ) : (
+          <>
+            <section>
+              <SectionLabel className="mb-3">Reimbursement Due</SectionLabel>
+              <p
+                className={`font-pixel text-pixel-lg m-0 cursor-help ${balanced ? 'text-ok' : 'text-accent'}`}
+                title={`(${money(hisTotalShared)} + ${money(herTotalShared)}) ÷ 2 - ${money(hisTotalShared)} + (${money(herTotalForHim)} - ${money(hisTotalForHer)})`}
+              >
+                {reimbursementDirection === 'herToHim'
+                  ? `${money(reimbursementAmount)} - She should pay Him`
+                  : `${money(reimbursementAmount)} - He should pay Her`
+                }
               </p>
+              <Note>
+                Makes sure shared costs are split 50/50 and accounts for when one person paid for the other's personal expenses.
+              </Note>
+            </section>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              <section>
+                <SectionLabel className="mb-1">His Spending</SectionLabel>
+                <Row label="Spent on shared categories:">{money(hisTotalShared)}</Row>
+                <Row label="Spent on her categories:">{money(hisTotalForHer)}</Row>
+              </section>
+              <section>
+                <SectionLabel className="mb-1">Her Spending</SectionLabel>
+                <Row label="Spent on shared categories:">{money(herTotalShared)}</Row>
+                <Row label="Spent on his categories:">{money(herTotalForHim)}</Row>
+              </section>
             </div>
-          ) : (
-            <>
-              <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                  <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400 mb-2">His Spending</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Spent on shared categories:</span>
-                      <span className="font-semibold">{currencySymbol}{milliunitsToDisplayAmount(hisTotalShared)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Spent on her categories:</span>
-                      <span className="font-semibold">{currencySymbol}{milliunitsToDisplayAmount(hisTotalForHer)}</span>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="bg-pink-50 dark:bg-pink-900/20 p-4 rounded-lg">
-                  <h3 className="text-lg font-semibold text-pink-700 dark:text-pink-400 mb-2">Her Spending</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Spent on shared categories:</span>
-                      <span className="font-semibold">{currencySymbol}{milliunitsToDisplayAmount(herTotalShared)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Spent on his categories:</span>
-                      <span className="font-semibold">{currencySymbol}{milliunitsToDisplayAmount(herTotalForHim)}</span>
-                    </div>
-                  </div>
-                </div>
+            <section>
+              <SectionLabel className="mb-1">Budget Refill Required</SectionLabel>
+              <Row label="She should refill:">{money(hisTotalForHer + herTotalForHer)}</Row>
+              <Row label="He should refill:">{money(herTotalForHim + hisTotalForHim)}</Row>
+              <Note>
+                Personal spending from shared accounts needs to be reimbursed back to the shared budget. This ensures only agreed-upon shared expenses remain in the shared budget.
+              </Note>
+            </section>
+
+            <section>
+              <SectionLabel className="mb-3">Shared Spending by Category</SectionLabel>
+              <div className="overflow-x-auto">
+                <table className="pixel-table">
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th className="text-right">His</th>
+                      <th className="text-right">Her</th>
+                      <th className="text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groups.map(([groupId, group]) => {
+                      const groupHisTotal = group.categories.reduce((sum, cat) => sum + cat.hisSpending, 0);
+                      const groupHerTotal = group.categories.reduce((sum, cat) => sum + cat.herSpending, 0);
+
+                      return (
+                        <React.Fragment key={groupId}>
+                          <tr className="text-heading">
+                            <td className="label">{group.groupName}</td>
+                            <td className="pixel-num text-right">{money(groupHisTotal)}</td>
+                            <td className="pixel-num text-right">{money(groupHerTotal)}</td>
+                            <td className="pixel-num text-right">{money(groupHisTotal + groupHerTotal)}</td>
+                          </tr>
+
+                          {group.categories.map(category => {
+                            const catTotal = category.hisSpending + category.herSpending;
+                            if (catTotal <= 0) return null;
+                            return (
+                              <tr key={category.categoryId}>
+                                <td className="pl-3 sm:pl-4">{category.categoryName}</td>
+                                <td className="pixel-num text-right">{money(category.hisSpending)}</td>
+                                <td className="pixel-num text-right">{money(category.herSpending)}</td>
+                                <td className="pixel-num text-right">{money(catTotal)}</td>
+                              </tr>
+                            );
+                          })}
+                        </React.Fragment>
+                      );
+                    })}
+
+                    <tr className="text-heading">
+                      <td className="label">Grand Total</td>
+                      <td className="pixel-num text-right">{money(hisTotal)}</td>
+                      <td className="pixel-num text-right">{money(herTotal)}</td>
+                      <td className="pixel-num text-right">{money(total)}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-
-              <div className="mb-6 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                <div className="flex items-center mb-2">
-                  <h3 className="text-lg font-semibold text-green-700 dark:text-green-400">
-                    Reimbursement Due
-                  </h3>
-                  <span
-                    className="ml-2 cursor-help text-green-600 dark:text-green-400"
-                    title="Makes sure shared costs are split 50/50 and accounts for when one person paid for the other's personal expenses."
-                  >
-                    ℹ️
-                  </span>
-                </div>
-
-                <div className="text-center py-3">
-                  <div className="text-2xl font-bold mb-2">
-                    <span
-                      className="cursor-help"
-                      title={`(${currencySymbol}${milliunitsToDisplayAmount(hisTotalShared)} + ${currencySymbol}${milliunitsToDisplayAmount(herTotalShared)}) ÷ 2 - ${currencySymbol}${milliunitsToDisplayAmount(hisTotalShared)} + (${currencySymbol}${milliunitsToDisplayAmount(herTotalForHim)} - ${currencySymbol}${milliunitsToDisplayAmount(hisTotalForHer)})`}
-                    >
-                      {reimbursementDirection === 'herToHim'
-                        ? `${currencySymbol}${milliunitsToDisplayAmount(reimbursementAmount)} - She should pay Him`
-                        : `${currencySymbol}${milliunitsToDisplayAmount(reimbursementAmount)} - He should pay Her`
-                      }
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
-                <div className="flex items-center mb-2">
-                  <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-400">
-                    Budget Refill Required
-                  </h3>
-                  <span
-                    className="ml-2 cursor-help text-yellow-600 dark:text-yellow-400"
-                    title="Personal spending from shared accounts needs to be reimbursed back to the shared budget. This ensures only agreed-upon shared expenses remain in the shared budget."
-                  >
-                    ℹ️
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span>She should refill:</span>
-                    <span className="font-semibold">{currencySymbol}{milliunitsToDisplayAmount(hisTotalForHer + herTotalForHer)}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span>He should refill:</span>
-                    <span className="font-semibold">{currencySymbol}{milliunitsToDisplayAmount(herTotalForHim + hisTotalForHim)}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3">Shared Spending by Category</h3>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-gray-100 dark:bg-gray-700">
-                        <th className="text-left p-2 border border-gray-300 dark:border-gray-600">Category</th>
-                        <th className="text-right p-2 border border-gray-300 dark:border-gray-600">His Spending</th>
-                        <th className="text-right p-2 border border-gray-300 dark:border-gray-600">Her Spending</th>
-                        <th className="text-right p-2 border border-gray-300 dark:border-gray-600">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Object.entries(
-                        categorySummary.reduce((acc, cat) => {
-                          if (!acc[cat.groupId]) {
-                            acc[cat.groupId] = { groupName: cat.groupName, categories: [] };
-                          }
-                          acc[cat.groupId].categories.push(cat);
-                          return acc;
-                        }, {})
-                      ).map(([groupId, group]) => {
-                        const groupHisTotal = group.categories.reduce((sum, cat) => sum + cat.hisSpending, 0);
-                        const groupHerTotal = group.categories.reduce((sum, cat) => sum + cat.herSpending, 0);
-                        const groupTotal = groupHisTotal + groupHerTotal;
-
-                        return (
-                          <React.Fragment key={groupId}>
-                            <tr className="bg-gray-100 dark:bg-gray-700 font-bold">
-                              <td className="p-2 border border-gray-300 dark:border-gray-600">{group.groupName}</td>
-                              <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(groupHisTotal)}</td>
-                              <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(groupHerTotal)}</td>
-                              <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(groupTotal)}</td>
-                            </tr>
-
-                            {group.categories.map(category => {
-                              const catTotal = category.hisSpending + category.herSpending;
-                              if (catTotal > 0) {
-                                return (
-                                  <tr key={category.categoryId}>
-                                    <td className="p-2 border border-gray-300 dark:border-gray-600 pl-6">{category.categoryName}</td>
-                                    <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(category.hisSpending)}</td>
-                                    <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(category.herSpending)}</td>
-                                    <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(catTotal)}</td>
-                                  </tr>
-                                );
-                              }
-                              return null;
-                            })}
-                          </React.Fragment>
-                        );
-                      })}
-
-                      <tr className="font-bold">
-                        <td className="p-2 border border-gray-300 dark:border-gray-600">Grand Total</td>
-                        <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(hisTotal)}</td>
-                        <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(herTotal)}</td>
-                        <td className="text-right p-2 border border-gray-300 dark:border-gray-600">{currencySymbol}{milliunitsToDisplayAmount(total)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          )}
-        </>
+            </section>
+          </>
+        )
       ) : (
-        <div className="text-center p-8">
-          <p className="text-lg">
-            Please fix the configuration warnings to view the reimbursement report.
-          </p>
-        </div>
+        <p className="text-center m-0">Please fix the configuration warnings to view the reimbursement report.</p>
       )}
     </div>
   );
