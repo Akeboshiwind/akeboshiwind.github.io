@@ -331,9 +331,7 @@ const SortingScreen = ({ algoKey, shuffledItems, onBack, onComplete }) => {
             </span>
           </div>
         </div>
-        <div className="pixel-panel h-3" aria-hidden="true">
-          <div className="h-full bg-accent" style={{ width: `${progressPct}%` }} />
-        </div>
+        <progress className="pixel-progress" value={progressPct} max={100} aria-hidden="true" />
       </div>
 
       <section className="pixel-panel flex flex-col p-4 sm:p-5">
