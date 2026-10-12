@@ -222,6 +222,11 @@
     background: var(--accent);
   }
 
+  .pixel-check[data-variant="ok"]:checked {
+    border-color: var(--ok);
+    background: var(--ok);
+  }
+
   /* A tick on a 6×6 grid drawn at 12px, so its pixels are the border's 2px. */
   .pixel-check:checked::before {
     content: "";

@@ -62,8 +62,9 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
           <div class="flex gap-4">
             <label class="flex items-center gap-2"><input type="checkbox" class="pixel-check" /> Off</label>
             <label class="flex items-center gap-2"><input type="checkbox" class="pixel-check" checked /> On</label>
+            <label class="flex items-center gap-2"><input type="checkbox" class="pixel-check" data-variant="ok" checked /> Done</label>
           </div>
-          <p class="label opacity-60">.pixel-check</p>
+          <p class="label opacity-60">.pixel-check · data-variant="ok" fills --ok when checked</p>
 
           <SectionLabel class="mt-4 mb-2">Radio</SectionLabel>
           <div class="flex gap-4">
