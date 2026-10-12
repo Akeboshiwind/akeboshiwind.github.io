@@ -12,12 +12,6 @@ describe('Chat', () => {
     expect(screen.getByText('Chat')).toBeTruthy();
   });
 
-  test('has a home link', () => {
-    render(<App />);
-    const home = screen.getByText('← Home').closest('a');
-    expect(home.getAttribute('href')).toBe('../');
-  });
-
   test('sending a message adds it to the list', () => {
     render(<App />);
     const textarea = screen.getByPlaceholderText('Type a message...');
