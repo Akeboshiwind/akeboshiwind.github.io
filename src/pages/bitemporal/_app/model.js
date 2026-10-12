@@ -160,6 +160,14 @@ export function eventToDml(event, start, end) {
   );
 }
 
+const NON_TEXT_INPUTS = ['checkbox', 'radio', 'button', 'submit', 'reset', 'color', 'range', 'file', 'image'];
+
+/** Whether `element` is a field where Delete and Backspace edit what's typed. */
+export function isTextEntry(element) {
+  if (element.isContentEditable || element.tagName === 'TEXTAREA') return true;
+  return element.tagName === 'INPUT' && !NON_TEXT_INPUTS.includes(element.type);
+}
+
 export function generateDml(events, start, end) {
   return events.map((e) => eventToDml(e, start, end)).join('\n\n');
 }

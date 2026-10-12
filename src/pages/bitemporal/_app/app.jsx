@@ -21,6 +21,7 @@ import {
   removeIndices,
   updateIndices,
   generateDml,
+  isTextEntry,
 } from './model.js';
 
 const ABLY_API_KEY = 'Vr1zhQ.IsKO2g:nY_BkeBtmxQxs0W_MYZNkx-34cZBzzNLOrrAARrygfQ';
@@ -318,6 +319,7 @@ function onContextMenu(e) {
 }
 
 function onKeyDown(e) {
+  if (isTextEntry(e.target)) return;
   if ((e.key === 'Delete' || e.key === 'Backspace') && (selection.events.size || selection.points.size)) {
     e.preventDefault();
     deleteSelected(selection);

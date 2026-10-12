@@ -15,6 +15,7 @@ import {
   removeIndices,
   eventToDml,
   generateDml,
+  isTextEntry,
 } from './model.js';
 
 const closed = { _valid_from: 0.1, _valid_to: 0.4, _system_from: 0.2, color: [1, 2, 3] };
@@ -153,5 +154,26 @@ describe('DML', () => {
 
   test('events are separated by a blank line', () => {
     expect(generateDml([closed, open], start, end).split('\n\n')).toHaveLength(2);
+  });
+});
+
+describe('isTextEntry', () => {
+  const el = (html) => {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.firstElementChild;
+  };
+
+  test('text and date fields take typed keys', () => {
+    expect(isTextEntry(el('<input type="text">'))).toBe(true);
+    expect(isTextEntry(el('<input type="date">'))).toBe(true);
+    expect(isTextEntry(el('<textarea></textarea>'))).toBe(true);
+  });
+
+  test('the page, the canvas and buttons do not', () => {
+    expect(isTextEntry(document.body)).toBe(false);
+    expect(isTextEntry(el('<canvas></canvas>'))).toBe(false);
+    expect(isTextEntry(el('<button></button>'))).toBe(false);
+    expect(isTextEntry(el('<input type="checkbox">'))).toBe(false);
   });
 });
