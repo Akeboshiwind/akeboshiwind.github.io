@@ -265,7 +265,9 @@ Here's an example of the expected format with sample data:
   const allocationMatches = parseFloat(allocatedTotal) === parseFloat(billTotal);
 
   return (
-    <div className="text-text">
+    <div className="w-full max-w-[720px] mx-auto text-text">
+      <h1 className="page-title mt-4 mb-2">Bill Splitter</h1>
+      <p className="page-sub mt-0 mb-8">Split bills fairly between people with different meal costs.</p>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-8 text-sm">
         <div>
           <ol className="list-decimal marker:text-accent marker:font-pixel pl-5 space-y-1">
