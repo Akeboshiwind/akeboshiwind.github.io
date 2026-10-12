@@ -41,7 +41,7 @@ marked.use(
 
 mermaid.initialize({ startOnLoad: false });
 
-function App({ historyUrl }) {
+export function App({ historyUrl }) {
   const [text, setText] = useLocalStorage('markdown-preview:text', '');
   const [view, setView] = useState('editor');
   const previewRef = useRef(null);
@@ -110,5 +110,4 @@ function App({ historyUrl }) {
 }
 
 const mount = document.getElementById('app');
-const root = createRoot(mount);
-root.render(<App historyUrl={mount.dataset.historyUrl} />);
+if (mount) createRoot(mount).render(<App historyUrl={mount.dataset.historyUrl} />);
