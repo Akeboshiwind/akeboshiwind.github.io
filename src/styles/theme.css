@@ -267,7 +267,7 @@
     width: 100%;
     max-height: 80dvh;
     padding: 1rem;
-    border: 2px solid var(--border);
+    border-top: 2px solid var(--border);
     background: var(--bg);
     color: var(--text);
   }
@@ -288,6 +288,7 @@
 
     .pixel-sheet {
       max-width: 28rem;
+      border: 2px solid var(--border);
     }
   }
 
