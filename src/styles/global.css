@@ -29,12 +29,13 @@
   --text-pixel-lg: 22px;
 }
 
+/* --accent-light/-dark and --link-light/-dark come from ThemeInit, which emits the default accent (src/lib/accents.js) and the remembered one. */
 :root, [data-theme="light"] {
   --bg: #f1efe8;
   --text: #3b3a36;
   --heading: #1c1b19;
-  --accent: #e5501c;
-  --link: #b23b0e;
+  --accent: var(--accent-light);
+  --link: var(--link-light);
   --code-bg: #e6e3d9;
   --code-text: #1c1b19;
   --border: #d3cfc3;
@@ -44,8 +45,8 @@
   --bg: #232321;
   --text: #cfccc3;
   --heading: #efece4;
-  --accent: #ff6a33;
-  --link: #ff8c5e;
+  --accent: var(--accent-dark);
+  --link: var(--link-dark);
   --code-bg: #191917;
   --code-text: #e6e3d9;
   --border: #3d3c38;

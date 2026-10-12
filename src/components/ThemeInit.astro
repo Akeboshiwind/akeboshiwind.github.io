@@ -1,9 +1,14 @@
 ---
-// Runs before paint to set the theme on <html>, preventing FOUC.
+// Runs before paint to set the theme, accent colour and dice face on <html>, preventing FOUC.
 // Shared by Layout.astro (notes) and AppLayout.astro (SPAs) so one stored choice drives both surfaces.
+import accents from '../lib/accents.js?raw';
 import themeInit from '../lib/theme-init.js?raw';
+import { ACCENTS } from '../lib/accents.js';
 import { inlineScript } from '../lib/inline-script.js';
 
-const code = inlineScript([themeInit], 'initTheme();');
+const code = inlineScript([accents, themeInit], 'initTheme();');
+const [{ light, dark }] = ACCENTS;
+const defaults = `:root{--accent-light:${light.accent};--link-light:${light.link};--accent-dark:${dark.accent};--link-dark:${dark.link}}`;
 ---
+<style is:inline set:html={defaults}></style>
 <script is:inline set:html={code} />
