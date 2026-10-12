@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { ScreenHeader } from '../components/ScreenHeader.jsx';
 
 const EQUIPMENT_FILTERS = ['all', 'none', 'dumbbell', 'band', 'elliptical', 'other'];
 
@@ -17,24 +18,21 @@ export function Pool({ state, navigate }) {
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-4">
-        <button
-          type="button"
-          onClick={() => navigate('/planner')}
-          className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-        >
-          ← Back
-        </button>
-        <h1 className="text-2xl font-semibold flex-1 text-center">Exercises</h1>
-        <button
-          type="button"
-          onClick={() => navigate('/pool/new')}
-          aria-label="New exercise"
-          className="text-sm font-medium text-emerald-700 dark:text-emerald-300 hover:underline"
-        >
-          + New
-        </button>
-      </div>
+      <ScreenHeader
+        backLabel="← Back"
+        onBack={() => navigate('/planner')}
+        title="Exercises"
+        action={
+          <button
+            type="button"
+            onClick={() => navigate('/pool/new')}
+            aria-label="New exercise"
+            className="text-sm font-medium text-emerald-700 dark:text-emerald-300 hover:underline"
+          >
+            + New
+          </button>
+        }
+      />
 
       <input
         type="search"

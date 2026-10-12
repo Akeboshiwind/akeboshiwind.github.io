@@ -2,6 +2,7 @@ import { DAY_NAMES, totalUnits, completedUnits } from '../store.js';
 import { SectionBanner } from '../components/SectionBanner.jsx';
 import { ExerciseCard } from '../components/ExerciseCard.jsx';
 import { CircuitBlock } from '../components/CircuitBlock.jsx';
+import { ScreenHeader } from '../components/ScreenHeader.jsx';
 
 const noop = () => {};
 
@@ -24,19 +25,7 @@ export function HistoryDetail({ state, entryId, navigate }) {
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-4">
-        <button
-          type="button"
-          onClick={() => navigate('/history')}
-          className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-        >
-          ← History
-        </button>
-        <h1 className="text-2xl font-semibold flex-1 text-center">
-          {DAY_NAMES[entry.day]}
-        </h1>
-        <span className="w-12" />
-      </div>
+      <ScreenHeader backLabel="← History" onBack={() => navigate('/history')} title={DAY_NAMES[entry.day]} />
 
       <header className="mb-4 text-center">
         <p className="text-sm text-gray-500 dark:text-gray-400">{entry.focus}</p>

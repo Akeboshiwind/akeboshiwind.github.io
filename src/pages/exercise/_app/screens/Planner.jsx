@@ -1,23 +1,14 @@
 import { useState } from 'react';
 import { DAYS, DAY_NAMES, totalUnits } from '../store.js';
 import { GenerateRoutineSheet } from '../components/GenerateRoutineSheet.jsx';
+import { ScreenHeader } from '../components/ScreenHeader.jsx';
 
 export function Planner({ state, setState, navigate }) {
   const [generateOpen, setGenerateOpen] = useState(false);
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-4">
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-        >
-          ← Today
-        </button>
-        <h1 className="text-2xl font-semibold flex-1 text-center">Week template</h1>
-        <span className="w-12" />
-      </div>
+      <ScreenHeader backLabel="← Today" onBack={() => navigate('/')} title="Week template" />
 
       <button
         type="button"

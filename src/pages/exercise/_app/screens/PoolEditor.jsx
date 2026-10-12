@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { upsertPoolEntry, deletePoolEntry } from '../store.js';
+import { ScreenHeader } from '../components/ScreenHeader.jsx';
 
 const EMPTY_REPS = {
   kind: 'reps', name: '', description: '', tip: '',
@@ -38,19 +39,7 @@ export function PoolEditor({ state, setState, exerciseId, navigate }) {
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-4">
-        <button
-          type="button"
-          onClick={() => navigate('/pool')}
-          className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-        >
-          ← Pool
-        </button>
-        <h1 className="text-xl font-semibold flex-1 text-center">
-          {isNew ? 'New exercise' : 'Edit exercise'}
-        </h1>
-        <span className="w-12" />
-      </div>
+      <ScreenHeader backLabel="← Pool" onBack={() => navigate('/pool')} title={isNew ? 'New exercise' : 'Edit exercise'} titleClass="text-xl" />
 
       <Form
         initial={existing ?? EMPTY_REPS}

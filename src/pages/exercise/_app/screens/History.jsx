@@ -1,21 +1,12 @@
 import { DAY_NAMES, totalUnits, completedUnits } from '../store.js';
+import { ScreenHeader } from '../components/ScreenHeader.jsx';
 
 export function History({ state, navigate }) {
   const groups = groupByWeek(state.history);
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-4">
-        <button
-          type="button"
-          onClick={() => navigate('/planner')}
-          className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-        >
-          ← Back
-        </button>
-        <h1 className="text-2xl font-semibold flex-1 text-center">History</h1>
-        <span className="w-12" />
-      </div>
+      <ScreenHeader backLabel="← Back" onBack={() => navigate('/planner')} title="History" />
 
       {state.history.length === 0 && (
         <p className="text-sm text-gray-500 text-center py-12">
