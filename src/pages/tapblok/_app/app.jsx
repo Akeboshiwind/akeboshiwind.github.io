@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import lockIcon from 'pixelarticons/svg/lock.svg?raw';
 import unlockIcon from 'pixelarticons/svg/unlock.svg?raw';
 import { PAGE_BACKGROUND } from '../../../lib/accents.js';
+import { Icon } from '../../../components/pixel/Icon.jsx';
 import './unlock.css';
 
 // The code TapBlok's own "Your QR Code" screen shows — scanning it starts or
@@ -12,16 +13,6 @@ const PAYLOAD = 'TAPBLOK_TOGGLE';
 
 // The light theme's --heading on its page colour, in both themes: scanners want dark-on-light.
 const INK = '#1c1b19';
-
-function Icon({ svg, className }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`inline-block [&>svg]:w-full [&>svg]:h-full [&>svg]:[shape-rendering:crispEdges] ${className}`}
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
-  );
-}
 
 export function App() {
   const [unlocked, setUnlocked] = useState(false);
@@ -62,7 +53,7 @@ export function App() {
         <p className="page-sub max-w-xs">Scan this code to start or stop a monitoring session.</p>
       </header>
 
-      <div className={`border p-3 ${unlocked ? 'border-accent' : 'border-border'}`}>
+      <div className={`pixel-panel p-3 ${unlocked ? 'border-accent' : ''}`}>
         <div
           className="relative h-64 w-64 sm:h-80 sm:w-80"
           style={{ backgroundColor: PAGE_BACKGROUND }}
@@ -83,7 +74,7 @@ export function App() {
             className="tapblok-cover pointer-events-none absolute inset-0 flex items-center justify-center bg-bg"
           >
             <span data-dither="rings" className="absolute inset-0" />
-            <span className="relative flex flex-col items-center gap-2 border border-border bg-bg px-4 py-3">
+            <span className="pixel-panel relative flex flex-col items-center gap-2 bg-bg px-4 py-3">
               <Icon svg={lockIcon} className="h-10 w-10 text-accent" />
               <span className="label text-heading">Tap to unlock</span>
             </span>
@@ -110,7 +101,7 @@ export function App() {
             <button
               type="button"
               onClick={() => toggle(false)}
-              className="label cursor-pointer border border-border px-3 py-1.5 hover:border-accent hover:bg-accent hover:text-bg"
+              className="pixel-button"
             >
               Lock again
             </button>

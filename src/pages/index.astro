@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import CardList from '../components/CardList.astro';
 import Tabs from '../components/Tabs.astro';
-import SectionLabel from '../components/SectionLabel.astro';
+import SectionLabel from '../components/pixel/SectionLabel.astro';
 import { getCollection } from 'astro:content';
 
 const base = import.meta.env.BASE_URL;
@@ -49,11 +49,11 @@ const rest = allItems.filter(i => !i.pinned).sort((a, b) => b.date.getTime() - a
 
   {pinned.length > 0 && (
     <>
-      <SectionLabel>Pinned</SectionLabel>
+      <SectionLabel class="mt-8 mb-1">Pinned</SectionLabel>
       <CardList items={pinned} />
     </>
   )}
 
-  <SectionLabel>Recent</SectionLabel>
+  <SectionLabel class="mt-8 mb-1">Recent</SectionLabel>
   <CardList items={rest} />
 </Layout>

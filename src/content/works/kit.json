@@ -1,0 +1,12 @@
+{
+  "title": "Pixel Kit",
+  "stage": "scribble",
+  "published": "2026-10-12",
+  "description": "The buttons, chips, fields, panels, icons and colours the pixel-styled tools and posts are drawn from, side by side in light and dark.",
+  "tags": [
+    "tool"
+  ],
+  "category": "utilities",
+  "icon": "brush",
+  "dither": "ui"
+}

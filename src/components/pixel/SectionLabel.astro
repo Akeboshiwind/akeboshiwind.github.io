@@ -1,0 +1,12 @@
+---
+interface Props {
+  class?: string;
+}
+
+const { class: className = '' } = Astro.props;
+---
+
+<h2 class:list={['section-label', className]}>
+  <span><slot /></span>
+  <span data-dither="fade-x" class="section-fade" aria-hidden="true"></span>
+</h2>
