@@ -9,6 +9,7 @@ export default defineEcConfig({
   themes: ['github-light', 'github-dark'],
   themeCssSelector: (theme) => `[data-theme='${theme.type}']`,
   useDarkModeMediaQuery: false,
+  emitExternalStylesheet: false,
   defaultProps: { frame: 'none' },
   styleOverrides: {
     borderRadius: '0',
