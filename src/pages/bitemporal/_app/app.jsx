@@ -456,7 +456,7 @@ function commitRoomCodeEdit() {
   const { roomCodeInput, roomCode } = store.get();
   const code = normalizeRoomCode(roomCodeInput);
   if (code && code !== roomCode) {
-    ably.leavePresence(roomChannel(roomCode));
+    ably.leaveChannel(roomChannel(roomCode));
     enterRoom(code);
   }
   store.update({ roomCodeInput: null });

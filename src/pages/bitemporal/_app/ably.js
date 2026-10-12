@@ -16,8 +16,12 @@ export function enterPresence(name) {
   channel(name).presence.enter().catch((e) => console.log('Presence enter failed:', e));
 }
 
-export function leavePresence(name) {
-  channel(name).presence.leave();
+/** Leave `name`'s presence and drop every message and presence listener on it. */
+export function leaveChannel(name) {
+  const ch = channel(name);
+  ch.unsubscribe();
+  ch.presence.unsubscribe();
+  ch.presence.leave().catch((e) => console.log('Presence leave failed:', e));
 }
 
 /** Call `callback` on every presence change on `name`, and once when the connection first comes up. */
