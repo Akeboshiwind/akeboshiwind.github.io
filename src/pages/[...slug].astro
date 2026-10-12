@@ -24,14 +24,14 @@ const historyUrl = historyFromPath(`src/content/notes/${note.id}`);
   publishedTime={note.data.published}
 >
   <article class="prose prose-sm font-sans max-w-none leading-relaxed
-    prose-a:text-link prose-a:no-underline hover:prose-a:underline prose-a:visited:text-link-visited
-    prose-code:font-mono prose-code:bg-code-bg prose-code:text-code-text prose-code:px-1 prose-code:rounded-sm prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
+    prose-a:no-underline prose-a:hover:underline
+    prose-code:font-mono prose-code:bg-code-bg prose-code:text-code-text prose-code:px-1 prose-code:rounded-none prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
     prose-pre:font-mono">
     <h1>
-      <a href="/stages/" class="italic opacity-60 font-normal no-underline hover:underline">A {note.data.stage}:</a> {note.data.title}
+      <a href="/stages/" class="label block mb-2 font-normal text-accent no-underline hover:underline">A {note.data.stage}</a>{note.data.title}
     </h1>
 
-    <p class="font-mono text-[0.9rem]">
+    <p class="label">
       <time datetime={note.data.published.toISOString().split('T')[0]}>
         {note.data.published.toISOString().split('T')[0]}
       </time>

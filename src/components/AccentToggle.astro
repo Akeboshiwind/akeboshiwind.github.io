@@ -1,0 +1,67 @@
+---
+import { DEFAULT_FACE, DICE_FACES } from '../lib/accents.js';
+
+const { class: className = '' } = Astro.props;
+
+const RAINBOW = ['#8e3fd6', '#2f6fe0', '#2e9e48', '#f2c418', '#f28a12', '#e0302b'];
+const ARCH_CENTRE = [12, 20];
+
+const OUTLINE: Array<[number, number, number, number]> = [[4, 2, 16, 2], [4, 20, 16, 2], [2, 4, 2, 16], [20, 4, 2, 16]];
+const outlinePixels = OUTLINE.flatMap(([x0, y0, w, h]) =>
+  Array.from({ length: w * h }, (_, i) => [x0 + (i % w), y0 + Math.floor(i / w)] as [number, number]),
+);
+
+const distance = (x: number, y: number) => Math.hypot(x - ARCH_CENTRE[0], y - ARCH_CENTRE[1]);
+const reach = outlinePixels.map(([x, y]) => distance(x + 0.5, y + 0.5));
+const [near, far] = [Math.min(...reach), Math.max(...reach)];
+const bandAt = (x: number, y: number) =>
+  RAINBOW[Math.max(0, Math.min(RAINBOW.length - 1, Math.floor(((distance(x, y) - near) / (far - near)) * RAINBOW.length)))];
+
+const shown = (face: number) => `[data-accent-face="${face}"] .accent-toggle [data-pips="${face}"]`;
+const faceCss = [
+  '.accent-toggle [data-pips]{display:none}',
+  `${[
+    `:root:not([data-accent-face]) .accent-toggle [data-pips="${DEFAULT_FACE}"]`,
+    ...DICE_FACES.map((_, i) => shown(i + 1)),
+  ].join(',')}{display:inline}`,
+].join('');
+---
+<button
+  type="button"
+  class:list={['accent-toggle inline-flex items-center justify-center w-9 h-9 border border-border hover:border-accent cursor-pointer', className]}
+  aria-label="Re-roll accent colour"
+  title="Re-roll accent colour"
+>
+  <svg viewBox="0 0 24 24" width="24" height="24" shape-rendering="crispEdges" aria-hidden="true">
+    {outlinePixels.map(([x, y]) => <rect x={x} y={y} width="1" height="1" fill={bandAt(x + 0.5, y + 0.5)} />)}
+    {DICE_FACES.map((pips, i) => (
+      <g data-pips={i + 1}>
+        {pips.map(([x, y]) => <rect x={x} y={y} width="4" height="4" fill={bandAt(x + 2, y + 2)} />)}
+      </g>
+    ))}
+  </svg>
+</button>
+
+<style is:inline set:html={faceCss}></style>
+
+<script>
+  import { ACCENTS, nextAccent, nextFace } from '../lib/accents.js';
+
+  const root = document.documentElement;
+  const btn = document.querySelector<HTMLButtonElement>('.accent-toggle')!;
+  const sync = () => {
+    const name = ACCENTS.find((a) => a.id === root.dataset.accent)?.name ?? ACCENTS[0].name;
+    const label = `Accent: ${name}. Re-roll`;
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('title', label);
+  };
+  btn.addEventListener('click', () => {
+    (window as any).__setAccent?.({
+      id: nextAccent(root.dataset.accent ?? ''),
+      face: nextFace(Number(root.dataset.accentFace)),
+    });
+    sync();
+  });
+  window.addEventListener('storage', (e) => { if (e.key === 'accent') sync(); });
+  sync();
+</script>

@@ -1,0 +1,11 @@
+---
+// Inlined as a classic script at the end of <body> so the first ResizeObserver paint lands before first paint;
+// a module script is deferred until after it, so every dither popped in.
+import engine from '../lib/dither.js?raw';
+import dom from '../lib/dither-dom.js?raw';
+import { inlineScript } from '../lib/inline-script.js';
+
+const code = inlineScript([engine, dom], 'ditherAll();');
+---
+
+<script is:inline set:html={code} />

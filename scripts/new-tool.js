@@ -99,6 +99,7 @@ writeFileSync(worksFile, JSON.stringify({
   tags: ['tool'],
   category: 'utilities',
   icon: 'wrench',
+  dither: 'ui',
 }, null, 2) + '\n');
 
 console.log(`Created:`);
@@ -112,6 +113,8 @@ console.log(`  - Add a screenshot at src/assets/works/${slug}.png`);
 console.log(`  - Fill in the description in ${worksFile}`);
 console.log(`  - Pick a category + icon in ${worksFile} (defaults: utilities / wrench)`);
 console.log(`    categories: finance, health, ai, images, utilities, fun, learning, talks, personal`);
-console.log(`    icon: any name from https://lucide.dev/icons/`);
+console.log(`    icon: a pixelarticons name (https://pixelarticons.com/), or a lucide name aliased in Icon.astro`);
+console.log(`  - Set dither in ${worksFile} once the screenshot exists (default: ui)`);
+console.log(`    ui: app UI (panels, text, buttons); image: mainly a picture, photo or illustration`);
 console.log(`  - Study 2-3 existing React apps for patterns (NOT bitemporal/christmas/chat-wrapped)`);
 console.log(`  - Run \`npm test\` to verify everything still passes`);

@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import CardList from '../components/CardList.astro';
 import Tabs from '../components/Tabs.astro';
+import SectionLabel from '../components/SectionLabel.astro';
 import { getCollection } from 'astro:content';
 
 const base = import.meta.env.BASE_URL;
@@ -15,9 +16,9 @@ function workUrl(work: { id: string; data: { url?: string } }) {
   return work.data.url || `${base}${work.id.replace('.json', '')}/`;
 }
 
-function screenshot(work: { id: string }) {
-  const key = `../assets/works/${work.id.replace('.json', '')}.png`;
-  return screenshots[key]?.default;
+function thumbnail(work: { id: string; data: { dither: 'ui' | 'image' } }) {
+  const src = screenshots[`../assets/works/${work.id.replace('.json', '')}.png`]?.default;
+  return src && { src, dither: work.data.dither };
 }
 
 const allItems = [
@@ -34,7 +35,7 @@ const allItems = [
     stage: work.data.stage,
     description: work.data.description,
     date: work.data.updated ?? work.data.published,
-    image: screenshot(work),
+    image: thumbnail(work),
     pinned: work.data.pinned,
   })),
 ];
@@ -48,11 +49,11 @@ const rest = allItems.filter(i => !i.pinned).sort((a, b) => b.date.getTime() - a
 
   {pinned.length > 0 && (
     <>
-      <h2 class="text-sm font-semibold text-heading mt-6 mb-1 uppercase tracking-wide opacity-60">Pinned</h2>
+      <SectionLabel>Pinned</SectionLabel>
       <CardList items={pinned} />
     </>
   )}
 
-  <h2 class="text-sm font-semibold text-heading mt-6 mb-1 uppercase tracking-wide opacity-60">Recent</h2>
+  <SectionLabel>Recent</SectionLabel>
   <CardList items={rest} />
 </Layout>

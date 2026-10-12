@@ -1,9 +1,16 @@
 ---
+import AccentToggle from './AccentToggle.astro';
+import Logo from './Logo.astro';
 import ThemeToggle from './ThemeToggle.astro';
 const base = import.meta.env.BASE_URL;
 ---
 
-<header class="mt-4 mb-8 flex items-center justify-between gap-4">
-  <a href={base} class="text-xl font-bold text-heading no-underline hover:no-underline">{`By the Rocks`}</a>
-  <ThemeToggle />
+<header class="mt-6 mb-8 flex items-center justify-between gap-4">
+  <a href={base} class="no-underline hover:no-underline">
+    <Logo />
+  </a>
+  <div class="flex items-center gap-2">
+    <AccentToggle />
+    <ThemeToggle />
+  </div>
 </header>

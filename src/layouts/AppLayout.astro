@@ -1,6 +1,7 @@
 ---
 import '../styles/app.css';
 import ThemeInit from '../components/ThemeInit.astro';
+import Favicons from '../components/Favicons.astro';
 import { historyFromPagePath } from '../lib/history.js';
 
 const { title } = Astro.props;
@@ -27,6 +28,7 @@ window.__vite_plugin_react_preamble_installed__ = true;
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
+  <Favicons />
   <slot name="head" />
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen">

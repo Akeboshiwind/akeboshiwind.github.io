@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import CardList from '../../components/CardList.astro';
 import Tabs from '../../components/Tabs.astro';
+import SectionLabel from '../../components/SectionLabel.astro';
 
 const base = import.meta.env.BASE_URL;
 
@@ -27,16 +28,14 @@ const grouped = years.map(year => ({
 <Layout title="Posts" description="Everything written on this site, newest first.">
   <Tabs active="posts" />
 
-  <h1 class="text-2xl font-bold text-heading mt-4 mb-2">Posts</h1>
-  <p class="text-sm opacity-70 mt-0 mb-4">
+  <h1 class="page-title mt-6 mb-2">Posts</h1>
+  <p class="page-sub mt-0 mb-4">
     {items.length} {items.length === 1 ? 'post' : 'posts'}, newest first. Dates are last updated.
   </p>
 
   {grouped.map(group => (
     <section class="mb-6">
-      <h2 class="text-sm font-semibold text-heading uppercase tracking-wide opacity-70 mt-0 mb-0 pb-1 border-b border-border">
-        {group.year}
-      </h2>
+      <SectionLabel class="mt-0">{group.year}</SectionLabel>
       <CardList items={group.items} showImages={false} />
     </section>
   ))}

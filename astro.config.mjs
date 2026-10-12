@@ -10,9 +10,7 @@ export default defineConfig({
   site: 'https://bythe.rocks',
   trailingSlash: 'always',
   integrations: [
-    expressiveCode({
-      themes: ['github-dark'],
-    }),
+    expressiveCode(),
     mdx(),
   ],
   vite: {

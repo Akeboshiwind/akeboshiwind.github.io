@@ -31,6 +31,7 @@ const works = defineCollection({
     pinned: z.boolean().optional().default(false),
     category: z.string().optional(),
     icon: z.string().optional(),
+    dither: z.enum(['ui', 'image']).default('ui'),
   }),
 });
 
