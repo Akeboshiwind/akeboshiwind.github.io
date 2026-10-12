@@ -17,6 +17,8 @@
   --color-bg: var(--bg);
   --color-accent: var(--accent);
   --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
   --color-code-bg: var(--code-bg);
   --color-code-text: var(--code-text);
   --font-sans: Verdana, sans-serif;
@@ -39,6 +41,8 @@
   --code-text: #1c1b19;
   --border: #d3cfc3;
   --danger: oklch(57.7% 0.245 27.325);
+  --ok: oklch(52.7% 0.154 150.069);
+  --warn: oklch(55.5% 0.163 48.998);
 }
 
 [data-theme="dark"] {
@@ -51,6 +55,8 @@
   --code-text: #e6e3d9;
   --border: #3d3c38;
   --danger: oklch(70.4% 0.191 22.216);
+  --ok: oklch(79.2% 0.209 151.711);
+  --warn: oklch(82.8% 0.189 84.429);
 }
 
 @layer base {

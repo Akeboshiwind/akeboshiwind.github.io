@@ -4,7 +4,7 @@ import SectionLabel from '../../components/pixel/SectionLabel.astro';
 import Icon from '../../components/pixel/Icon.astro';
 
 const themes = ['light', 'dark'];
-const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent', 'danger'];
+const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent', 'danger', 'ok', 'warn'];
 ---
 <PixelAppLayout title="Pixel Kit" wide>
   <main class="w-full max-w-[1100px] mx-auto flex flex-col gap-6">
@@ -91,6 +91,7 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
               </div>
             ))}
           </div>
+          <p class="label flex gap-4"><span class="text-ok">.text-ok</span><span class="text-warn">.text-warn</span><span class="text-danger">.text-danger</span></p>
         </section>
       ))}
     </div>
