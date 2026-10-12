@@ -272,6 +272,21 @@ describe('Meal Generator', () => {
     expect(lockButton(bands()[0]).getAttribute('aria-pressed')).toBe('false');
   });
 
+  test('the picker closes on its close button and its backdrop, leaving the band alone', () => {
+    render(<App />);
+    const before = names();
+
+    openPicker(0);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    openPicker(0);
+    fireEvent.click(screen.getByRole('dialog').parentElement);
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    expect(names()).toEqual(before);
+  });
+
   test('the keyboard shortcuts stand down while the picker is open', () => {
     render(<App />);
     const before = names();
@@ -330,6 +345,36 @@ describe('Meal Generator', () => {
     expect(names()).toEqual(shown);
     expect(lockButton(bands()[0]).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('button', { name: 'Back' }).disabled).toBe(false);
+  });
+
+  test("a palette saved under today's key and shape loads as it was left", () => {
+    localStorage.setItem('mealGenerator_state', JSON.stringify({
+      entries: [
+        [
+          { id: 'pasta', locked: false },
+          { id: 'rajma', locked: true },
+          { id: 'bhindi', locked: false },
+          { id: 'sambar', locked: false },
+          { id: 'palak-tofu', locked: false },
+        ],
+        [
+          { id: 'lasagne', locked: false },
+          { id: 'rajma', locked: true },
+          { id: 'egg-curry', locked: false },
+          { id: 'pav-baji', locked: true },
+          { id: 'gobi-subji', locked: false },
+        ],
+      ],
+      index: 1,
+    }));
+    render(<App />);
+
+    expect(names()).toEqual(['Lasagne', 'Rajma', 'Egg curry', 'Pav baji', 'Gobi subji']);
+    expect(bands().map(b => lockButton(b).getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false', 'true', 'false']);
+    expect(screen.getByText('2 / 2')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(names()).toEqual(['Pasta', 'Rajma', 'Bhindi', 'Sambar', 'Palak tofu']);
   });
 
   test('a corrupt stored palette falls back to a fresh one', () => {
