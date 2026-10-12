@@ -1,0 +1,512 @@
+<!DOCTYPE html><html lang="en" class="font-sans text-base leading-relaxed text-text bg-bg"> <head><style>:root{--accent-light:#e5501c;--link-light:#b23b0e;--accent-dark:#ff6a33;--link-dark:#ff8c5e}</style><script>(() => {
+const c3 = (n) => +n.toFixed(3);
+
+/** Light and dark `--accent`/`--link` for an OKLCH hue, at the lightness each theme's background needs. */
+const fromHue = (hue, chroma = 0.19) => ({
+  light: { accent: `oklch(0.62 ${chroma} ${hue})`, link: `oklch(0.47 ${c3(chroma * 0.85)} ${hue})` },
+  dark: { accent: `oklch(0.72 ${c3(chroma * 0.9)} ${hue})`, link: `oklch(0.80 ${c3(chroma * 0.7)} ${hue})` },
+});
+
+const DEFAULT_ACCENT = 'orange';
+
+/** The light theme's page colour, for the places outside CSS that need it: theme-color and the icon set. */
+const PAGE_BACKGROUND = '#f1efe8';
+
+const HUES = [
+  ['Red', 25], ['Vermilion', 40], ['Amber', 70], ['Ochre', 90], ['Olive', 120], ['Green', 150],
+  ['Teal', 185], ['Cyan', 215], ['Blue', 255], ['Indigo', 280], ['Violet', 305], ['Magenta', 335],
+];
+
+const ACCENTS = [
+  {
+    id: DEFAULT_ACCENT,
+    name: 'Orange',
+    light: { accent: '#e5501c', link: '#b23b0e' },
+    dark: { accent: '#ff6a33', link: '#ff8c5e' },
+  },
+  ...HUES.map(([name, hue]) => ({ id: `h${hue}`, name, ...fromHue(hue) })),
+];
+
+/**
+ * A random accent id other than `current`; an unknown `current` counts as the default.
+ *
+ * @param {string} current
+ * @param {() => number} [random] uniform in [0, 1)
+ */
+function nextAccent(current, random = Math.random) {
+  const from = ACCENTS.some((a) => a.id === current) ? current : DEFAULT_ACCENT;
+  const others = ACCENTS.filter((a) => a.id !== from);
+  return others[Math.floor(random() * others.length)].id;
+}
+
+const [L, M, R] = [5, 10, 15];
+
+/** Pip corners for die faces 1–6 (face n is `DICE_FACES[n - 1]`); each pip is 4×4 on a 24-unit icon. */
+const DICE_FACES = [
+  [[M, M]],
+  [[L, L], [R, R]],
+  [[L, L], [M, M], [R, R]],
+  [[L, L], [R, L], [L, R], [R, R]],
+  [[L, L], [R, L], [M, M], [L, R], [R, R]],
+  [[L, L], [R, L], [L, M], [R, M], [L, R], [R, R]],
+];
+
+const DEFAULT_FACE = 5;
+
+const isFace = (face) => Number.isInteger(face) && face >= 1 && face <= DICE_FACES.length;
+
+/**
+ * A random die face other than `current`, for the re-roll button.
+ *
+ * @param {number} current
+ * @param {() => number} [random] uniform in [0, 1)
+ */
+function nextFace(current, random = Math.random) {
+  const others = DICE_FACES.map((_, i) => i + 1).filter((f) => f !== current);
+  return others[Math.floor(random() * others.length)];
+}
+
+/**
+ * The remembered accent and dice face from their stored form; each part that is missing or invalid
+ * falls back to its default independently.
+ *
+ * @param {string | null} raw as written by `serialiseChoice`
+ * @returns {{ id: string, face: number }}
+ */
+function parseChoice(raw) {
+  let stored = null;
+  try { stored = JSON.parse(raw); } catch {}
+  const { id, face } = stored && typeof stored === 'object' ? stored : {};
+  return {
+    id: ACCENTS.some((a) => a.id === id) ? id : DEFAULT_ACCENT,
+    face: isFace(face) ? face : DEFAULT_FACE,
+  };
+}
+
+/** @param {{ id: string, face: number }} choice */
+const serialiseChoice = ({ id, face }) => JSON.stringify({ id, face });
+
+
+
+const ACCENT_VARS = [
+  ['--accent-light', 'light', 'accent'],
+  ['--link-light', 'light', 'link'],
+  ['--accent-dark', 'dark', 'accent'],
+  ['--link-dark', 'dark', 'link'],
+];
+
+/**
+ * Applies the remembered theme and accent to <html> before first paint, keeps them in step with other tabs,
+ * and installs `window.__setTheme(pref)` and `window.__setAccent({ id, face })` for the toggles.
+ */
+function initTheme() {
+  const root = document.documentElement;
+  const dark = window.matchMedia('(prefers-color-scheme: dark)');
+  const get = (key) => { try { return localStorage.getItem(key); } catch { return null; } };
+  const set = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
+
+  const readTheme = () => {
+    const pref = get('theme');
+    return pref === 'light' || pref === 'dark' ? pref : 'auto';
+  };
+  const applyTheme = (pref) => {
+    root.dataset.themePref = pref;
+    root.dataset.theme = pref === 'auto' ? (dark.matches ? 'dark' : 'light') : pref;
+  };
+  const applyAccent = ({ id, face }) => {
+    const accent = ACCENTS.find((a) => a.id === id);
+    root.dataset.accent = id;
+    root.dataset.accentFace = String(face);
+    for (const [name, theme, key] of ACCENT_VARS) root.style.setProperty(name, accent[theme][key]);
+  };
+
+  root.classList.add('js');
+  applyTheme(readTheme());
+  applyAccent(parseChoice(get('accent')));
+
+  dark.addEventListener('change', () => applyTheme(readTheme()));
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'theme') applyTheme(readTheme());
+    if (e.key === 'accent') applyAccent(parseChoice(get('accent')));
+  });
+  window.__setTheme = (pref) => {
+    set('theme', pref);
+    applyTheme(pref);
+  };
+  window.__setAccent = (choice) => {
+    set('accent', serialiseChoice(choice));
+    applyAccent(choice);
+  };
+}
+
+initTheme();
+})();</script><style>@keyframes undither {0% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3C%2Fsvg%3E") } 12.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 25% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 37.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 50% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 62.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 75% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 87.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 100% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") }}
+@keyframes redither {0% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 12.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 25% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 37.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 50% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 62.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 75% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 87.5% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%221%22%20height%3D%221%22%2F%3E%3C%2Fsvg%3E") } 100% { mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%204%22%20shape-rendering%3D%22crispEdges%22%3E%3C%2Fsvg%3E") }}</style><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="X-Clacks-Overhead" content="GNU Terry Pratchett"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=d2f361b1"><link rel="icon" type="image/svg+xml" href="/favicon.svg?v=d2f361b1"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=d2f361b1"><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=d2f361b1"><link rel="shortcut icon" href="/favicon.ico?v=d2f361b1"><link rel="manifest" href="/site.webmanifest?v=d2f361b1"><link rel="mask-icon" href="/safari-pinned-tab.svg?v=d2f361b1" color="#e5501c"><meta name="msapplication-TileColor" content="#f1efe8"><meta name="msapplication-config" content="/browserconfig.xml?v=d2f361b1"><meta name="theme-color" content="#f1efe8"><link rel="preload" href="/fonts/DepartureMono-Regular.woff2" as="font" type="font/woff2" crossorigin><!-- SEO --><title>A scribble: Making a case sensitive folder on MacOS | By the Rocks</title><meta name="description" content="Making a case sensitive folder on MacOS"><link rel="canonical" href="https://bythe.rocks/pr-preview/pr-75/macos-case-insensitive/"><!-- Open Graph --><meta property="og:type" content="article"><meta property="og:url" content="https://bythe.rocks/pr-preview/pr-75/macos-case-insensitive/"><meta property="og:title" content="A scribble: Making a case sensitive folder on MacOS | By the Rocks"><meta property="og:description" content="Making a case sensitive folder on MacOS"><meta property="og:site_name" content="By the Rocks"><meta property="article:published_time" content="2025-03-10T00:00:00.000Z"><!-- Twitter --><meta name="twitter:card" content="summary"><meta name="twitter:title" content="A scribble: Making a case sensitive folder on MacOS | By the Rocks"><meta name="twitter:description" content="Making a case sensitive folder on MacOS"><link rel="stylesheet" href="/pr-preview/pr-75/_astro/_slug_.COCY9n73.css"></head> <body class="mx-auto px-5 max-w-[720px]"> <header class="mt-6 mb-8 flex items-center justify-between gap-4"> <a href="/pr-preview/pr-75/" class="no-underline hover:no-underline"> <span class="flex items-center gap-3 text-heading"> <span data-dither="cairn" data-seed="2" data-px="1" class="w-9 h-9" aria-hidden="true"></span> <span class="font-pixel text-pixel-lg leading-none">By the Rocks</span> </span> </a> <div class="flex items-center gap-2"> <button type="button" class="accent-toggle inline-flex items-center justify-center w-9 h-9 border border-border hover:border-accent cursor-pointer" aria-label="Re-roll accent colour" title="Re-roll accent colour"> <svg viewBox="0 0 24 24" width="24" height="24" shape-rendering="crispEdges" aria-hidden="true"> <rect x="4" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="5" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="6" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="7" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="8" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="9" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="10" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="11" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="12" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="13" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="14" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="15" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="16" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="17" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="18" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="19" y="2" width="1" height="1" fill="#e0302b"></rect><rect x="4" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="5" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="6" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="7" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="8" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="9" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="10" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="11" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="12" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="13" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="14" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="15" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="16" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="17" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="18" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="19" y="3" width="1" height="1" fill="#e0302b"></rect><rect x="4" y="20" width="1" height="1" fill="#2e9e48"></rect><rect x="5" y="20" width="1" height="1" fill="#2f6fe0"></rect><rect x="6" y="20" width="1" height="1" fill="#2f6fe0"></rect><rect x="7" y="20" width="1" height="1" fill="#2f6fe0"></rect><rect x="8" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="9" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="10" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="11" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="12" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="13" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="14" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="15" y="20" width="1" height="1" fill="#8e3fd6"></rect><rect x="16" y="20" width="1" height="1" fill="#2f6fe0"></rect><rect x="17" y="20" width="1" height="1" fill="#2f6fe0"></rect><rect x="18" y="20" width="1" height="1" fill="#2f6fe0"></rect><rect x="19" y="20" width="1" height="1" fill="#2e9e48"></rect><rect x="4" y="21" width="1" height="1" fill="#2e9e48"></rect><rect x="5" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="6" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="7" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="8" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="9" y="21" width="1" height="1" fill="#8e3fd6"></rect><rect x="10" y="21" width="1" height="1" fill="#8e3fd6"></rect><rect x="11" y="21" width="1" height="1" fill="#8e3fd6"></rect><rect x="12" y="21" width="1" height="1" fill="#8e3fd6"></rect><rect x="13" y="21" width="1" height="1" fill="#8e3fd6"></rect><rect x="14" y="21" width="1" height="1" fill="#8e3fd6"></rect><rect x="15" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="16" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="17" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="18" y="21" width="1" height="1" fill="#2f6fe0"></rect><rect x="19" y="21" width="1" height="1" fill="#2e9e48"></rect><rect x="2" y="4" width="1" height="1" fill="#e0302b"></rect><rect x="3" y="4" width="1" height="1" fill="#e0302b"></rect><rect x="2" y="5" width="1" height="1" fill="#e0302b"></rect><rect x="3" y="5" width="1" height="1" fill="#e0302b"></rect><rect x="2" y="6" width="1" height="1" fill="#e0302b"></rect><rect x="3" y="6" width="1" height="1" fill="#f28a12"></rect><rect x="2" y="7" width="1" height="1" fill="#f28a12"></rect><rect x="3" y="7" width="1" height="1" fill="#f28a12"></rect><rect x="2" y="8" width="1" height="1" fill="#f28a12"></rect><rect x="3" y="8" width="1" height="1" fill="#f28a12"></rect><rect x="2" y="9" width="1" height="1" fill="#f28a12"></rect><rect x="3" y="9" width="1" height="1" fill="#f28a12"></rect><rect x="2" y="10" width="1" height="1" fill="#f28a12"></rect><rect x="3" y="10" width="1" height="1" fill="#f2c418"></rect><rect x="2" y="11" width="1" height="1" fill="#f2c418"></rect><rect x="3" y="11" width="1" height="1" fill="#f2c418"></rect><rect x="2" y="12" width="1" height="1" fill="#f2c418"></rect><rect x="3" y="12" width="1" height="1" fill="#f2c418"></rect><rect x="2" y="13" width="1" height="1" fill="#f2c418"></rect><rect x="3" y="13" width="1" height="1" fill="#f2c418"></rect><rect x="2" y="14" width="1" height="1" fill="#f2c418"></rect><rect x="3" y="14" width="1" height="1" fill="#f2c418"></rect><rect x="2" y="15" width="1" height="1" fill="#f2c418"></rect><rect x="3" y="15" width="1" height="1" fill="#2e9e48"></rect><rect x="2" y="16" width="1" height="1" fill="#f2c418"></rect><rect x="3" y="16" width="1" height="1" fill="#2e9e48"></rect><rect x="2" y="17" width="1" height="1" fill="#2e9e48"></rect><rect x="3" y="17" width="1" height="1" fill="#2e9e48"></rect><rect x="2" y="18" width="1" height="1" fill="#2e9e48"></rect><rect x="3" y="18" width="1" height="1" fill="#2e9e48"></rect><rect x="2" y="19" width="1" height="1" fill="#2e9e48"></rect><rect x="3" y="19" width="1" height="1" fill="#2e9e48"></rect><rect x="20" y="4" width="1" height="1" fill="#e0302b"></rect><rect x="21" y="4" width="1" height="1" fill="#e0302b"></rect><rect x="20" y="5" width="1" height="1" fill="#e0302b"></rect><rect x="21" y="5" width="1" height="1" fill="#e0302b"></rect><rect x="20" y="6" width="1" height="1" fill="#f28a12"></rect><rect x="21" y="6" width="1" height="1" fill="#e0302b"></rect><rect x="20" y="7" width="1" height="1" fill="#f28a12"></rect><rect x="21" y="7" width="1" height="1" fill="#f28a12"></rect><rect x="20" y="8" width="1" height="1" fill="#f28a12"></rect><rect x="21" y="8" width="1" height="1" fill="#f28a12"></rect><rect x="20" y="9" width="1" height="1" fill="#f28a12"></rect><rect x="21" y="9" width="1" height="1" fill="#f28a12"></rect><rect x="20" y="10" width="1" height="1" fill="#f2c418"></rect><rect x="21" y="10" width="1" height="1" fill="#f28a12"></rect><rect x="20" y="11" width="1" height="1" fill="#f2c418"></rect><rect x="21" y="11" width="1" height="1" fill="#f2c418"></rect><rect x="20" y="12" width="1" height="1" fill="#f2c418"></rect><rect x="21" y="12" width="1" height="1" fill="#f2c418"></rect><rect x="20" y="13" width="1" height="1" fill="#f2c418"></rect><rect x="21" y="13" width="1" height="1" fill="#f2c418"></rect><rect x="20" y="14" width="1" height="1" fill="#f2c418"></rect><rect x="21" y="14" width="1" height="1" fill="#f2c418"></rect><rect x="20" y="15" width="1" height="1" fill="#2e9e48"></rect><rect x="21" y="15" width="1" height="1" fill="#f2c418"></rect><rect x="20" y="16" width="1" height="1" fill="#2e9e48"></rect><rect x="21" y="16" width="1" height="1" fill="#f2c418"></rect><rect x="20" y="17" width="1" height="1" fill="#2e9e48"></rect><rect x="21" y="17" width="1" height="1" fill="#2e9e48"></rect><rect x="20" y="18" width="1" height="1" fill="#2e9e48"></rect><rect x="21" y="18" width="1" height="1" fill="#2e9e48"></rect><rect x="20" y="19" width="1" height="1" fill="#2e9e48"></rect><rect x="21" y="19" width="1" height="1" fill="#2e9e48"></rect> <g data-pips="1"> <rect x="10" y="10" width="4" height="4" fill="#2e9e48"></rect> </g><g data-pips="2"> <rect x="5" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="15" y="15" width="4" height="4" fill="#2f6fe0"></rect> </g><g data-pips="3"> <rect x="5" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="10" y="10" width="4" height="4" fill="#2e9e48"></rect><rect x="15" y="15" width="4" height="4" fill="#2f6fe0"></rect> </g><g data-pips="4"> <rect x="5" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="15" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="5" y="15" width="4" height="4" fill="#2f6fe0"></rect><rect x="15" y="15" width="4" height="4" fill="#2f6fe0"></rect> </g><g data-pips="5"> <rect x="5" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="15" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="10" y="10" width="4" height="4" fill="#2e9e48"></rect><rect x="5" y="15" width="4" height="4" fill="#2f6fe0"></rect><rect x="15" y="15" width="4" height="4" fill="#2f6fe0"></rect> </g><g data-pips="6"> <rect x="5" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="15" y="5" width="4" height="4" fill="#f28a12"></rect><rect x="5" y="10" width="4" height="4" fill="#2e9e48"></rect><rect x="15" y="10" width="4" height="4" fill="#2e9e48"></rect><rect x="5" y="15" width="4" height="4" fill="#2f6fe0"></rect><rect x="15" y="15" width="4" height="4" fill="#2f6fe0"></rect> </g> </svg> </button> <style>.accent-toggle [data-pips]{display:none}:root:not([data-accent-face]) .accent-toggle [data-pips="5"],[data-accent-face="1"] .accent-toggle [data-pips="1"],[data-accent-face="2"] .accent-toggle [data-pips="2"],[data-accent-face="3"] .accent-toggle [data-pips="3"],[data-accent-face="4"] .accent-toggle [data-pips="4"],[data-accent-face="5"] .accent-toggle [data-pips="5"],[data-accent-face="6"] .accent-toggle [data-pips="6"]{display:inline}</style> <script type="module">const s=n=>+n.toFixed(3),g=(n,c=.19)=>({light:{accent:`oklch(0.62 ${c} ${n})`,link:`oklch(0.47 ${s(c*.85)} ${n})`},dark:{accent:`oklch(0.72 ${s(c*.9)} ${n})`,link:`oklch(0.80 ${s(c*.7)} ${n})`}}),k="orange",A=[["Red",25],["Vermilion",40],["Amber",70],["Ochre",90],["Olive",120],["Green",150],["Teal",185],["Cyan",215],["Blue",255],["Indigo",280],["Violet",305],["Magenta",335]],r=[{id:k,name:"Orange",light:{accent:"#e5501c",link:"#b23b0e"},dark:{accent:"#ff6a33",link:"#ff8c5e"}},...A.map(([n,c])=>({id:`h${c}`,name:n,...g(c)}))];function $(n,c=Math.random){const a=r.some(l=>l.id===n)?n:k,i=r.filter(l=>l.id!==a);return i[Math.floor(c()*i.length)].id}const[t,o,e]=[5,10,15],b=[[[o,o]],[[t,t],[e,e]],[[t,t],[o,o],[e,e]],[[t,t],[e,t],[t,e],[e,e]],[[t,t],[e,t],[o,o],[t,e],[e,e]],[[t,t],[e,t],[t,o],[e,o],[t,e],[e,e]]];function h(n,c=Math.random){const a=b.map((i,l)=>l+1).filter(i=>i!==n);return a[Math.floor(c()*a.length)]}const d=document.documentElement,m=document.querySelector(".accent-toggle"),f=()=>{const c=`Accent: ${r.find(a=>a.id===d.dataset.accent)?.name??r[0].name}. Re-roll`;m.setAttribute("aria-label",c),m.setAttribute("title",c)};m.addEventListener("click",()=>{window.__setAccent?.({id:$(d.dataset.accent??""),face:h(Number(d.dataset.accentFace))}),f()});window.addEventListener("storage",n=>{n.key==="accent"&&f()});f();</script> <button type="button" class="theme-toggle inline-flex items-center justify-center w-9 h-9 border border-border text-text hover:text-bg hover:bg-accent hover:border-accent cursor-pointer" aria-label="Theme: auto" title="Theme: auto"> <span class="hidden pref-auto:inline-flex"><span class="pixel-icon inline-flex items-center justify-center w-6 h-6" data-astro-cid-patnjmll><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+  <path d="M4 2h16v2H4zm0 14h16v2H4zM2 4h2v12H2zm18 0h2v12h-2zm-9 14h2v2h-2zm-3 2h8v2H8z"/>
+</svg>
+</span> </span> <span class="hidden pref-light:inline-flex"><span class="pixel-icon inline-flex items-center justify-center w-6 h-6" data-astro-cid-patnjmll><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M13 22h-2v-3h2v3Zm-6-3H5v-2h2v2Zm12 0h-2v-2h2v2Zm-4-2H9v-2h6v2Zm-6-2H7V9h2v6Zm8 0h-2V9h2v6ZM5 13H2v-2h3v2Zm17 0h-3v-2h3v2Zm-7-4H9V7h6v2ZM7 7H5V5h2v2Zm12 0h-2V5h2v2Zm-6-2h-2V2h2v3Z"/></svg></span> </span> <span class="hidden pref-dark:inline-flex"><span class="pixel-icon inline-flex items-center justify-center w-6 h-6" data-astro-cid-patnjmll><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+  <path d="M18 22H8v-2h10v2ZM8 20H6v-2h2v2Zm12 0h-2v-2h2v2ZM6 18H4v-2h2v2Zm16 0h-2v-4h-2v-2h2v-2h2v8ZM4 16H2V6h2v10Zm14 0h-6v-2h6v2Zm-6-2h-2v-2h2v2Zm-2-2H8V6h2v6ZM6 6H4V4h2v2Zm8-2h-2v2h-2V4H6V2h8v2Z"/>
+</svg>
+</span> </span> </button> <script type="module">const t=["auto","light","dark"],n=document.querySelector(".theme-toggle"),c=()=>{const e=`Theme: ${document.documentElement.dataset.themePref??"auto"}`;n.setAttribute("aria-label",e),n.setAttribute("title",e)};n.addEventListener("click",()=>{const o=document.documentElement.dataset.themePref??"auto",e=t[(t.indexOf(o)+1)%t.length];window.__setTheme?.(e),c()});c();</script> </div> </header> <main>  <article class="prose prose-sm font-sans max-w-none leading-relaxed
+    prose-a:no-underline prose-a:hover:underline
+    prose-code:font-mono prose-code:bg-code-bg prose-code:text-code-text prose-code:px-1 prose-code:rounded-none prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
+    prose-pre:font-mono"> <h1> <a href="/stages/" class="label block mb-2 font-normal text-accent no-underline hover:underline">A scribble</a>Making a case sensitive folder on MacOS </h1> <p class="label"> <time datetime="2025-03-10"> 2025-03-10 </time> <span class="opacity-60">  · updated  <time datetime="2026-03-23"> 2026-03-23 </time> </span> <span class="opacity-60">  ·  <a href="https://github.com/akeboshiwind/akeboshiwind.github.io/commits/touch-reveal/src/content/notes/macos-case-insensitive.md" target="_blank" rel="noopener">history</a> </span> </p> <p>First we need to figure out which disk to create our new volume on:</p>
+<p>Here I’m copying whatever <code>Nix Store</code> is using, but really we just need whatever disk <code>Apple_APFS</code> is on.</p>
+<div class="expressive-code"><link rel="stylesheet" href="/pr-preview/pr-75/_astro/ec.e0f5k.css"><script type="module" src="/pr-preview/pr-75/_astro/ec.0vx5m.js"></script><figure class="frame"><figcaption class="header"></figcaption><pre data-language="sh"><code><div class="ec-line"><div class="code"><span style="--0:#808386;--1:#E1E4E8">REFERENCE_CONTAINER</span><span style="--0:#DC5562;--1:#F97583">=</span><span style="--0:#808386;--1:#E1E4E8">$(</span><span style="--0:#9371D1;--1:#B392F0">diskutil</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">info</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">"Nix Store"</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#DC5562;--1:#F97583">2></span><span style="--0:#6B85A3;--1:#9ECBFF">/dev/null</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#DC5562;--1:#F97583">|</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#9371D1;--1:#B392F0">grep</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">"Container:"</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#DC5562;--1:#F97583">|</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#9371D1;--1:#B392F0">awk</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">'{print $3}'</span><span style="--0:#808386;--1:#E1E4E8">)</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="REFERENCE_CONTAINER=$(diskutil info &#x22;Nix Store&#x22; 2>/dev/null | grep &#x22;Container:&#x22; | awk &#x27;{print $3}&#x27;)"><div></div></button></div></figure></div>
+<p>Now we can create a case-insensitive volume:</p>
+<div class="expressive-code"><figure class="frame"><figcaption class="header"></figcaption><pre data-language="sh"><code><div class="ec-line"><div class="code"><span style="--0:#808386;--1:#E1E4E8">VOLUME_NAME</span><span style="--0:#DC5562;--1:#F97583">=</span><span style="--0:#6B85A3;--1:#9ECBFF">"OsmTest"</span></div></div><div class="ec-line"><div class="code"><span style="--0:#9371D1;--1:#B392F0">diskutil</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">apfs</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">addVolume</span><span style="--0:#808386;--1:#E1E4E8"> $REFERENCE_CONTAINER </span><span style="--0:#6B85A3;--1:#9ECBFF">APFSX</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">"</span><span style="--0:#808386;--1:#E1E4E8">$VOLUME_NAME</span><span style="--0:#6B85A3;--1:#9ECBFF">"</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="VOLUME_NAME=&#x22;OsmTest&#x22;diskutil apfs addVolume $REFERENCE_CONTAINER APFSX &#x22;$VOLUME_NAME&#x22;"><div></div></button></div></figure></div>
+<p>We’ll need the device the volume is mounted at to mount later:</p>
+<div class="expressive-code"><figure class="frame"><figcaption class="header"></figcaption><pre data-language="sh"><code><div class="ec-line"><div class="code"><span style="--0:#808386;--1:#E1E4E8">VOLUME_DEVICE</span><span style="--0:#DC5562;--1:#F97583">=</span><span style="--0:#808386;--1:#E1E4E8">$(</span><span style="--0:#9371D1;--1:#B392F0">diskutil</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">info</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">"</span><span style="--0:#808386;--1:#E1E4E8">$VOLUME_NAME</span><span style="--0:#6B85A3;--1:#9ECBFF">"</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#DC5562;--1:#F97583">|</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#9371D1;--1:#B392F0">grep</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">"Device Node:"</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#DC5562;--1:#F97583">|</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#9371D1;--1:#B392F0">awk</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">'{print $3}'</span><span style="--0:#808386;--1:#E1E4E8">)</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="VOLUME_DEVICE=$(diskutil info &#x22;$VOLUME_NAME&#x22; | grep &#x22;Device Node:&#x22; | awk &#x27;{print $3}&#x27;)"><div></div></button></div></figure></div>
+<p>Next create the folder we want to mount to:</p>
+<div class="expressive-code"><figure class="frame"><figcaption class="header"></figcaption><pre data-language="sh"><code><div class="ec-line"><div class="code"><span style="--0:#808386;--1:#E1E4E8">MOUNT_POINT</span><span style="--0:#DC5562;--1:#F97583">=</span><span style="--0:#6B85A3;--1:#9ECBFF">~/test</span></div></div><div class="ec-line"><div class="code"><span style="--0:#9371D1;--1:#B392F0">mkdir</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#4085D4;--1:#79B8FF">-p</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">"</span><span style="--0:#808386;--1:#E1E4E8">$MOUNT_POINT</span><span style="--0:#6B85A3;--1:#9ECBFF">"</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="MOUNT_POINT=~/testmkdir -p &#x22;$MOUNT_POINT&#x22;"><div></div></button></div></figure></div>
+<p>(Why is this a requirement? Not sure)</p>
+<p>Now we can mount the folder:</p>
+<div class="expressive-code"><figure class="frame"><figcaption class="header"></figcaption><pre data-language="sh"><code><div class="ec-line"><div class="code"><span style="--0:#9371D1;--1:#B392F0">sudo</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">mount</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#4085D4;--1:#79B8FF">-t</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">apfs</span><span style="--0:#808386;--1:#E1E4E8"> $VOLUME_DEVICE </span><span style="--0:#6B85A3;--1:#9ECBFF">"</span><span style="--0:#808386;--1:#E1E4E8">$MOUNT_POINT</span><span style="--0:#6B85A3;--1:#9ECBFF">"</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="sudo mount -t apfs $VOLUME_DEVICE &#x22;$MOUNT_POINT&#x22;"><div></div></button></div></figure></div>
+<p>We won’t have much luck using it unless we set the user &#x26; group:</p>
+<div class="expressive-code"><figure class="frame"><figcaption class="header"></figcaption><pre data-language="sh"><code><div class="ec-line"><div class="code"><span style="--0:#808386;--1:#E1E4E8">USER_ID</span><span style="--0:#DC5562;--1:#F97583">=</span><span style="--0:#808386;--1:#E1E4E8">$(</span><span style="--0:#9371D1;--1:#B392F0">id</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#4085D4;--1:#79B8FF">-u</span><span style="--0:#808386;--1:#E1E4E8"> $USER)</span></div></div><div class="ec-line"><div class="code"><span style="--0:#808386;--1:#E1E4E8">GROUP_ID</span><span style="--0:#DC5562;--1:#F97583">=</span><span style="--0:#808386;--1:#E1E4E8">$(</span><span style="--0:#9371D1;--1:#B392F0">id</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#4085D4;--1:#79B8FF">-g</span><span style="--0:#808386;--1:#E1E4E8"> $USER)</span></div></div><div class="ec-line"><div class="code"><span style="--0:#9371D1;--1:#B392F0">sudo</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">chown</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">"</span><span style="--0:#808386;--1:#E1E4E8">$USER_ID</span><span style="--0:#6B85A3;--1:#9ECBFF">:</span><span style="--0:#808386;--1:#E1E4E8">$GROUP_ID</span><span style="--0:#6B85A3;--1:#9ECBFF">"</span><span style="--0:#808386;--1:#E1E4E8"> </span><span style="--0:#6B85A3;--1:#9ECBFF">"</span><span style="--0:#808386;--1:#E1E4E8">$MOUNT_POINT</span><span style="--0:#6B85A3;--1:#9ECBFF">"</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="USER_ID=$(id -u $USER)GROUP_ID=$(id -g $USER)sudo chown &#x22;$USER_ID:$GROUP_ID&#x22; &#x22;$MOUNT_POINT&#x22;"><div></div></button></div></figure></div>
+<hr>
+<p>NOTE: The mount will disappear on reboot (I think)
+Tbd: fix this with a launchdaemon?</p> <p>
+Tags: <span> 
+#devops </span> </p> </article>  </main> <footer class="mt-16"> <span data-dither="ripples" class="h-12" aria-hidden="true"></span> <p class="label text-center text-text opacity-70 my-4">&copy; 2026 By the Rocks</p> </footer> <script>(() => {
+// Ordered dithering: https://en.wikipedia.org/wiki/Ordered_dithering
+function bayer(n) {
+  if (n === 1) return [[0]];
+  const m = bayer(n / 2);
+  const q = (k) => m.map((row) => row.map((v) => 4 * v + k));
+  const [a, b, c, d] = [q(0), q(2), q(3), q(1)];
+  return [
+    ...a.map((row, i) => [...row, ...b[i]]),
+    ...c.map((row, i) => [...row, ...d[i]]),
+  ];
+}
+
+const BAYER_8 = bayer(8);
+
+/**
+ * CSS `url()`s of an ordered-dither dissolve, for animating a tiled 4×4 mask: frame k of `steps` has the
+ * Bayer cells below level `16k / steps` on, so frame 0 shows nothing, the last shows everything,
+ * and each frame keeps every cell the one before had.
+ *
+ * @param {number} steps
+ * @returns {string[]} `steps + 1` frames
+ */
+function dissolveFrames(steps) {
+  const levels = bayer(4);
+  return Array.from({ length: steps + 1 }, (_, k) => {
+    let rects = '';
+    levels.forEach((row, y) => row.forEach((level, x) => {
+      if (level < (16 * k) / steps) rects += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
+    }));
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4" shape-rendering="crispEdges">${rects}</svg>`;
+    return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  });
+}
+
+// mulberry32: https://gist.github.com/tommyettinger/46a874533244883189143505d203312c
+function rng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Threshold a density field into a 1-bit mask.
+ *
+ * @param {number} cols
+ * @param {number} rows
+ * @param {(x: number, y: number) => number} density
+ *   Called with the cell centre in cell units; returns 0 (never lit) to 1 (always lit).
+ * @param {{ method?: 'bayer' | 'noise' | 'atkinson', seed?: number }} [opts] `seed` only affects `noise`.
+ * @returns {Uint8Array} row-major, 1 = lit
+ */
+function dither(cols, rows, density, { method = 'bayer', seed = 1 } = {}) {
+  if (method === 'atkinson') return atkinson(cols, rows, density);
+  const mask = new Uint8Array(cols * rows);
+  const random = rng(seed);
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const threshold = method === 'noise'
+        ? random()
+        : (BAYER_8[y % 8][x % 8] + 0.5) / 64;
+      mask[y * cols + x] = density(x + 0.5, y + 0.5) > threshold ? 1 : 0;
+    }
+  }
+  return mask;
+}
+
+// Atkinson dithering: https://en.wikipedia.org/wiki/Atkinson_dithering
+const ATKINSON_SPREAD = [[1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]];
+
+function atkinson(cols, rows, density) {
+  const grid = new Float32Array(cols * rows);
+  for (let y = 0; y < rows; y++)
+    for (let x = 0; x < cols; x++) grid[y * cols + x] = density(x + 0.5, y + 0.5);
+  const mask = new Uint8Array(cols * rows);
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const i = y * cols + x;
+      mask[i] = grid[i] >= 0.5 ? 1 : 0;
+      const err = (grid[i] - mask[i]) / 8;
+      for (const [dx, dy] of ATKINSON_SPREAD) {
+        const [nx, ny] = [x + dx, y + dy];
+        if (nx >= 0 && nx < cols && ny < rows) grid[ny * cols + nx] += err;
+      }
+    }
+  }
+  return mask;
+}
+
+const clamp = (v) => Math.min(1, Math.max(0, v));
+
+const shade = (x, y, cx, cy, r) => clamp(0.12 + Math.hypot(x - (cx - r * 0.45), y - (cy - r * 0.5)) / (r * 1.6));
+
+const facet = (d, steps = 4) => Math.round(d * steps) / steps;
+
+function lumpy(random, wobble = 1) {
+  const harmonics = [2, 3, 5].map((k, i) => ({ k, phase: random() * Math.PI * 2, amp: wobble * [0.18, 0.12, 0.07][i] * (0.6 + random() * 0.8) }));
+  const tilt = (random() - 0.5) * 0.5;
+  return (angle) => 1 + harmonics.reduce((s, { k, phase, amp }) => s + amp * Math.sin(k * (angle + tilt) + phase), 0);
+}
+
+function stone(x, y, { cx, cy, rx, ry, outline }) {
+  const dx = (x - cx) / rx;
+  const dy = (y - cy) / ry;
+  if (Math.hypot(dx, dy) > outline(Math.atan2(dy, dx))) return null;
+  return facet(shade(x, y, cx, cy, Math.max(rx, ry)));
+}
+
+/**
+ * Shapes keyed by the `data-dither` value that selects them: the `dither` method each is drawn with, and
+ * `make(cols, rows, random)`, which takes the grid size and a seeded `random` and returns its density function.
+ */
+const shapes = {
+  rule: { method: 'noise', make: (w, h) => (x, y) => {
+    const across = 1 - Math.abs((2 * y) / h - 1);
+    const ends = clamp(Math.min(x, w - x) / (w * 0.2));
+    return clamp(across * 1.4 * ends);
+  } },
+
+  'fade-x': { method: 'bayer', make: (w) => (x) => clamp(1 - x / w) },
+
+  ripples: { method: 'bayer', make: (w, h, random) => {
+    const squash = 3;
+    const n = Math.max(3, Math.round(w / 30));
+    const drops = Array.from({ length: n }, (_, i) => ({
+      x: ((i + 0.2 + 0.6 * random()) / n) * w,
+      y: h * (0.25 + 0.6 * random()),
+      r: h * (0.6 + 1.6 * random()),
+    }));
+    return (x, y) => {
+      let d = 0;
+      for (const drop of drops) {
+        const t = Math.hypot(x - drop.x, (y - drop.y) * squash) / drop.r;
+        if (t >= 1) continue;
+        const ring = (0.5 + 0.5 * Math.cos(t * Math.PI * 6)) ** 6;
+        d = Math.max(d, ring * (1 - t) ** 1.5);
+      }
+      return clamp(d);
+    };
+  } },
+
+  rings: { method: 'bayer', make: (w, h) => {
+    const r = Math.min(w, h) / 2;
+    return (x, y) => {
+      const d = Math.hypot(x - w / 2, y - h / 2) / r;
+      if (d > 1) return 0;
+      return clamp((0.5 + 0.5 * Math.cos(d * Math.PI * 7)) * (1 - d));
+    };
+  } },
+
+  cairn: { method: 'bayer', make: (w, h, random) => {
+    const stones = [
+      { cx: w * 0.5, cy: h * 0.24, rx: w * 0.2, ry: h * 0.12 },
+      { cx: w * 0.52, cy: h * 0.5, rx: w * 0.31, ry: h * 0.14 },
+      { cx: w * 0.48, cy: h * 0.78, rx: w * 0.46, ry: h * 0.16 },
+    ].map((s) => ({ ...s, outline: lumpy(random, 0.6) }));
+    return (x, y) => {
+      for (const s of stones) {
+        const d = stone(x, y, s);
+        if (d !== null) return d;
+      }
+      return 0;
+    };
+  } },
+};
+
+const PAPER = 0.9;
+const INK_FLOOR = 0.15;
+
+const luminance = (rgba, i) => (0.2126 * rgba[4 * i] + 0.7152 * rgba[4 * i + 1] + 0.0722 * rgba[4 * i + 2]) / 255;
+
+/**
+ * Density field from an image: dark pixels light up.
+ *
+ * @param {Uint8ClampedArray} rgba `ImageData.data` for a `cols × rows` image
+ * @param {number} cols
+ * @param {number} rows
+ * @param {{ tone?: 'stretch' | 'equalise' | 'paper' }} [opts]
+ *   - `stretch`: contrast stretched to the image's own luminance range.
+ *   - `equalise`: histogram equalisation, so each distinct luminance gets an evenly spaced density;
+ *     a single-luminance image falls back to `stretch`.
+ *   - `paper`: luminance ≥ `PAPER` is empty page; the remaining ink is equalised into [`INK_FLOOR`, 1],
+ *     so off-white panels don't speckle and the lightest ink colour still shows.
+ */
+function imageDensity(rgba, cols, rows, { tone = 'stretch' } = {}) {
+  const lum = new Float32Array(cols * rows);
+  for (let i = 0; i < lum.length; i++) lum[i] = luminance(rgba, i);
+  const at = (x, y) => lum[Math.floor(y) * cols + Math.floor(x)];
+  if (tone === 'equalise') {
+    const equalised = equalise(lum);
+    if (equalised) return (x, y) => equalised(at(x, y));
+  }
+  if (tone === 'paper') {
+    const ink = lum.filter((v) => v < PAPER);
+    const equalised = ink.length ? equalise(ink) : null;
+    return (x, y) => {
+      const v = at(x, y);
+      if (v >= PAPER) return 0;
+      return INK_FLOOR + (1 - INK_FLOOR) * (equalised ? equalised(v) : 1);
+    };
+  }
+  const min = lum.reduce((a, v) => Math.min(a, v), Infinity);
+  const range = lum.reduce((a, v) => Math.max(a, v), -Infinity) - min;
+  const stretch = range < 0.05 ? (v) => v : (v) => (v - min) / range;
+  return (x, y) => clamp(1 - stretch(at(x, y)));
+}
+
+function equalise(lum) {
+  const bin = (v) => Math.round(v * 255);
+  const cdf = new Float32Array(256);
+  for (const v of lum) cdf[bin(v)]++;
+  for (let b = 1; b < 256; b++) cdf[b] += cdf[b - 1];
+  const cdfMin = cdf[bin(lum.reduce((a, v) => Math.min(a, v), Infinity))];
+  const span = lum.length - cdfMin;
+  if (span === 0) return null;
+  return (v) => clamp(1 - (cdf[bin(v)] - cdfMin) / span);
+}
+
+
+
+
+const IMAGE_TONES = { ui: 'equalise', image: 'paper' };
+
+const watched = new WeakSet();
+
+function imageField(el, cols, rows, repaint) {
+  const img = el.parentElement.querySelector('img');
+  if (!img) return null;
+  if (!watched.has(img)) {
+    watched.add(img);
+    img.addEventListener('load', repaint);
+  }
+  if (!img.complete || !img.naturalWidth) return null;
+  // naturalWidth is density-corrected for srcset candidates, but drawImage's source rect is in bitmap pixels,
+  // so crop with the destination rect, which only depends on the aspect ratio.
+  const s = Math.max(cols / img.naturalWidth, rows / img.naturalHeight);
+  const [dw, dh] = [img.naturalWidth * s, img.naturalHeight * s];
+  const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  ctx.canvas.width = cols;
+  ctx.canvas.height = rows;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, (cols - dw) / 2, (rows - dh) / 2, dw, dh);
+  return imageDensity(ctx.getImageData(0, 0, cols, rows).data, cols, rows, { tone: IMAGE_TONES[el.dataset.ditherKind] });
+}
+
+function imageShape(el, seed) {
+  const repaint = () => {
+    const box = el.getBoundingClientRect();
+    paint(el, seed, box.width, box.height);
+  };
+  return { method: 'atkinson', make: (cols, rows) => imageField(el, cols, rows, repaint) };
+}
+
+function maskUrl(mask, cols, rows, scale) {
+  const cells = document.createElement('canvas');
+  cells.width = cols;
+  cells.height = rows;
+  const pixels = new ImageData(cols, rows);
+  mask.forEach((on, i) => { pixels.data[4 * i + 3] = on ? 255 : 0; });
+  cells.getContext('2d').putImageData(pixels, 0, 0);
+
+  // Mask images are resampled smoothly, so draw at device resolution to keep pixel edges hard.
+  const canvas = document.createElement('canvas');
+  canvas.width = cols * scale;
+  canvas.height = rows * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(cells, 0, 0, canvas.width, canvas.height);
+  return `url(${canvas.toDataURL()})`;
+}
+
+function paint(el, seed, width, height) {
+  const shape = el.dataset.dither || 'rule';
+  const px = Number(el.dataset.px) || 2;
+  const cols = Math.ceil(width / px);
+  const rows = Math.ceil(height / px);
+  if (!cols || !rows) return;
+
+  const { method, make } = shape === 'image' ? imageShape(el, seed) : shapes[shape] ?? {};
+  const random = rng(seed);
+  const density = make?.(cols, rows, random);
+  if (!density) return;
+
+  const mask = dither(cols, rows, density, { method, seed: Math.floor(random() * 2 ** 32) });
+
+  const url = maskUrl(mask, cols, rows, Math.max(1, Math.round(px * devicePixelRatio)));
+  const size = `${cols * px}px ${rows * px}px`;
+  Object.assign(el.style, {
+    maskImage: url, webkitMaskImage: url,
+    maskSize: size, webkitMaskSize: size,
+  });
+  el.dataset.dithered = '';
+}
+
+function markTouched({ target }) {
+  target.closest?.('.dither-img')?.setAttribute('data-touched', '');
+}
+
+const SELECTOR = 'hr, [data-dither]';
+
+/** Paint every `hr` and `[data-dither]` element, including ones added later, repainting when its size changes. */
+function ditherAll(root = document) {
+  let nextSeed = 1;
+  const seeds = new WeakMap();
+  const sizes = new WeakMap();
+  const resizes = new ResizeObserver((entries) => {
+    for (const { target, borderBoxSize: [box] } of entries) {
+      const [width, height] = [box.inlineSize, box.blockSize];
+      // Hidden elements report 0×0; keeping the last real size means showing them again doesn't re-dither.
+      if (!width || !height) continue;
+      const size = `${Math.round(width)}x${Math.round(height)}`;
+      if (sizes.get(target) === size) continue;
+      sizes.set(target, size);
+      paint(target, seeds.get(target), width, height);
+    }
+  });
+  const track = (el) => {
+    if (seeds.has(el)) return;
+    const inOrder = nextSeed++;
+    const seed = Number.parseInt(el.dataset.seed ?? '', 10);
+    seeds.set(el, Number.isNaN(seed) ? inOrder : seed);
+    resizes.observe(el);
+  };
+  root.querySelectorAll(SELECTOR).forEach(track);
+  root.addEventListener('pointerover', markTouched);
+  root.addEventListener('focusin', markTouched);
+  // iOS Safari only applies :active to elements under a touchstart listener.
+  root.addEventListener('touchstart', () => {}, { passive: true });
+  new MutationObserver((records) => records.forEach(({ addedNodes }) => addedNodes.forEach((node) => {
+    if (node.nodeType !== 1) return;
+    if (node.matches(SELECTOR)) track(node);
+    node.querySelectorAll(SELECTOR).forEach(track);
+  }))).observe(root.body ?? root, { childList: true, subtree: true });
+}
+
+ditherAll();
+})();</script> </body></html>
