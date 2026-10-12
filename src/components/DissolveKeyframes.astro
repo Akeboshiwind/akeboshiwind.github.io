@@ -1,0 +1,10 @@
+---
+import { dissolveFrames } from '../lib/dither.js';
+
+const frames = dissolveFrames(8);
+const keyframes = (name: string, order: string[]) =>
+  `@keyframes ${name} {${order.map((url, k) => `${(100 * k) / (order.length - 1)}% { mask-image: ${url} }`).join(' ')}}`;
+const css = [keyframes('undither', frames), keyframes('redither', [...frames].reverse())].join('\n');
+---
+
+<style is:inline set:html={css} />

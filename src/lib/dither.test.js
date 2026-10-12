@@ -1,5 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { bayer, dither, imageDensity, rng, shapes } from './dither.js';
+import { bayer, dissolveFrames, dither, imageDensity, rng, shapes } from './dither.js';
+
+describe('dissolveFrames', () => {
+  const cells = (frame) => (decodeURIComponent(frame).match(/<rect /g) ?? []).length;
+
+  it('runs from no cells to all 16 of the 4×4 tile', () => {
+    const frames = dissolveFrames(8);
+    expect(frames).toHaveLength(9);
+    expect(cells(frames[0])).toBe(0);
+    expect(cells(frames[8])).toBe(16);
+  });
+
+  it('only ever turns cells on, two Bayer levels per step', () => {
+    expect(dissolveFrames(8).map(cells)).toEqual([0, 2, 4, 6, 8, 10, 12, 14, 16]);
+  });
+});
 
 const count = (mask) => mask.reduce((n, on) => n + on, 0);
 

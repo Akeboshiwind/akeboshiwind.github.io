@@ -12,6 +12,26 @@ export function bayer(n) {
 
 const BAYER_8 = bayer(8);
 
+/**
+ * CSS `url()`s of an ordered-dither dissolve, for animating a tiled 4×4 mask: frame k of `steps` has the
+ * Bayer cells below level `16k / steps` on, so frame 0 shows nothing, the last shows everything,
+ * and each frame keeps every cell the one before had.
+ *
+ * @param {number} steps
+ * @returns {string[]} `steps + 1` frames
+ */
+export function dissolveFrames(steps) {
+  const levels = bayer(4);
+  return Array.from({ length: steps + 1 }, (_, k) => {
+    let rects = '';
+    levels.forEach((row, y) => row.forEach((level, x) => {
+      if (level < (16 * k) / steps) rects += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
+    }));
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4" shape-rendering="crispEdges">${rects}</svg>`;
+    return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  });
+}
+
 // mulberry32: https://gist.github.com/tommyettinger/46a874533244883189143505d203312c
 export function rng(seed) {
   let a = seed >>> 0;
