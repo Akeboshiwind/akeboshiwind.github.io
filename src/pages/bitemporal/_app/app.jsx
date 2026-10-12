@@ -23,6 +23,7 @@ import {
   generateDml,
   isTextEntry,
 } from './model.js';
+import { SectionLabel } from '../../../components/pixel/SectionLabel.jsx';
 
 const ABLY_API_KEY = 'Vr1zhQ.IsKO2g:nY_BkeBtmxQxs0W_MYZNkx-34cZBzzNLOrrAARrygfQ';
 const GLOBAL_CHANNEL = 'global';
@@ -462,12 +463,6 @@ function commitRoomCodeEdit() {
   store.update({ roomCodeInput: null });
 }
 
-const button = 'label px-2 py-1 border-2 border-border text-text hover:border-accent hover:text-accent cursor-pointer';
-const primaryButton =
-  'label px-2 py-1 border-2 border-accent bg-accent text-bg hover:bg-transparent hover:text-accent cursor-pointer';
-const dateInput =
-  'flex-1 px-2 py-1 font-pixel text-pixel bg-bg border-2 border-border text-heading focus:border-accent focus:outline-none';
-
 // Paths from pixelarticons (https://pixelarticons.com/), drawn on a 24-unit grid.
 const ICONS = {
   cursor: 'M6 4h2v16H6zm2 0h2v2H8zm2 2h2v2h-2zm2 2h2v2h-2zm2 2h2v2h-2zm2 2h2v2h-2zm-8 6h2v2H8zm2-2h2v2h-2zm2-2h6v2h-6z',
@@ -507,7 +502,7 @@ function ConnectionPill({ status }) {
 }
 
 const PresenceIndicator = ({ roomCount, globalCount }) => (
-  <div className="fixed bottom-4 right-4 px-3 py-2 bg-bg border-2 border-border label text-text z-10">
+  <div className="pixel-panel fixed bottom-4 right-4 px-3 py-2 bg-bg label text-text z-10">
     <span className="inline-flex items-center gap-2">
       <span className="w-2 h-2 bg-accent" />
       {`${roomCount}/${globalCount} online`}
@@ -579,7 +574,7 @@ const TOOLS = [
 ];
 
 const Toolbar = ({ current }) => (
-  <div className="absolute top-2 left-2 bg-bg border-2 border-border p-1 flex flex-col gap-1 z-10">
+  <div className="pixel-panel absolute top-2 left-2 bg-bg p-1 flex flex-col gap-1 z-10">
     {TOOLS.map(([tool, title, icon]) => (
       <button
         key={tool}
@@ -607,17 +602,9 @@ const Option = ({ checked, onChange, synced, children }) => (
   </label>
 );
 
-const SectionLabel = ({ children, action }) => (
-  <h2 className="label flex items-center gap-3 text-heading mt-6 mb-2">
-    <span className="shrink-0">{children}</span>
-    <span data-dither="fade-x" className="flex-1 h-[6px]" aria-hidden="true" />
-    {action}
-  </h2>
-);
-
 const SavedStateCard = ({ saved }) => (
   <div className="relative group cursor-pointer" onClick={() => loadSavedState(saved)}>
-    <img src={saved.thumbnail} className="w-full border-2 border-border hover:border-accent" />
+    <img src={saved.thumbnail} className="pixel-panel w-full hover:border-accent" />
     <button
       className="absolute -top-2 -right-2 w-5 h-5 bg-heading text-bg hover:bg-red-600 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
       onClick={(e) => {
@@ -659,14 +646,15 @@ function RoomCodeInput({ roomCode, roomCodeInput }) {
 
 function SidePanel({ s }) {
   return (
-    <div className="w-72 shrink-0 bg-code-bg text-text border-2 border-border p-4 flex flex-col min-h-0 overflow-y-auto font-pixel text-pixel-md">
+    <div className="pixel-panel w-72 shrink-0 bg-code-bg text-text p-4 flex flex-col min-h-0 overflow-y-auto font-pixel text-pixel-md">
       <h1 className="page-title mb-4">Bitemporal Visualizer</h1>
-      <div className="p-3 border-2 border-border">
+      <div className="pixel-panel p-3">
         <div className="label opacity-70 mb-1">Room</div>
         <div className="flex items-center gap-2">
           <RoomCodeInput roomCode={s.roomCode} roomCodeInput={s.roomCodeInput} />
           <button
-            className={`${s.shareCopied ? primaryButton : button} w-20 text-center`}
+            className="pixel-button w-20 text-center"
+            data-variant={s.shareCopied ? 'primary' : undefined}
             title="Copy shareable link to this room"
             onClick={shareRoomUrl}
           >
@@ -675,20 +663,20 @@ function SidePanel({ s }) {
         </div>
       </div>
 
-      <SectionLabel>View</SectionLabel>
+      <SectionLabel className="mt-6 mb-2">View</SectionLabel>
       <div className="flex flex-col gap-2">
         <Option checked={s.showGrid} onChange={toggle('showGrid')}>Grid</Option>
         <Option checked={s.autoSelect} onChange={toggle('autoSelect')}>Auto-select after draw</Option>
         <Option checked={s.showVtEqSt} onChange={toggle('showVtEqSt')}>vt = st</Option>
       </div>
 
-      <SectionLabel>Room Settings</SectionLabel>
+      <SectionLabel className="mt-6 mb-2">Room Settings</SectionLabel>
       <div className="flex flex-col gap-2">
         <Option checked={s.snapToGrid} onChange={toggle('snapToGrid')} synced>Snap to grid</Option>
         <Option checked={s.showTicks} onChange={toggle('showTicks')} synced>Axis ticks</Option>
       </div>
 
-      <SectionLabel>DML Export</SectionLabel>
+      <SectionLabel className="mt-6 mb-2">DML Export</SectionLabel>
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <label className="label w-12">Start</label>
@@ -696,7 +684,7 @@ function SidePanel({ s }) {
             type="date"
             value={s.dmlStart}
             onChange={(e) => store.update({ dmlStart: e.target.value })}
-            className={dateInput}
+            className="pixel-field flex-1 font-pixel text-pixel"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -705,17 +693,18 @@ function SidePanel({ s }) {
             type="date"
             value={s.dmlEnd}
             onChange={(e) => store.update({ dmlEnd: e.target.value })}
-            className={dateInput}
+            className="pixel-field flex-1 font-pixel text-pixel"
           />
         </div>
-        <button className={`${primaryButton} w-full mt-1`} onClick={copyDml}>
+        <button className="pixel-button w-full mt-1" data-variant="primary" onClick={copyDml}>
           Copy DML
         </button>
       </div>
 
       <SectionLabel
+        className="mt-6 mb-2"
         action={
-          <button className={primaryButton} onClick={saveCurrentState}>
+          <button className="pixel-button" data-variant="primary" onClick={saveCurrentState}>
             Save
           </button>
         }
