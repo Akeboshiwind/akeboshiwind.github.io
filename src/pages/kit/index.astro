@@ -4,6 +4,7 @@ import SectionLabel from '../../components/pixel/SectionLabel.astro';
 import Icon from '../../components/pixel/Icon.astro';
 import FileDrop from '../../components/pixel/FileDrop.astro';
 import Sheet from '../../components/pixel/Sheet.astro';
+import Menu from '../../components/pixel/Menu.astro';
 
 const themes = ['light', 'dark'];
 const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent', 'danger', 'ok', 'warn'];
@@ -123,6 +124,12 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
             </Sheet>
           </div>
           <p class="label opacity-60">&lt;Sheet&gt; · .pixel-scrim .pixel-sheet · from the bottom edge on phones, centred from sm</p>
+
+          <SectionLabel class="mt-4 mb-2">Menu</SectionLabel>
+          <div class="flex justify-end items-start h-44">
+            <Menu label="Options" icon="more-vertical" items={['Rename', 'Export', 'Delete']} open />
+          </div>
+          <p class="label opacity-60">&lt;Menu&gt; · .pixel-menu .pixel-menu-trigger .pixel-menu-list .pixel-menu-item · arrow keys move, Escape, Tab, a choice or a press outside close · side="top" opens upward</p>
 
           <SectionLabel class="mt-4 mb-2">Icons</SectionLabel>
           <div class="flex gap-3 text-heading">

@@ -96,7 +96,7 @@
     opacity: 0.7;
   }
 
-  .label, .pixel-button, .pixel-chip, .pixel-file, .section-label, .pixel-table th {
+  .label, .pixel-button, .pixel-chip, .pixel-file, .pixel-menu-item, .section-label, .pixel-table th {
     font-family: var(--font-pixel);
     font-size: var(--text-pixel);
     line-height: 1.4;
@@ -430,6 +430,65 @@
     border-color: var(--danger);
     background: var(--danger);
     color: var(--bg);
+  }
+
+  .pixel-menu {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .pixel-menu-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pixel-menu-trigger[aria-expanded="true"] {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .pixel-menu-list {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    min-width: 12rem;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0;
+    border: 2px solid var(--border);
+    background: var(--bg);
+  }
+
+  .pixel-menu-list[data-side="top"] {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .pixel-menu-item {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .pixel-menu-item:not(:disabled):is(:hover, :focus-visible) {
+    color: var(--accent);
+  }
+
+  .pixel-menu-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  .pixel-menu-item:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   /* A bare icon: no border, but never a smaller target than 32px. */

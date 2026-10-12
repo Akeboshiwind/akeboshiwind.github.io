@@ -1,0 +1,35 @@
+---
+// The markup only: opening, closing and moving focus are the page's script's job, as Menu.jsx does them.
+import Icon from './Icon.astro';
+
+interface Props {
+  label: string;
+  icon: string;
+  items: string[];
+  side?: 'bottom' | 'top';
+  open?: boolean;
+  class?: string;
+}
+
+const { label, icon, items, side = 'bottom', open = false, class: className = '' } = Astro.props;
+const menuId = `menu-${Math.random().toString(36).slice(2, 10)}`;
+---
+
+<div class:list={['pixel-menu', className]}>
+  <button
+    type="button"
+    aria-label={label}
+    title={label}
+    aria-haspopup="menu"
+    aria-expanded={open ? 'true' : 'false'}
+    aria-controls={menuId}
+    class="pixel-button pixel-menu-trigger"
+  >
+    <Icon name={icon} />
+  </button>
+  <div id={menuId} role="menu" aria-label={label} data-side={side} class="pixel-menu-list" hidden={!open}>
+    {items.map((item) => (
+      <button type="button" role="menuitem" tabindex="-1" class="pixel-menu-item">{item}</button>
+    ))}
+  </div>
+</div>
