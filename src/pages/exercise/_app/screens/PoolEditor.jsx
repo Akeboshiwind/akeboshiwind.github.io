@@ -39,7 +39,7 @@ export function PoolEditor({ state, setState, exerciseId, navigate }) {
 
   return (
     <>
-      <ScreenHeader backLabel="← Pool" onBack={() => navigate('/pool')} title={isNew ? 'New exercise' : 'Edit exercise'} titleClass="text-xl" />
+      <ScreenHeader backLabel="← Pool" onBack={() => navigate('/pool')} title={isNew ? 'New exercise' : 'Edit exercise'} />
 
       <Form
         initial={existing ?? EMPTY_REPS}

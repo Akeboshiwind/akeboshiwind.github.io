@@ -6,6 +6,8 @@ import {
   addCircuit, addCircuitChild,
 } from '../store.js';
 import { BottomSheet } from '../components/BottomSheet.jsx';
+import { Field, inputClass } from '../components/Field.jsx';
+import { Icon, upSvg, downSvg, pencilSvg, trashSvg, loopSvg } from '../icons.js';
 import { ExerciseActionsSheet } from '../components/ExerciseActionsSheet.jsx';
 import { CircuitEditSheet } from '../components/CircuitEditSheet.jsx';
 import { ScreenHeader } from '../components/ScreenHeader.jsx';
@@ -39,38 +41,37 @@ export function DayEditor({ state, setState, dayKey, navigate }) {
       <ScreenHeader backLabel="← Week" onBack={() => navigate('/planner')} title={DAY_NAMES[dayKey]} />
 
       <div className="space-y-3 mb-6">
-        <label className="flex items-center gap-2 text-sm">
+        <label className="label flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
             checked={day.rest}
             onChange={e => setState(s => setRestDay(s, dayKey, e.target.checked))}
-            className="w-4 h-4"
+            className="pixel-check"
           />
           Rest day
         </label>
 
         {!day.rest && (
-          <label className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
-            Focus
+          <Field label="Focus">
             <input
               type="text"
               value={day.focus ?? ''}
               onChange={e => setState(s => setFocus(s, dayKey, e.target.value))}
               placeholder="e.g. Upper Body Strength"
-              className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-base"
+              className={inputClass}
             />
-          </label>
+          </Field>
         )}
       </div>
 
       {day.rest ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+        <p className="text-sm opacity-70 text-center py-8">
           Rest day — no exercises.
         </p>
       ) : (
         <>
           {day.items.length === 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+            <p className="text-sm opacity-70 text-center py-8">
               No exercises yet. Add one below.
             </p>
           )}
@@ -127,21 +128,22 @@ export function DayEditor({ state, setState, dayKey, navigate }) {
             <button
               type="button"
               onClick={() => setShowAddPicker(true)}
-              className="py-3 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-medium"
+              data-variant="primary"
+              className="pixel-button py-3"
             >
               + Add exercise
             </button>
             <button
               type="button"
               onClick={() => setAddSectionOpen(true)}
-              className="py-3 rounded-md border border-gray-300 dark:border-gray-600 font-medium"
+              className="pixel-button py-3"
             >
               + Add section
             </button>
             <button
               type="button"
               onClick={() => setState(s => addCircuit(s, dayKey))}
-              className="col-span-2 py-3 rounded-md border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-medium"
+              className="pixel-button col-span-2 py-3"
             >
               + Add circuit
             </button>
@@ -239,7 +241,7 @@ export function DayEditor({ state, setState, dayKey, navigate }) {
 function Row({ item, pool, canUp, canDown, onMoveUp, onMoveDown, onEdit, onRemove }) {
   return (
     <li>
-      <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
+      <div className="pixel-panel flex items-center gap-2 p-2">
         <MoveArrows canUp={canUp} canDown={canDown} onUp={onMoveUp} onDown={onMoveDown} />
         <div className="flex-1 min-w-0">
           <RowSummary item={item} pool={pool} />
@@ -254,17 +256,15 @@ function Row({ item, pool, canUp, canDown, onMoveUp, onMoveDown, onEdit, onRemov
 function CircuitRow({ item, pool, canUp, canDown, onMoveUp, onMoveDown, onEditCircuit, onEditChild, onRemoveChild, onMoveChild, onAddChild }) {
   return (
     <li>
-      <div className="relative rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 pl-4">
-        <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-emerald-500/70" aria-hidden="true" />
-
+      <div className="pixel-panel border-l-accent border-l-8 p-2">
         <div className="flex items-center gap-2">
           <MoveArrows canUp={canUp} canDown={canDown} onUp={onMoveUp} onDown={onMoveDown} />
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1">
-              <LoopIcon />Circuit
+            <p className="label text-accent inline-flex items-center gap-1">
+              <Icon svg={loopSvg} className="w-4 h-4" />Circuit
             </p>
-            <p className="font-medium text-sm truncate">{item.name}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-heading truncate">{item.name}</p>
+            <p className="text-xs opacity-70">
               {item.rounds} rounds · {item.children.length} exercises
             </p>
           </div>
@@ -277,7 +277,7 @@ function CircuitRow({ item, pool, canUp, canDown, onMoveUp, onMoveDown, onEditCi
             const childCanUp = i > 0;
             const childCanDown = i < item.children.length - 1;
             return (
-              <li key={child.id} className="flex items-center gap-2 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-2">
+              <li key={child.id} className="flex items-center gap-2 border-2 border-border p-1">
                 <MoveArrows
                   canUp={childCanUp}
                   canDown={childCanDown}
@@ -286,8 +286,8 @@ function CircuitRow({ item, pool, canUp, canDown, onMoveUp, onMoveDown, onEditCi
                   small
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{ex?.name ?? child.exerciseId}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{child.durationSec}s</p>
+                  <p className="text-sm text-heading truncate">{ex?.name ?? child.exerciseId}</p>
+                  <p className="text-xs opacity-70">{child.durationSec}s</p>
                 </div>
                 <EditButton onClick={() => onEditChild(child.id)} />
                 <RemoveButton onClick={() => onRemoveChild(child.id)} />
@@ -298,7 +298,7 @@ function CircuitRow({ item, pool, canUp, canDown, onMoveUp, onMoveDown, onEditCi
             <button
               type="button"
               onClick={onAddChild}
-              className="w-full text-left text-xs px-2 py-1.5 rounded-md border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="pixel-button w-full text-left border-dashed"
             >
               + Add exercise
             </button>
@@ -310,7 +310,7 @@ function CircuitRow({ item, pool, canUp, canDown, onMoveUp, onMoveDown, onEditCi
 }
 
 function MoveArrows({ canUp, canDown, onUp, onDown, small }) {
-  const sizeClass = small ? 'w-6 h-5' : 'w-7 h-6';
+  const sizeClass = small ? 'w-6 h-5' : 'w-7 h-7';
   return (
     <div className="flex flex-col gap-0.5 flex-shrink-0">
       <button
@@ -318,18 +318,18 @@ function MoveArrows({ canUp, canDown, onUp, onDown, small }) {
         onClick={onUp}
         disabled={!canUp}
         aria-label="Move up"
-        className={`${sizeClass} flex items-center justify-center rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed`}
+        className={`${sizeClass} flex items-center justify-center hover:text-accent disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-text`}
       >
-        <svg viewBox="0 0 16 16" className="w-3.5 h-3.5"><path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 10l4-4 4 4"/></svg>
+        <Icon svg={upSvg} className="w-4 h-4" />
       </button>
       <button
         type="button"
         onClick={onDown}
         disabled={!canDown}
         aria-label="Move down"
-        className={`${sizeClass} flex items-center justify-center rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed`}
+        className={`${sizeClass} flex items-center justify-center hover:text-accent disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-text`}
       >
-        <svg viewBox="0 0 16 16" className="w-3.5 h-3.5"><path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 6l4 4 4-4"/></svg>
+        <Icon svg={downSvg} className="w-4 h-4" />
       </button>
     </div>
   );
@@ -341,9 +341,9 @@ function EditButton({ onClick }) {
       type="button"
       onClick={onClick}
       aria-label="Edit"
-      className="p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+      className="p-2 hover:text-accent"
     >
-      <svg viewBox="0 0 16 16" className="w-4 h-4"><path fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M11 2l3 3-8 8H3v-3z"/></svg>
+      <Icon svg={pencilSvg} className="w-4 h-4" />
     </button>
   );
 }
@@ -354,19 +354,10 @@ function RemoveButton({ onClick }) {
       type="button"
       onClick={onClick}
       aria-label="Remove"
-      className="p-2 rounded-md text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400"
+      className="p-2 hover:text-danger"
     >
-      <svg viewBox="0 0 16 16" className="w-4 h-4"><path fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" d="M3 4h10M5 4V2.5h6V4M5 4l1 9.5h4L11 4"/></svg>
+      <Icon svg={trashSvg} className="w-4 h-4" />
     </button>
-  );
-}
-
-function LoopIcon() {
-  return (
-    <svg viewBox="0 0 16 16" className="w-3 h-3" aria-hidden="true">
-      <path fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
-        d="M3 8a5 5 0 0 1 9-3M13 8a5 5 0 0 1-9 3M11 4l1.5 1L13 3.5M5 12l-1.5-1L3 12.5"/>
-    </svg>
   );
 }
 
@@ -374,16 +365,16 @@ function RowSummary({ item, pool }) {
   if (item.kind === 'section') {
     return (
       <>
-        <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Section</p>
-        <p className="font-medium text-sm truncate">{item.name || '(unnamed section)'}</p>
+        <p className="label text-accent">Section</p>
+        <p className="text-sm text-heading truncate">{item.name || '(unnamed section)'}</p>
       </>
     );
   }
   const ex = pool[item.exerciseId];
   return (
     <>
-      <p className="font-medium text-sm truncate">{ex?.name ?? item.exerciseId}</p>
-      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{itemSummary(item)}</p>
+      <p className="text-sm text-heading truncate">{ex?.name ?? item.exerciseId}</p>
+      <p className="text-xs opacity-70 truncate">{itemSummary(item)}</p>
     </>
   );
 }
@@ -408,27 +399,25 @@ function SectionForm({ section, onSave }) {
       onSubmit={e => { e.preventDefault(); onSave({ name: name.trim(), description: description.trim() }); }}
       className="flex flex-col gap-3"
     >
-      <label className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
-        Name
+      <Field label="Name">
         <input
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
           required
           autoFocus
-          className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-base"
+          className={inputClass}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
-        Description (optional)
+      </Field>
+      <Field label="Description (optional)">
         <textarea
           value={description}
           onChange={e => setDescription(e.target.value)}
           rows={3}
-          className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-base resize-none"
+          className={`${inputClass} resize-none`}
         />
-      </label>
-      <button type="submit" className="self-end px-3 py-2 rounded-md bg-emerald-600 text-white text-sm font-medium">
+      </Field>
+      <button type="submit" data-variant="primary" className="pixel-button self-end py-2">
         Save
       </button>
     </form>
@@ -451,25 +440,25 @@ function PoolPicker({ pool, onPick, filterKind }) {
         placeholder="Search exercises…"
         value={q}
         onChange={e => setQ(e.target.value)}
-        className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-base"
+        className={inputClass}
       />
-      <ul className="flex flex-col gap-1 max-h-80 overflow-y-auto">
+      <ul className="flex flex-col">
         {filtered.map(p => (
           <li key={p.id}>
             <button
               type="button"
               onClick={() => onPick(p.id)}
-              className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="pixel-line w-full text-left px-1 py-2 hover:text-accent"
             >
-              <p className="font-medium text-sm">{p.name}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-heading">{p.name}</p>
+              <p className="label opacity-70">
                 {p.kind} · {p.equipment}
               </p>
             </button>
           </li>
         ))}
         {filtered.length === 0 && (
-          <li className="px-3 py-2 text-sm text-gray-500">No matches.</li>
+          <li className="px-1 py-2 text-sm opacity-70">No matches.</li>
         )}
       </ul>
     </div>
