@@ -364,7 +364,7 @@ Here's an example of the expected format with sample data:
                         <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1"><button onClick={() => toggleAllPeople(item.uniqueId)} className={`${chip} ${assignees.length === people.length ? chipOn : chipOff}`}>All</button>{people.map(p => <button key={p} onClick={() => togglePersonAssignment(item.uniqueId, p)} className={`${chip} ${assignees.includes(p) ? chipOn : chipOff}`}>{p}</button>)}</div>
                       </td>
                       <td className="p-1 sm:p-2 text-center">
-                        <button onClick={() => toggleExpandedRow(item.uniqueId)} disabled={!canItemBeSplit(item.uniqueId)} className={`${chip} ${expandedRows[item.uniqueId] ? chipOn : canItemBeSplit(item.uniqueId) ? chipOff : 'border-border opacity-30 cursor-not-allowed'}`}>{expandedRows[item.uniqueId] ? 'Hide' : 'Split'}</button>
+                        <button onClick={() => toggleExpandedRow(item.uniqueId)} disabled={!canItemBeSplit(item.uniqueId)} className={`${chip} ${expandedRows[item.uniqueId] ? chipOn : canItemBeSplit(item.uniqueId) ? chipOff : 'border-border opacity-50 cursor-not-allowed'}`}>{expandedRows[item.uniqueId] ? 'Hide' : 'Split'}</button>
                       </td>
                     </tr>
                     {expandedRows[item.uniqueId] && canItemBeSplit(item.uniqueId) && (
@@ -449,8 +449,7 @@ Here's an example of the expected format with sample data:
             <div className="flex justify-between items-baseline py-1.5 pixel-line"><span>Subtotal</span><span className={amount}>{money(billSubtotal)}{home(billSubtotal)}</span></div>
             {tax > 0 && <div className="flex justify-between items-baseline py-1.5 pixel-line"><span>Tax</span><span className={amount}>{money(tax)}{home(tax)}</span></div>}
             {serviceChargeAmount > 0 && <div className="flex justify-between items-baseline py-1.5 pixel-line"><span>Service</span><span className={amount}>{money(serviceChargeAmount)}{home(serviceChargeAmount)}</span></div>}
-            <div className="flex justify-between items-baseline py-1.5 text-heading"><span className="label">Total</span><span className="font-pixel text-pixel-lg">{currency}{billTotal}{home(parseFloat(billTotal))}</span></div>
-            <hr className="my-1" />
+            <div className="flex justify-between items-baseline py-1.5 pixel-line text-heading"><span className="label">Total</span><span className="font-pixel text-pixel-lg">{currency}{billTotal}{home(parseFloat(billTotal))}</span></div>
             <div className={`flex justify-between items-baseline py-1.5 ${allocationMatches ? 'text-accent' : errorText}`}><span className="label">Allocated</span><span className={amount}>{currency}{allocatedTotal}{home(parseFloat(allocatedTotal))}</span></div>
           </div>
         </div>
