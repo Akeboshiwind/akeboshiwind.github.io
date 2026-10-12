@@ -9,6 +9,7 @@ npm run dev           # Dev server (all content visible)
 npm run build         # Build for production
 npm run preview       # Preview production build
 npm test              # Run all tests
+npm run favicons      # Regenerate public/ favicons from the header mark (cairn, seed 2)
 ```
 
 ## Structure

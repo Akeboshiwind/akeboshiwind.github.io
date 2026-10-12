@@ -11,7 +11,8 @@
     "test:vitest": "vitest run",
     "test:node": "node --test src/content/notes/*/*.node-test.cjs",
     "new-tool": "node scripts/new-tool.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "favicons": "node scripts/favicons.js"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.13",
@@ -42,6 +43,7 @@
     "@testing-library/react": "^16.3.2",
     "happy-dom": "^20.7.0",
     "husky": "^9.1.7",
+    "pngjs": "^7.0.0",
     "vitest": "^4.0.18"
   }
 }
