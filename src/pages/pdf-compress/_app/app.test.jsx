@@ -105,8 +105,11 @@ describe('PDF Compress', () => {
     expect(screen.getByRole('button', { name: 'Loading Ghostscript…' }).disabled).toBe(true);
     worker().emit({ type: 'progress', stage: 'compressing', current: 0, total: 0 });
     expect(screen.getByRole('button', { name: 'Compressing…' })).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: 'Compression progress' }).hasAttribute('value')).toBe(false);
     worker().emit({ type: 'progress', stage: 'compressing', current: 2, total: 5 });
     expect(screen.getByRole('button', { name: 'Compressing — page 2 of 5' })).toBeTruthy();
+    const bar = screen.getByRole('progressbar', { name: 'Compression progress' });
+    expect([bar.value, bar.max]).toEqual([2, 5]);
     expect(screen.getByRole('radio', { name: /Screen/ }).closest('fieldset').disabled).toBe(true);
   });
 

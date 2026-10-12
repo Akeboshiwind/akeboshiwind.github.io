@@ -140,6 +140,7 @@ export function App() {
   };
 
   const busy = stage === 'loading' || stage === 'compressing';
+  const pagesKnown = stage === 'compressing' && progress.total > 0;
 
   return (
     <div className="text-text">
@@ -221,18 +222,12 @@ export function App() {
       </button>
 
       {busy && (
-        <div className="pixel-panel mt-4 h-4 p-[2px]">
-          <div
-            className={`h-full bg-accent ${
-              stage === 'loading' || progress.total === 0 ? 'animate-pulse w-1/3' : ''
-            }`}
-            style={
-              stage === 'compressing' && progress.total > 0
-                ? { width: `${(progress.current / progress.total) * 100}%` }
-                : undefined
-            }
-          />
-        </div>
+        <progress
+          className="pixel-progress mt-4"
+          aria-label="Compression progress"
+          value={pagesKnown ? progress.current : undefined}
+          max={pagesKnown ? progress.total : undefined}
+        />
       )}
 
       {error && (
