@@ -11,7 +11,7 @@ import { historyFromPagePath } from '../lib/history.js';
 const { title } = Astro.props;
 const historyUrl = historyFromPagePath(Astro.url.pathname);
 ---
-<AppShell title={title} bodyClass="flex flex-col min-h-screen p-4 gap-4 font-sans text-text bg-bg [&>#app]:flex-1 [&>#app]:flex [&>#app]:flex-col">
+<AppShell title={title} bodyClass="flex flex-col min-h-screen w-full max-w-[720px] mx-auto p-4 gap-4 font-sans text-text bg-bg [&>#app]:flex-1 [&>#app]:flex [&>#app]:flex-col">
   <Fragment slot="head">
     <DissolveKeyframes />
     <meta name="theme-color" content={PAGE_BACKGROUND} />
