@@ -11,6 +11,9 @@ export const DEFAULT_ACCENT = 'orange';
 /** The light theme's page colour, for the places outside CSS that need it: theme-color and the icon set. */
 export const PAGE_BACKGROUND = '#f1efe8';
 
+/** The light theme's heading colour, for drawing that has to stay light-themed whatever the page's theme. */
+export const PAGE_INK = '#1c1b19';
+
 const HUES = [
   ['Red', 25], ['Vermilion', 40], ['Amber', 70], ['Ochre', 90], ['Olive', 120], ['Green', 150],
   ['Teal', 185], ['Cyan', 215], ['Blue', 255], ['Indigo', 280], ['Violet', 305], ['Magenta', 335],
