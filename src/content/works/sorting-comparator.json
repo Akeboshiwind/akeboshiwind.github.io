@@ -9,5 +9,6 @@
     "visualization"
   ],
   "category": "learning",
-  "icon": "arrow-up-down"
+  "icon": "arrow-up-down",
+  "dither": "ui"
 }

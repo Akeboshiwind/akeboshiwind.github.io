@@ -1,4 +1,5 @@
 import { describe, test, expect, afterEach, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { App } from './app.jsx';
 import ALGORITHMS from './algorithms/index.js';
@@ -19,7 +20,6 @@ const editItems = (text) => {
 
 const choices = (items) => screen.getAllByRole('button').filter(b => items.includes(b.textContent));
 
-// Always picks the item that comes first alphabetically, so the result reads A→Z.
 const finish = (items) => {
   let guard = 100;
   while (screen.queryByText('Which should rank first?') && guard--) {
@@ -29,6 +29,12 @@ const finish = (items) => {
 };
 
 describe('Sorting Comparator', () => {
+  test('sits on PixelAppLayout, whose app bar carries the home link', () => {
+    const page = readFileSync('src/pages/sorting-comparator/index.astro', 'utf8');
+    expect(page).toContain("import PixelAppLayout from '../../layouts/PixelAppLayout.astro'");
+    expect(readFileSync('src/layouts/PixelAppLayout.astro', 'utf8')).toContain('<a href="../"');
+  });
+
   describe('choosing an algorithm', () => {
     test('shows the title, the item count and every algorithm', () => {
       render(<App />);
