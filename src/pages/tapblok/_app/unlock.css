@@ -14,6 +14,17 @@
   animation: undither 0.4s step-end both;
 }
 
+/* data-dissolved is set by settleDissolves() in dither-dom.js once the dissolve ends. */
+.tapblok-cover[data-cover="out"][data-dissolved="out"] {
+  animation: none;
+  visibility: hidden;
+}
+
+.tapblok-cover[data-cover="in"][data-dissolved="in"] {
+  animation: none;
+  mask: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tapblok-cover {
     animation-duration: 0s !important;

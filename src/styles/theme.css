@@ -133,6 +133,16 @@
     .dither-img[data-touched]:not(:hover, :focus-visible) img {
       animation: redither 0.10s step-end both;
     }
+
+    /* data-dissolved is set by settleDissolves() once a dissolve ends, so the resting state doesn't depend on the held last frame. */
+    .dither-img:is(:hover, :focus-visible) img[data-dissolved="in"] {
+      animation: none;
+      mask: none;
+    }
+
+    .dither-img:not(:hover, :focus-visible) img[data-dissolved="out"] {
+      animation: none;
+    }
   }
 
   .pixel-line {
