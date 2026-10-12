@@ -1,9 +1,9 @@
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { App } from './app.jsx';
 import { SLOT_COUNT } from './store.js';
-import { MEALS, mealById } from './meals.js';
-import { swatch } from './color.js';
+import { MEALS } from './meals.js';
 
 afterEach(cleanup);
 beforeEach(() => localStorage.clear());
@@ -29,9 +29,10 @@ describe('Meal Generator', () => {
     expect(shown.every(n => known.has(n))).toBe(true);
   });
 
-  test('has a home link', () => {
-    render(<App />);
-    expect(screen.getByText('← Home').closest('a').getAttribute('href')).toBe('../');
+  test('sits on PixelAppLayout, whose app bar carries the home link', () => {
+    const page = readFileSync('src/pages/meal-generator/index.astro', 'utf8');
+    expect(page).toContain("import PixelAppLayout from '../../layouts/PixelAppLayout.astro'");
+    expect(readFileSync('src/layouts/PixelAppLayout.astro', 'utf8')).toContain('<a href="../"');
   });
 
   test('generate replaces the meals', () => {
@@ -180,34 +181,17 @@ describe('Meal Generator', () => {
     expect(names()).toEqual(second);
   });
 
-  test('the top band leaves room for the nav pill on mobile only', () => {
+  test('the bands share the palette equally', () => {
     render(<App />);
-    const [first, ...rest] = bands();
-
-    expect(first.className).toContain('pt-14');
-    expect(first.className).toContain('flex-[1.25]');
-    // Desktop lays the bands out as equal columns, with the pill clear of them.
-    expect(first.className).toContain('md:flex-1');
-    expect(first.className).toContain('md:pt-5');
-
-    for (const band of rest) {
-      expect(band.className).not.toContain('pt-14');
+    for (const band of bands()) {
       expect(band.className).toContain('flex-1');
     }
   });
 
-  test('the browser chrome is tinted with the top band, and follows it', () => {
+  test('the browser chrome is left to the layout, whose app bar now tops the page', () => {
     render(<App />);
-    const chrome = () => document.head.querySelector('meta[name="theme-color"]')?.getAttribute('content');
-    const topHex = () => swatch(MEALS.find(m => m.name === names()[0]).hue).hex;
-
-    expect(chrome()).toBe(topHex());
-
     fireEvent.click(generateButton());
-    expect(chrome()).toBe(topHex());
-
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    expect(chrome()).toBe(topHex());
+    expect(document.head.querySelector('meta[name="theme-color"]')).toBeNull();
   });
 
   test('tapping a name picks a meal by hand, and locks the band', () => {
@@ -287,6 +271,18 @@ describe('Meal Generator', () => {
     expect(names()).toEqual(before);
   });
 
+  test('the picker takes focus, and gives it back to the band it was opened from', () => {
+    render(<App />);
+    const name = nameButton(bands()[2]);
+    name.focus();
+
+    fireEvent.click(name);
+    expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(document.activeElement).toBe(nameButton(bands()[2]));
+  });
+
   test('the keyboard shortcuts stand down while the picker is open', () => {
     render(<App />);
     const before = names();
@@ -310,11 +306,9 @@ describe('Meal Generator', () => {
     }
   });
 
-  test('the menu reaches the theme setting and the meal list', () => {
+  test('the menu reaches the meal list', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
-    expect(screen.getByRole('radiogroup', { name: 'Theme' })).toBeTruthy();
-
     fireEvent.click(screen.getByRole('button', { name: 'All meals' }));
     const dialog = screen.getByRole('dialog', { name: 'All meals' });
     expect(within(dialog).getAllByText('in this set')).toHaveLength(SLOT_COUNT);

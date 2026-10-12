@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
+import { Icon } from '../../../components/pixel/Icon.jsx';
+import lockSvg from 'pixelarticons/svg/lock.svg?raw';
+import unlockSvg from 'pixelarticons/svg/unlock.svg?raw';
+import undoSvg from 'pixelarticons/svg/undo.svg?raw';
+import redoSvg from 'pixelarticons/svg/redo.svg?raw';
 import { Menu } from './menu.jsx';
 import { MealPicker } from './picker.jsx';
 import { mealById } from './meals.js';
@@ -12,40 +17,16 @@ import {
 
 const PREFIX = 'mealGenerator_';
 
-const LockIcon = ({ locked }) => (
-  <svg
-    width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-  >
-    <rect x="3" y="11" width="18" height="11" rx="2" />
-    {locked
-      ? <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-      : <path d="M7 11V7a5 5 0 0 1 9.9-1" />}
-  </svg>
-);
+// The band's own colour is the text colour, so the focus ring is drawn in it.
+const onBand = 'cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current';
 
-const Arrow = ({ direction }) => (
-  <svg
-    width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-    style={direction === 'forward' ? { transform: 'scaleX(-1)' } : undefined}
-  >
-    <path d="M9 14 4 9l5-5" />
-    <path d="M4 9h11a5 5 0 0 1 0 10h-4" />
-  </svg>
-);
-
-const Band = ({ slot, onToggleLock, onPick, first }) => {
+const Band = ({ slot, onToggleLock, onPick }) => {
   const meal = mealById(slot.id);
   const { background, text } = swatch(meal.hue);
 
   return (
     <li
-      className={`flex items-center justify-between gap-4 px-6 py-5 min-h-0 md:flex-1 md:flex-col md:items-start md:justify-end md:px-5 md:pt-5 md:pb-8 ${
-        // On mobile the nav pill floats over the top band, so that one is
-        // given extra room rather than having its label crowded.
-        first ? 'flex-[1.25] pt-14' : 'flex-1'
-      }`}
+      className="flex flex-1 items-center justify-between gap-4 min-h-0 px-4 py-3 md:flex-col md:items-start md:justify-end md:px-3 md:pb-4"
       style={{ backgroundColor: background, color: text }}
     >
       <button
@@ -53,7 +34,7 @@ const Band = ({ slot, onToggleLock, onPick, first }) => {
         onClick={onPick}
         aria-haspopup="dialog"
         aria-label={`Change ${meal.name}`}
-        className="min-w-0 cursor-pointer text-left text-xl font-semibold tracking-tight transition-opacity hover:opacity-75 md:mb-4 md:text-2xl"
+        className={`min-w-0 text-left font-pixel text-pixel-lg leading-tight hover:opacity-75 md:text-pixel-md ${onBand}`}
       >
         {meal.name}
       </button>
@@ -63,28 +44,28 @@ const Band = ({ slot, onToggleLock, onPick, first }) => {
         aria-pressed={slot.locked}
         aria-label={`${slot.locked ? 'Unlock' : 'Lock'} ${meal.name}`}
         title={slot.locked ? 'Unlock' : 'Lock'}
-        className={`shrink-0 p-2 rounded-full cursor-pointer transition-opacity hover:opacity-100 ${slot.locked ? 'opacity-100' : 'opacity-55'}`}
+        className={`shrink-0 p-2 md:-ml-2 hover:opacity-100 ${slot.locked ? 'opacity-100' : 'opacity-55'} ${onBand}`}
       >
-        <LockIcon locked={slot.locked} />
+        <Icon svg={slot.locked ? lockSvg : unlockSvg} className="w-6 h-6" />
       </button>
     </li>
   );
 };
 
-const ToolbarButton = ({ onClick, disabled, label, children }) => (
+const HistoryButton = ({ onClick, disabled, label, svg }) => (
   <button
     type="button"
     onClick={onClick}
     disabled={disabled}
     aria-label={label}
     title={label}
-    className="p-2 rounded-lg text-gray-700 dark:text-gray-200 enabled:cursor-pointer enabled:hover:bg-gray-100 dark:enabled:hover:bg-gray-800 disabled:opacity-30 transition-colors"
+    className="pixel-button flex h-10 items-center"
   >
-    {children}
+    <Icon svg={svg} />
   </button>
 );
 
-export function App({ historyUrl }) {
+export function App() {
   const [stored, setStored] = useLocalStorage('state', null, { prefix: PREFIX });
 
   // `useLocalStorage` evaluates its initial value eagerly, so seeding it with
@@ -103,19 +84,6 @@ export function App({ historyUrl }) {
   // The band whose meal is being picked by hand, if any.
   const [picking, setPicking] = useState(null);
   const overlayOpen = menuOpen || picking !== null;
-
-  // iOS Safari tints its chrome — the strip around the Dynamic Island most
-  // visibly — with theme-color, so it tracks the band at the top of the page.
-  const topColor = swatch(mealById(slots[0].id).hue).hex;
-  useEffect(() => {
-    let meta = document.head.querySelector('meta[name="theme-color"]');
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.setAttribute('name', 'theme-color');
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute('content', topColor);
-  }, [topColor]);
 
   useEffect(() => {
     const onKeyDown = e => {
@@ -137,31 +105,25 @@ export function App({ historyUrl }) {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] overflow-hidden">
-      <h1 className="sr-only">Meal Generator</h1>
+    <main className="flex flex-1 flex-col gap-4">
+      <header className="flex flex-col gap-2">
+        <h1 className="page-title">Meal Generator</h1>
+        <p className="page-sub">
+          Five meals, one colour each. Lock the ones you want and generate the rest.
+          <span className="hidden sm:inline"> Space generates; ← and → step through what you've rolled.</span>
+        </p>
+      </header>
 
-      <div className="relative flex-1 min-h-0">
-        <nav className="absolute top-3 left-3 z-10 flex items-center gap-3 rounded-full bg-black/30 px-3 py-1.5 text-sm text-white backdrop-blur-sm">
-          <a href="../" className="hover:opacity-70 transition-opacity">← Home</a>
-          {historyUrl && (
-            <a href={historyUrl} target="_blank" rel="noopener" className="opacity-70 hover:opacity-100 transition-opacity">
-              history
-            </a>
-          )}
-        </nav>
-
-        <ul aria-label="Palette" className="flex h-full flex-col md:flex-row">
-          {slots.map((slot, i) => (
-            <Band
-              key={i}
-              slot={slot}
-              first={i === 0}
-              onToggleLock={() => apply(s => toggleLock(s, i))}
-              onPick={() => setPicking(i)}
-            />
-          ))}
-        </ul>
-      </div>
+      <ul aria-label="Palette" className="pixel-panel flex min-h-[420px] flex-1 flex-col md:min-h-[320px] md:flex-row">
+        {slots.map((slot, i) => (
+          <Band
+            key={i}
+            slot={slot}
+            onToggleLock={() => apply(s => toggleLock(s, i))}
+            onPick={() => setPicking(i)}
+          />
+        ))}
+      </ul>
 
       {picking !== null && (
         <MealPicker
@@ -172,23 +134,20 @@ export function App({ historyUrl }) {
         />
       )}
 
-      <div className="flex items-center gap-1 border-t border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900">
-        <ToolbarButton onClick={() => apply(undo)} disabled={!canUndo(state)} label="Back">
-          <Arrow direction="back" />
-        </ToolbarButton>
-        <ToolbarButton onClick={() => apply(redo)} disabled={!canRedo(state)} label="Forward">
-          <Arrow direction="forward" />
-        </ToolbarButton>
+      <div className="flex items-center gap-2">
+        <HistoryButton onClick={() => apply(undo)} disabled={!canUndo(state)} label="Back" svg={undoSvg} />
+        <HistoryButton onClick={() => apply(redo)} disabled={!canRedo(state)} label="Forward" svg={redoSvg} />
 
         <button
           type="button"
           onClick={() => apply(generate)}
-          className="flex-1 cursor-pointer rounded-lg px-4 py-2 text-base font-medium text-gray-900 transition-colors hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-800"
+          className="pixel-button h-10 flex-1"
+          data-variant="primary"
         >
           Generate
         </button>
 
-        <span className="hidden shrink-0 px-2 text-xs text-gray-400 sm:inline">
+        <span className="label hidden shrink-0 opacity-60 sm:inline">
           {state.index + 1} / {state.entries.length}
         </span>
         <Menu
@@ -198,9 +157,9 @@ export function App({ historyUrl }) {
           anyLocked={anyLocked(state)}
         />
       </div>
-    </div>
+    </main>
   );
 }
 
 const mount = document.getElementById('app');
-if (mount) createRoot(mount).render(<App historyUrl={mount.dataset.historyUrl} />);
+if (mount) createRoot(mount).render(<App />);

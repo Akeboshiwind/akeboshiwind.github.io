@@ -1,13 +1,9 @@
-import { describe, test, expect, vi, afterEach, beforeEach } from 'vitest';
+import { describe, test, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { Menu } from './menu.jsx';
 import { MEALS } from './meals.js';
 
-afterEach(() => {
-  cleanup();
-  delete window.__setTheme;
-  delete document.documentElement.dataset.themePref;
-});
+afterEach(cleanup);
 
 const slots = [
   { id: 'pasta', locked: false },
@@ -22,6 +18,7 @@ const openMeals = () => {
   openMenu();
   fireEvent.click(screen.getByRole('button', { name: 'All meals' }));
 };
+const menuItems = () => screen.queryByRole('button', { name: 'All meals' });
 
 describe('Menu', () => {
   test('starts closed', () => {
@@ -29,7 +26,7 @@ describe('Menu', () => {
     const button = screen.getByRole('button', { name: 'Menu' });
 
     expect(button.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.queryByRole('radiogroup')).toBeNull();
+    expect(menuItems()).toBeNull();
   });
 
   test('opens on the menu button and closes again', () => {
@@ -37,11 +34,11 @@ describe('Menu', () => {
     openMenu();
 
     expect(screen.getByRole('button', { name: 'Menu' }).getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getByRole('radiogroup', { name: 'Theme' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Unlock all' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'All meals' })).toBeTruthy();
 
     openMenu();
-    expect(screen.queryByRole('radiogroup')).toBeNull();
+    expect(menuItems()).toBeNull();
   });
 
   test('closes on a click outside and on Escape', () => {
@@ -49,42 +46,17 @@ describe('Menu', () => {
 
     openMenu();
     fireEvent.pointerDown(document.body);
-    expect(screen.queryByRole('radiogroup')).toBeNull();
+    expect(menuItems()).toBeNull();
 
     openMenu();
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.queryByRole('radiogroup')).toBeNull();
+    expect(menuItems()).toBeNull();
   });
 
-  describe('theme', () => {
-    beforeEach(() => { window.__setTheme = vi.fn(); });
-
-    test('offers the three settings, marking the current one', () => {
-      document.documentElement.dataset.themePref = 'dark';
-      render(<Menu slots={slots} />);
-      openMenu();
-
-      const group = screen.getByRole('radiogroup', { name: 'Theme' });
-      const labels = within(group).getAllByRole('radio').map(r => r.textContent);
-      expect(labels).toEqual(['Auto', 'Light', 'Dark']);
-      expect(within(group).getByRole('radio', { name: 'Dark' }).getAttribute('aria-checked')).toBe('true');
-    });
-
-    test('defaults to auto when nothing is stored', () => {
-      render(<Menu slots={slots} />);
-      openMenu();
-      expect(screen.getByRole('radio', { name: 'Auto' }).getAttribute('aria-checked')).toBe('true');
-    });
-
-    test('choosing one applies it site-wide', () => {
-      render(<Menu slots={slots} />);
-      openMenu();
-      fireEvent.click(screen.getByRole('radio', { name: 'Light' }));
-
-      expect(window.__setTheme).toHaveBeenCalledWith('light');
-      expect(screen.getByRole('radio', { name: 'Light' }).getAttribute('aria-checked')).toBe('true');
-      expect(screen.getByRole('radio', { name: 'Auto' }).getAttribute('aria-checked')).toBe('false');
-    });
+  test('leaves the theme to the app bar', () => {
+    render(<Menu slots={slots} />);
+    openMenu();
+    expect(screen.queryByRole('radiogroup')).toBeNull();
   });
 
   describe('unlock all', () => {
@@ -104,7 +76,7 @@ describe('Menu', () => {
       fireEvent.click(item);
 
       expect(onUnlockAll).toHaveBeenCalledTimes(1);
-      expect(screen.queryByRole('radiogroup')).toBeNull();
+      expect(menuItems()).toBeNull();
     });
   });
 
@@ -157,6 +129,13 @@ describe('Menu', () => {
       openMeals();
       fireEvent.click(screen.getByRole('dialog').parentElement);
       expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    test('hands focus back to the menu button, since the item that opened it has gone', () => {
+      render(<Menu slots={slots} />);
+      openMeals();
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Menu' }));
     });
 
     test('a click inside the dialog leaves it open', () => {
