@@ -17,7 +17,8 @@ export function SetCheckboxes({ count, completed, onToggle, disabled, labels }) 
           >
             <input
               type="checkbox"
-              className="pixel-check checked:border-ok checked:bg-ok disabled:cursor-not-allowed"
+              className="pixel-check disabled:cursor-not-allowed"
+              data-variant="ok"
               checked={done}
               disabled={disabled}
               onChange={() => onToggle(i)}
