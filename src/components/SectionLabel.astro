@@ -8,4 +8,5 @@ const { class: className = '' } = Astro.props;
 
 <h2 class:list={['label flex items-center gap-3 text-heading mt-8 mb-1', className]}>
   <span class="flex items-center gap-2 shrink-0"><slot /></span>
+  <span data-dither="fade-x" class="flex-1 h-[6px]" aria-hidden="true"></span>
 </h2>

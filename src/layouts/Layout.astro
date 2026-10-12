@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import ThemeInit from '../components/ThemeInit.astro';
+import DitherScript from '../components/DitherScript.astro';
 
 interface Props {
   title?: string;
@@ -65,7 +66,9 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <slot />
   </main>
   <footer class="mt-16">
+    <span data-dither="ripples" class="h-12" aria-hidden="true"></span>
     <p class="label text-center text-text opacity-70 my-4">&copy; {new Date().getFullYear()} By the Rocks</p>
   </footer>
+  <DitherScript />
 </body>
 </html>

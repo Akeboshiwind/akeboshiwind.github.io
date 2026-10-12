@@ -57,11 +57,20 @@
     color: var(--bg);
   }
 
+  :where(hr, [data-dither]) {
+    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+  }
+
   hr {
     border: 0;
     height: 10px;
     margin: 2.5em 0;
     background: linear-gradient(90deg, var(--accent) 50%, transparent 0) center / 4px 2px repeat-x;
+  }
+
+  hr[data-dithered] {
+    background: var(--accent);
   }
 }
 
@@ -85,6 +94,15 @@
     line-height: 1.4;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+  }
+
+  [data-dither] {
+    display: block;
+    background-color: var(--accent);
+  }
+
+  [data-dither]:not([data-dithered]) {
+    visibility: hidden;
   }
 
   .pixel-line {
