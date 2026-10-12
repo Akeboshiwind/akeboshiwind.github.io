@@ -9,5 +9,6 @@
     "images"
   ],
   "category": "health",
-  "icon": "microscope"
+  "icon": "microscope",
+  "dither": "ui"
 }
