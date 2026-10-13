@@ -14,7 +14,7 @@ import { start, flip, rate, undo, refresh, reset } from './session.js';
 // Departure Mono has no Devanagari glyphs; the page's <head> loads this font.
 const devanagari = "font-['Noto_Sans_Devanagari',sans-serif] font-semibold";
 
-const RATING_BORDER = ['border-danger', 'border-warn', 'border-ok', 'border-accent'];
+const RATING_BORDER = ['', 'border-warn', 'border-ok', 'border-accent'];
 const STATE_BORDER = { new: 'border-accent', learning: 'border-warn', review: 'border-ok' };
 
 const Answer = ({ card }) => (
@@ -255,6 +255,7 @@ export function App() {
                 key={rating}
                 type="button"
                 onClick={() => handleRate(rating)}
+                data-variant={rating === 0 ? 'danger' : undefined}
                 className={`pixel-button ${RATING_BORDER[rating]} flex flex-col items-center gap-1 py-3`}
               >
                 <span>{label}</span>
