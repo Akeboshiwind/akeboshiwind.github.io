@@ -55,6 +55,7 @@ Tools and posts draw their UI from one kit. **Read both locations before styling
 - **Classes** — `src/styles/theme.css`, `@layer components`. They work unchanged in `.astro`, `.jsx`, `.md` and `.mdx`.
 - **Components** — `src/components/pixel/`. Each is an `.astro` and `.jsx` pair: Astro pages here cannot render `.jsx` (no `@astrojs/react`), and React apps cannot import `.astro`. The pair carries no styling of its own; that lives in the classes.
 - **Catalogue** — `/kit/` (`src/pages/kit/index.astro`) shows everything in both themes. `src/lib/pixel-kit.test.js` fails until a new class or component is on it.
+- **Danger is never colour alone** — reach it through `data-variant="danger"`, `.pixel-alert`, `.pixel-alert-text` or `.pixel-hatch`. `src/lib/pixel-colours.test.js` fails on a bare danger colour (`text-danger`, `bg-danger`, `var(--danger)`, …).
 - **Colours** — tokens only. `src/lib/pixel-colours.test.js` fails when a page on `PixelAppLayout` uses a Tailwind palette class, a `dark:` variant or a hex colour. A value that must leave CSS (a canvas, a library option) is a `PAGE_*` constant in `src/lib/accents.js`.
 
 ## Apps

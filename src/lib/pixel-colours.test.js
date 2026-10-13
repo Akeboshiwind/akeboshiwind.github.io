@@ -31,3 +31,13 @@ describe('a page on PixelAppLayout takes its colours from the theme', () => {
     expect(found).toEqual([]);
   });
 });
+
+const BARE_DANGER = /\b(?:bg|text|border(?:-[trblxy])?|ring|outline|fill|stroke|decoration|caret|accent|from|via|to)-danger\b|var\(--danger\)/g;
+
+describe('a page on PixelAppLayout draws danger only through the kit', () => {
+  test.each(pixelPages)('%s', (dir) => {
+    const found = files(dir).flatMap((path) =>
+      [...readFileSync(path, 'utf8').matchAll(BARE_DANGER)].map(([match]) => `${path}: ${match}`));
+    expect(found).toEqual([]);
+  });
+});
