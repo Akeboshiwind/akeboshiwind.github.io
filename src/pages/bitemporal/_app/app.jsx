@@ -2,7 +2,7 @@ import './entry.css';
 import { createRoot } from 'react-dom/client';
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import * as ably from './ably.js';
-import { config, renderCanvas, rgbToCss } from './canvas.js';
+import { config, plotFrame, renderCanvas, rgbToCss } from './canvas.js';
 import {
   normalizeRoomCode,
   generateRoomCode,
@@ -151,16 +151,14 @@ let selection = NOTHING_SELECTED;
 
 store.subscribe(repaint);
 
-function drawSize() {
-  return { w: canvasEl.width - 2 * config.padding, h: canvasEl.height - 2 * config.padding };
-}
+const currentFrame = () => plotFrame(canvasEl.width, canvasEl.height, config.insets);
 
 function toNormalized(e) {
   const rect = canvasEl.getBoundingClientRect();
-  const { w, h } = drawSize();
+  const frame = currentFrame();
   return {
-    x: (e.clientX - rect.left - config.padding) / w,
-    y: 1 - (e.clientY - rect.top - config.padding) / h,
+    x: (e.clientX - rect.left - frame.left) / frame.width,
+    y: 1 - (e.clientY - rect.top - frame.top) / frame.height,
   };
 }
 
@@ -171,7 +169,7 @@ const handleWidthFor = (e) => (e.pointerType === 'touch' ? TOUCH_HANDLE_WIDTH : 
 
 function hitAt({ x, y }, handleWidth) {
   const { events, points } = store.get();
-  const { w, h } = drawSize();
+  const { width: w, height: h } = currentFrame();
   const point = pointHitTest(points, x, y, w, h);
   return point ? { point } : { event: hitTest(events, x, y, w, handleWidth) };
 }
@@ -186,6 +184,7 @@ function repaint() {
   canvasEl.height = height;
   const s = store.get();
   renderCanvas(canvasEl, s.events, {
+    insets: config.insets,
     showGrid: s.showGrid,
     showTicks: s.showTicks,
     showVtEqSt: s.showVtEqSt,

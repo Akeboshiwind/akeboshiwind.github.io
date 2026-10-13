@@ -1,7 +1,11 @@
 import { outline, fadeLit, disc, lineCells } from './pixel.js';
 
 export const config = {
-  padding: 60,
+  /**
+   * Canvas px between each canvas edge and the plot.
+   * `labelLeft` and `labelBottom` place the axis labels, in px from the left and bottom canvas edges.
+   */
+  insets: { top: 60, right: 60, bottom: 60, left: 60, labelLeft: 20, labelBottom: 28 },
   gridDivisions: 10,
   handleWidth: 8,
   pointRadius: 8,
@@ -43,32 +47,43 @@ const range = (from, to, step = 1) => {
   return out;
 };
 
-function plotArea(width, height, padding) {
+/** The plot's rectangle on a `width` × `height` canvas with `insets`, in canvas px. */
+export function plotFrame(width, height, insets) {
   return {
-    left: toCell(padding),
-    right: toCell(width - padding),
-    top: toCell(padding),
-    bottom: toCell(height - padding),
+    left: insets.left,
+    top: insets.top,
+    width: width - insets.left - insets.right,
+    height: height - insets.top - insets.bottom,
+  };
+}
+
+const xOf = (frame, x) => frame.left + x * frame.width;
+const yOf = (frame, y) => frame.top + frame.height - y * frame.height;
+
+function plotArea(frame) {
+  return {
+    left: toCell(frame.left),
+    right: toCell(frame.left + frame.width),
+    top: toCell(frame.top),
+    bottom: toCell(frame.top + frame.height),
   };
 }
 
 export const rgbToCss = ([r, g, b]) => `rgb(${r},${g},${b})`;
 
-function drawGrid(ctx, width, height, padding, divisions, color) {
-  const { left, right, top, bottom } = plotArea(width, height, padding);
-  const stepX = (width - 2 * padding) / divisions;
-  const stepY = (height - 2 * padding) / divisions;
+function drawGrid(ctx, frame, divisions, color) {
+  const { left, right, top, bottom } = plotArea(frame);
   ctx.fillStyle = color;
   for (let i = 0; i <= divisions; i++) {
-    const col = toCell(padding + i * stepX);
-    const row = toCell(height - padding - i * stepY);
+    const col = toCell(xOf(frame, i / divisions));
+    const row = toCell(yOf(frame, i / divisions));
     for (const r of range(top, bottom, 2)) fillCell(ctx, col, r);
     for (const c of range(left, right, 2)) fillCell(ctx, c, row);
   }
 }
 
-function drawAxes(ctx, width, height, padding, colors) {
-  const { left, right, top, bottom } = plotArea(width, height, padding);
+function drawAxes(ctx, frame, colors) {
+  const { left, right, top, bottom } = plotArea(frame);
   ctx.fillStyle = colors.heading;
   fillCells(ctx, left, bottom, right + 1, bottom + 1);
   fillCells(ctx, left, top, left + 1, bottom + 1);
@@ -78,14 +93,14 @@ function drawAxes(ctx, width, height, padding, colors) {
   }
 }
 
-function drawAxisLabels(ctx, width, height, padding, colors) {
+function drawAxisLabels(ctx, width, height, insets, colors) {
   ctx.fillStyle = colors.text;
   ctx.font = config.font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillText('VALID TIME', width / 2, height - padding + 32);
+  ctx.fillText('VALID TIME', width / 2, height - insets.labelBottom);
   ctx.save();
-  ctx.translate(padding - 40, height / 2);
+  ctx.translate(insets.labelLeft, height / 2);
   ctx.rotate(-Math.PI / 2);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
@@ -93,16 +108,14 @@ function drawAxisLabels(ctx, width, height, padding, colors) {
   ctx.restore();
 }
 
-function drawTicks(ctx, width, height, padding, divisions, colors) {
-  const { left, bottom } = plotArea(width, height, padding);
+function drawTicks(ctx, frame, divisions, colors) {
+  const { left, bottom } = plotArea(frame);
   const { cell } = config;
-  const stepX = (width - 2 * padding) / divisions;
-  const stepY = (height - 2 * padding) / divisions;
   const tickCells = 3;
   ctx.font = config.font;
   for (let i = 0; i <= divisions; i++) {
-    const col = toCell(padding + i * stepX);
-    const row = toCell(height - padding - i * stepY);
+    const col = toCell(xOf(frame, i / divisions));
+    const row = toCell(yOf(frame, i / divisions));
     ctx.fillStyle = colors.heading;
     fillCells(ctx, col, bottom, col + 1, bottom + tickCells + 1);
     fillCells(ctx, left - tickCells, row, left, row + 1);
@@ -116,19 +129,17 @@ function drawTicks(ctx, width, height, padding, divisions, colors) {
   }
 }
 
-function eventCells(event, width, height, padding) {
-  const drawWidth = width - 2 * padding;
-  const drawHeight = height - 2 * padding;
+function eventCells(event, frame) {
   return {
-    left: toCell(padding + event._valid_from * drawWidth),
-    right: toCell(padding + (event._valid_to ?? 1) * drawWidth),
-    top: toCell(padding),
-    bottom: toCell(height - padding - event._system_from * drawHeight),
+    left: toCell(xOf(frame, event._valid_from)),
+    right: toCell(xOf(frame, event._valid_to ?? 1)),
+    top: toCell(frame.top),
+    bottom: toCell(yOf(frame, event._system_from)),
   };
 }
 
-function drawEvent(ctx, event, width, height, padding, selected, colors) {
-  const { left, right, top, bottom } = eventCells(event, width, height, padding);
+function drawEvent(ctx, event, frame, selected, colors) {
+  const { left, right, top, bottom } = eventCells(event, frame);
   if (!(left < right && top < bottom)) return;
   const open = event._valid_to == null;
   const { fade } = config;
@@ -174,11 +185,9 @@ export function drawOrder(events) {
   return events.map((_, i) => i).sort((a, b) => events[a]._system_from - events[b]._system_from);
 }
 
-function drawPoint(ctx, point, width, height, padding, selected, colors) {
-  const drawWidth = width - 2 * padding;
-  const drawHeight = height - 2 * padding;
-  const col = toCell(padding + point.x * drawWidth);
-  const row = toCell(height - padding - point.y * drawHeight);
+function drawPoint(ctx, point, frame, selected, colors) {
+  const col = toCell(xOf(frame, point.x));
+  const row = toCell(yOf(frame, point.y));
   const radius = config.pointRadius / config.cell;
   const fillDisc = (r, style) => {
     ctx.fillStyle = style;
@@ -190,14 +199,12 @@ function drawPoint(ctx, point, width, height, padding, selected, colors) {
 }
 
 /** Cell bounds of a box given as two corners in 0..1 coordinates. */
-function normalizedBox({ x1, y1, x2, y2 }, width, height, padding) {
-  const drawWidth = width - 2 * padding;
-  const drawHeight = height - 2 * padding;
+function normalizedBox({ x1, y1, x2, y2 }, frame) {
   return {
-    left: toCell(padding + Math.min(x1, x2) * drawWidth),
-    right: toCell(padding + Math.max(x1, x2) * drawWidth),
-    top: toCell(height - padding - Math.max(y1, y2) * drawHeight),
-    bottom: toCell(height - padding - Math.min(y1, y2) * drawHeight),
+    left: toCell(xOf(frame, Math.min(x1, x2))),
+    right: toCell(xOf(frame, Math.max(x1, x2))),
+    top: toCell(yOf(frame, Math.max(y1, y2))),
+    bottom: toCell(yOf(frame, Math.min(y1, y2))),
   };
 }
 
@@ -213,25 +220,25 @@ function drawDashedOutline(ctx, { left, right, top, bottom }, on, off) {
   });
 }
 
-function drawSelectionBox(ctx, width, height, padding, { start, end }, colors) {
-  const box = normalizedBox({ x1: start.x, y1: start.y, x2: end.x, y2: end.y }, width, height, padding);
+function drawSelectionBox(ctx, frame, { start, end }, colors) {
+  const box = normalizedBox({ x1: start.x, y1: start.y, x2: end.x, y2: end.y }, frame);
   ctx.fillStyle = colors.accent;
   for (const r of range(box.top, box.bottom))
     for (const c of range(box.left, box.right)) if (c % 2 === 0 && r % 2 === 0) fillCell(ctx, c, r);
   drawDashedOutline(ctx, box, 2, 2);
 }
 
-function drawVtEqStLine(ctx, width, height, padding, colors) {
-  const { left, right, top, bottom } = plotArea(width, height, padding);
+function drawVtEqStLine(ctx, frame, colors) {
+  const { left, right, top, bottom } = plotArea(frame);
   ctx.fillStyle = colors.heading;
   lineCells(left, bottom, right, top).forEach(([c, r], i) => {
     if (i % 6 < 3) fillCell(ctx, c, r);
   });
 }
 
-function drawZoomRect(ctx, rect, width, height, padding, colors) {
+function drawZoomRect(ctx, rect, frame, colors) {
   ctx.fillStyle = colors.accent;
-  drawDashedOutline(ctx, normalizedBox(rect, width, height, padding), 3, 2);
+  drawDashedOutline(ctx, normalizedBox(rect, frame), 3, 2);
 }
 
 /**
@@ -241,6 +248,7 @@ function drawZoomRect(ctx, rect, width, height, padding, colors) {
  * @param {Array<{_valid_from: number, _valid_to: number | null, _system_from: number, color: number[]}>} events
  *   in 0..1 coordinates; a null `_valid_to` is open to valid time ∞
  * @param {object} opts
+ * @param {object} opts.insets as `config.insets`
  * @param {boolean} [opts.showGrid]
  * @param {boolean} [opts.showTicks]
  * @param {boolean} [opts.showVtEqSt]
@@ -254,7 +262,9 @@ function drawZoomRect(ctx, rect, width, height, padding, colors) {
 export function renderCanvas(canvas, events, opts) {
   const ctx = canvas.getContext('2d');
   const { width, height } = canvas;
-  const { padding, gridDivisions } = config;
+  const { gridDivisions } = config;
+  const { insets } = opts;
+  const frame = plotFrame(width, height, insets);
   const colors = themeColors();
   const selected = opts.selected ?? new Set();
   const points = opts.points ?? [];
@@ -263,14 +273,14 @@ export function renderCanvas(canvas, events, opts) {
 
   ctx.fillStyle = colors.bg;
   ctx.fillRect(0, 0, width, height);
-  drawGrid(ctx, width, height, padding, gridDivisions, colors.border);
-  drawAxes(ctx, width, height, padding, colors);
-  drawAxisLabels(ctx, width, height, padding, colors);
-  if (opts.showTicks) drawTicks(ctx, width, height, padding, gridDivisions, colors);
-  for (const i of drawOrder(events)) drawEvent(ctx, events[i], width, height, padding, selected.has(i), colors);
-  points.forEach((point, i) => drawPoint(ctx, point, width, height, padding, selectedPoints.has(i), colors));
-  if (opts.showGrid) drawGrid(ctx, width, height, padding, gridDivisions, colors.text);
-  if (opts.selectionBox) drawSelectionBox(ctx, width, height, padding, opts.selectionBox, colors);
-  if (zoomRect) drawZoomRect(ctx, zoomRect, width, height, padding, colors);
-  if (opts.showVtEqSt) drawVtEqStLine(ctx, width, height, padding, colors);
+  drawGrid(ctx, frame, gridDivisions, colors.border);
+  drawAxes(ctx, frame, colors);
+  drawAxisLabels(ctx, width, height, insets, colors);
+  if (opts.showTicks) drawTicks(ctx, frame, gridDivisions, colors);
+  for (const i of drawOrder(events)) drawEvent(ctx, events[i], frame, selected.has(i), colors);
+  points.forEach((point, i) => drawPoint(ctx, point, frame, selectedPoints.has(i), colors));
+  if (opts.showGrid) drawGrid(ctx, frame, gridDivisions, colors.text);
+  if (opts.selectionBox) drawSelectionBox(ctx, frame, opts.selectionBox, colors);
+  if (zoomRect) drawZoomRect(ctx, zoomRect, frame, colors);
+  if (opts.showVtEqSt) drawVtEqStLine(ctx, frame, colors);
 }
