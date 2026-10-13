@@ -777,11 +777,12 @@
   }
 }
 
-/* Unlayered so it beats the size utilities: iOS Safari zooms into any field under 16px when it is focused. */
+/* Unlayered so it beats the font utilities: iOS Safari zooms into any field under 16px when it is focused, and Departure Mono blurs at 16px. */
 @media (pointer: coarse) {
   input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"], [type="button"], [type="submit"], [type="reset"]),
   textarea,
   select {
-    font-size: var(--text-pixel-lg);
+    font-family: var(--font-sans);
+    font-size: 16px;
   }
 }
