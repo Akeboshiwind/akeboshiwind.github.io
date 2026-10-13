@@ -76,16 +76,6 @@ describe.each(Object.keys(COUNTS))('%s', (key) => {
     expect(drive(algo.fn, [2, 1]).sorted).toEqual([1, 2]);
   });
 
-  if (algo.noRepeatPairs) {
-    // Known bug: powersort claims no repeats, but merging runs re-asks pairs its run detection already asked.
-    (key === 'powersort' ? test.fails : test)('never asks about the same pair of distinct values twice', () => {
-      for (const input of ['random', 'sorted', 'reversed']) {
-        const keys = drive(algo.fn, INPUTS[input]).pairs.map(({ a, b }) => [a, b].sort((x, y) => x - y).join());
-        expect(new Set(keys).size).toBe(keys.length);
-      }
-    });
-  }
-
   if (algo.exact) {
     test('asks exactly getTotal(n) comparisons', () => {
       for (const items of Object.values(INPUTS)) {
@@ -95,23 +85,39 @@ describe.each(Object.keys(COUNTS))('%s', (key) => {
   }
 });
 
+const permutations = (n) => n === 0 ? [[]]
+  : permutations(n - 1).flatMap(p => Array.from({ length: n }, (_, i) => [...p.slice(0, i), n, ...p.slice(i)]));
+const lists = (n, values) => n === 0 ? [[]]
+  : lists(n - 1, values).flatMap(l => Array.from({ length: values }, (_, v) => [...l, v + 1]));
+const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+
+// Every ordering of up to 7 distinct items, and every list of up to 6 drawn from three values.
+const DISTINCT = range(2, 7).flatMap(permutations);
+const WITH_TIES = range(2, 6).flatMap(n => lists(n, 3));
+
+// Known bugs, each fixed by the commit that removes it from its list.
+const OVER_BOUND = ['fordJohnson', 'mergeAdaptive'];
+const REPEATS_PAIRS = ['powersort'];
+
 // The sorting screen shows "Comparison k / ≤ getTotal(n)", so getTotal must bound every run.
 describe('getTotal bounds the comparisons asked', () => {
-  const withinBound = (key, items) =>
-    expect(drive(ALGORITHMS[key].fn, items).pairs.length).toBeLessThanOrEqual(ALGORITHMS[key].getTotal(items.length));
+  for (const key of Object.keys(COUNTS)) {
+    const algo = ALGORITHMS[key];
+    (OVER_BOUND.includes(key) ? test.fails : test)(`${key}, on every input`, () => {
+      for (const items of [...DISTINCT, ...WITH_TIES]) {
+        expect(drive(algo.fn, items).pairs.length).toBeLessThanOrEqual(algo.getTotal(items.length));
+      }
+    });
+  }
+});
 
-  const bounded = Object.keys(COUNTS).filter(key => !['mergeAdaptive', 'fordJohnson'].includes(key));
-  test.each(bounded)('%s', (key) => {
-    for (const items of Object.values(INPUTS)) withinBound(key, items);
-  });
-
-  test('fordJohnson on distinct items', () => {
-    for (const input of ['random', 'sorted', 'reversed']) withinBound('fordJohnson', INPUTS[input]);
-  });
-
-  // Known bug: with equal items fordJohnson asks one more than its worst-case total (17 > 16 for n=8).
-  test.fails('fordJohnson on duplicates', () => withinBound('fordJohnson', INPUTS.duplicates));
-
-  // Known bug: the pre-merge check costs an extra comparison that getTotal (mergeUpperBound) doesn't count.
-  test.fails('mergeAdaptive', () => withinBound('mergeAdaptive', INPUTS.random));
+describe('an algorithm claiming no repeats never asks the same pair of distinct values twice', () => {
+  for (const key of Object.keys(COUNTS).filter(k => ALGORITHMS[k].noRepeatPairs)) {
+    (REPEATS_PAIRS.includes(key) ? test.fails : test)(`${key}, on every ordering`, () => {
+      for (const items of DISTINCT) {
+        const keys = drive(ALGORITHMS[key].fn, items).pairs.map(({ a, b }) => [a, b].sort((x, y) => x - y).join());
+        expect(new Set(keys).size).toBe(keys.length);
+      }
+    });
+  }
 });
