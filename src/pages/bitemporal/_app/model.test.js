@@ -4,6 +4,7 @@ import {
   snapToGrid,
   hitTest,
   pointHitTest,
+  menuTargets,
   eventsInSelection,
   pointsInSelection,
   moveEvent,
@@ -63,6 +64,24 @@ test('pointHitTest finds the topmost point within its radius', () => {
   const points = [{ x: 0.5, y: 0.5 }, { x: 0.501, y: 0.5 }];
   expect(pointHitTest(points, 0.5, 0.5, 1000, 1000)).toEqual({ index: 1 });
   expect(pointHitTest(points, 0.6, 0.5, 1000, 1000)).toBe(null);
+});
+
+describe('menuTargets', () => {
+  const selection = { events: new Set([0, 2]), points: new Set([1]) };
+
+  test('acts on the whole selection when the hit item is in it', () => {
+    expect(menuTargets({ event: { index: 2 } }, selection)).toBe(selection);
+    expect(menuTargets({ point: { index: 1 } }, selection)).toBe(selection);
+  });
+
+  test('acts on the hit item alone when it is outside the selection', () => {
+    expect(menuTargets({ event: { index: 1 } }, selection)).toEqual({ events: new Set([1]), points: new Set() });
+    expect(menuTargets({ point: { index: 0 } }, selection)).toEqual({ events: new Set(), points: new Set([0]) });
+  });
+
+  test('is null when nothing was hit', () => {
+    expect(menuTargets({ event: null }, selection)).toBe(null);
+  });
 });
 
 describe('selection', () => {

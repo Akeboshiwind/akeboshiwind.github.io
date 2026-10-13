@@ -8,6 +8,7 @@ import {
   generateRoomCode,
   hitTest,
   pointHitTest,
+  menuTargets,
   eventsInSelection,
   pointsInSelection,
   moveEvent,
@@ -309,21 +310,14 @@ function onMouseUp() {
   repaint();
 }
 
+function openMenu(hit, at) {
+  const targets = menuTargets(hit, selection);
+  if (targets) store.update({ contextMenu: { ...at, ...targets } });
+}
+
 function onContextMenu(e) {
   e.preventDefault();
-  const { point, event } = hitAt(toNormalized(e));
-  const at = { x: e.clientX, y: e.clientY };
-  if (point) {
-    const inSelection = selection.points.has(point.index);
-    store.update({
-      contextMenu: inSelection ? { ...at, ...selection } : { ...at, events: new Set(), points: new Set([point.index]) },
-    });
-  } else if (event) {
-    const inSelection = selection.events.has(event.index);
-    store.update({
-      contextMenu: inSelection ? { ...at, ...selection } : { ...at, events: new Set([event.index]), points: new Set() },
-    });
-  }
+  openMenu(hitAt(toNormalized(e)), { x: e.clientX, y: e.clientY });
 }
 
 function onKeyDown(e) {

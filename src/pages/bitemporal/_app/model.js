@@ -49,6 +49,17 @@ export function pointHitTest(points, x, y, drawWidth, drawHeight) {
   return null;
 }
 
+/**
+ * The items a context menu opened on `hit` acts on, as `{events, points}` Sets of indices.
+ * `selection` has the same shape, and is returned itself, not a copy, when the hit item is in it; otherwise the hit item alone.
+ * `hit` is `{point}` or `{event}`, as from `pointHitTest` and `hitTest`; null when it holds neither.
+ */
+export function menuTargets({ point, event }, selection) {
+  if (point) return selection.points.has(point.index) ? selection : { events: new Set(), points: new Set([point.index]) };
+  if (event) return selection.events.has(event.index) ? selection : { events: new Set([event.index]), points: new Set() };
+  return null;
+}
+
 function bounds(a, b) {
   return { minX: Math.min(a.x, b.x), maxX: Math.max(a.x, b.x), minY: Math.min(a.y, b.y), maxY: Math.max(a.y, b.y) };
 }
