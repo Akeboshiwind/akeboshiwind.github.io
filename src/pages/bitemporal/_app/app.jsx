@@ -26,6 +26,7 @@ import {
 } from './model.js';
 import { SectionLabel } from '../../../components/pixel/SectionLabel.jsx';
 import { Icon } from '../../../components/pixel/Icon.jsx';
+import { Sheet } from '../../../components/pixel/Sheet.jsx';
 import cursorIcon from 'pixelarticons/svg/cursor-minimal.svg?raw';
 import squareIcon from 'pixelarticons/svg/square.svg?raw';
 import circleIcon from 'pixelarticons/svg/circle.svg?raw';
@@ -104,6 +105,7 @@ function initialState() {
     shareCopied: false,
     /** `{x, y, events, points}`: screen position and the index sets it acts on, or null when closed. */
     contextMenu: null,
+    sheetOpen: false,
   };
 }
 
@@ -637,7 +639,7 @@ function RoomCodeInput({ roomCode, roomCodeInput }) {
 
 function SidePanel({ s }) {
   return (
-    <div className="pixel-panel w-72 shrink-0 bg-code-bg text-text p-4 flex flex-col min-h-0 overflow-y-auto font-pixel text-pixel-md">
+    <div className="pixel-panel w-72 shrink-0 bg-code-bg text-text p-4 hidden md:flex flex-col min-h-0 overflow-y-auto font-pixel text-pixel-md">
       <h1 className="page-title mb-4">Bitemporal Visualizer</h1>
       <Options s={s} />
     </div>
@@ -758,16 +760,30 @@ function MainCanvas({ tool }) {
           <canvas ref={ref} className="w-full h-full touch-none [image-rendering:pixelated]" />
         </div>
         <Toolbar current={tool} />
+        <button className="pixel-button md:hidden absolute top-2 right-2 z-10" onClick={() => store.update({ sheetOpen: true })}>
+          Options
+        </button>
       </div>
     </div>
   );
 }
+
+const closeSheet = () => store.update({ sheetOpen: false });
 
 function App() {
   const s = useAppState();
   return (
     <div className="flex-1 flex gap-4 min-h-0">
       <SidePanel s={s} />
+      {s.sheetOpen && (
+        <div className="md:hidden">
+          <Sheet title="Options" onClose={closeSheet}>
+            <div className="min-h-0 overflow-y-auto flex flex-col font-pixel text-pixel-md">
+              <Options s={s} />
+            </div>
+          </Sheet>
+        </div>
+      )}
       <MainCanvas tool={s.tool} />
       <PresenceIndicator roomCount={s.roomCount} globalCount={s.globalCount} />
       <ConnectionPill status={s.connectionStatus} />
