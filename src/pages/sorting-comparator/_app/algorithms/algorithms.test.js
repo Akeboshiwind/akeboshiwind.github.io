@@ -95,15 +95,14 @@ const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from
 const DISTINCT = range(2, 7).flatMap(permutations);
 const WITH_TIES = range(2, 6).flatMap(n => lists(n, 3));
 
-// Known bugs, each fixed by the commit that removes it from its list.
-const OVER_BOUND = ['mergeAdaptive'];
+// A known bug, fixed by the commit that removes it from the list.
 const REPEATS_PAIRS = ['powersort'];
 
 // The sorting screen shows "Comparison k / ≤ getTotal(n)", so getTotal must bound every run.
 describe('getTotal bounds the comparisons asked', () => {
   for (const key of Object.keys(COUNTS)) {
     const algo = ALGORITHMS[key];
-    (OVER_BOUND.includes(key) ? test.fails : test)(`${key}, on every input`, () => {
+    test(`${key}, on every input`, () => {
       for (const items of [...DISTINCT, ...WITH_TIES]) {
         expect(drive(algo.fn, items).pairs.length).toBeLessThanOrEqual(algo.getTotal(items.length));
       }
