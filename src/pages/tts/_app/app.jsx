@@ -18,7 +18,7 @@ const STATUS_COLOUR = {
   generating: 'bg-warn animate-pulse',
   retrying: 'bg-warn animate-pulse',
   completed: 'bg-ok',
-  failed: 'bg-danger',
+  failed: 'pixel-hatch',
 };
 
 function KeyForm({ onSave }) {
@@ -98,7 +98,7 @@ function VoicePicker({ voice, onPick, apiKey }) {
           </div>
         ))}
       </div>
-      {error && <p role="alert" className="text-danger text-sm break-words">{error}</p>}
+      {error && <p role="alert" className="text-sm break-words"><span className="pixel-alert-text">{error}</span></p>}
     </div>
   );
 }
@@ -173,7 +173,7 @@ function ChunkCard({ chunk, number, playing, onPlay, onRetry }) {
       {header}
       <p className="mt-2 whitespace-pre-wrap break-words">{chunk.text}</p>
       {chunk.status === 'failed' && chunk.error && (
-        <p className="mt-2 text-sm text-danger break-words">{chunk.error}</p>
+        <p className="mt-2 text-sm break-words"><span className="pixel-alert-text">{chunk.error}</span></p>
       )}
     </>
   );
