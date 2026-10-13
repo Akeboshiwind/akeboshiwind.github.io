@@ -151,7 +151,11 @@ export function App() {
           </div>
 
           <p className="pixel-num">
-            <span className="pixel-alert-text" data-variant="ok">{((1 - result.size / result.originalSize) * 100).toFixed(1)}% smaller</span>
+            {result.size < result.originalSize ? (
+              <span className="pixel-alert-text" data-variant="ok">{((1 - result.size / result.originalSize) * 100).toFixed(1)}% smaller</span>
+            ) : (
+              <span className="pixel-alert-text" data-variant="warn">{((result.size / result.originalSize - 1) * 100).toFixed(1)}% larger — try a lower quality or a smaller max size</span>
+            )}
           </p>
 
           <img src={result.url} alt="Compressed" className="pixel-panel w-full" />
