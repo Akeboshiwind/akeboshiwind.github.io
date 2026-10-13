@@ -13,6 +13,8 @@ npm run favicons      # Regenerate public/ favicons from the header mark (cairn,
 npm run shot -- /bill/ [--theme dark] [--width 390]  # Screenshot pages in both themes; prints the PNG paths
 ```
 
+In a new worktree, run `npm ci` first (about 4s). Never symlink the main checkout's `node_modules`.
+
 ## Structure
 
 ```
