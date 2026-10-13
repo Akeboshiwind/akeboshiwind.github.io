@@ -5,6 +5,7 @@ import {
   hitTest,
   pointHitTest,
   menuTargets,
+  clampToViewport,
   eventsInSelection,
   pointsInSelection,
   moveEvent,
@@ -87,6 +88,23 @@ describe('menuTargets', () => {
 
   test('is null when nothing was hit', () => {
     expect(menuTargets({ event: null }, selection)).toBe(null);
+  });
+});
+
+describe('clampToViewport', () => {
+  const viewport = { width: 390, height: 844 };
+  const size = { width: 256, height: 150 };
+
+  test('leaves a box that fits where it is', () => {
+    expect(clampToViewport({ x: 10, y: 20 }, size, viewport)).toEqual({ x: 10, y: 20 });
+  });
+
+  test('moves a box that would overflow back inside the right and bottom edges', () => {
+    expect(clampToViewport({ x: 300, y: 800 }, size, viewport)).toEqual({ x: 134, y: 694 });
+  });
+
+  test('pins a box larger than the viewport to the top-left corner', () => {
+    expect(clampToViewport({ x: 300, y: 800 }, { width: 500, height: 900 }, viewport)).toEqual({ x: 0, y: 0 });
   });
 });
 

@@ -63,6 +63,14 @@ export function menuTargets({ point, event }, selection) {
   return null;
 }
 
+/** Where to put a box of `size` asked for at `at` so it stays inside `viewport`; all in px. A box too big for the viewport sits at its top-left. */
+export function clampToViewport(at, size, viewport) {
+  return {
+    x: Math.max(0, Math.min(at.x, viewport.width - size.width)),
+    y: Math.max(0, Math.min(at.y, viewport.height - size.height)),
+  };
+}
+
 function bounds(a, b) {
   return { minX: Math.min(a.x, b.x), maxX: Math.max(a.x, b.x), minY: Math.min(a.y, b.y), maxY: Math.max(a.y, b.y) };
 }

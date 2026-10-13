@@ -1,6 +1,6 @@
 import './entry.css';
 import { createRoot } from 'react-dom/client';
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import * as ably from './ably.js';
 import { config, renderCanvas, rgbToCss } from './canvas.js';
 import {
@@ -9,6 +9,7 @@ import {
   hitTest,
   pointHitTest,
   menuTargets,
+  clampToViewport,
   eventsInSelection,
   pointsInSelection,
   moveEvent,
@@ -544,10 +545,18 @@ function ColorInput({ onPick }) {
 }
 
 function ContextMenu({ menu, events }) {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    if (!menu) return;
+    const el = ref.current;
+    const { x, y } = clampToViewport(menu, el.getBoundingClientRect(), { width: innerWidth, height: innerHeight });
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+  }, [menu]);
   if (!menu) return null;
   const allOpen = menu.events.size > 0 && [...menu.events].every((i) => events[i]?._valid_to == null);
   return (
-    <div className="fixed bg-bg border-2 border-heading p-2 z-50" style={{ left: `${menu.x}px`, top: `${menu.y}px` }}>
+    <div ref={ref} className="fixed bg-bg border-2 border-heading p-2 z-50">
       <div className="flex gap-1 items-center">
         {PRESET_COLORS.map((color) => (
           <button
