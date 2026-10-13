@@ -679,7 +679,7 @@ const Option = ({ checked, onChange, synced, children }) => (
 
 const SavedStateCard = ({ saved }) => (
   <div className="relative group cursor-pointer" onClick={() => loadSavedState(saved)}>
-    <img src={saved.thumbnail} className="pixel-panel w-full hover:border-accent" />
+    <img src={saved.thumbnail} width={120} height={80} className="pixel-panel w-full hover:border-accent" />
     <button
       className="pixel-icon-button pixel-panel absolute -top-2 -right-2 min-w-0 min-h-0 w-6 h-6 p-0 bg-bg opacity-0 group-hover:opacity-100"
       data-variant="danger"
@@ -730,6 +730,12 @@ function SidePanel({ s }) {
 }
 
 function Options({ s }) {
+  const savedGrid = useRef(null);
+  const savedCount = useRef(s.savedStates.length);
+  useEffect(() => {
+    if (s.savedStates.length > savedCount.current) savedGrid.current.lastElementChild.scrollIntoView({ block: 'nearest' });
+    savedCount.current = s.savedStates.length;
+  }, [s.savedStates.length]);
   return (
     <>
       <div className="pixel-panel p-3">
@@ -797,7 +803,7 @@ function Options({ s }) {
       </SectionLabel>
       <div className="pt-2 pr-2">
         {s.savedStates.length ? (
-          <div className="grid grid-cols-2 gap-2">
+          <div ref={savedGrid} className="grid grid-cols-2 gap-2">
             {s.savedStates.map((saved) => (
               <SavedStateCard key={saved.id} saved={saved} />
             ))}
