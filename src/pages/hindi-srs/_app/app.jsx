@@ -14,8 +14,12 @@ import { start, flip, rate, undo, refresh, reset } from './session.js';
 // Departure Mono has no Devanagari glyphs; the page's <head> loads this font.
 const devanagari = "font-['Noto_Sans_Devanagari',sans-serif] font-semibold";
 
-const RATING_BORDER = ['', 'border-warn', 'border-ok', 'border-accent'];
-const STATE_BORDER = { new: 'border-accent', learning: 'border-warn', review: 'border-ok' };
+const RATING_VARIANT = ['danger', 'warn', 'ok', undefined];
+const STATE_VARIANT = { learning: 'warn', review: 'ok' };
+
+const StateMark = ({ state, className = '' }) => (
+  <span aria-hidden="true" className={`pixel-mark ${className}`} data-variant={STATE_VARIANT[state]} />
+);
 
 const Answer = ({ card }) => (
   <>
@@ -66,10 +70,13 @@ const EmptyState = ({ cards, settings }) => {
   );
 };
 
-const Stat = ({ value, label, className }) => (
+const Stat = ({ value, label, className = 'text-heading', state }) => (
   <div className="pixel-panel p-3 text-center">
     <div className={`font-pixel text-pixel-lg ${className}`}>{value}</div>
-    <div className="label opacity-70">{label}</div>
+    <div className="label opacity-70 flex items-center justify-center gap-2">
+      {state && <StateMark state={state} className="w-2 h-2" />}
+      {label}
+    </div>
   </div>
 );
 
@@ -117,8 +124,8 @@ const Settings = ({ cards, settings, onSettings, onReset }) => {
         <SectionLabel className="mb-3">Progress</SectionLabel>
         <div className="grid grid-cols-3 gap-3">
           <Stat value={stats.new} label="New" className="text-accent" />
-          <Stat value={stats.learning} label="Learning" className="text-warn" />
-          <Stat value={stats.mastered} label="Mastered" className="text-ok" />
+          <Stat value={stats.learning} label="Learning" state="learning" />
+          <Stat value={stats.mastered} label="Mastered" state="review" />
         </div>
       </div>
 
@@ -140,9 +147,10 @@ const Settings = ({ cards, settings, onSettings, onReset }) => {
               lang="hi"
               aria-pressed={preview?.char === card.char}
               onClick={() => setPreview(preview?.char === card.char ? null : card)}
-              className={`${devanagari} aspect-square flex items-center justify-center text-2xl border-2 ${STATE_BORDER[card.state]} cursor-pointer hover:bg-code-bg aria-pressed:bg-code-bg`}
+              className={`${devanagari} relative aspect-square flex items-center justify-center text-2xl border-2 ${card.state === 'new' ? 'border-accent' : 'border-border'} cursor-pointer hover:bg-code-bg aria-pressed:bg-code-bg`}
             >
               {card.char}
+              {STATE_VARIANT[card.state] && <StateMark state={card.state} className="absolute top-1 right-1 w-2 h-2" />}
             </button>
           ))}
         </div>
@@ -215,8 +223,8 @@ export function App() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className="label flex gap-4" aria-label="Today">
           <span><span className="text-accent">{stats.new}</span> new</span>
-          <span><span className="text-warn">{stats.learning}</span> learning</span>
-          <span><span className="text-ok">{stats.due}</span> due</span>
+          <span className="flex items-center gap-1"><StateMark state="learning" className="w-2 h-2" />{stats.learning} learning</span>
+          <span className="flex items-center gap-1"><StateMark state="review" className="w-2 h-2" />{stats.due} due</span>
         </p>
         <div className="flex gap-2">
           <button type="button" className="pixel-button flex items-center gap-2" onClick={() => commit(refresh(session, settings))}>
@@ -255,8 +263,8 @@ export function App() {
                 key={rating}
                 type="button"
                 onClick={() => handleRate(rating)}
-                data-variant={rating === 0 ? 'danger' : undefined}
-                className={`pixel-button ${RATING_BORDER[rating]} flex flex-col items-center gap-1 py-3`}
+                data-variant={RATING_VARIANT[rating]}
+                className={`pixel-button ${rating === 3 ? 'border-accent' : ''} flex flex-col items-center gap-1 py-3`}
               >
                 <span>{label}</span>
                 <span className="pixel-num opacity-70">{rating === 0 ? '<1m' : formatInterval(current, rating)}</span>
