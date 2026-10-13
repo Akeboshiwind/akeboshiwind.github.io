@@ -192,7 +192,8 @@ function repaint() {
 
 const offsetsFor = (indices, offset) => new Map([...indices].map((i) => [i, offset(i)]));
 
-function onMouseDown(e) {
+function onPointerDown(e) {
+  if (!e.isPrimary) return;
   if (store.get().contextMenu) closeContextMenu();
   if (e.button !== 0) return;
   const p = toNormalized(e);
@@ -252,8 +253,8 @@ function cursorFor(tool, p) {
 
 const updateAt = (items, offsets, f) => items.map((item, i) => (offsets.has(i) ? f(item, offsets.get(i)) : item));
 
-function onMouseMove(e) {
-  if (!canvasEl) return;
+function onPointerMove(e) {
+  if (!e.isPrimary || !canvasEl) return;
   const p = toNormalized(e);
   const s = store.get();
   canvasEl.style.cursor = cursorFor(s.tool, p);
@@ -300,7 +301,8 @@ function onMouseMove(e) {
   }
 }
 
-function onMouseUp() {
+function onPointerUp(e) {
+  if (!e.isPrimary) return;
   const { mode, start, end } = drag;
   const autoSelect = store.get().autoSelect && { tool: 'select' };
   if (mode === 'draw' && isDrag(start, end))
@@ -718,17 +720,19 @@ function MainCanvas({ tool }) {
     const canvas = ref.current;
     canvasEl = canvas;
     window.addEventListener('resize', repaint);
-    canvas.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    canvas.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
     canvas.addEventListener('contextmenu', onContextMenu);
     window.addEventListener('keydown', onKeyDown);
     repaint();
     return () => {
       window.removeEventListener('resize', repaint);
-      canvas.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
       canvas.removeEventListener('contextmenu', onContextMenu);
       window.removeEventListener('keydown', onKeyDown);
       canvasEl = null;
@@ -738,7 +742,7 @@ function MainCanvas({ tool }) {
     <div className="flex-1 min-w-0">
       <div className="relative w-full h-full overflow-hidden">
         <div className="absolute inset-0 left-5">
-          <canvas ref={ref} className="w-full h-full [image-rendering:pixelated]" />
+          <canvas ref={ref} className="w-full h-full touch-none [image-rendering:pixelated]" />
         </div>
         <Toolbar current={tool} />
       </div>
