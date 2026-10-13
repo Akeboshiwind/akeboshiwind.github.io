@@ -1,1 +1,0 @@
-import{r as s}from"./client.BDdPAVk5.js";const n=(a,r,{prefix:c=""}={})=>{const t=c+a,[e,u]=s.useState(()=>{try{const o=localStorage.getItem(t);return o!==null?JSON.parse(o):r}catch{return r}});return s.useEffect(()=>{try{localStorage.setItem(t,JSON.stringify(e))}catch{}},[e,t]),[e,u]};export{n as u};
