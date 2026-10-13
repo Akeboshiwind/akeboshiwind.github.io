@@ -338,7 +338,7 @@ Here's an example of the expected format with sample data:
                       <td>
                         <div className="flex items-start gap-1.5">
                           {isOver
-                            ? <span className="pixel-hatch w-2 h-2 mt-[11px] shrink-0" aria-hidden="true" />
+                            ? <span className="pixel-mark w-2 h-2 mt-[11px] shrink-0" aria-hidden="true" />
                             : <span className={`${marker} font-pixel text-pixel leading-[30px]`} aria-hidden="true">■</span>}
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center">

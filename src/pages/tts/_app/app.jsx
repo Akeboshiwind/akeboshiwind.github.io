@@ -18,7 +18,7 @@ const STATUS_COLOUR = {
   generating: 'bg-warn animate-pulse',
   retrying: 'bg-warn animate-pulse',
   completed: 'bg-ok',
-  failed: 'pixel-hatch',
+  failed: 'pixel-mark',
 };
 
 function KeyForm({ onSave }) {
