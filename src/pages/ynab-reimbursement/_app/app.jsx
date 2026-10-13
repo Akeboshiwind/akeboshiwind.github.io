@@ -259,7 +259,7 @@ const App = () => {
       )}
 
       {successMessage && (
-        <p role="status" className="label fixed top-0 inset-x-0 z-40 m-0 py-1 text-center bg-ok text-bg">
+        <p role="status" className="pixel-alert label fixed top-0 inset-x-0 z-40 m-0 py-1 text-center bg-bg" data-variant="ok">
           {successMessage}
         </p>
       )}
