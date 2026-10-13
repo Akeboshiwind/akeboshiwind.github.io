@@ -360,7 +360,7 @@ function WeddingDateInput({ weddingDate, onChange }) {
           type="date"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="flex-1 px-3 py-2 rounded-lg border border-pink-300 dark:border-pink-700 bg-white dark:bg-gray-800 text-sm"
+          className="flex-1 px-3 py-2 rounded-lg border border-pink-300 dark:border-pink-700 bg-white dark:bg-gray-800 text-sm pointer-coarse:text-base"
         />
         <button
           onClick={() => { onChange(value); setEditing(false); }}
