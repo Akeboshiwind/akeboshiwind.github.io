@@ -82,6 +82,11 @@
   }
 }
 
+:root {
+  --pixel-hatch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' shape-rendering='crispEdges'%3E%3Cpath d='M0 6h2v2H0zM2 4h2v2H2zM4 2h2v2H4zM6 0h2v2H6z'/%3E%3C/svg%3E");
+  --pixel-zigzag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 2h2v2H0zM2 0h2v2H2zM4 2h2v2H4zM6 0h2v2H6z'/%3E%3C/svg%3E");
+}
+
 @layer components {
   .page-title {
     font-family: var(--font-pixel);
@@ -421,15 +426,75 @@
     color: var(--bg);
   }
 
-  .pixel-button[data-variant="danger"] {
+  /* Danger is never colour alone: under a red accent, or without colour vision, the hatch is what sets it apart. */
+  :is(.pixel-button, .pixel-chip)[data-variant="danger"], .pixel-alert {
+    position: relative;
     border-color: var(--danger);
+    border-left: 0.75rem solid transparent;
+    color: var(--danger);
+  }
+
+  /* The strip fills the wide left border, so a tool's own padding utilities can't push text under it. */
+  :is(.pixel-button, .pixel-chip)[data-variant="danger"]::before, .pixel-alert::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    left: -0.75rem;
+    width: 0.75rem;
+    background: var(--danger);
+    mask:
+      linear-gradient(#000 0 0) left / 2px 100% no-repeat,
+      linear-gradient(#000 0 0) top / 100% 2px no-repeat,
+      linear-gradient(#000 0 0) bottom / 100% 2px no-repeat,
+      var(--pixel-hatch) 2px 0 / 8px 8px;
+  }
+
+  button.pixel-chip[data-variant="danger"]:not(:disabled):hover {
+    border-color: var(--danger);
+    border-left-color: transparent;
     color: var(--danger);
   }
 
   .pixel-button[data-variant="danger"]:not(:disabled):hover {
     border-color: var(--danger);
+    border-left-color: transparent;
     background: var(--danger);
     color: var(--bg);
+  }
+
+  .pixel-button[data-variant="danger"]:not(:disabled):hover::before {
+    background: var(--bg);
+  }
+
+  .pixel-alert {
+    border-top: 2px solid var(--danger);
+    border-right: 2px solid var(--danger);
+    border-bottom: 2px solid var(--danger);
+    padding: 0.75rem;
+  }
+
+  .pixel-alert-text {
+    position: relative;
+    display: inline-block;
+    padding-bottom: 5px;
+    color: var(--danger);
+  }
+
+  .pixel-alert-text::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 4px;
+    background: var(--danger);
+    mask: var(--pixel-zigzag) 0 0 / 8px 4px repeat-x;
+  }
+
+  .pixel-hatch {
+    display: inline-block;
+    background: var(--danger);
+    mask: var(--pixel-hatch) 0 0 / 8px 8px;
   }
 
   /* The inline padding lines its content up with PixelAppLayout's 720px column, whose own padding is 1rem. */

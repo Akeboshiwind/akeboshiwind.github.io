@@ -41,6 +41,20 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
           </div>
           <p class="label opacity-60">.pixel-button · data-variant="primary" | "danger"</p>
 
+          <SectionLabel class="mt-4 mb-2">Danger</SectionLabel>
+          <div class="flex flex-wrap items-center gap-2">
+            <button class="pixel-button" data-variant="primary">Save</button>
+            <button class="pixel-button" data-variant="danger">Delete list</button>
+            <button class="pixel-chip" data-variant="danger">Poor</button>
+          </div>
+          <div class="pixel-alert">
+            <p class="label">Couldn't import</p>
+            <p class="m-0 text-text">The file isn't valid JSON.</p>
+          </div>
+          <p class="label m-0"><span class="pixel-alert-text">API error 401: invalid key</span></p>
+          <p class="label flex items-center gap-2"><span class="pixel-hatch w-3 h-3"></span> failed</p>
+          <p class="label opacity-60">Never colour alone: data-variant="danger" on .pixel-button or .pixel-chip, .pixel-alert, .pixel-alert-text, .pixel-hatch · an icon-only danger action's glyph is its shape</p>
+
           <SectionLabel class="mt-4 mb-2">Icon buttons</SectionLabel>
           <div class="flex flex-wrap gap-1">
             <button class="pixel-icon-button" aria-label="Edit"><Icon name="pencil" class="w-4 h-4" /></button>
@@ -166,7 +180,7 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
               </div>
             ))}
           </div>
-          <p class="label flex gap-4"><span class="text-ok">.text-ok</span><span class="text-warn">.text-warn</span><span class="text-danger">.text-danger</span></p>
+          <p class="label flex gap-4"><span class="text-ok">.text-ok</span><span class="text-warn">.text-warn</span><span class="pixel-alert-text">.pixel-alert-text</span></p>
         </section>
       ))}
     </div>
