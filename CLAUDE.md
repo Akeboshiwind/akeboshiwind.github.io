@@ -10,6 +10,7 @@ npm run build         # Build for production
 npm run preview       # Preview production build
 npm test              # Run all tests
 npm run favicons      # Regenerate public/ favicons from the header mark (cairn, seed 2)
+npm run shot -- /bill/ [--theme dark] [--width 390]  # Screenshot pages in both themes; prints the PNG paths
 ```
 
 ## Structure
@@ -77,6 +78,8 @@ All apps are built through Astro's Vite pipeline — no separate build step need
    - `"ui"` — app UI: panels, text, buttons. Equalised so layout and colour blocks stay distinct.
    - `"image"` — mainly a picture, photo or illustration (e.g. `animal-crossing-hourly`, `wedding-celebration`). Treats near-white as empty page so the picture isn't flattened.
    The tone for each value is `IMAGE_TONES` in `src/lib/dither-dom.js`.
+
+To check a page visually, use `npm run shot`, not a hand-rolled Playwright script. It serves on a free port, so parallel worktrees don't clash, and fails on a non-2xx response.
 
 Key conventions the scaffold already sets up:
 - `PixelAppLayout` provides the HTML shell, the pixel theme, the app bar (← Home, History, accent and theme toggles) and the `<div id="app">` mount point

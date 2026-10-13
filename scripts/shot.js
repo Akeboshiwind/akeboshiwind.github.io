@@ -1,0 +1,102 @@
+#!/usr/bin/env node
+
+import { spawnSync } from 'child_process';
+import { mkdirSync } from 'fs';
+import { createServer } from 'net';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { parseArgs } from 'util';
+
+const THEMES = ['light', 'dark'];
+const USAGE = 'Usage: npm run shot -- <path>... [--theme light,dark] [--width 390,1280] [--out <dir>]';
+
+/**
+ * Turns CLI paths and options into the screenshots to take.
+ * `theme` and `width` are comma-separated lists, as typed on the command line.
+ * `tmp` is the parent of the `shots/` directory used when `out` is absent.
+ * Returns `{ dir, shots }`, each shot being `{ path, theme, width, file }`.
+ * Throws on a missing path, an unknown theme or a width that is not a positive integer.
+ */
+export function planShots(paths, { tmp, out, theme = 'light,dark', width = '390,1280' }) {
+  if (paths.length === 0) throw new Error(`Give at least one path to shoot.\n${USAGE}`);
+
+  const themes = theme.split(',');
+  const unknown = themes.find((t) => !THEMES.includes(t));
+  if (unknown) throw new Error(`Unknown theme "${unknown}"; use ${THEMES.join(' or ')}.`);
+
+  const widths = width.split(',').map((w) => {
+    if (!/^[1-9]\d*$/.test(w)) throw new Error(`Width "${w}" is not a positive integer.`);
+    return Number(w);
+  });
+
+  const dir = out ?? join(tmp, 'shots');
+  const shots = paths.flatMap((path) => {
+    const name = path.replace(/^\/+|\/+$/g, '').replaceAll('/', '-') || 'home';
+    return themes.flatMap((t) => widths.map((w) => ({
+      path, theme: t, width: w, file: join(dir, `${name}-${t}-${w}.png`),
+    })));
+  });
+  return { dir, shots };
+}
+
+function freePort() {
+  return new Promise((resolve, reject) => {
+    const server = createServer().once('error', reject).listen(0, () => {
+      const { port } = server.address();
+      server.close(() => resolve(port));
+    });
+  });
+}
+
+async function launchChromium(chromium) {
+  try {
+    return await chromium.launch();
+  } catch (e) {
+    if (!/Executable doesn't exist/.test(e.message)) throw e;
+    spawnSync('npx', ['playwright', 'install', 'chromium-headless-shell'], { stdio: 'inherit' });
+    return chromium.launch();
+  }
+}
+
+async function main() {
+  const { values, positionals } = parseArgs({
+    allowPositionals: true,
+    options: { theme: { type: 'string' }, width: { type: 'string' }, out: { type: 'string' } },
+  });
+  const tmp = process.env.CLAUDE_JOB_DIR ? join(process.env.CLAUDE_JOB_DIR, 'tmp') : tmpdir();
+  const { dir, shots } = planShots(positionals, { tmp, ...values });
+  mkdirSync(dir, { recursive: true });
+
+  const { dev } = await import('astro');
+  const { chromium } = await import('playwright');
+  const server = await dev({
+    logLevel: 'warn',
+    server: { port: await freePort() },
+    devToolbar: { enabled: false },
+    vite: { optimizeDeps: { entries: [] } },
+  });
+  const browser = await launchChromium(chromium).catch(async (e) => { await server.stop(); throw e; });
+  try {
+    const base = `http://localhost:${server.address.port}`;
+    for (const { path, theme, width, file } of shots) {
+      const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme });
+      const page = await context.newPage();
+      const response = await page.goto(base + path, { waitUntil: 'networkidle' });
+      if (!response.ok()) throw new Error(`${path} returned ${response.status()}`);
+      await page.screenshot({ path: file, fullPage: true });
+      await context.close();
+      console.log(file);
+    }
+  } finally {
+    await browser.close();
+    await server.stop();
+  }
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((e) => {
+    console.error(e.message);
+    process.exit(1);
+  });
+}
