@@ -190,8 +190,8 @@ export function App() {
                   <div className="label text-heading">{p.label}</div>
                   <div className="text-sm opacity-70">{p.blurb}</div>
                   {est && (
-                    <div className="font-pixel text-pixel mt-1 text-ok">
-                      ~{formatSize(est.out)} ({est.pct.toFixed(0)}% smaller)
+                    <div className="font-pixel text-pixel mt-1">
+                      <span className="pixel-alert-text" data-variant="ok">~{formatSize(est.out)} ({est.pct.toFixed(0)}% smaller)</span>
                     </div>
                   )}
                 </div>
@@ -244,12 +244,12 @@ export function App() {
           </div>
 
           {result.size < file.size ? (
-            <p className="font-pixel text-pixel text-ok m-0">
-              {((1 - result.size / file.size) * 100).toFixed(1)}% smaller — saved {formatSize(file.size - result.size)}
+            <p className="font-pixel text-pixel m-0">
+              <span className="pixel-alert-text" data-variant="ok">{((1 - result.size / file.size) * 100).toFixed(1)}% smaller — saved {formatSize(file.size - result.size)}</span>
             </p>
           ) : (
-            <p className="font-pixel text-pixel text-warn m-0">
-              No reduction — try a more aggressive level.
+            <p className="font-pixel text-pixel m-0">
+              <span className="pixel-alert-text" data-variant="warn">No reduction — try a more aggressive level.</span>
             </p>
           )}
 
