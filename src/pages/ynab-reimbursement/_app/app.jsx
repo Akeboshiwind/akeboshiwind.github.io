@@ -267,7 +267,7 @@ const App = () => {
       {currentView !== 'main' && <PageHeader />}
 
       {error && (
-        <p role="alert" className="pixel-panel border-danger text-danger p-3 m-0">{error}</p>
+        <p role="alert" className="pixel-alert m-0">{error}</p>
       )}
 
       {currentView === 'tokenInput' && (

@@ -14,8 +14,8 @@ export const BudgetSelectionView = ({
     {isLoading ? (
       <p className="label">Loading budgets...</p>
     ) : error ? (
-      <div className="pixel-panel border-danger p-3 flex flex-col items-start gap-2">
-        <p className="text-danger m-0">{error}</p>
+      <div className="pixel-alert flex flex-col items-start gap-2">
+        <p className="m-0">{error}</p>
         <button onClick={onLogout} className="pixel-button" data-variant="danger">
           Logout
         </button>
