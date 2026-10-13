@@ -17,7 +17,7 @@ import { PhotoReader } from './PhotoReader.jsx';
 
 const TITLE = 'Lateral Flow Test Reader';
 
-const FormError = ({ children }) => children ? <p role="alert" className="label text-danger">{children}</p> : null;
+const FormError = ({ children }) => children ? <p role="alert" className="label"><span className="pixel-alert-text">{children}</span></p> : null;
 
 function EntryForm({ title, initial, onSave, onCancel, onDelete }) {
   const [score, setScore] = useState(initial.score);
