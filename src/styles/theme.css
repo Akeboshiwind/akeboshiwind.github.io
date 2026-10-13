@@ -451,6 +451,7 @@
   :is(.pixel-button, .pixel-chip, .pixel-row, .pixel-alert, .pixel-alert-text, .pixel-mark)[data-variant="ok"] {
     --tone: var(--ok);
     --tone-fill: linear-gradient(#000 0 0);
+    --tone-hover-fill: linear-gradient(#000 0 0) 0 0 / 0.75rem 100% no-repeat, linear-gradient(#000 0 2px, transparent 0) 0 0 / 100% 8px;
     --tone-line: linear-gradient(#000 0 0) 0 0 / 100% 2px no-repeat;
     --tone-line-height: 2px;
   }
@@ -497,19 +498,21 @@
       var(--tone-hover-fill);
   }
 
-  /* A 2px halo in the page colour keeps the label legible over the hatch or dots. */
-  :is(.pixel-button, .pixel-row):is([data-variant="danger"], [data-variant="warn"]):not(:disabled):hover {
+  /* A 2px halo in the page colour keeps the label legible over the hatch, dots or stripes. */
+  :is(.pixel-button, .pixel-row):is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):hover {
     text-shadow: 2px 0 var(--bg), -2px 0 var(--bg), 0 2px var(--bg), 0 -2px var(--bg), 2px 2px var(--bg), -2px -2px var(--bg), 2px -2px var(--bg), -2px 2px var(--bg);
   }
 
   /* A faded child would fade its halo with it, leaving it unreadable over the pattern.
      !important because a tool's opacity utility sits in a later layer than the kit. */
-  :is(.pixel-button, .pixel-row):is([data-variant="danger"], [data-variant="warn"]):not(:disabled):hover * {
+  :is(.pixel-button, .pixel-row):is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):hover * {
     opacity: 1 !important;
   }
 
-  .pixel-button[data-variant="ok"]:not(:disabled):hover {
+  .pixel-button[data-variant="ok"]:not(:disabled):active {
+    background: var(--tone);
     color: var(--bg);
+    text-shadow: none;
   }
 
   /* A row in a divided panel: a tone draws its strip inside the padding, because the panel's divide-* colour reaches every border. */
@@ -580,10 +583,6 @@
     right: 0;
     width: auto;
     mask: var(--tone-hover-fill);
-  }
-
-  .pixel-row[data-variant="ok"]:not(:disabled):hover {
-    color: var(--bg);
   }
 
   .pixel-row:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):active {
