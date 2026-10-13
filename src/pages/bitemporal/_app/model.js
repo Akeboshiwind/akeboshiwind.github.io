@@ -24,15 +24,18 @@ export function snapToGrid(v) {
 
 const maybeSnap = (v, snap) => (snap ? snapToGrid(v) : v);
 
-/** The topmost event containing `(x, y)`, and whether `x` is on its resize handle; null if none. */
-export function hitTest(events, x, y, drawWidth) {
-  const handleWidth = config.handleWidth / drawWidth;
+/**
+ * The topmost event containing `(x, y)`, and whether `x` is on its resize handle; null if none.
+ * `drawWidth` and `handleWidth` are in pixels; the handle runs that far in from a closed event's right edge.
+ */
+export function hitTest(events, x, y, drawWidth, handleWidth) {
+  const handleSpan = handleWidth / drawWidth;
   for (const index of drawOrder(events).reverse()) {
     const { _valid_from, _valid_to, _system_from } = events[index];
     const open = _valid_to == null;
     const validTo = open ? 1 : _valid_to;
     if (x >= _valid_from && x <= validTo && y >= _system_from)
-      return { index, onHandle: !open && x >= validTo - handleWidth };
+      return { index, onHandle: !open && x >= validTo - handleSpan };
   }
   return null;
 }
@@ -47,6 +50,25 @@ export function pointHitTest(points, x, y, drawWidth, drawHeight) {
     if ((dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) <= 1) return { index };
   }
   return null;
+}
+
+/**
+ * The items a context menu opened on `hit` acts on, as `{events, points}` Sets of indices.
+ * `selection` has the same shape, and is returned itself, not a copy, when the hit item is in it; otherwise the hit item alone.
+ * `hit` is `{point}` or `{event}`, as from `pointHitTest` and `hitTest`; null when it holds neither.
+ */
+export function menuTargets({ point, event }, selection) {
+  if (point) return selection.points.has(point.index) ? selection : { events: new Set(), points: new Set([point.index]) };
+  if (event) return selection.events.has(event.index) ? selection : { events: new Set([event.index]), points: new Set() };
+  return null;
+}
+
+/** Where to put a box of `size` asked for at `at` so it stays inside `viewport`; all in px. A box too big for the viewport sits at its top-left. */
+export function clampToViewport(at, size, viewport) {
+  return {
+    x: Math.max(0, Math.min(at.x, viewport.width - size.width)),
+    y: Math.max(0, Math.min(at.y, viewport.height - size.height)),
+  };
 }
 
 function bounds(a, b) {

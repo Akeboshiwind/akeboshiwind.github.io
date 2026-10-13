@@ -1,13 +1,15 @@
 import './entry.css';
 import { createRoot } from 'react-dom/client';
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import * as ably from './ably.js';
-import { config, renderCanvas, rgbToCss } from './canvas.js';
+import { config, plotFrame, renderCanvas, rgbToCss } from './canvas.js';
 import {
   normalizeRoomCode,
   generateRoomCode,
   hitTest,
   pointHitTest,
+  menuTargets,
+  clampToViewport,
   eventsInSelection,
   pointsInSelection,
   moveEvent,
@@ -25,6 +27,7 @@ import {
 } from './model.js';
 import { SectionLabel } from '../../../components/pixel/SectionLabel.jsx';
 import { Icon } from '../../../components/pixel/Icon.jsx';
+import { Sheet } from '../../../components/pixel/Sheet.jsx';
 import cursorIcon from 'pixelarticons/svg/cursor-minimal.svg?raw';
 import squareIcon from 'pixelarticons/svg/square.svg?raw';
 import circleIcon from 'pixelarticons/svg/circle.svg?raw';
@@ -103,11 +106,23 @@ function initialState() {
     shareCopied: false,
     /** `{x, y, events, points}`: screen position and the index sets it acts on, or null when closed. */
     contextMenu: null,
+    sheetOpen: false,
   };
 }
 
 const store = createStore(initialState());
 const useAppState = () => useSyncExternalStore(store.subscribe, store.get);
+
+/** Tailwind's `md`, so the layout chosen here agrees with the `md:` classes. */
+const wideQuery = matchMedia('(width >= 48rem)');
+const useWide = () =>
+  useSyncExternalStore(
+    (onChange) => {
+      wideQuery.addEventListener('change', onChange);
+      return () => wideQuery.removeEventListener('change', onChange);
+    },
+    () => wideQuery.matches,
+  );
 
 const changed = (keys, a, b) => keys.some((k) => a[k] !== b[k]);
 
@@ -147,24 +162,31 @@ let selection = NOTHING_SELECTED;
 
 store.subscribe(repaint);
 
-function drawSize() {
-  return { w: canvasEl.width - 2 * config.padding, h: canvasEl.height - 2 * config.padding };
+function currentInsets() {
+  if (wideQuery.matches) return config.insets;
+  return store.get().showTicks ? config.compactTickInsets : config.compactInsets;
 }
+const currentFrame = () => plotFrame(canvasEl.width, canvasEl.height, currentInsets());
 
 function toNormalized(e) {
   const rect = canvasEl.getBoundingClientRect();
-  const { w, h } = drawSize();
+  const frame = currentFrame();
   return {
-    x: (e.clientX - rect.left - config.padding) / w,
-    y: 1 - (e.clientY - rect.top - config.padding) / h,
+    x: (e.clientX - rect.left - frame.left) / frame.width,
+    y: 1 - (e.clientY - rect.top - frame.top) / frame.height,
   };
 }
 
-function hitAt({ x, y }) {
+/** A fingertip covers far more than the handle as drawn. */
+const TOUCH_HANDLE_WIDTH = 28;
+
+const handleWidthFor = (e) => (e.pointerType === 'touch' ? TOUCH_HANDLE_WIDTH : config.handleWidth);
+
+function hitAt({ x, y }, handleWidth) {
   const { events, points } = store.get();
-  const { w, h } = drawSize();
+  const { width: w, height: h } = currentFrame();
   const point = pointHitTest(points, x, y, w, h);
-  return point ? { point } : { event: hitTest(events, x, y, w) };
+  return point ? { point } : { event: hitTest(events, x, y, w, handleWidth) };
 }
 
 const boxOf = (a, b) => ({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
@@ -177,6 +199,7 @@ function repaint() {
   canvasEl.height = height;
   const s = store.get();
   renderCanvas(canvasEl, s.events, {
+    insets: currentInsets(),
     showGrid: s.showGrid,
     showTicks: s.showTicks,
     showVtEqSt: s.showVtEqSt,
@@ -191,9 +214,8 @@ function repaint() {
 
 const offsetsFor = (indices, offset) => new Map([...indices].map((i) => [i, offset(i)]));
 
-function onMouseDown(e) {
-  if (store.get().contextMenu) closeContextMenu();
-  if (e.button !== 0) return;
+function onPointerDown(e) {
+  if (!e.isPrimary || e.button !== 0) return;
   const p = toNormalized(e);
   const { events, points, tool, autoSelect } = store.get();
 
@@ -203,7 +225,9 @@ function onMouseDown(e) {
   } else if (tool === 'point') {
     store.update({ points: [...points, { x: p.x, y: p.y, color: NEW_ITEM_COLOR }], ...(autoSelect && { tool: 'select' }) });
   } else {
-    const { point, event } = hitAt(p);
+    const hit = hitAt(p, handleWidthFor(e));
+    if (e.pointerType === 'touch') startLongPress(hit, { x: e.clientX, y: e.clientY });
+    const { point, event } = hit;
     if (point) {
       const pointOffset = (i) => ({ x: p.x - points[i].x, y: p.y - points[i].y });
       const group = selection.points.has(point.index) && selection.points.size > 1;
@@ -243,7 +267,7 @@ function cursorFor(tool, p) {
   if (drag.mode === 'select') return 'crosshair';
   if (drag.mode === 'resize' || drag.mode === 'resize-group') return 'ew-resize';
   if (drag.mode !== 'idle') return 'move';
-  const { point, event } = hitAt(p);
+  const { point, event } = hitAt(p, config.handleWidth);
   if (point) return 'move';
   if (event) return event.onHandle ? 'ew-resize' : 'move';
   return 'crosshair';
@@ -251,8 +275,12 @@ function cursorFor(tool, p) {
 
 const updateAt = (items, offsets, f) => items.map((item, i) => (offsets.has(i) ? f(item, offsets.get(i)) : item));
 
-function onMouseMove(e) {
-  if (!canvasEl) return;
+function onPointerMove(e) {
+  if (!e.isPrimary || !canvasEl) return;
+  if (longPress) {
+    if (Math.hypot(e.clientX - longPress.x, e.clientY - longPress.y) < LONG_PRESS_SLOP_PX) return;
+    cancelLongPress();
+  }
   const p = toNormalized(e);
   const s = store.get();
   canvasEl.style.cursor = cursorFor(s.tool, p);
@@ -299,7 +327,9 @@ function onMouseMove(e) {
   }
 }
 
-function onMouseUp() {
+function onPointerUp(e) {
+  if (!e.isPrimary) return;
+  cancelLongPress();
   const { mode, start, end } = drag;
   const autoSelect = store.get().autoSelect && { tool: 'select' };
   if (mode === 'draw' && isDrag(start, end))
@@ -309,21 +339,37 @@ function onMouseUp() {
   repaint();
 }
 
+function openMenu(hit, at) {
+  const targets = menuTargets(hit, selection);
+  if (targets) store.update({ contextMenu: { ...at, ...targets } });
+}
+
+const LONG_PRESS_MS = 500;
+const LONG_PRESS_SLOP_PX = 8;
+
+let longPress = null;
+
+function startLongPress(hit, at) {
+  if (!hit.point && !hit.event) return;
+  longPress = {
+    ...at,
+    timer: setTimeout(() => {
+      longPress = null;
+      drag = IDLE;
+      navigator.vibrate?.(30);
+      openMenu(hit, at);
+    }, LONG_PRESS_MS),
+  };
+}
+
+function cancelLongPress() {
+  clearTimeout(longPress?.timer);
+  longPress = null;
+}
+
 function onContextMenu(e) {
   e.preventDefault();
-  const { point, event } = hitAt(toNormalized(e));
-  const at = { x: e.clientX, y: e.clientY };
-  if (point) {
-    const inSelection = selection.points.has(point.index);
-    store.update({
-      contextMenu: inSelection ? { ...at, ...selection } : { ...at, events: new Set(), points: new Set([point.index]) },
-    });
-  } else if (event) {
-    const inSelection = selection.events.has(event.index);
-    store.update({
-      contextMenu: inSelection ? { ...at, ...selection } : { ...at, events: new Set([event.index]), points: new Set() },
-    });
-  }
+  openMenu(hitAt(toNormalized(e), handleWidthFor(e)), { x: e.clientX, y: e.clientY });
 }
 
 function onKeyDown(e) {
@@ -480,11 +526,13 @@ const CONNECTION_LABELS = {
   closed: 'Closed',
 };
 
+const connectionLabel = (status) => CONNECTION_LABELS[status] ?? `Status: ${status}`;
+
 function ConnectionPill({ status }) {
   if (status === 'connected') return null;
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-heading text-bg label animate-pulse z-10">
-      {CONNECTION_LABELS[status] ?? `Status: ${status}`}
+      {connectionLabel(status)}
     </div>
   );
 }
@@ -507,19 +555,35 @@ function ColorInput({ onPick }) {
     input.addEventListener('change', onChange);
     return () => input.removeEventListener('change', onChange);
   }, [onPick]);
-  return <input ref={ref} type="color" className="w-6 h-6 cursor-pointer border-0 p-0" />;
+  return <input ref={ref} type="color" className="w-6 h-6 pointer-coarse:w-9 pointer-coarse:h-9 cursor-pointer border-0 p-0" />;
 }
 
 function ContextMenu({ menu, events }) {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    if (!menu) return;
+    const el = ref.current;
+    const { x, y } = clampToViewport(menu, el.getBoundingClientRect(), { width: innerWidth, height: innerHeight });
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+  }, [menu]);
+  useEffect(() => {
+    if (!menu) return;
+    const closeOutside = (e) => {
+      if (!ref.current.contains(e.target)) closeContextMenu();
+    };
+    window.addEventListener('pointerdown', closeOutside);
+    return () => window.removeEventListener('pointerdown', closeOutside);
+  }, [menu]);
   if (!menu) return null;
   const allOpen = menu.events.size > 0 && [...menu.events].every((i) => events[i]?._valid_to == null);
   return (
-    <div className="fixed bg-bg border-2 border-heading p-2 z-50" style={{ left: `${menu.x}px`, top: `${menu.y}px` }}>
+    <div ref={ref} className="fixed bg-bg border-2 border-heading p-2 z-50">
       <div className="flex gap-1 items-center">
         {PRESET_COLORS.map((color) => (
           <button
             key={rgbToCss(color)}
-            className="w-6 h-6 border-2 border-transparent hover:border-heading cursor-pointer"
+            className="w-6 h-6 pointer-coarse:w-9 pointer-coarse:h-9 border-2 border-transparent hover:border-heading cursor-pointer"
             style={{ backgroundColor: rgbToCss(color) }}
             onClick={() => setColors(menu, color)}
           />
@@ -562,20 +626,42 @@ const TOOLS = [
   ['zoom', 'Zoom overlay (shared)', searchIcon],
 ];
 
+const ToolButtons = ({ current }) =>
+  TOOLS.map(([tool, title, icon]) => (
+    <button
+      key={tool}
+      className={`w-8 h-8 pointer-coarse:w-11 pointer-coarse:h-11 flex items-center justify-center cursor-pointer ${
+        current === tool ? 'bg-accent text-bg' : 'text-text hover:text-accent'
+      }`}
+      title={title}
+      onClick={() => store.update({ tool })}
+    >
+      <Icon svg={icon} className="w-6 h-6" />
+    </button>
+  ));
+
+const PhoneBar = ({ s }) => (
+  <div className="pixel-toolbar">
+    <ToolButtons current={s.tool} />
+    <button className="pixel-button ml-1" onClick={() => store.update({ sheetOpen: true })}>
+      Options
+    </button>
+    <span className="label text-text ml-auto px-1 inline-flex items-center gap-2">
+      {s.connectionStatus === 'connected' ? (
+        <>
+          <span className="w-2 h-2 bg-accent" />
+          {`${s.roomCount}/${s.globalCount}`}
+        </>
+      ) : (
+        <span className="animate-pulse">{connectionLabel(s.connectionStatus)}</span>
+      )}
+    </span>
+  </div>
+);
+
 const Toolbar = ({ current }) => (
   <div className="pixel-panel absolute top-2 left-2 bg-bg p-1 flex flex-col gap-1 z-10">
-    {TOOLS.map(([tool, title, icon]) => (
-      <button
-        key={tool}
-        className={`w-8 h-8 flex items-center justify-center cursor-pointer ${
-          current === tool ? 'bg-accent text-bg' : 'text-text hover:text-accent'
-        }`}
-        title={title}
-        onClick={() => store.update({ tool })}
-      >
-        <Icon svg={icon} className="w-6 h-6" />
-      </button>
-    ))}
+    <ToolButtons current={current} />
   </div>
 );
 
@@ -593,9 +679,9 @@ const Option = ({ checked, onChange, synced, children }) => (
 
 const SavedStateCard = ({ saved }) => (
   <div className="relative group cursor-pointer" onClick={() => loadSavedState(saved)}>
-    <img src={saved.thumbnail} className="pixel-panel w-full hover:border-accent" />
+    <img src={saved.thumbnail} width={120} height={80} className="pixel-panel w-full hover:border-accent" />
     <button
-      className="pixel-icon-button pixel-panel absolute -top-2 -right-2 min-w-0 min-h-0 w-6 h-6 p-0 bg-bg opacity-0 group-hover:opacity-100"
+      className="pixel-icon-button pixel-panel absolute -top-2 -right-2 min-w-0 min-h-0 w-6 h-6 p-0 bg-bg opacity-0 group-hover:opacity-100 pointer-coarse:opacity-100"
       data-variant="danger"
       onClick={(e) => {
         e.stopPropagation();
@@ -636,8 +722,22 @@ function RoomCodeInput({ roomCode, roomCodeInput }) {
 
 function SidePanel({ s }) {
   return (
-    <div className="pixel-panel w-72 shrink-0 bg-code-bg text-text p-4 flex flex-col min-h-0 overflow-y-auto font-pixel text-pixel-md">
+    <div className="pixel-panel w-72 shrink-0 bg-code-bg text-text p-4 hidden md:flex flex-col min-h-0 overflow-y-auto font-pixel text-pixel-md">
       <h1 className="page-title mb-4">Bitemporal Visualizer</h1>
+      <Options s={s} />
+    </div>
+  );
+}
+
+function Options({ s }) {
+  const savedGrid = useRef(null);
+  const savedCount = useRef(s.savedStates.length);
+  useEffect(() => {
+    if (s.savedStates.length > savedCount.current) savedGrid.current.lastElementChild.scrollIntoView({ block: 'nearest' });
+    savedCount.current = s.savedStates.length;
+  }, [s.savedStates.length]);
+  return (
+    <>
       <div className="pixel-panel p-3">
         <div className="label opacity-70 mb-1">Room</div>
         <div className="flex items-center gap-2">
@@ -701,65 +801,78 @@ function SidePanel({ s }) {
       >
         Saved States
       </SectionLabel>
-      <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex-1 overflow-y-auto pt-2 pr-2">
-          {s.savedStates.length ? (
-            <div className="grid grid-cols-2 gap-2">
-              {s.savedStates.map((saved) => (
-                <SavedStateCard key={saved.id} saved={saved} />
-              ))}
-            </div>
-          ) : (
-            <div className="label opacity-50 text-center py-4">No saved states yet</div>
-          )}
-        </div>
+      <div className="pt-2 pr-2">
+        {s.savedStates.length ? (
+          <div ref={savedGrid} className="grid grid-cols-2 gap-2">
+            {s.savedStates.map((saved) => (
+              <SavedStateCard key={saved.id} saved={saved} />
+            ))}
+          </div>
+        ) : (
+          <div className="label opacity-50 text-center py-4">No saved states yet</div>
+        )}
       </div>
-    </div>
+    </>
   );
 }
 
-function MainCanvas({ tool }) {
+function MainCanvas({ s, wide }) {
   const ref = useRef(null);
   useEffect(() => {
     const canvas = ref.current;
     canvasEl = canvas;
     window.addEventListener('resize', repaint);
-    canvas.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    canvas.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
     canvas.addEventListener('contextmenu', onContextMenu);
     window.addEventListener('keydown', onKeyDown);
     repaint();
     return () => {
       window.removeEventListener('resize', repaint);
-      canvas.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
       canvas.removeEventListener('contextmenu', onContextMenu);
       window.removeEventListener('keydown', onKeyDown);
       canvasEl = null;
     };
   }, []);
   return (
-    <div className="flex-1 min-w-0">
-      <div className="relative w-full h-full overflow-hidden">
-        <div className="absolute inset-0 left-5">
-          <canvas ref={ref} className="w-full h-full [image-rendering:pixelated]" />
+    <div className="flex-1 min-w-0 flex flex-col">
+      <div className="relative flex-1 min-h-0 overflow-hidden">
+        <div className="absolute inset-0 md:left-5">
+          <canvas ref={ref} className="w-full h-full touch-none select-none [-webkit-touch-callout:none] [image-rendering:pixelated]" />
         </div>
-        <Toolbar current={tool} />
+        {wide && <Toolbar current={s.tool} />}
       </div>
+      {!wide && <PhoneBar s={s} />}
     </div>
   );
 }
 
+const closeSheet = () => store.update({ sheetOpen: false });
+
 function App() {
   const s = useAppState();
+  const wide = useWide();
   return (
     <div className="flex-1 flex gap-4 min-h-0">
       <SidePanel s={s} />
-      <MainCanvas tool={s.tool} />
-      <PresenceIndicator roomCount={s.roomCount} globalCount={s.globalCount} />
-      <ConnectionPill status={s.connectionStatus} />
+      {s.sheetOpen && (
+        <div className="md:hidden">
+          <Sheet title="Options" onClose={closeSheet}>
+            <div className="min-h-0 overflow-y-auto flex flex-col font-pixel text-pixel-md">
+              <Options s={s} />
+            </div>
+          </Sheet>
+        </div>
+      )}
+      <MainCanvas s={s} wide={wide} />
+      {wide && <PresenceIndicator roomCount={s.roomCount} globalCount={s.globalCount} />}
+      {wide && <ConnectionPill status={s.connectionStatus} />}
       <ContextMenu menu={s.contextMenu} events={s.events} />
     </div>
   );

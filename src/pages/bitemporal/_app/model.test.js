@@ -4,6 +4,8 @@ import {
   snapToGrid,
   hitTest,
   pointHitTest,
+  menuTargets,
+  clampToViewport,
   eventsInSelection,
   pointsInSelection,
   moveEvent,
@@ -40,22 +42,28 @@ test('snapToGrid rounds to the nearest tenth', () => {
 
 describe('hitTest', () => {
   const drawWidth = 1000;
+  const handleWidth = 8;
 
   test('finds the event under the point, latest system time first', () => {
     const under = { ...closed, _system_from: 0.1 };
-    expect(hitTest([under, closed], 0.2, 0.5, drawWidth)).toEqual({ index: 1, onHandle: false });
+    expect(hitTest([under, closed], 0.2, 0.5, drawWidth, handleWidth)).toEqual({ index: 1, onHandle: false });
   });
 
   test('reports the resize handle at the right edge of a closed event', () => {
-    expect(hitTest([closed], 0.399, 0.5, drawWidth)).toEqual({ index: 0, onHandle: true });
+    expect(hitTest([closed], 0.399, 0.5, drawWidth, handleWidth)).toEqual({ index: 0, onHandle: true });
+  });
+
+  test('the handle is as many pixels wide as asked', () => {
+    expect(hitTest([closed], 0.38, 0.5, drawWidth, 8)).toEqual({ index: 0, onHandle: false });
+    expect(hitTest([closed], 0.38, 0.5, drawWidth, 28)).toEqual({ index: 0, onHandle: true });
   });
 
   test('an open event runs to the right edge and has no handle', () => {
-    expect(hitTest([open], 0.999, 0.5, drawWidth)).toEqual({ index: 0, onHandle: false });
+    expect(hitTest([open], 0.999, 0.5, drawWidth, handleWidth)).toEqual({ index: 0, onHandle: false });
   });
 
   test('misses below system-from', () => {
-    expect(hitTest([closed], 0.2, 0.1, drawWidth)).toBe(null);
+    expect(hitTest([closed], 0.2, 0.1, drawWidth, handleWidth)).toBe(null);
   });
 });
 
@@ -63,6 +71,41 @@ test('pointHitTest finds the topmost point within its radius', () => {
   const points = [{ x: 0.5, y: 0.5 }, { x: 0.501, y: 0.5 }];
   expect(pointHitTest(points, 0.5, 0.5, 1000, 1000)).toEqual({ index: 1 });
   expect(pointHitTest(points, 0.6, 0.5, 1000, 1000)).toBe(null);
+});
+
+describe('menuTargets', () => {
+  const selection = { events: new Set([0, 2]), points: new Set([1]) };
+
+  test('acts on the whole selection when the hit item is in it', () => {
+    expect(menuTargets({ event: { index: 2 } }, selection)).toBe(selection);
+    expect(menuTargets({ point: { index: 1 } }, selection)).toBe(selection);
+  });
+
+  test('acts on the hit item alone when it is outside the selection', () => {
+    expect(menuTargets({ event: { index: 1 } }, selection)).toEqual({ events: new Set([1]), points: new Set() });
+    expect(menuTargets({ point: { index: 0 } }, selection)).toEqual({ events: new Set(), points: new Set([0]) });
+  });
+
+  test('is null when nothing was hit', () => {
+    expect(menuTargets({ event: null }, selection)).toBe(null);
+  });
+});
+
+describe('clampToViewport', () => {
+  const viewport = { width: 390, height: 844 };
+  const size = { width: 256, height: 150 };
+
+  test('leaves a box that fits where it is', () => {
+    expect(clampToViewport({ x: 10, y: 20 }, size, viewport)).toEqual({ x: 10, y: 20 });
+  });
+
+  test('moves a box that would overflow back inside the right and bottom edges', () => {
+    expect(clampToViewport({ x: 300, y: 800 }, size, viewport)).toEqual({ x: 134, y: 694 });
+  });
+
+  test('pins a box larger than the viewport to the top-left corner', () => {
+    expect(clampToViewport({ x: 300, y: 800 }, { width: 500, height: 900 }, viewport)).toEqual({ x: 0, y: 0 });
+  });
 });
 
 describe('selection', () => {
