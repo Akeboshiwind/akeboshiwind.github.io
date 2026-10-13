@@ -639,6 +639,14 @@ function SidePanel({ s }) {
   return (
     <div className="pixel-panel w-72 shrink-0 bg-code-bg text-text p-4 flex flex-col min-h-0 overflow-y-auto font-pixel text-pixel-md">
       <h1 className="page-title mb-4">Bitemporal Visualizer</h1>
+      <Options s={s} />
+    </div>
+  );
+}
+
+function Options({ s }) {
+  return (
+    <>
       <div className="pixel-panel p-3">
         <div className="label opacity-70 mb-1">Room</div>
         <div className="flex items-center gap-2">
@@ -715,7 +723,7 @@ function SidePanel({ s }) {
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
