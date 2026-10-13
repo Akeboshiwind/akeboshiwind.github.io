@@ -9,7 +9,7 @@ const INPUTS = {
 };
 
 const COUNTS = {
-  fordJohnson:     { random: 21, sorted: 19, reversed: 20, duplicates: 17 },
+  fordJohnson:     { random: 21, sorted: 19, reversed: 20, duplicates: 16 },
   mergeAdaptive:   { random: 28, sorted: 9,  reversed: 19, duplicates: 18 },
   powersort:       { random: 30, sorted: 9,  reversed: 9,  duplicates: 19 },
   binaryInsertion: { random: 21, sorted: 19, reversed: 25, duplicates: 15 },
@@ -96,7 +96,7 @@ const DISTINCT = range(2, 7).flatMap(permutations);
 const WITH_TIES = range(2, 6).flatMap(n => lists(n, 3));
 
 // Known bugs, each fixed by the commit that removes it from its list.
-const OVER_BOUND = ['fordJohnson', 'mergeAdaptive'];
+const OVER_BOUND = ['mergeAdaptive'];
 const REPEATS_PAIRS = ['powersort'];
 
 // The sorting screen shows "Comparison k / ≤ getTotal(n)", so getTotal must bound every run.
