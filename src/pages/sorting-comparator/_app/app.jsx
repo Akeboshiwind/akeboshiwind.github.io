@@ -34,7 +34,7 @@ function replaySort(algoKey, shuffledItems, history) {
 const RATING_STYLE = {
   great: 'border-ok text-ok',
   ok:    'border-warn text-warn',
-  poor:  'border-danger text-danger',
+  poor:  '',
 };
 const RATING_ICON = { great: checkSvg, ok: minusSvg, poor: closeSvg };
 
@@ -90,6 +90,7 @@ const AlgoRow = ({ algoKey, algo, n, expanded, onToggle, onStart }) => {
               <li
                 key={s.label}
                 className={`pixel-chip inline-flex items-center gap-1 ${RATING_STYLE[s.rating]}`}
+                data-variant={s.rating === 'poor' ? 'danger' : undefined}
                 title={s.note}
               >
                 <Icon svg={RATING_ICON[s.rating]} className="h-3 w-3" />
