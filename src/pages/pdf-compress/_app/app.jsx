@@ -231,7 +231,7 @@ export function App() {
       )}
 
       {error && (
-        <p className="pixel-panel border-danger text-danger mt-4 mb-0 p-3 text-sm">
+        <p className="pixel-alert mt-4 mb-0 text-sm">
           {error}
         </p>
       )}
