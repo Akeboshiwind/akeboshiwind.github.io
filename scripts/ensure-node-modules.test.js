@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { execFileSync, spawnSync } from 'child_process';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { createHash } from 'crypto';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
@@ -24,6 +25,19 @@ describe('ensure-node-modules hook', () => {
     const root = project();
     const { status } = runHook(join(root, 'src'));
     expect(status).toBe(0);
+    expect(existsSync(join(root, 'node_modules/dep/package.json'))).toBe(true);
+  });
+
+  test('takes over a lock left by a killed run', () => {
+    const root = project();
+    const lock = join(tmpdir(), `npm-ci-${createHash('sha1').update(root).digest('hex')}`);
+    mkdirSync(lock);
+    const old = new Date(Date.now() - 10 * 60_000);
+    utimesSync(lock, old, old);
+    const started = Date.now();
+    const { status } = runHook(root);
+    expect(status).toBe(0);
+    expect(Date.now() - started).toBeLessThan(30_000);
     expect(existsSync(join(root, 'node_modules/dep/package.json'))).toBe(true);
   });
 
