@@ -201,9 +201,7 @@ function repaint() {
 const offsetsFor = (indices, offset) => new Map([...indices].map((i) => [i, offset(i)]));
 
 function onPointerDown(e) {
-  if (!e.isPrimary) return;
-  if (store.get().contextMenu) closeContextMenu();
-  if (e.button !== 0) return;
+  if (!e.isPrimary || e.button !== 0) return;
   const p = toNormalized(e);
   const { events, points, tool, autoSelect } = store.get();
 
@@ -552,6 +550,14 @@ function ContextMenu({ menu, events }) {
     const { x, y } = clampToViewport(menu, el.getBoundingClientRect(), { width: innerWidth, height: innerHeight });
     el.style.left = `${x}px`;
     el.style.top = `${y}px`;
+  }, [menu]);
+  useEffect(() => {
+    if (!menu) return;
+    const closeOutside = (e) => {
+      if (!ref.current.contains(e.target)) closeContextMenu();
+    };
+    window.addEventListener('pointerdown', closeOutside);
+    return () => window.removeEventListener('pointerdown', closeOutside);
   }, [menu]);
   if (!menu) return null;
   const allOpen = menu.events.size > 0 && [...menu.events].every((i) => events[i]?._valid_to == null);
