@@ -776,3 +776,12 @@
     cursor: not-allowed;
   }
 }
+
+/* Unlayered so it beats the size utilities: iOS Safari zooms into any field under 16px when it is focused. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"], [type="button"], [type="submit"], [type="reset"]),
+  textarea,
+  select {
+    font-size: var(--text-pixel-lg);
+  }
+}
