@@ -429,21 +429,21 @@
   }
 
   /* Danger, warn and ok are never colour alone: each has its own fill — hatch, dots, solid — so they stay apart under any accent and without colour vision. */
-  :is(.pixel-button, .pixel-chip):is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]), .pixel-alert, .pixel-alert-text, .pixel-mark {
+  :is(.pixel-button, .pixel-chip, .pixel-row):is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]), .pixel-alert, .pixel-alert-text, .pixel-mark {
     --tone: var(--danger);
     --tone-fill: var(--pixel-hatch) 2px 0 / 8px 8px;
     --tone-line: var(--pixel-wave) 0 0 / 8px 6px repeat-x;
     --tone-line-height: 6px;
   }
 
-  :is(.pixel-button, .pixel-chip, .pixel-alert, .pixel-alert-text, .pixel-mark)[data-variant="warn"] {
+  :is(.pixel-button, .pixel-chip, .pixel-row, .pixel-alert, .pixel-alert-text, .pixel-mark)[data-variant="warn"] {
     --tone: var(--warn);
     --tone-fill: var(--pixel-dots) 2px 0 / 4px 4px;
     --tone-line: var(--pixel-dash) 0 0 / 4px 2px repeat-x;
     --tone-line-height: 2px;
   }
 
-  :is(.pixel-button, .pixel-chip, .pixel-alert, .pixel-alert-text, .pixel-mark)[data-variant="ok"] {
+  :is(.pixel-button, .pixel-chip, .pixel-row, .pixel-alert, .pixel-alert-text, .pixel-mark)[data-variant="ok"] {
     --tone: var(--ok);
     --tone-fill: linear-gradient(#000 0 0);
     --tone-line: linear-gradient(#000 0 0) 0 0 / 100% 2px no-repeat;
@@ -482,24 +482,66 @@
     color: var(--heading);
   }
 
-  .pixel-button:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):hover::before {
+  :is(.pixel-button, .pixel-row):is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):hover::before {
     width: auto;
     right: -2px;
   }
 
   /* A 2px halo in the page colour keeps the label legible over the hatch or dots. */
-  .pixel-button:is([data-variant="danger"], [data-variant="warn"]):not(:disabled):hover {
+  :is(.pixel-button, .pixel-row):is([data-variant="danger"], [data-variant="warn"]):not(:disabled):hover {
     text-shadow: 2px 0 var(--bg), -2px 0 var(--bg), 0 2px var(--bg), 0 -2px var(--bg), 2px 2px var(--bg), -2px -2px var(--bg), 2px -2px var(--bg), -2px 2px var(--bg);
   }
 
   /* A faded child would fade its halo with it, leaving it unreadable over the pattern.
      !important because a tool's opacity utility sits in a later layer than the kit. */
-  .pixel-button:is([data-variant="danger"], [data-variant="warn"]):not(:disabled):hover * {
+  :is(.pixel-button, .pixel-row):is([data-variant="danger"], [data-variant="warn"]):not(:disabled):hover * {
     opacity: 1 !important;
   }
 
-  .pixel-button[data-variant="ok"]:not(:disabled):hover {
+  :is(.pixel-button, .pixel-row)[data-variant="ok"]:not(:disabled):hover {
     color: var(--bg);
+  }
+
+  /* A row in a divided panel: it keeps the panel's dividers, so a tone changes only its left edge. */
+  .pixel-row {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .pixel-row:not(:disabled):is(:hover, :focus-visible) {
+    color: var(--accent);
+  }
+
+  .pixel-row:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  .pixel-row:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]) {
+    position: relative;
+    isolation: isolate;
+    border-left: 0.75rem solid transparent;
+    color: var(--tone);
+  }
+
+  .pixel-row:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"])::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    bottom: 0;
+    left: -0.75rem;
+    width: 0.75rem;
+    background: var(--tone);
+    mask: var(--tone-fill);
+  }
+
+  .pixel-row:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):is(:hover, :focus-visible) {
+    color: var(--heading);
   }
 
   .pixel-alert {
@@ -637,6 +679,12 @@
   .pixel-icon-button:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
+  }
+
+  .pixel-icon-button[data-size="sm"] {
+    min-width: 0;
+    min-height: 0;
+    padding: 0 0.125rem;
   }
 
   .pixel-icon-button:disabled {
