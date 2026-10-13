@@ -795,18 +795,16 @@ function Options({ s }) {
       >
         Saved States
       </SectionLabel>
-      <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex-1 overflow-y-auto pt-2 pr-2">
-          {s.savedStates.length ? (
-            <div className="grid grid-cols-2 gap-2">
-              {s.savedStates.map((saved) => (
-                <SavedStateCard key={saved.id} saved={saved} />
-              ))}
-            </div>
-          ) : (
-            <div className="label opacity-50 text-center py-4">No saved states yet</div>
-          )}
-        </div>
+      <div className="pt-2 pr-2">
+        {s.savedStates.length ? (
+          <div className="grid grid-cols-2 gap-2">
+            {s.savedStates.map((saved) => (
+              <SavedStateCard key={saved.id} saved={saved} />
+            ))}
+          </div>
+        ) : (
+          <div className="label opacity-50 text-center py-4">No saved states yet</div>
+        )}
       </div>
     </>
   );
