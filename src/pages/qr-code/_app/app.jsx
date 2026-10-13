@@ -101,7 +101,7 @@ export function App() {
             </div>
           </div>
 
-          {error && <p className="label text-danger">{error}</p>}
+          {error && <p className="label"><span className="pixel-alert-text">{error}</span></p>}
 
           <button
             onClick={handleDownload}
