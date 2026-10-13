@@ -72,9 +72,9 @@ export const RecommendationsView = ({
       )}
 
       {!isGenerating && generateError && (
-        <div role="alert" className="pixel-panel border-danger p-4 mb-4">
-          <p className="label text-danger mb-1">Failed to generate recommendations</p>
-          <p className="text-sm text-danger mb-3 break-words">{generateError}</p>
+        <div role="alert" className="pixel-alert p-4 mb-4">
+          <p className="label mb-1">Failed to generate recommendations</p>
+          <p className="text-sm mb-3 break-words">{generateError}</p>
           <button onClick={onRetryGenerate} className="pixel-button" data-variant="danger">
             Try again
           </button>

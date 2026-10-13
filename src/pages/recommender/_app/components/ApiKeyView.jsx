@@ -48,7 +48,7 @@ export const ApiKeyView = ({ onSave }) => {
           className="pixel-field w-full font-pixel text-pixel py-2"
           autoFocus
         />
-        {error && <p className="label text-danger">{error}</p>}
+        {error && <p className="label"><span className="pixel-alert-text">{error}</span></p>}
         <button
           type="submit"
           disabled={!key.trim()}

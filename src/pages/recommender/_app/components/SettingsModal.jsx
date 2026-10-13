@@ -76,8 +76,8 @@ export const SettingsModal = ({ list, onSave, onDelete, onClose }) => {
             Delete list
           </button>
         ) : (
-          <div className="pixel-panel border-danger p-3">
-            <p className="text-sm text-danger mb-3">
+          <div className="pixel-alert">
+            <p className="text-sm mb-3">
               Delete "{list.name}"? This cannot be undone.
             </p>
             <div className="flex gap-2">
