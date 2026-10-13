@@ -451,7 +451,7 @@
   :is(.pixel-button, .pixel-chip, .pixel-row, .pixel-alert, .pixel-alert-text, .pixel-mark)[data-variant="ok"] {
     --tone: var(--ok);
     --tone-fill: linear-gradient(#000 0 0);
-    --tone-hover-fill: linear-gradient(#000 0 0) 0 0 / 0.75rem 100% no-repeat, linear-gradient(#000 0 2px, transparent 0) 0 0 / 100% 8px;
+    --tone-hover-fill: linear-gradient(#000 0 0) 0 0 / 0.75rem 100% no-repeat, var(--pixel-hatch) 2px 0 / 8px 8px;
     --tone-line: linear-gradient(#000 0 0) 0 0 / 100% 2px no-repeat;
     --tone-line-height: 2px;
   }
