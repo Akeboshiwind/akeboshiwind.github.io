@@ -9,9 +9,9 @@ export function SetCheckboxes({ count, completed, onToggle, disabled, labels }) 
         return (
           <label
             key={i}
+            data-variant={done ? 'ok' : undefined}
             className={[
               'pixel-chip inline-flex items-center gap-2 py-2 min-w-[80px]',
-              done ? 'border-ok text-ok' : '',
               disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-accent',
             ].join(' ')}
           >

@@ -49,7 +49,7 @@ export function CircuitBlock({
         </span>
         <div className="flex flex-wrap justify-end gap-1 ml-auto" aria-hidden="true">
           {Array.from({ length: item.rounds }, (_, i) => (
-            <span key={i} className={`inline-block w-2.5 h-2.5 ${completed?.[i] ? 'bg-ok' : 'bg-border'}`} />
+            <span key={i} className={`inline-block w-2.5 h-2.5 ${completed?.[i] ? 'pixel-mark' : 'bg-border'}`} data-variant={completed?.[i] ? 'ok' : undefined} />
           ))}
         </div>
       </div>
@@ -72,7 +72,7 @@ export function CircuitBlock({
           const last = i === item.children.length - 1;
           return (
             <li key={child.id}>
-              <div className={`flex items-center gap-2 border-2 p-2 ${done ? 'border-ok' : 'border-border'}`}>
+              <div className="flex items-center gap-2 border-2 border-border p-2">
                 <input
                   type="checkbox"
                   className="pixel-check disabled:cursor-not-allowed disabled:opacity-50"
