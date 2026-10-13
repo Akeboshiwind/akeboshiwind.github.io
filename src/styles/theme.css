@@ -502,7 +502,7 @@
     color: var(--bg);
   }
 
-  /* A row in a divided panel: it keeps the panel's dividers, so a tone changes only its left edge. */
+  /* A row in a divided panel: a tone draws its strip inside the padding, because the panel's divide-* colour reaches every border. */
   .pixel-row {
     display: block;
     width: 100%;
@@ -524,7 +524,7 @@
   .pixel-row:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]) {
     position: relative;
     isolation: isolate;
-    border-left: 0.75rem solid transparent;
+    padding-left: 1.75rem;
     color: var(--tone);
   }
 
@@ -534,7 +534,7 @@
     z-index: -1;
     top: 0;
     bottom: 0;
-    left: -0.75rem;
+    left: 0;
     width: 0.75rem;
     background: var(--tone);
     mask: var(--tone-fill);
