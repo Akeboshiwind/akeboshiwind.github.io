@@ -509,7 +509,15 @@
     opacity: 1 !important;
   }
 
-  .pixel-button[data-variant="ok"]:not(:disabled):active {
+  .pixel-button:not(:disabled):active, .pixel-button:not(:disabled):hover:active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .pixel-button:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):active {
+    border-color: var(--tone);
+    border-left-color: transparent;
     background: var(--tone);
     color: var(--bg);
     text-shadow: none;
