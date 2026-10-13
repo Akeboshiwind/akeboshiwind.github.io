@@ -162,7 +162,11 @@ let selection = NOTHING_SELECTED;
 
 store.subscribe(repaint);
 
-const currentFrame = () => plotFrame(canvasEl.width, canvasEl.height, config.insets);
+function currentInsets() {
+  if (wideQuery.matches) return config.insets;
+  return store.get().showTicks ? config.compactTickInsets : config.compactInsets;
+}
+const currentFrame = () => plotFrame(canvasEl.width, canvasEl.height, currentInsets());
 
 function toNormalized(e) {
   const rect = canvasEl.getBoundingClientRect();
@@ -195,7 +199,7 @@ function repaint() {
   canvasEl.height = height;
   const s = store.get();
   renderCanvas(canvasEl, s.events, {
-    insets: config.insets,
+    insets: currentInsets(),
     showGrid: s.showGrid,
     showTicks: s.showTicks,
     showVtEqSt: s.showVtEqSt,

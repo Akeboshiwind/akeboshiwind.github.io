@@ -6,6 +6,10 @@ export const config = {
    * `labelLeft` and `labelBottom` place the axis labels, in px from the left and bottom canvas edges.
    */
   insets: { top: 60, right: 60, bottom: 60, left: 60, labelLeft: 20, labelBottom: 28 },
+  /** `insets` for a phone, where nothing overlays the canvas and only the axes and their labels need room. */
+  compactInsets: { top: 16, right: 16, bottom: 44, left: 28, labelLeft: 14, labelBottom: 20 },
+  /** `compactInsets` with room for the tick labels, which sit outside the axes. */
+  compactTickInsets: { top: 16, right: 24, bottom: 44, left: 44, labelLeft: 14, labelBottom: 20 },
   gridDivisions: 10,
   handleWidth: 8,
   pointRadius: 8,
