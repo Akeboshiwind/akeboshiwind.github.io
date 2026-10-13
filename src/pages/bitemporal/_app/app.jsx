@@ -609,20 +609,23 @@ const TOOLS = [
   ['zoom', 'Zoom overlay (shared)', searchIcon],
 ];
 
+const ToolButtons = ({ current }) =>
+  TOOLS.map(([tool, title, icon]) => (
+    <button
+      key={tool}
+      className={`w-8 h-8 pointer-coarse:w-11 pointer-coarse:h-11 flex items-center justify-center cursor-pointer ${
+        current === tool ? 'bg-accent text-bg' : 'text-text hover:text-accent'
+      }`}
+      title={title}
+      onClick={() => store.update({ tool })}
+    >
+      <Icon svg={icon} className="w-6 h-6" />
+    </button>
+  ));
+
 const Toolbar = ({ current }) => (
   <div className="pixel-panel absolute top-2 left-2 bg-bg p-1 flex flex-col gap-1 z-10">
-    {TOOLS.map(([tool, title, icon]) => (
-      <button
-        key={tool}
-        className={`w-8 h-8 pointer-coarse:w-11 pointer-coarse:h-11 flex items-center justify-center cursor-pointer ${
-          current === tool ? 'bg-accent text-bg' : 'text-text hover:text-accent'
-        }`}
-        title={title}
-        onClick={() => store.update({ tool })}
-      >
-        <Icon svg={icon} className="w-6 h-6" />
-      </button>
-    ))}
+    <ToolButtons current={current} />
   </div>
 );
 
