@@ -306,7 +306,7 @@ Here's an example of the expected format with sample data:
               {people.map((person, i) => (
                 <span key={i} className={`${chip} inline-flex items-center gap-2`}>
                   {person}
-                  <button onClick={() => { setPeople(people.filter((_,idx) => idx !== i)); }} className="pixel-icon-button min-w-0 min-h-0 p-0" data-variant="danger" aria-label={`Remove ${person}`}>×</button>
+                  <button onClick={() => { setPeople(people.filter((_,idx) => idx !== i)); }} className="pixel-icon-button" data-size="sm" data-variant="danger" aria-label={`Remove ${person}`}>×</button>
                 </span>
               ))}
             </div>

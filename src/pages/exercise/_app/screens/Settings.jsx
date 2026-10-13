@@ -115,11 +115,11 @@ function Action({ label, description, onClick, danger }) {
       type="button"
       onClick={onClick}
       data-variant={danger ? 'danger' : undefined}
-      className={`w-full text-left px-4 py-3 ${danger ? 'pixel-button border-t-0 border-r-0 last:border-b-0 whitespace-normal' : 'hover:text-accent'}`}
+      className="pixel-row"
     >
       <p className="label">{label}</p>
       {description && (
-        <p className="text-sm opacity-70 mt-0.5 font-sans normal-case tracking-normal">{description}</p>
+        <p className="text-sm opacity-70 mt-0.5">{description}</p>
       )}
     </button>
   );
