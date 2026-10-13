@@ -212,7 +212,9 @@ function onPointerDown(e) {
   } else if (tool === 'point') {
     store.update({ points: [...points, { x: p.x, y: p.y, color: NEW_ITEM_COLOR }], ...(autoSelect && { tool: 'select' }) });
   } else {
-    const { point, event } = hitAt(p, handleWidthFor(e));
+    const hit = hitAt(p, handleWidthFor(e));
+    if (e.pointerType === 'touch') startLongPress(hit, { x: e.clientX, y: e.clientY });
+    const { point, event } = hit;
     if (point) {
       const pointOffset = (i) => ({ x: p.x - points[i].x, y: p.y - points[i].y });
       const group = selection.points.has(point.index) && selection.points.size > 1;
@@ -262,6 +264,10 @@ const updateAt = (items, offsets, f) => items.map((item, i) => (offsets.has(i) ?
 
 function onPointerMove(e) {
   if (!e.isPrimary || !canvasEl) return;
+  if (longPress) {
+    if (Math.hypot(e.clientX - longPress.x, e.clientY - longPress.y) < LONG_PRESS_SLOP_PX) return;
+    cancelLongPress();
+  }
   const p = toNormalized(e);
   const s = store.get();
   canvasEl.style.cursor = cursorFor(s.tool, p);
@@ -310,6 +316,7 @@ function onPointerMove(e) {
 
 function onPointerUp(e) {
   if (!e.isPrimary) return;
+  cancelLongPress();
   const { mode, start, end } = drag;
   const autoSelect = store.get().autoSelect && { tool: 'select' };
   if (mode === 'draw' && isDrag(start, end))
@@ -322,6 +329,29 @@ function onPointerUp(e) {
 function openMenu(hit, at) {
   const targets = menuTargets(hit, selection);
   if (targets) store.update({ contextMenu: { ...at, ...targets } });
+}
+
+const LONG_PRESS_MS = 500;
+const LONG_PRESS_SLOP_PX = 8;
+
+let longPress = null;
+
+function startLongPress(hit, at) {
+  if (!hit.point && !hit.event) return;
+  longPress = {
+    ...at,
+    timer: setTimeout(() => {
+      longPress = null;
+      drag = IDLE;
+      navigator.vibrate?.(30);
+      openMenu(hit, at);
+    }, LONG_PRESS_MS),
+  };
+}
+
+function cancelLongPress() {
+  clearTimeout(longPress?.timer);
+  longPress = null;
 }
 
 function onContextMenu(e) {
@@ -757,7 +787,7 @@ function MainCanvas({ tool }) {
     <div className="flex-1 min-w-0">
       <div className="relative w-full h-full overflow-hidden">
         <div className="absolute inset-0 left-5">
-          <canvas ref={ref} className="w-full h-full touch-none [image-rendering:pixelated]" />
+          <canvas ref={ref} className="w-full h-full touch-none select-none [-webkit-touch-callout:none] [image-rendering:pixelated]" />
         </div>
         <Toolbar current={tool} />
         <button className="pixel-button md:hidden absolute top-2 right-2 z-10" onClick={() => store.update({ sheetOpen: true })}>
