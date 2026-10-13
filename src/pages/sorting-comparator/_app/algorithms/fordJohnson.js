@@ -13,18 +13,15 @@ function jacobsthalSeq(maxN) {
   return t;
 }
 
-// 0-based insertion order for p items using Jacobsthal numbers
+// Insertion order for the pending elements b2..b(p+1), as 0-based indices where pending[i] is b(i+2).
+// Groups run b3 b2, b5 b4, b11..b6, …: each ends at a Jacobsthal number and is inserted downwards.
 function jacobsthalOrder(p) {
-  if (p <= 0) return [];
-  const t = jacobsthalSeq(p);
+  const last = p + 1;
+  const t = jacobsthalSeq(last);
   const order = [];
-  const used = new Set();
-  for (let k = 2; k < t.length && order.length < p; k++) {
-    for (let j = Math.min(t[k], p); j > t[k - 1]; j--) {
-      if (!used.has(j - 1)) { order.push(j - 1); used.add(j - 1); }
-    }
+  for (let k = 2; t[k - 1] < last; k++) {
+    for (let j = Math.min(t[k], last); j > t[k - 1]; j--) order.push(j - 2);
   }
-  for (let i = 0; i < p; i++) { if (!used.has(i)) order.push(i); }
   return order;
 }
 

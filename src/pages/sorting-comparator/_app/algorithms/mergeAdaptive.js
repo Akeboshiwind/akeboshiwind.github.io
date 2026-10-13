@@ -41,6 +41,19 @@ function* mergeSortAdaptive(items) {
   return arr;
 }
 
+// Worst case: a plain merge's l + r - 1, plus the pre-check whenever it can't be reused.
+// With a single left item the merge's first comparison is the pre-check, so it costs nothing extra.
+function adaptiveUpperBound(n) {
+  let extra = 0;
+  for (let w = 1; w < n; w *= 2)
+    for (let lo = 0; lo < n; lo += 2 * w) {
+      const mid = Math.min(lo + w, n);
+      const hi = Math.min(lo + 2 * w, n);
+      if (hi > mid && mid - lo > 1) extra++;
+    }
+  return mergeUpperBound(n) + extra;
+}
+
 // Number of actual merges in bottom-up merge sort (right half non-empty)
 function countMerges(n) {
   let count = 0;
@@ -57,7 +70,7 @@ export default {
   name: 'Adaptive Merge Sort',
   fn: mergeSortAdaptive,
   complexity: 'O(n log n)',
-  getTotal: n => mergeUpperBound(n),
+  getTotal: n => adaptiveUpperBound(n),
   exact: false,
   stable: true,
   noRepeatPairs: true,
@@ -65,8 +78,8 @@ export default {
     'Merge sort with a pre-sorted check before each merge: "is left[last] ≤ right[first]?" One comparison can skip an entire merge group. On already-sorted data it uses only one comparison per merge — ideal when you suspect your list is nearly in order.',
   estimates: {
     best:  n => countMerges(n),
-    avg:   n => Math.round((countMerges(n) + mergeUpperBound(n)) / 2),
-    worst: n => mergeUpperBound(n),
+    avg:   n => Math.round((countMerges(n) + adaptiveUpperBound(n)) / 2),
+    worst: n => adaptiveUpperBound(n),
     bestLabel:  'already sorted — each merge skipped in 1 comparison',
     worstLabel: 'each merge needs full comparison work',
   },
