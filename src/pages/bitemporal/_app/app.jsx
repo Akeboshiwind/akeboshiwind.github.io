@@ -542,7 +542,8 @@ function ContextMenu({ menu, events }) {
       )}
       <div className="pixel-line h-0.5 my-2" />
       <button
-        className="w-full text-left label text-danger hover:bg-danger hover:text-bg px-1 py-1 cursor-pointer"
+        className="pixel-button w-full text-left px-1 py-1"
+        data-variant="danger"
         onClick={() => {
           deleteSelected(menu);
           closeContextMenu();
@@ -594,7 +595,8 @@ const SavedStateCard = ({ saved }) => (
   <div className="relative group cursor-pointer" onClick={() => loadSavedState(saved)}>
     <img src={saved.thumbnail} className="pixel-panel w-full hover:border-accent" />
     <button
-      className="absolute -top-2 -right-2 w-5 h-5 bg-heading text-bg hover:bg-danger flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
+      className="pixel-icon-button pixel-panel absolute -top-2 -right-2 min-w-0 min-h-0 w-6 h-6 p-0 bg-bg opacity-0 group-hover:opacity-100"
+      data-variant="danger"
       onClick={(e) => {
         e.stopPropagation();
         deleteSavedState(saved.id);
