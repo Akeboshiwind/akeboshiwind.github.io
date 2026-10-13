@@ -55,7 +55,7 @@ Tools and posts draw their UI from one kit. **Read both locations before styling
 - **Classes** — `src/styles/theme.css`, `@layer components`. They work unchanged in `.astro`, `.jsx`, `.md` and `.mdx`.
 - **Components** — `src/components/pixel/`. Each is an `.astro` and `.jsx` pair: Astro pages here cannot render `.jsx` (no `@astrojs/react`), and React apps cannot import `.astro`. The pair carries no styling of its own; that lives in the classes.
 - **Catalogue** — `/kit/` (`src/pages/kit/index.astro`) shows everything in both themes. `src/lib/pixel-kit.test.js` fails until a new class or component is on it.
-- **Danger is never colour alone** — reach it through `data-variant="danger"`, `.pixel-alert`, `.pixel-alert-text` or `.pixel-hatch`. `src/lib/pixel-colours.test.js` fails on a bare danger colour (`text-danger`, `bg-danger`, `var(--danger)`, …).
+- **Danger, warn and ok are never colour alone** — reach them through `data-variant="danger" | "warn" | "ok"` on the kit classes (`.pixel-button`, `.pixel-chip`, `.pixel-alert`, `.pixel-alert-text`, `.pixel-mark`). Danger is hatched, warn dotted, ok solid. `src/lib/pixel-colours.test.js` fails on a bare tone colour (`text-ok`, `bg-warn`, `border-danger`, `var(--ok)`, …).
 - **Colours** — tokens only. `src/lib/pixel-colours.test.js` fails when a page on `PixelAppLayout` uses a Tailwind palette class, a `dark:` variant or a hex colour. A value that must leave CSS (a canvas, a library option) is a `PAGE_*` constant in `src/lib/accents.js`.
 
 ## Apps
@@ -82,7 +82,7 @@ Key conventions the scaffold already sets up:
 - `PixelAppLayout` provides the HTML shell, the pixel theme, the app bar (← Home, History, accent and theme toggles) and the `<div id="app">` mount point
 - `PixelAppLayout` sits in the notes' 720px column; `wide` spans the window, for an app whose content is a canvas
 - `useLocalStorage` from `src/lib/useLocalStorage.js` for persisting state
-- Dark mode via the theme's tokens (`bg-bg`, `text-text`, `border-border`, `text-accent`, `text-danger`, …), which swap with the theme
+- Dark mode via the theme's tokens (`bg-bg`, `text-text`, `border-border`, `text-accent`, `text-link`, …), which swap with the theme
 - Apps must work on both mobile and desktop — use responsive Tailwind classes
 - `PixelAppLayout` has a `<slot name="head" />` for extra `<head>` content if needed
 
