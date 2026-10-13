@@ -570,10 +570,10 @@ export function App() {
           </div>
 
           {error && (
-            <p role="alert" className="pixel-panel border-danger text-danger text-sm px-3 py-2 m-0">{error}</p>
+            <p role="alert" className="pixel-alert text-sm py-2 m-0">{error}</p>
           )}
           {mismatch && (
-            <p role="alert" className="pixel-panel border-danger text-danger text-sm px-3 py-2 m-0">{mismatch}</p>
+            <p role="alert" className="pixel-alert text-sm py-2 m-0">{mismatch}</p>
           )}
         </section>
 
