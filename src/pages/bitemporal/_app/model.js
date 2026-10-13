@@ -24,15 +24,18 @@ export function snapToGrid(v) {
 
 const maybeSnap = (v, snap) => (snap ? snapToGrid(v) : v);
 
-/** The topmost event containing `(x, y)`, and whether `x` is on its resize handle; null if none. */
-export function hitTest(events, x, y, drawWidth) {
-  const handleWidth = config.handleWidth / drawWidth;
+/**
+ * The topmost event containing `(x, y)`, and whether `x` is on its resize handle; null if none.
+ * `drawWidth` and `handleWidth` are in pixels; the handle runs that far in from a closed event's right edge.
+ */
+export function hitTest(events, x, y, drawWidth, handleWidth) {
+  const handleSpan = handleWidth / drawWidth;
   for (const index of drawOrder(events).reverse()) {
     const { _valid_from, _valid_to, _system_from } = events[index];
     const open = _valid_to == null;
     const validTo = open ? 1 : _valid_to;
     if (x >= _valid_from && x <= validTo && y >= _system_from)
-      return { index, onHandle: !open && x >= validTo - handleWidth };
+      return { index, onHandle: !open && x >= validTo - handleSpan };
   }
   return null;
 }

@@ -161,11 +161,16 @@ function toNormalized(e) {
   };
 }
 
-function hitAt({ x, y }) {
+/** A fingertip covers far more than the handle as drawn. */
+const TOUCH_HANDLE_WIDTH = 28;
+
+const handleWidthFor = (e) => (e.pointerType === 'touch' ? TOUCH_HANDLE_WIDTH : config.handleWidth);
+
+function hitAt({ x, y }, handleWidth) {
   const { events, points } = store.get();
   const { w, h } = drawSize();
   const point = pointHitTest(points, x, y, w, h);
-  return point ? { point } : { event: hitTest(events, x, y, w) };
+  return point ? { point } : { event: hitTest(events, x, y, w, handleWidth) };
 }
 
 const boxOf = (a, b) => ({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
@@ -205,7 +210,7 @@ function onPointerDown(e) {
   } else if (tool === 'point') {
     store.update({ points: [...points, { x: p.x, y: p.y, color: NEW_ITEM_COLOR }], ...(autoSelect && { tool: 'select' }) });
   } else {
-    const { point, event } = hitAt(p);
+    const { point, event } = hitAt(p, handleWidthFor(e));
     if (point) {
       const pointOffset = (i) => ({ x: p.x - points[i].x, y: p.y - points[i].y });
       const group = selection.points.has(point.index) && selection.points.size > 1;
@@ -245,7 +250,7 @@ function cursorFor(tool, p) {
   if (drag.mode === 'select') return 'crosshair';
   if (drag.mode === 'resize' || drag.mode === 'resize-group') return 'ew-resize';
   if (drag.mode !== 'idle') return 'move';
-  const { point, event } = hitAt(p);
+  const { point, event } = hitAt(p, config.handleWidth);
   if (point) return 'move';
   if (event) return event.onHandle ? 'ew-resize' : 'move';
   return 'crosshair';
@@ -319,7 +324,7 @@ function openMenu(hit, at) {
 
 function onContextMenu(e) {
   e.preventDefault();
-  openMenu(hitAt(toNormalized(e)), { x: e.clientX, y: e.clientY });
+  openMenu(hitAt(toNormalized(e), handleWidthFor(e)), { x: e.clientX, y: e.clientY });
 }
 
 function onKeyDown(e) {

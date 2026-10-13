@@ -41,22 +41,28 @@ test('snapToGrid rounds to the nearest tenth', () => {
 
 describe('hitTest', () => {
   const drawWidth = 1000;
+  const handleWidth = 8;
 
   test('finds the event under the point, latest system time first', () => {
     const under = { ...closed, _system_from: 0.1 };
-    expect(hitTest([under, closed], 0.2, 0.5, drawWidth)).toEqual({ index: 1, onHandle: false });
+    expect(hitTest([under, closed], 0.2, 0.5, drawWidth, handleWidth)).toEqual({ index: 1, onHandle: false });
   });
 
   test('reports the resize handle at the right edge of a closed event', () => {
-    expect(hitTest([closed], 0.399, 0.5, drawWidth)).toEqual({ index: 0, onHandle: true });
+    expect(hitTest([closed], 0.399, 0.5, drawWidth, handleWidth)).toEqual({ index: 0, onHandle: true });
+  });
+
+  test('the handle is as many pixels wide as asked', () => {
+    expect(hitTest([closed], 0.38, 0.5, drawWidth, 8)).toEqual({ index: 0, onHandle: false });
+    expect(hitTest([closed], 0.38, 0.5, drawWidth, 28)).toEqual({ index: 0, onHandle: true });
   });
 
   test('an open event runs to the right edge and has no handle', () => {
-    expect(hitTest([open], 0.999, 0.5, drawWidth)).toEqual({ index: 0, onHandle: false });
+    expect(hitTest([open], 0.999, 0.5, drawWidth, handleWidth)).toEqual({ index: 0, onHandle: false });
   });
 
   test('misses below system-from', () => {
-    expect(hitTest([closed], 0.2, 0.1, drawWidth)).toBe(null);
+    expect(hitTest([closed], 0.2, 0.1, drawWidth, handleWidth)).toBe(null);
   });
 });
 
