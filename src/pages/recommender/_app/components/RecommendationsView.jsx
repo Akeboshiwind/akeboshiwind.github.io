@@ -83,7 +83,7 @@ export const RecommendationsView = ({
 
       {isExhausted && !generateError && reviewed.length > 0 && pending.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <Icon svg={checkSvg} className="w-10 h-10 text-ok mb-4" />
+          <Icon svg={checkSvg} className="w-10 h-10 text-accent mb-4" />
           <p className="font-pixel text-pixel-md text-heading mb-1">All reviewed!</p>
           <p className="text-sm opacity-80 mb-6">New recommendations will be generated shortly.</p>
         </div>
