@@ -681,7 +681,7 @@ const SavedStateCard = ({ saved }) => (
   <div className="relative group cursor-pointer" onClick={() => loadSavedState(saved)}>
     <img src={saved.thumbnail} width={120} height={80} className="pixel-panel w-full hover:border-accent" />
     <button
-      className="pixel-icon-button pixel-panel absolute -top-2 -right-2 min-w-0 min-h-0 w-6 h-6 p-0 bg-bg opacity-0 group-hover:opacity-100"
+      className="pixel-icon-button pixel-panel absolute -top-2 -right-2 min-w-0 min-h-0 w-6 h-6 p-0 bg-bg opacity-0 group-hover:opacity-100 pointer-coarse:opacity-100"
       data-variant="danger"
       onClick={(e) => {
         e.stopPropagation();
