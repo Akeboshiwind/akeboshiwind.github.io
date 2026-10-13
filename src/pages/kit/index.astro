@@ -94,10 +94,11 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
           <SectionLabel class="mt-4 mb-2">Rows</SectionLabel>
           <div class="pixel-panel divide-y-2 divide-border">
             <button class="pixel-row"><span class="label block">Export as JSON</span><span class="text-sm opacity-70">Download your data.</span></button>
+            <button class="pixel-row" data-variant="ok"><span class="label block">Mark all done</span><span class="text-sm opacity-70">Ticks every set today.</span></button>
             <button class="pixel-row" data-variant="warn"><span class="label block">Reset template</span><span class="text-sm opacity-70">Your history is kept.</span></button>
             <button class="pixel-row" data-variant="danger"><span class="label block">Erase all data</span><span class="text-sm opacity-70">Back to the seed data.</span></button>
           </div>
-          <p class="label opacity-60">.pixel-row · a full-width action in a divided panel · data-variant="danger" | "warn" | "ok" adds the tone's strip and keeps the dividers</p>
+          <p class="label opacity-60">.pixel-row · a full-width action in a divided panel · a chevron marks it pressable, and a press fills it · data-variant="danger" | "warn" | "ok" adds the tone's strip and keeps the dividers</p>
 
           <SectionLabel class="mt-4 mb-2">Chips</SectionLabel>
           <div class="flex flex-wrap gap-1">
