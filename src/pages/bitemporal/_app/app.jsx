@@ -113,6 +113,17 @@ function initialState() {
 const store = createStore(initialState());
 const useAppState = () => useSyncExternalStore(store.subscribe, store.get);
 
+/** Tailwind's `md`, so the layout chosen here agrees with the `md:` classes. */
+const wideQuery = matchMedia('(width >= 48rem)');
+const useWide = () =>
+  useSyncExternalStore(
+    (onChange) => {
+      wideQuery.addEventListener('change', onChange);
+      return () => wideQuery.removeEventListener('change', onChange);
+    },
+    () => wideQuery.matches,
+  );
+
 const changed = (keys, a, b) => keys.some((k) => a[k] !== b[k]);
 
 store.subscribe((s, prev) => {
@@ -511,11 +522,13 @@ const CONNECTION_LABELS = {
   closed: 'Closed',
 };
 
+const connectionLabel = (status) => CONNECTION_LABELS[status] ?? `Status: ${status}`;
+
 function ConnectionPill({ status }) {
   if (status === 'connected') return null;
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-heading text-bg label animate-pulse z-10">
-      {CONNECTION_LABELS[status] ?? `Status: ${status}`}
+      {connectionLabel(status)}
     </div>
   );
 }
@@ -622,6 +635,25 @@ const ToolButtons = ({ current }) =>
       <Icon svg={icon} className="w-6 h-6" />
     </button>
   ));
+
+const PhoneBar = ({ s }) => (
+  <div className="pixel-toolbar">
+    <ToolButtons current={s.tool} />
+    <button className="pixel-button ml-1" onClick={() => store.update({ sheetOpen: true })}>
+      Options
+    </button>
+    <span className="label text-text ml-auto px-1 inline-flex items-center gap-2">
+      {s.connectionStatus === 'connected' ? (
+        <>
+          <span className="w-2 h-2 bg-accent" />
+          {`${s.roomCount}/${s.globalCount}`}
+        </>
+      ) : (
+        <span className="animate-pulse">{connectionLabel(s.connectionStatus)}</span>
+      )}
+    </span>
+  </div>
+);
 
 const Toolbar = ({ current }) => (
   <div className="pixel-panel absolute top-2 left-2 bg-bg p-1 flex flex-col gap-1 z-10">
@@ -776,7 +808,7 @@ function Options({ s }) {
   );
 }
 
-function MainCanvas({ tool }) {
+function MainCanvas({ s, wide }) {
   const ref = useRef(null);
   useEffect(() => {
     const canvas = ref.current;
@@ -801,16 +833,14 @@ function MainCanvas({ tool }) {
     };
   }, []);
   return (
-    <div className="flex-1 min-w-0">
-      <div className="relative w-full h-full overflow-hidden">
-        <div className="absolute inset-0 left-5">
+    <div className="flex-1 min-w-0 flex flex-col">
+      <div className="relative flex-1 min-h-0 overflow-hidden">
+        <div className="absolute inset-0 md:left-5">
           <canvas ref={ref} className="w-full h-full touch-none select-none [-webkit-touch-callout:none] [image-rendering:pixelated]" />
         </div>
-        <Toolbar current={tool} />
-        <button className="pixel-button md:hidden absolute top-2 right-2 z-10" onClick={() => store.update({ sheetOpen: true })}>
-          Options
-        </button>
+        {wide && <Toolbar current={s.tool} />}
       </div>
+      {!wide && <PhoneBar s={s} />}
     </div>
   );
 }
@@ -819,6 +849,7 @@ const closeSheet = () => store.update({ sheetOpen: false });
 
 function App() {
   const s = useAppState();
+  const wide = useWide();
   return (
     <div className="flex-1 flex gap-4 min-h-0">
       <SidePanel s={s} />
@@ -831,9 +862,9 @@ function App() {
           </Sheet>
         </div>
       )}
-      <MainCanvas tool={s.tool} />
-      <PresenceIndicator roomCount={s.roomCount} globalCount={s.globalCount} />
-      <ConnectionPill status={s.connectionStatus} />
+      <MainCanvas s={s} wide={wide} />
+      {wide && <PresenceIndicator roomCount={s.roomCount} globalCount={s.globalCount} />}
+      {wide && <ConnectionPill status={s.connectionStatus} />}
       <ContextMenu menu={s.contextMenu} events={s.events} />
     </div>
   );

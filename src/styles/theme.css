@@ -362,6 +362,17 @@
     }
   }
 
+  .pixel-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    padding: 0.25rem;
+    padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+    border-top: 2px solid var(--border);
+    background: var(--bg);
+  }
+
   .pixel-icon {
     display: inline-flex;
     align-items: center;
