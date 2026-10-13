@@ -65,7 +65,7 @@ export function Settings({ state, setState, navigate }) {
       <Section title="Backup">
         <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={onPickFile} />
         <Action label="Export as JSON" description="Download your pool, template, and history." onClick={exportJson} />
-        <Action label="Import from JSON" description="Replace your data from a previous export." onClick={() => fileRef.current?.click()} />
+        <Action label="Import from JSON" description="Replace your data from a previous export." onClick={() => fileRef.current?.click()} variant="warn" />
         {importError && (
           <p className="text-sm px-4 py-3"><span className="pixel-alert-text">{importError}</span></p>
         )}
@@ -76,6 +76,7 @@ export function Settings({ state, setState, navigate }) {
           label="Reset week template"
           description="Restores the original 8-week plan. Your pool and history are kept."
           onClick={resetTemplate}
+          variant="warn"
         />
         <Action
           label="Clear history"
