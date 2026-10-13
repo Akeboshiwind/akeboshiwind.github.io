@@ -86,6 +86,8 @@
   --pixel-hatch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' shape-rendering='crispEdges'%3E%3Cpath d='M0 6h2v2H0zM2 4h2v2H2zM4 2h2v2H4zM6 0h2v2H6z'/%3E%3C/svg%3E");
   --pixel-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6' shape-rendering='crispEdges'%3E%3Cpath d='M0 4h2v2H0zM2 2h2v2H2zM4 0h2v2H4zM6 2h2v2H6z'/%3E%3C/svg%3E");
   --pixel-dots: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h2v2H0z'/%3E%3C/svg%3E");
+  --pixel-dot-band: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h2v2H0zM4 0h2v2H4zM8 0h2v2H8z'/%3E%3C/svg%3E");
+  --pixel-dots-sparse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h2v2H0z'/%3E%3C/svg%3E");
   --pixel-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='10' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h2v2H0zM2 2h2v2H2zM4 4h2v2H4zM2 6h2v2H2zM0 8h2v2H0z'/%3E%3C/svg%3E");
   --pixel-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='2' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h2v2H0z'/%3E%3C/svg%3E");
 }
@@ -433,6 +435,7 @@
   :is(.pixel-button, .pixel-chip, .pixel-row):is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]), .pixel-alert, .pixel-alert-text, .pixel-mark {
     --tone: var(--danger);
     --tone-fill: var(--pixel-hatch) 2px 0 / 8px 8px;
+    --tone-hover-fill: var(--tone-fill);
     --tone-line: var(--pixel-wave) 0 0 / 8px 6px repeat-x;
     --tone-line-height: 6px;
   }
@@ -440,6 +443,7 @@
   :is(.pixel-button, .pixel-chip, .pixel-row, .pixel-alert, .pixel-alert-text, .pixel-mark)[data-variant="warn"] {
     --tone: var(--warn);
     --tone-fill: var(--pixel-dots) 2px 0 / 4px 4px;
+    --tone-hover-fill: var(--pixel-dot-band) 2px 0 / 24px 4px repeat-y, var(--pixel-dots-sparse) 2px 0 / 8px 8px;
     --tone-line: var(--pixel-dash) 0 0 / 4px 2px repeat-x;
     --tone-line-height: 2px;
   }
@@ -486,6 +490,11 @@
   .pixel-button:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):hover::before {
     width: auto;
     right: -2px;
+    mask:
+      linear-gradient(#000 0 0) left / 2px 100% no-repeat,
+      linear-gradient(#000 0 0) top / 100% 2px no-repeat,
+      linear-gradient(#000 0 0) bottom / 100% 2px no-repeat,
+      var(--tone-hover-fill);
   }
 
   /* A 2px halo in the page colour keeps the label legible over the hatch or dots. */
@@ -570,6 +579,7 @@
   .pixel-row:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):hover::before {
     right: 0;
     width: auto;
+    mask: var(--tone-hover-fill);
   }
 
   .pixel-row[data-variant="ok"]:not(:disabled):hover {
