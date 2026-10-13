@@ -119,7 +119,7 @@ function Input({ brief, setBrief, raw, setRaw, promptText, onCopy, copied, onPre
       </section>
 
       {error && (
-        <p className="label text-danger normal-case tracking-normal break-words">{error}</p>
+        <p className="label normal-case tracking-normal break-words"><span className="pixel-alert-text">{error}</span></p>
       )}
 
       <button

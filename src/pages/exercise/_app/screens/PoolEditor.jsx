@@ -212,7 +212,7 @@ function Form({ initial, isNew, onSave, onDelete }) {
           {tags.map(t => (
             <span key={t} className="pixel-chip inline-flex items-center gap-2">
               {t}
-              <button type="button" onClick={() => setTags(tags.filter(x => x !== t))} aria-label={`Remove ${t}`} className="hover:text-danger">×</button>
+              <button type="button" onClick={() => setTags(tags.filter(x => x !== t))} aria-label={`Remove ${t}`} className="pixel-icon-button min-w-0 min-h-0 p-0" data-variant="danger">×</button>
             </span>
           ))}
         </div>
