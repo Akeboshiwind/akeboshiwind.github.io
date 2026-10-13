@@ -41,6 +41,42 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
           </div>
           <p class="label opacity-60">.pixel-button · data-variant="primary" | "danger"</p>
 
+          <SectionLabel class="mt-4 mb-2">Tones</SectionLabel>
+          <div class="flex flex-wrap items-center gap-2">
+            <button class="pixel-button" data-variant="primary">Save</button>
+            <button class="pixel-button" data-variant="danger">Delete list</button>
+            <button class="pixel-button" data-variant="warn">Retry</button>
+            <button class="pixel-button" data-variant="ok">Mark done</button>
+          </div>
+          <div class="flex flex-wrap gap-1">
+            <span class="pixel-chip" data-variant="danger">Poor</span>
+            <span class="pixel-chip" data-variant="warn">OK</span>
+            <span class="pixel-chip" data-variant="ok">Great</span>
+          </div>
+          <div class="pixel-alert">
+            <p class="label">Couldn't import</p>
+            <p class="m-0 text-text">The file isn't valid JSON.</p>
+          </div>
+          <div class="pixel-alert" data-variant="warn">
+            <p class="label">Configuration warnings</p>
+            <p class="m-0 text-text">Two accounts have no type set.</p>
+          </div>
+          <div class="pixel-alert" data-variant="ok">
+            <p class="label">Imported</p>
+            <p class="m-0 text-text">42 transactions for September.</p>
+          </div>
+          <p class="label m-0 flex flex-wrap gap-4">
+            <span class="pixel-alert-text">API error 401</span>
+            <span class="pixel-alert-text" data-variant="warn">No reduction</span>
+            <span class="pixel-alert-text" data-variant="ok">62% smaller</span>
+          </p>
+          <p class="label flex items-center gap-4">
+            <span class="flex items-center gap-2"><span class="pixel-mark w-3 h-3"></span> failed</span>
+            <span class="flex items-center gap-2"><span class="pixel-mark w-3 h-3" data-variant="warn"></span> retrying</span>
+            <span class="flex items-center gap-2"><span class="pixel-mark w-3 h-3" data-variant="ok"></span> done</span>
+          </p>
+          <p class="label opacity-60">Never colour alone: danger is hatched, warn is dotted, ok is solid · data-variant="danger" | "warn" | "ok" on .pixel-button, .pixel-chip, .pixel-alert, .pixel-alert-text, .pixel-mark (danger is the default) · an icon-only action's glyph is its shape</p>
+
           <SectionLabel class="mt-4 mb-2">Icon buttons</SectionLabel>
           <div class="flex flex-wrap gap-1">
             <button class="pixel-icon-button" aria-label="Edit"><Icon name="pencil" class="w-4 h-4" /></button>
@@ -49,7 +85,19 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
             <button class="pixel-icon-button" aria-label="More"><Icon name="more-horizontal" class="w-5 h-5" /></button>
             <button class="pixel-icon-button" aria-label="Disabled" disabled><Icon name="arrow-up" class="w-4 h-4" /></button>
           </div>
-          <p class="label opacity-60">.pixel-icon-button · no border, at least 32px square · accent on hover, data-variant="danger" | "ok" swaps the hover colour</p>
+          <div class="flex flex-wrap gap-1">
+            <span class="pixel-chip flex items-center gap-1">Alice <button class="pixel-icon-button" data-size="sm" data-variant="danger" aria-label="Remove Alice">×</button></span>
+            <span class="pixel-chip flex items-center gap-1">Bob <button class="pixel-icon-button" data-size="sm" data-variant="danger" aria-label="Remove Bob">×</button></span>
+          </div>
+          <p class="label opacity-60">.pixel-icon-button · no border, at least 32px square · accent on hover, data-variant="danger" | "ok" swaps the hover colour · data-size="sm" fits inside a chip</p>
+
+          <SectionLabel class="mt-4 mb-2">Rows</SectionLabel>
+          <div class="pixel-panel divide-y-2 divide-border">
+            <button class="pixel-row"><span class="label block">Export as JSON</span><span class="text-sm opacity-70">Download your data.</span></button>
+            <button class="pixel-row" data-variant="warn"><span class="label block">Reset template</span><span class="text-sm opacity-70">Your history is kept.</span></button>
+            <button class="pixel-row" data-variant="danger"><span class="label block">Erase all data</span><span class="text-sm opacity-70">Back to the seed data.</span></button>
+          </div>
+          <p class="label opacity-60">.pixel-row · a full-width action in a divided panel · data-variant="danger" | "warn" | "ok" adds the tone's strip and keeps the dividers</p>
 
           <SectionLabel class="mt-4 mb-2">Chips</SectionLabel>
           <div class="flex flex-wrap gap-1">
@@ -166,7 +214,7 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
               </div>
             ))}
           </div>
-          <p class="label flex gap-4"><span class="text-ok">.text-ok</span><span class="text-warn">.text-warn</span><span class="text-danger">.text-danger</span></p>
+          <p class="label flex gap-4"><span class="pixel-alert-text">.pixel-alert-text</span></p>
         </section>
       ))}
     </div>

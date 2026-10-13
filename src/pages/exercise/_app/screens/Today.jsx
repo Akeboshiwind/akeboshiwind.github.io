@@ -192,8 +192,8 @@ export function Today({ state, setState, today }) {
 
 function ActiveBanner({ activeDay, onResume, onDiscard }) {
   return (
-    <div className="pixel-panel border-warn p-3 mb-4 text-sm">
-      <p className="text-warn">
+    <div className="pixel-alert mb-4 text-sm" data-variant="warn">
+      <p>
         Workout in progress on {DAY_NAMES[activeDay]}.
       </p>
       <div className="mt-2 flex gap-2">
@@ -230,8 +230,8 @@ function StartBanner({ viewDay, today, onStart }) {
 function SessionBanner({ startedAt, onCancel }) {
   const seconds = useElapsedSeconds(startedAt);
   return (
-    <div className="pixel-panel border-ok p-3 mb-4 flex items-center justify-between gap-3">
-      <div className="text-ok flex items-baseline gap-2">
+    <div className="pixel-alert mb-4 flex items-center justify-between gap-3" data-variant="ok">
+      <div className="flex items-baseline gap-2">
         <span className="label">Session in progress</span>
         <span className="pixel-num">{formatElapsed(seconds)}</span>
       </div>

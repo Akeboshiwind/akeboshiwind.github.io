@@ -67,7 +67,7 @@ export function Settings({ state, setState, navigate }) {
         <Action label="Export as JSON" description="Download your pool, template, and history." onClick={exportJson} />
         <Action label="Import from JSON" description="Replace your data from a previous export." onClick={() => fileRef.current?.click()} />
         {importError && (
-          <p className="text-sm text-danger px-4 py-3">{importError}</p>
+          <p className="text-sm px-4 py-3"><span className="pixel-alert-text">{importError}</span></p>
         )}
       </Section>
 
@@ -114,7 +114,8 @@ function Action({ label, description, onClick, danger }) {
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left px-4 py-3 ${danger ? 'text-danger hover:bg-danger hover:text-bg' : 'hover:text-accent'}`}
+      data-variant={danger ? 'danger' : undefined}
+      className="pixel-row"
     >
       <p className="label">{label}</p>
       {description && (

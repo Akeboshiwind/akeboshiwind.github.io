@@ -31,11 +31,7 @@ function replaySort(algoKey, shuffledItems, history) {
 
 // ——— Screen 1: Algorithm Selection ———
 
-const RATING_STYLE = {
-  great: 'border-ok text-ok',
-  ok:    'border-warn text-warn',
-  poor:  'border-danger text-danger',
-};
+const RATING_VARIANT = { great: 'ok', ok: 'warn', poor: 'danger' };
 const RATING_ICON = { great: checkSvg, ok: minusSvg, poor: closeSvg };
 
 const Estimate = ({ label, children }) => (
@@ -89,7 +85,8 @@ const AlgoRow = ({ algoKey, algo, n, expanded, onToggle, onStart }) => {
             {algo.scenarios.map(s => (
               <li
                 key={s.label}
-                className={`pixel-chip inline-flex items-center gap-1 ${RATING_STYLE[s.rating]}`}
+                className="pixel-chip inline-flex items-center gap-1"
+                data-variant={RATING_VARIANT[s.rating]}
                 title={s.note}
               >
                 <Icon svg={RATING_ICON[s.rating]} className="h-3 w-3" />
@@ -372,7 +369,7 @@ const SortingScreen = ({ algoKey, shuffledItems, onBack, onComplete }) => {
                   <span className="w-5 shrink-0 text-right font-pixel text-pixel opacity-70">{idx + 1}</span>
                   <span className="min-w-0 break-words">{item}</span>
                   {isActive && <span className="label ml-auto">comparing</span>}
-                  {isSettled && !isActive && <Icon svg={checkSvg} className="ml-auto h-4 w-4 shrink-0 text-ok" />}
+                  {isSettled && !isActive && <Icon svg={checkSvg} className="ml-auto h-4 w-4 shrink-0" />}
                 </li>
               );
             })}

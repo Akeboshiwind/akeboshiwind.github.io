@@ -196,7 +196,7 @@ export function App() {
       </p>
 
       {error && (
-        <div className="pixel-panel border-danger text-danger p-3 text-sm">
+        <div className="pixel-alert text-sm">
           {error}
         </div>
       )}

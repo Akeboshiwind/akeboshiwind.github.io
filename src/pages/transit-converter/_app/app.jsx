@@ -64,7 +64,7 @@ function App() {
       <section className="mb-8">
         <SectionLabel className="mb-3">JSON</SectionLabel>
         {error && (
-          <p className="pixel-panel border-danger text-danger font-pixel text-pixel p-3 mb-3 break-words">{error}</p>
+          <p className="pixel-alert font-pixel text-pixel mb-3 break-words">{error}</p>
         )}
         {output !== null ? (
           <pre className="bg-code-bg text-code-text font-pixel text-pixel p-3 overflow-auto max-h-[60vh]">{output}</pre>

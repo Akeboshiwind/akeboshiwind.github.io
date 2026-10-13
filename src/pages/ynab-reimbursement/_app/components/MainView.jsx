@@ -19,12 +19,12 @@ const Note = ({ children }) => (
 );
 
 const Warnings = ({ title, children }) => (
-  <section className="pixel-panel border-warn p-3">
-    <h2 className="label text-warn flex items-center gap-2 mt-0 mb-2">
+  <section className="pixel-alert" data-variant="warn">
+    <h2 className="label flex items-center gap-2 mt-0 mb-2">
       <Icon svg={warningIcon} className="w-4 h-4" />
       {title}
     </h2>
-    {children}
+    <div className="text-text">{children}</div>
   </section>
 );
 
@@ -177,13 +177,15 @@ export const MainView = ({
             <section>
               <SectionLabel className="mb-3">Reimbursement Due</SectionLabel>
               <p
-                className={`font-pixel text-pixel-lg m-0 cursor-help ${balanced ? 'text-ok' : 'text-accent'}`}
+                className={`font-pixel text-pixel-lg m-0 cursor-help ${balanced ? '' : 'text-accent'}`}
                 title={`(${money(hisTotalShared)} + ${money(herTotalShared)}) ÷ 2 - ${money(hisTotalShared)} + (${money(herTotalForHim)} - ${money(hisTotalForHer)})`}
               >
-                {reimbursementDirection === 'herToHim'
-                  ? `${money(reimbursementAmount)} - She should pay Him`
-                  : `${money(reimbursementAmount)} - He should pay Her`
-                }
+                <span className={balanced ? 'pixel-alert-text' : undefined} data-variant={balanced ? 'ok' : undefined}>
+                  {reimbursementDirection === 'herToHim'
+                    ? `${money(reimbursementAmount)} - She should pay Him`
+                    : `${money(reimbursementAmount)} - He should pay Her`
+                  }
+                </span>
               </p>
               <Note>
                 Makes sure shared costs are split 50/50 and accounts for when one person paid for the other's personal expenses.

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { sampleSpan, readLine, lineRatio, dragCrop, dragMarker } from './analysis.js';
 
 const MARKERS = [
-  { id: 'control', label: 'Control', colour: 'text-ok', start: 25 },
+  { id: 'control', label: 'Control', colour: 'text-link', start: 25 },
   { id: 'test', label: 'Test', colour: 'text-accent', start: 45 },
   { id: 'base', label: 'Base', colour: 'text-heading', start: 65 },
 ];
@@ -124,7 +124,7 @@ export function PhotoReader({ img, onSave, onCancel }) {
 
       <p className="label opacity-70 leading-relaxed">
         Drag edges to crop. Drag markers to align:{' '}
-        <span className="text-ok">Control</span> → control line ·{' '}
+        <span className="text-link">Control</span> → control line ·{' '}
         <span className="text-accent">Test</span> → test line ·{' '}
         <span className="text-heading">Base</span> → background
       </p>

@@ -88,9 +88,9 @@ export const ImportExportModal = ({ lists, onImport, onClose }) => {
               Or choose a .json file
             </span>
           </FileDrop>
-          {importError && <p className="label text-danger mt-2">{importError}</p>}
+          {importError && <p className="label mt-2"><span className="pixel-alert-text">{importError}</span></p>}
           {confirming && !importError && (
-            <p className="text-sm text-warn mt-2">
+            <p className="pixel-alert text-sm mt-2 mb-0" data-variant="warn">
               This will replace all {lists.length} existing list{lists.length !== 1 ? 's' : ''}. Click Import again to confirm.
             </p>
           )}

@@ -47,23 +47,24 @@ export function TimerBar({ phases, onDismiss }) {
   return (
     <div
       role="status"
-      className={`pixel-bar pt-4 flex items-center gap-3 ${done ? 'border-ok' : ''}`}
+      className="pixel-bar pt-4 flex items-center gap-3"
     >
       <div className="absolute inset-x-0 top-0 h-1 bg-border">
         <div
-          className={`h-full transition-[width] duration-1000 ease-linear ${done ? 'bg-ok' : 'bg-accent'}`}
+          className={`block h-full transition-[width] duration-1000 ease-linear ${done ? 'pixel-mark' : 'bg-accent'}`}
+          data-variant={done ? 'ok' : undefined}
           style={{ width: `${Math.min(100, Math.max(0, progress * 100))}%` }}
         />
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className={`label truncate ${done ? 'text-ok' : 'opacity-70'}`}>
-          {phaseLabel}
+        <p className={`label truncate ${done ? '' : 'opacity-70'}`}>
+          {done ? <span className="pixel-alert-text" data-variant="ok">{phaseLabel}</span> : phaseLabel}
           {!done && phases.length > 1 && (
             <span className="ml-2">{phaseIdx + 1} / {phases.length}</span>
           )}
         </p>
-        <p className={`font-pixel text-pixel-lg tabular-nums ${done ? 'text-ok' : 'text-heading'}`}>{formatRemaining(remaining)}</p>
+        <p className="font-pixel text-pixel-lg tabular-nums text-heading">{formatRemaining(remaining)}</p>
       </div>
       {!done && (
         <button

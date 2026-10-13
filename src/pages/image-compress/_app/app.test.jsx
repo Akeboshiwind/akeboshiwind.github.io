@@ -99,6 +99,16 @@ describe('Image Compress', () => {
     expect(screen.getByRole('img', { name: 'Compressed' })).toBeTruthy();
   });
 
+  test('an output larger than the original is a warning, not a saving', async () => {
+    render(<App />);
+    choose(photo('small.jpg', 500 * 1024));
+    fireEvent.click(compressButton());
+
+    const result = await screen.findByText('70.0% larger — try a lower quality or a smaller max size');
+    expect(result.getAttribute('data-variant')).toBe('warn');
+    expect(screen.queryByText(/% smaller/)).toBeNull();
+  });
+
   test('an image already under the max dimension is not scaled up', async () => {
     imageSize = { width: 800, height: 600 };
     render(<App />);

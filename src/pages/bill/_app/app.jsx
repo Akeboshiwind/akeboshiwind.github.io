@@ -295,7 +295,7 @@ Here's an example of the expected format with sample data:
               } else setProcessingError('Invalid format');
             } catch { setProcessingError('Invalid JSON'); }
           }} />
-        {processingError && <p className="label mt-2 text-danger">Error: {processingError}</p>}
+        {processingError && <p className="label mt-2"><span className="pixel-alert-text">Error: {processingError}</span></p>}
       </Section>
 
       <Section title="People" action={<EditToggle open={showPeopleSettings} onClick={() => setShowPeopleSettings(!showPeopleSettings)} />}>
@@ -306,7 +306,7 @@ Here's an example of the expected format with sample data:
               {people.map((person, i) => (
                 <span key={i} className={`${chip} inline-flex items-center gap-2`}>
                   {person}
-                  <button onClick={() => { setPeople(people.filter((_,idx) => idx !== i)); }} className="text-danger hover:opacity-70" aria-label={`Remove ${person}`}>×</button>
+                  <button onClick={() => { setPeople(people.filter((_,idx) => idx !== i)); }} className="pixel-icon-button" data-size="sm" data-variant="danger" aria-label={`Remove ${person}`}>×</button>
                 </span>
               ))}
             </div>
@@ -331,13 +331,15 @@ Here's an example of the expected format with sample data:
                 const assignees = itemAssignments[item.uniqueId] || [];
                 const isFirst = item.uniqueId.endsWith('-0');
                 const orig = items.find(i => i.id === item.id);
-                const marker = isOver ? 'text-danger' : isComplete ? 'text-accent' : 'text-transparent';
+                const marker = isComplete ? 'text-accent' : 'text-transparent';
                 return (
                   <React.Fragment key={item.uniqueId}>
                     <tr className="align-top">
                       <td>
                         <div className="flex items-start gap-1.5">
-                          <span className={`${marker} font-pixel text-pixel leading-[30px]`} aria-hidden="true">■</span>
+                          {isOver
+                            ? <span className="pixel-mark w-2 h-2 mt-[11px] shrink-0" aria-hidden="true" />
+                            : <span className={`${marker} font-pixel text-pixel leading-[30px]`} aria-hidden="true">■</span>}
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center">
                               {isFirst ? <input type="text" value={orig.name} onChange={(e) => updateItemName(orig.id, e.target.value)} className="pixel-field w-full" /> : <span className="leading-[30px] text-heading">{item.name}</span>}
@@ -363,7 +365,7 @@ Here's an example of the expected format with sample data:
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>{assignees.map(p => <div key={p} className="flex items-center mb-2"><span className="mr-2 w-24 truncate">{p}</span><input type="number" min="0" max="100" value={personShares[item.uniqueId]?.[p] || 0} onChange={(e) => handleShareChange(item.uniqueId, p, e.target.value)} className={`pixel-field ${amount} w-20 text-right`} /><span className="ml-1 font-pixel">%</span></div>)}</div>
                             <div className="flex flex-col items-start gap-2">
-                              <div className={`font-pixel text-pixel-lg ${isComplete ? 'text-accent' : isOver ? 'text-danger' : 'opacity-70'}`}>Total {totalPercent}%</div>
+                              <div className={`font-pixel text-pixel-lg ${isComplete ? 'text-accent' : isOver ? '' : 'opacity-70'}`}>{isOver ? <span className="pixel-alert-text">Total {totalPercent}%</span> : `Total ${totalPercent}%`}</div>
                               <button onClick={() => { const ns = { ...personShares }; ns[item.uniqueId] = createEqualSplit(assignees); setPersonShares(ns); }} className="pixel-button" data-variant="primary">Equal split</button>
                             </div>
                           </div>
@@ -440,7 +442,7 @@ Here's an example of the expected format with sample data:
             {tax > 0 && <div className="flex justify-between items-baseline py-1.5 pixel-line"><span>Tax</span><span className={amount}>{money(tax)}{home(tax)}</span></div>}
             {serviceChargeAmount > 0 && <div className="flex justify-between items-baseline py-1.5 pixel-line"><span>Service</span><span className={amount}>{money(serviceChargeAmount)}{home(serviceChargeAmount)}</span></div>}
             <div className="flex justify-between items-baseline py-1.5 pixel-line text-heading"><span className="label">Total</span><span className="font-pixel text-pixel-lg">{currency}{billTotal}{home(parseFloat(billTotal))}</span></div>
-            <div className={`flex justify-between items-baseline py-1.5 ${allocationMatches ? 'text-accent' : 'text-danger'}`}><span className="label">Allocated</span><span className={amount}>{currency}{allocatedTotal}{home(parseFloat(allocatedTotal))}</span></div>
+            <div className={`flex justify-between items-baseline py-1.5 ${allocationMatches ? 'text-accent' : ''}`}><span className="label">Allocated</span><span className={allocationMatches ? amount : `${amount} pixel-alert-text`}>{currency}{allocatedTotal}{home(parseFloat(allocatedTotal))}</span></div>
           </div>
         </div>
       </Section>

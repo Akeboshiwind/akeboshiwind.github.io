@@ -150,8 +150,12 @@ export function App() {
             <Stat label="Compressed" width={result.width} height={result.height} size={result.size} />
           </div>
 
-          <p className="pixel-num text-ok">
-            {((1 - result.size / result.originalSize) * 100).toFixed(1)}% smaller
+          <p className="pixel-num">
+            {result.size < result.originalSize ? (
+              <span className="pixel-alert-text" data-variant="ok">{((1 - result.size / result.originalSize) * 100).toFixed(1)}% smaller</span>
+            ) : (
+              <span className="pixel-alert-text" data-variant="warn">{((result.size / result.originalSize - 1) * 100).toFixed(1)}% larger — try a lower quality or a smaller max size</span>
+            )}
           </p>
 
           <img src={result.url} alt="Compressed" className="pixel-panel w-full" />

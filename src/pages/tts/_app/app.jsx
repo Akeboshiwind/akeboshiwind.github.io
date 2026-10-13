@@ -13,12 +13,12 @@ import { useSession } from './useSession.js';
 
 const SPEEDS = ['0.5', '0.75', '1', '1.25', '1.5', '2'];
 
-const STATUS_COLOUR = {
-  pending: 'bg-text opacity-40',
-  generating: 'bg-warn animate-pulse',
-  retrying: 'bg-warn animate-pulse',
-  completed: 'bg-ok',
-  failed: 'bg-danger',
+const STATUS_MARK = {
+  pending: { className: 'bg-text opacity-40' },
+  generating: { className: 'pixel-mark animate-pulse', variant: 'warn' },
+  retrying: { className: 'pixel-mark animate-pulse', variant: 'warn' },
+  completed: { className: 'pixel-mark', variant: 'ok' },
+  failed: { className: 'pixel-mark', variant: 'danger' },
 };
 
 function KeyForm({ onSave }) {
@@ -98,7 +98,7 @@ function VoicePicker({ voice, onPick, apiKey }) {
           </div>
         ))}
       </div>
-      {error && <p role="alert" className="text-danger text-sm break-words">{error}</p>}
+      {error && <p role="alert" className="text-sm break-words"><span className="pixel-alert-text">{error}</span></p>}
     </div>
   );
 }
@@ -160,7 +160,7 @@ function ChunkCard({ chunk, number, playing, onPlay, onRetry }) {
     <div className="flex items-center gap-3">
       <span className="label">Chunk {number}</span>
       <span className="flex items-center gap-2 label opacity-80">
-        <span aria-hidden="true" className={`w-2 h-2 ${STATUS_COLOUR[chunk.status]}`} />
+        <span aria-hidden="true" className={`w-2 h-2 ${STATUS_MARK[chunk.status].className}`} data-variant={STATUS_MARK[chunk.status].variant} />
         {chunk.status}
       </span>
       {chunk.status === 'failed' && (
@@ -173,7 +173,7 @@ function ChunkCard({ chunk, number, playing, onPlay, onRetry }) {
       {header}
       <p className="mt-2 whitespace-pre-wrap break-words">{chunk.text}</p>
       {chunk.status === 'failed' && chunk.error && (
-        <p className="mt-2 text-sm text-danger break-words">{chunk.error}</p>
+        <p className="mt-2 text-sm break-words"><span className="pixel-alert-text">{chunk.error}</span></p>
       )}
     </>
   );
@@ -227,7 +227,7 @@ function PlayerBar({ session }) {
         />
         <span className="pixel-num">{formatTime(position)} / {formatTime(total)}</span>
       </div>
-      {waiting && <p className="label text-warn">Waiting for more audio to generate...</p>}
+      {waiting && <p className="label"><span className="pixel-alert-text" data-variant="warn">Waiting for more audio to generate...</span></p>}
     </div>
   );
 }

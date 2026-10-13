@@ -24,7 +24,7 @@ const TypeSelect = ({ value, types, onChange }) => (
 const Marks = ({ item, hasWarning }) => (
   <>
     {hasWarning && (
-      <span className="text-warn inline-flex align-middle ml-2" title="Needs a type">
+      <span className="pixel-alert-text inline-flex align-middle ml-2" data-variant="warn" title="Needs a type">
         <Icon svg={warningIcon} className="w-4 h-4" />
       </span>
     )}

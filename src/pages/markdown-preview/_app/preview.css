@@ -26,7 +26,8 @@
 }
 
 .markdown-preview :is(.hljs-keyword, .hljs-doctag, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-meta .hljs-keyword, .hljs-deletion) {
-  color: var(--danger);
+  color: var(--heading);
+  font-weight: bold;
 }
 
 .markdown-preview :is(.hljs-title, .hljs-section, .hljs-name, .hljs-selector-tag, .hljs-selector-pseudo) {
@@ -38,11 +39,12 @@
 }
 
 .markdown-preview :is(.hljs-string, .hljs-regexp, .hljs-addition, .hljs-meta .hljs-string) {
-  color: var(--ok);
+  color: var(--text);
+  font-style: italic;
 }
 
 .markdown-preview :is(.hljs-built_in, .hljs-symbol, .hljs-bullet) {
-  color: var(--warn);
+  color: var(--link);
 }
 
 .markdown-preview .hljs-emphasis {

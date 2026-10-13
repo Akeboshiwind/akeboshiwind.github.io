@@ -119,7 +119,7 @@ function Input({ brief, setBrief, raw, setRaw, promptText, onCopy, copied, onPre
       </section>
 
       {error && (
-        <p className="label text-danger normal-case tracking-normal break-words">{error}</p>
+        <p className="label normal-case tracking-normal break-words"><span className="pixel-alert-text">{error}</span></p>
       )}
 
       <button
@@ -146,13 +146,13 @@ function Preview({ summary, onBack, onApply }) {
         </h3>
         <ul className="text-sm space-y-1">
           <li>
-            <span className="text-ok">+ {newExercises.length} new</span>
+            <span className="pixel-alert-text" data-variant="ok">+ {newExercises.length} new</span>
             {newExercises.length > 0 && (
               <span className="opacity-70"> · {trim(newExercises)}</span>
             )}
           </li>
           <li>
-            <span className="text-warn">↻ {updatedExercises.length} updated</span>
+            <span className="pixel-alert-text" data-variant="warn">↻ {updatedExercises.length} updated</span>
             {updatedExercises.length > 0 && (
               <span className="opacity-70"> · {trim(updatedExercises)}</span>
             )}

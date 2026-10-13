@@ -259,7 +259,7 @@ const App = () => {
       )}
 
       {successMessage && (
-        <p role="status" className="label fixed top-0 inset-x-0 z-40 m-0 py-1 text-center bg-ok text-bg">
+        <p role="status" className="pixel-alert label fixed top-0 inset-x-0 z-40 m-0 py-1 text-center bg-bg" data-variant="ok">
           {successMessage}
         </p>
       )}
@@ -267,7 +267,7 @@ const App = () => {
       {currentView !== 'main' && <PageHeader />}
 
       {error && (
-        <p role="alert" className="pixel-panel border-danger text-danger p-3 m-0">{error}</p>
+        <p role="alert" className="pixel-alert m-0">{error}</p>
       )}
 
       {currentView === 'tokenInput' && (
