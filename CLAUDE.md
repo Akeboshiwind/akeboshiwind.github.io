@@ -13,6 +13,12 @@ npm run favicons      # Regenerate public/ favicons from the header mark (cairn,
 npm run shot -- /bill/ [--theme dark] [--width 390]  # Screenshot pages in both themes; prints the PNG paths
 ```
 
+## Landing a change
+
+- Base branch: `master`. Checks before pushing: `npm test`.
+- **A push to `master` deploys to bythe.rocks** (`.github/workflows/deploy.yml`); a PR gets a preview at `/pr-preview/pr-<n>/`.
+- Push with an explicit `HEAD:refs/heads/<dest>`: the global `push.default = upstream` sends a branch cut from `origin/master` to `master`, even when the push names the branch.
+
 ## Structure
 
 ```
