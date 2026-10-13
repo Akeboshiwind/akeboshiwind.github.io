@@ -86,6 +86,9 @@
   --pixel-hatch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' shape-rendering='crispEdges'%3E%3Cpath d='M0 6h2v2H0zM2 4h2v2H2zM4 2h2v2H4zM6 0h2v2H6z'/%3E%3C/svg%3E");
   --pixel-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6' shape-rendering='crispEdges'%3E%3Cpath d='M0 4h2v2H0zM2 2h2v2H2zM4 0h2v2H4zM6 2h2v2H6z'/%3E%3C/svg%3E");
   --pixel-dots: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h2v2H0z'/%3E%3C/svg%3E");
+  --pixel-dot-band: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h2v2H0zM4 0h2v2H4zM8 0h2v2H8z'/%3E%3C/svg%3E");
+  --pixel-dots-sparse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h2v2H0z'/%3E%3C/svg%3E");
+  --pixel-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='10' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h2v2H0zM2 2h2v2H2zM4 4h2v2H4zM2 6h2v2H2zM0 8h2v2H0z'/%3E%3C/svg%3E");
   --pixel-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='2' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h2v2H0z'/%3E%3C/svg%3E");
 }
 
@@ -432,6 +435,7 @@
   :is(.pixel-button, .pixel-chip, .pixel-row):is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]), .pixel-alert, .pixel-alert-text, .pixel-mark {
     --tone: var(--danger);
     --tone-fill: var(--pixel-hatch) 2px 0 / 8px 8px;
+    --tone-hover-fill: var(--tone-fill);
     --tone-line: var(--pixel-wave) 0 0 / 8px 6px repeat-x;
     --tone-line-height: 6px;
   }
@@ -439,6 +443,7 @@
   :is(.pixel-button, .pixel-chip, .pixel-row, .pixel-alert, .pixel-alert-text, .pixel-mark)[data-variant="warn"] {
     --tone: var(--warn);
     --tone-fill: var(--pixel-dots) 2px 0 / 4px 4px;
+    --tone-hover-fill: var(--pixel-dot-band) 2px 0 / 24px 4px repeat-y, var(--pixel-dots-sparse) 2px 0 / 8px 8px;
     --tone-line: var(--pixel-dash) 0 0 / 4px 2px repeat-x;
     --tone-line-height: 2px;
   }
@@ -446,6 +451,7 @@
   :is(.pixel-button, .pixel-chip, .pixel-row, .pixel-alert, .pixel-alert-text, .pixel-mark)[data-variant="ok"] {
     --tone: var(--ok);
     --tone-fill: linear-gradient(#000 0 0);
+    --tone-hover-fill: linear-gradient(#000 0 0) 0 0 / 0.75rem 100% no-repeat, var(--pixel-hatch) 2px 0 / 8px 8px;
     --tone-line: linear-gradient(#000 0 0) 0 0 / 100% 2px no-repeat;
     --tone-line-height: 2px;
   }
@@ -482,38 +488,72 @@
     color: var(--heading);
   }
 
-  :is(.pixel-button, .pixel-row):is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):hover::before {
+  .pixel-button:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):hover::before {
     width: auto;
     right: -2px;
+    mask:
+      linear-gradient(#000 0 0) left / 2px 100% no-repeat,
+      linear-gradient(#000 0 0) top / 100% 2px no-repeat,
+      linear-gradient(#000 0 0) bottom / 100% 2px no-repeat,
+      var(--tone-hover-fill);
   }
 
-  /* A 2px halo in the page colour keeps the label legible over the hatch or dots. */
-  :is(.pixel-button, .pixel-row):is([data-variant="danger"], [data-variant="warn"]):not(:disabled):hover {
+  /* A 2px halo in the page colour keeps the label legible over the hatch, dots or stripes. */
+  :is(.pixel-button, .pixel-row):is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):hover {
     text-shadow: 2px 0 var(--bg), -2px 0 var(--bg), 0 2px var(--bg), 0 -2px var(--bg), 2px 2px var(--bg), -2px -2px var(--bg), 2px -2px var(--bg), -2px 2px var(--bg);
   }
 
   /* A faded child would fade its halo with it, leaving it unreadable over the pattern.
      !important because a tool's opacity utility sits in a later layer than the kit. */
-  :is(.pixel-button, .pixel-row):is([data-variant="danger"], [data-variant="warn"]):not(:disabled):hover * {
+  :is(.pixel-button, .pixel-row):is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):hover * {
     opacity: 1 !important;
   }
 
-  :is(.pixel-button, .pixel-row)[data-variant="ok"]:not(:disabled):hover {
+  .pixel-button:not(:disabled):active, .pixel-button:not(:disabled):hover:active {
+    border-color: var(--accent);
+    background: var(--accent);
     color: var(--bg);
   }
 
-  /* A row in a divided panel: it keeps the panel's dividers, so a tone changes only its left edge. */
+  .pixel-button:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):active {
+    border-color: var(--tone);
+    border-left-color: transparent;
+    background: var(--tone);
+    color: var(--bg);
+    text-shadow: none;
+  }
+
+  /* A row in a divided panel: a tone draws its strip inside the padding, because the panel's divide-* colour reaches every border. */
   .pixel-row {
+    position: relative;
+    isolation: isolate;
     display: block;
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
     text-align: left;
     color: var(--text);
     cursor: pointer;
   }
 
+  .pixel-row::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    width: 6px;
+    height: 10px;
+    margin-top: -5px;
+    background: var(--border);
+    mask: var(--pixel-chevron);
+  }
+
   .pixel-row:not(:disabled):is(:hover, :focus-visible) {
     color: var(--accent);
+  }
+
+  .pixel-row:not(:disabled):is(:hover, :focus-visible)::after {
+    background: currentColor;
+    right: calc(1rem - 2px);
   }
 
   .pixel-row:focus-visible {
@@ -521,10 +561,13 @@
     outline-offset: -2px;
   }
 
+  .pixel-row:not(:disabled):active {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
   .pixel-row:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]) {
-    position: relative;
-    isolation: isolate;
-    border-left: 0.75rem solid transparent;
+    padding-left: 1.75rem;
     color: var(--tone);
   }
 
@@ -534,7 +577,7 @@
     z-index: -1;
     top: 0;
     bottom: 0;
-    left: -0.75rem;
+    left: 0;
     width: 0.75rem;
     background: var(--tone);
     mask: var(--tone-fill);
@@ -542,6 +585,18 @@
 
   .pixel-row:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):is(:hover, :focus-visible) {
     color: var(--heading);
+  }
+
+  .pixel-row:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):hover::before {
+    right: 0;
+    width: auto;
+    mask: var(--tone-hover-fill);
+  }
+
+  .pixel-row:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):active {
+    background: var(--tone);
+    color: var(--bg);
+    text-shadow: none;
   }
 
   .pixel-alert {

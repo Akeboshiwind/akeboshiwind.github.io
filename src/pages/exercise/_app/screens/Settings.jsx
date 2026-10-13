@@ -65,7 +65,7 @@ export function Settings({ state, setState, navigate }) {
       <Section title="Backup">
         <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={onPickFile} />
         <Action label="Export as JSON" description="Download your pool, template, and history." onClick={exportJson} />
-        <Action label="Import from JSON" description="Replace your data from a previous export." onClick={() => fileRef.current?.click()} />
+        <Action label="Import from JSON" description="Replace your data from a previous export." onClick={() => fileRef.current?.click()} variant="warn" />
         {importError && (
           <p className="text-sm px-4 py-3"><span className="pixel-alert-text">{importError}</span></p>
         )}
@@ -76,18 +76,19 @@ export function Settings({ state, setState, navigate }) {
           label="Reset week template"
           description="Restores the original 8-week plan. Your pool and history are kept."
           onClick={resetTemplate}
+          variant="warn"
         />
         <Action
           label="Clear history"
           description="Deletes every history entry."
           onClick={clearHistory}
-          danger
+          variant="danger"
         />
         <Action
           label="Erase all data"
           description="Pool, template, history, in-progress — back to seed."
           onClick={clearAll}
-          danger
+          variant="danger"
         />
       </Section>
 
@@ -109,12 +110,12 @@ function Section({ title, children }) {
   );
 }
 
-function Action({ label, description, onClick, danger }) {
+function Action({ label, description, onClick, variant }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      data-variant={danger ? 'danger' : undefined}
+      data-variant={variant}
       className="pixel-row"
     >
       <p className="label">{label}</p>

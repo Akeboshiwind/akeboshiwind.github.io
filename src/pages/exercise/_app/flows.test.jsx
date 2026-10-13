@@ -319,4 +319,10 @@ describe('Settings', () => {
     expect(stored().history).toEqual([]);
     expect(stored().pool.goblet).toBeUndefined();
   });
+
+  test('marks actions that replace data as warnings', () => {
+    open('#/settings');
+    expect(button(/^Reset week template/).dataset.variant).toBe('warn');
+    expect(button(/^Import from JSON/).dataset.variant).toBe('warn');
+  });
 });
