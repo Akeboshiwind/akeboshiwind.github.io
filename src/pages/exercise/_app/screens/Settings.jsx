@@ -81,13 +81,13 @@ export function Settings({ state, setState, navigate }) {
           label="Clear history"
           description="Deletes every history entry."
           onClick={clearHistory}
-          danger
+          variant="danger"
         />
         <Action
           label="Erase all data"
           description="Pool, template, history, in-progress — back to seed."
           onClick={clearAll}
-          danger
+          variant="danger"
         />
       </Section>
 
@@ -109,12 +109,12 @@ function Section({ title, children }) {
   );
 }
 
-function Action({ label, description, onClick, danger }) {
+function Action({ label, description, onClick, variant }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      data-variant={danger ? 'danger' : undefined}
+      data-variant={variant}
       className="pixel-row"
     >
       <p className="label">{label}</p>
