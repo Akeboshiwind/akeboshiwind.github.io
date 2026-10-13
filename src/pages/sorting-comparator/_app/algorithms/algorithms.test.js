@@ -11,7 +11,7 @@ const INPUTS = {
 const COUNTS = {
   fordJohnson:     { random: 21, sorted: 19, reversed: 20, duplicates: 16 },
   mergeAdaptive:   { random: 28, sorted: 9,  reversed: 19, duplicates: 18 },
-  powersort:       { random: 30, sorted: 9,  reversed: 9,  duplicates: 19 },
+  powersort:       { random: 28, sorted: 9,  reversed: 9,  duplicates: 19 },
   binaryInsertion: { random: 21, sorted: 19, reversed: 25, duplicates: 15 },
   merge:           { random: 26, sorted: 21, reversed: 15, duplicates: 17 },
   quick:           { random: 24, sorted: 21, reversed: 23, duplicates: 12 },
@@ -91,12 +91,8 @@ const lists = (n, values) => n === 0 ? [[]]
   : lists(n - 1, values).flatMap(l => Array.from({ length: values }, (_, v) => [...l, v + 1]));
 const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
-// Every ordering of up to 7 distinct items, and every list of up to 6 drawn from three values.
 const DISTINCT = range(2, 7).flatMap(permutations);
 const WITH_TIES = range(2, 6).flatMap(n => lists(n, 3));
-
-// A known bug, fixed by the commit that removes it from the list.
-const REPEATS_PAIRS = ['powersort'];
 
 // The sorting screen shows "Comparison k / ≤ getTotal(n)", so getTotal must bound every run.
 describe('getTotal bounds the comparisons asked', () => {
@@ -112,7 +108,7 @@ describe('getTotal bounds the comparisons asked', () => {
 
 describe('an algorithm claiming no repeats never asks the same pair of distinct values twice', () => {
   for (const key of Object.keys(COUNTS).filter(k => ALGORITHMS[k].noRepeatPairs)) {
-    (REPEATS_PAIRS.includes(key) ? test.fails : test)(`${key}, on every ordering`, () => {
+    test(`${key}, on every ordering`, () => {
       for (const items of DISTINCT) {
         const keys = drive(ALGORITHMS[key].fn, items).pairs.map(({ a, b }) => [a, b].sort((x, y) => x - y).join());
         expect(new Set(keys).size).toBe(keys.length);

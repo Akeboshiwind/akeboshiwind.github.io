@@ -3,13 +3,24 @@
 // On already-sorted input: finds one run, uses exactly n-1 comparisons.
 // Powersort is the modern successor to Timsort (used in Python 3.11+).
 
-function* mergeTwoRuns(arr, lo, mid, hi) {
+// Asks about two tagged items, or answers from an earlier question about the same pair.
+// Run detection compares the neighbours at each run boundary, and those two meet again in a merge.
+function* ask(known, x, y) {
+  const key = `${x.id},${y.id}`;
+  if (known.has(key)) return known.get(key);
+  const cmp = yield { a: x.v, b: y.v };
+  known.set(key, cmp);
+  known.set(`${y.id},${x.id}`, -cmp);
+  return cmp;
+}
+
+function* mergeTwoRuns(arr, known, lo, mid, hi) {
   const left = arr.slice(lo, mid);
   const right = arr.slice(mid, hi);
   let li = 0, ri = 0;
   const merged = [];
   while (li < left.length && ri < right.length) {
-    const cmp = yield { a: left[li], b: right[ri] };
+    const cmp = yield* ask(known, left[li], right[ri]);
     if (cmp > 0) merged.push(right[ri++]);
     else merged.push(left[li++]);
   }
@@ -19,9 +30,10 @@ function* mergeTwoRuns(arr, lo, mid, hi) {
 }
 
 function* powersort(items) {
-  const arr = [...items];
+  const arr = items.map((v, id) => ({ v, id }));
+  const known = new Map();
   const n = arr.length;
-  if (n <= 1) return arr;
+  if (n <= 1) return [...items];
 
   // Phase 1: detect natural runs (consumes comparisons to find boundaries)
   const runs = []; // each run: [lo, hi) exclusive
@@ -29,12 +41,12 @@ function* powersort(items) {
   while (i < n) {
     const lo = i;
     if (i + 1 >= n) { runs.push([lo, n]); break; }
-    const first = yield { a: arr[i], b: arr[i + 1] };
+    const first = yield* ask(known, arr[i], arr[i + 1]);
     if (first > 0) {
       // Descending run — extend
       i += 2;
       while (i < n) {
-        const c = yield { a: arr[i - 1], b: arr[i] };
+        const c = yield* ask(known, arr[i - 1], arr[i]);
         if (c <= 0) break;
         i++;
       }
@@ -45,7 +57,7 @@ function* powersort(items) {
       // Ascending run — extend
       i += 2;
       while (i < n) {
-        const c = yield { a: arr[i - 1], b: arr[i] };
+        const c = yield* ask(known, arr[i - 1], arr[i]);
         if (c > 0) break;
         i++;
       }
@@ -53,7 +65,7 @@ function* powersort(items) {
     runs.push([lo, i]);
   }
 
-  if (runs.length === 1) return arr; // already sorted
+  if (runs.length === 1) return arr.map(t => t.v); // already sorted
 
   // Phase 2: merge adjacent runs until one remains
   let current = runs;
@@ -64,13 +76,13 @@ function* powersort(items) {
       const [lo] = current[j];
       const [mid] = current[j + 1];
       const [, hi] = current[j + 1];
-      yield* mergeTwoRuns(arr, lo, mid, hi);
+      yield* mergeTwoRuns(arr, known, lo, mid, hi);
       next.push([lo, hi]);
     }
     current = next;
   }
 
-  return arr;
+  return arr.map(t => t.v);
 }
 
 // Worst-case: all single-element runs → full merge sort work
