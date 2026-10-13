@@ -19,7 +19,7 @@ function toJson(value) {
   }
 
   if (transit.isKeyword(value) || transit.isSymbol(value)) {
-    return value.name;
+    return String(value);
   }
 
   return value;

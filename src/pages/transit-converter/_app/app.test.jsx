@@ -29,6 +29,12 @@ describe('Transit Converter', () => {
     expect(JSON.parse(pre.textContent)).toEqual({ ':user': { ':name': 'Bob', ':ids': [1, 2, 3] }, ':n': null });
   });
 
+  test('keyword and symbol values keep their text, as keyword keys do', () => {
+    convert('["^ ","~:status","~:active","~:tags",["~:a","~:b"],"~:fn","~$inc"]');
+    const pre = screen.getByText((_, el) => el.tagName === 'PRE');
+    expect(JSON.parse(pre.textContent)).toEqual({ ':status': ':active', ':tags': [':a', ':b'], ':fn': 'inc' });
+  });
+
   test('invalid input shows the parse error and clears the output', () => {
     convert('["^ ","name","Alice","age",30]');
     convert('not transit {');
