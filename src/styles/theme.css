@@ -482,7 +482,6 @@
     color: var(--heading);
   }
 
-  /* Hovered, the fill spreads across the whole button rather than turning it a flat colour. */
   .pixel-button:is([data-variant="danger"], [data-variant="warn"], [data-variant="ok"]):not(:disabled):hover::before {
     width: auto;
     right: -2px;
@@ -491,6 +490,12 @@
   /* A 2px halo in the page colour keeps the label legible over the hatch or dots. */
   .pixel-button:is([data-variant="danger"], [data-variant="warn"]):not(:disabled):hover {
     text-shadow: 2px 0 var(--bg), -2px 0 var(--bg), 0 2px var(--bg), 0 -2px var(--bg), 2px 2px var(--bg), -2px -2px var(--bg), 2px -2px var(--bg), -2px 2px var(--bg);
+  }
+
+  /* A faded child would fade its halo with it, leaving it unreadable over the pattern.
+     !important because a tool's opacity utility sits in a later layer than the kit. */
+  .pixel-button:is([data-variant="danger"], [data-variant="warn"]):not(:disabled):hover * {
+    opacity: 1 !important;
   }
 
   .pixel-button[data-variant="ok"]:not(:disabled):hover {
