@@ -540,7 +540,7 @@ function ColorInput({ onPick }) {
     input.addEventListener('change', onChange);
     return () => input.removeEventListener('change', onChange);
   }, [onPick]);
-  return <input ref={ref} type="color" className="w-6 h-6 cursor-pointer border-0 p-0" />;
+  return <input ref={ref} type="color" className="w-6 h-6 pointer-coarse:w-9 pointer-coarse:h-9 cursor-pointer border-0 p-0" />;
 }
 
 function ContextMenu({ menu, events }) {
@@ -552,7 +552,7 @@ function ContextMenu({ menu, events }) {
         {PRESET_COLORS.map((color) => (
           <button
             key={rgbToCss(color)}
-            className="w-6 h-6 border-2 border-transparent hover:border-heading cursor-pointer"
+            className="w-6 h-6 pointer-coarse:w-9 pointer-coarse:h-9 border-2 border-transparent hover:border-heading cursor-pointer"
             style={{ backgroundColor: rgbToCss(color) }}
             onClick={() => setColors(menu, color)}
           />
@@ -600,7 +600,7 @@ const Toolbar = ({ current }) => (
     {TOOLS.map(([tool, title, icon]) => (
       <button
         key={tool}
-        className={`w-8 h-8 flex items-center justify-center cursor-pointer ${
+        className={`w-8 h-8 pointer-coarse:w-11 pointer-coarse:h-11 flex items-center justify-center cursor-pointer ${
           current === tool ? 'bg-accent text-bg' : 'text-text hover:text-accent'
         }`}
         title={title}
