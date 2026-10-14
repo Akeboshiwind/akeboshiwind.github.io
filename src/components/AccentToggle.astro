@@ -45,23 +45,7 @@ const faceCss = [
 <style is:inline set:html={faceCss}></style>
 
 <script>
-  import { ACCENTS, nextAccent, nextFace } from '../lib/accents.js';
+  import { wireAccentToggle } from '../lib/accent-toggle.js';
 
-  const root = document.documentElement;
-  const btn = document.querySelector<HTMLButtonElement>('.accent-toggle')!;
-  const sync = () => {
-    const name = ACCENTS.find((a) => a.id === root.dataset.accent)?.name ?? ACCENTS[0].name;
-    const label = `Accent: ${name}. Re-roll`;
-    btn.setAttribute('aria-label', label);
-    btn.setAttribute('title', label);
-  };
-  btn.addEventListener('click', () => {
-    (window as any).__setAccent?.({
-      id: nextAccent(root.dataset.accent ?? ''),
-      face: nextFace(Number(root.dataset.accentFace)),
-    });
-    sync();
-  });
-  window.addEventListener('storage', (e) => { if (e.key === 'accent') sync(); });
-  sync();
+  wireAccentToggle(document.querySelector<HTMLButtonElement>('.accent-toggle')!);
 </script>
