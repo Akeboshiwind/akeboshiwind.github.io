@@ -1,5 +1,5 @@
 ---
-import { DEFAULT_ACCENT, DEFAULT_FACE, DICE_FACES } from '../lib/accents.js';
+import { ACCENTS, DEFAULT_ACCENT, DEFAULT_FACE, DICE_FACES } from '../lib/accents.js';
 
 const { class: className = '' } = Astro.props;
 
@@ -7,25 +7,25 @@ const RAINBOW = ['#8e3fd6', '#2f6fe0', '#2e9e48', '#f2c418', '#f28a12', '#e0302b
 const ARCH_CENTRE = [12, 20];
 
 const OUTLINE: Array<[number, number, number, number]> = [[4, 2, 16, 2], [4, 20, 16, 2], [2, 4, 2, 16], [20, 4, 2, 16]];
-const ARROW_ROWS: Array<[number, number, number]> = [
-  [4, 10, 12], [5, 9, 12], [6, 8, 11], [7, 7, 10], [8, 6, 9], [9, 5, 8],
-  [10, 4, 20], [11, 3, 20], [12, 3, 20], [13, 4, 20],
-  [14, 5, 8], [15, 6, 9], [16, 7, 10], [17, 8, 11], [18, 9, 12], [19, 10, 12],
-];
-const ARROW = ARROW_ROWS.map(([y, x0, x1]) => [x0, y, x1 - x0 + 1, 1] as [number, number, number, number]);
-const pixelsOf = (rects: Array<[number, number, number, number]>) => rects.flatMap(([x0, y0, w, h]) =>
+const outlinePixels = OUTLINE.flatMap(([x0, y0, w, h]) =>
   Array.from({ length: w * h }, (_, i) => [x0 + (i % w), y0 + Math.floor(i / w)] as [number, number]),
 );
-const outlinePixels = pixelsOf(OUTLINE);
-const arrowPixels = pixelsOf(ARROW);
+
+const grid = Array.from({ length: 24 * 24 }, (_, i) => [i % 24, Math.floor(i / 24)] as [number, number]);
+const onLoop = (x: number, y: number) => {
+  const [dx, dy] = [x + 0.5 - 12, y + 0.5 - 12];
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  return Math.hypot(dx, dy) >= 6 && Math.hypot(dx, dy) <= 8.6 && !(angle > 95 && angle < 165);
+};
+const LOOP_HEAD: Array<[number, number, number]> = [[12, 1, 8], [13, 2, 7], [14, 3, 6], [15, 4, 5]];
+const onHead = (x: number, y: number) => LOOP_HEAD.some(([row, x0, x1]) => y === row && x >= x0 && x <= x1);
+const loopPixels = grid.filter(([x, y]) => onLoop(x, y) || onHead(x, y));
 
 const distance = (x: number, y: number) => Math.hypot(x - ARCH_CENTRE[0], y - ARCH_CENTRE[1]);
 const reach = outlinePixels.map(([x, y]) => distance(x + 0.5, y + 0.5));
 const [near, far] = [Math.min(...reach), Math.max(...reach)];
 const bandAt = (x: number, y: number) =>
   RAINBOW[Math.max(0, Math.min(RAINBOW.length - 1, Math.floor(((distance(x, y) - near) / (far - near)) * RAINBOW.length)))];
-
-const arrowBandAt = (x: number) => RAINBOW[Math.min(RAINBOW.length - 1, Math.floor(((x - 3) / 18) * RAINBOW.length))];
 
 const shown = (face: number) => `[data-accent-face="${face}"] .accent-toggle [data-pips="${face}"]`;
 const faceCss = [
@@ -37,7 +37,12 @@ const faceCss = [
 ].join('');
 
 const offersReset = `:root[data-accent]:not([data-accent="${DEFAULT_ACCENT}"]) .accent-toggle:not([data-rerolling])`;
-const modeCss = `.accent-toggle [data-arrow]{display:none}${offersReset} [data-arrow]{display:inline}${offersReset} [data-die]{display:none}`;
+const [{ light, dark }] = ACCENTS;
+const modeCss = [
+  `.accent-toggle [data-reset]{display:none;fill:${light.accent}}`,
+  `[data-theme="dark"] .accent-toggle [data-reset]{fill:${dark.accent}}`,
+  `${offersReset} [data-reset]{display:inline}${offersReset} [data-die]{display:none}`,
+].join('');
 ---
 <button
   type="button"
@@ -54,8 +59,8 @@ const modeCss = `.accent-toggle [data-arrow]{display:none}${offersReset} [data-a
         </g>
       ))}
     </g>
-    <g data-arrow>
-      {arrowPixels.map(([x, y]) => <rect x={x} y={y} width="1" height="1" fill={arrowBandAt(x)} />)}
+    <g data-reset>
+      {loopPixels.map(([x, y]) => <rect x={x} y={y} width="1" height="1" />)}
     </g>
   </svg>
 </button>
