@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ACCENTS, DEFAULT_ACCENT } from './accents.js';
-import { wireAccentToggle } from './accent-toggle.js';
+import { ACCENTS, DEFAULT_ACCENT, DEFAULT_FACE } from './accents.js';
+import { REROLL_GRACE_MS, wireAccentToggle } from './accent-toggle.js';
 
 const root = document.documentElement;
 const accentName = (id) => ACCENTS.find((a) => a.id === id).name;
@@ -22,9 +22,48 @@ describe('wireAccentToggle', () => {
   });
 
   it('labels the button with the current accent', () => {
-    root.dataset.accent = 'h150';
+    root.dataset.accent = DEFAULT_ACCENT;
     wireAccentToggle(btn);
-    expect(btn.getAttribute('aria-label')).toBe('Accent: Green. Re-roll');
+    expect(btn.getAttribute('aria-label')).toBe('Accent: Orange. Re-roll');
+  });
+
+  it('offers a reset on a fresh page with a non-default accent, and a press restores the defaults', () => {
+    root.dataset.accent = 'h150';
+    root.dataset.accentFace = '2';
+    wireAccentToggle(btn);
+    expect(btn.hasAttribute('data-rerolling')).toBe(false);
+    expect(btn.getAttribute('aria-label')).toBe('Accent: Green. Reset to Orange');
+    btn.click();
+    expect(window.__setAccent).toHaveBeenCalledWith({ id: DEFAULT_ACCENT, face: DEFAULT_FACE });
+    expect(btn.getAttribute('aria-label')).toBe('Accent: Orange. Re-roll');
+  });
+
+  describe('after a re-roll', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const rerollOnce = () => {
+      root.dataset.accent = DEFAULT_ACCENT;
+      wireAccentToggle(btn);
+      btn.click();
+    };
+
+    it('keeps re-rolling while presses come within the grace period', () => {
+      rerollOnce();
+      for (let i = 0; i < 5; i++) {
+        vi.advanceTimersByTime(REROLL_GRACE_MS - 1);
+        btn.click();
+      }
+      for (const [{ id }] of window.__setAccent.mock.calls) expect(id).not.toBe(DEFAULT_ACCENT);
+      expect(btn.hasAttribute('data-rerolling')).toBe(true);
+    });
+
+    it('offers the reset once the grace period passes without a press', () => {
+      rerollOnce();
+      vi.advanceTimersByTime(REROLL_GRACE_MS);
+      expect(btn.hasAttribute('data-rerolling')).toBe(false);
+      expect(btn.getAttribute('aria-label')).toMatch(/Reset to Orange$/);
+    });
   });
 
   it('re-rolls to a different accent and face on a press, and relabels', () => {
