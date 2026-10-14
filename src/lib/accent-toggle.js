@@ -8,7 +8,7 @@ const nameOf = (id) => ACCENTS.find((a) => a.id === id)?.name ?? ACCENTS[0].name
 /**
  * Wires the accent button. It re-rolls the accent and dice face; with a non-default accent and no re-roll on this
  * page in the last `REROLL_GRACE_MS`, it resets both to their defaults instead. `data-rerolling` marks the grace
- * period, and the button's CSS draws the die or the back arrow from it and the root's `data-accent`.
+ * period, and the button's CSS draws the die or the reset loop from it and the root's `data-accent`.
  */
 export function wireAccentToggle(btn, root = document.documentElement) {
   let grace;
