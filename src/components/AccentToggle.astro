@@ -1,5 +1,5 @@
 ---
-import { DEFAULT_FACE, DICE_FACES } from '../lib/accents.js';
+import { ACCENTS, DEFAULT_ACCENT, DEFAULT_FACE, DICE_FACES } from '../lib/accents.js';
 
 const { class: className = '' } = Astro.props;
 
@@ -10,6 +10,16 @@ const OUTLINE: Array<[number, number, number, number]> = [[4, 2, 16, 2], [4, 20,
 const outlinePixels = OUTLINE.flatMap(([x0, y0, w, h]) =>
   Array.from({ length: w * h }, (_, i) => [x0 + (i % w), y0 + Math.floor(i / w)] as [number, number]),
 );
+
+const grid = Array.from({ length: 24 * 24 }, (_, i) => [i % 24, Math.floor(i / 24)] as [number, number]);
+const onLoop = (x: number, y: number) => {
+  const [dx, dy] = [x + 0.5 - 12, y + 0.5 - 12];
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  return Math.hypot(dx, dy) >= 6 && Math.hypot(dx, dy) <= 8.6 && !(angle > 95 && angle < 165);
+};
+const LOOP_HEAD: Array<[number, number, number]> = [[12, 1, 8], [13, 2, 7], [14, 3, 6], [15, 4, 5]];
+const onHead = (x: number, y: number) => LOOP_HEAD.some(([row, x0, x1]) => y === row && x >= x0 && x <= x1);
+const loopPixels = grid.filter(([x, y]) => onLoop(x, y) || onHead(x, y));
 
 const distance = (x: number, y: number) => Math.hypot(x - ARCH_CENTRE[0], y - ARCH_CENTRE[1]);
 const reach = outlinePixels.map(([x, y]) => distance(x + 0.5, y + 0.5));
@@ -25,6 +35,14 @@ const faceCss = [
     ...DICE_FACES.map((_, i) => shown(i + 1)),
   ].join(',')}{display:inline}`,
 ].join('');
+
+const offersReset = `:root[data-accent]:not([data-accent="${DEFAULT_ACCENT}"]) .accent-toggle:not([data-rerolling])`;
+const [{ light, dark }] = ACCENTS;
+const modeCss = [
+  `.accent-toggle [data-reset]{display:none;fill:${light.accent}}`,
+  `[data-theme="dark"] .accent-toggle [data-reset]{fill:${dark.accent}}`,
+  `${offersReset} [data-reset]{display:inline}${offersReset} [data-die]{display:none}`,
+].join('');
 ---
 <button
   type="button"
@@ -33,35 +51,24 @@ const faceCss = [
   title="Re-roll accent colour"
 >
   <svg viewBox="0 0 24 24" width="24" height="24" shape-rendering="crispEdges" aria-hidden="true">
-    {outlinePixels.map(([x, y]) => <rect x={x} y={y} width="1" height="1" fill={bandAt(x + 0.5, y + 0.5)} />)}
-    {DICE_FACES.map((pips, i) => (
-      <g data-pips={i + 1}>
-        {pips.map(([x, y]) => <rect x={x} y={y} width="4" height="4" fill={bandAt(x + 2, y + 2)} />)}
-      </g>
-    ))}
+    <g data-die>
+      {outlinePixels.map(([x, y]) => <rect x={x} y={y} width="1" height="1" fill={bandAt(x + 0.5, y + 0.5)} />)}
+      {DICE_FACES.map((pips, i) => (
+        <g data-pips={i + 1}>
+          {pips.map(([x, y]) => <rect x={x} y={y} width="4" height="4" fill={bandAt(x + 2, y + 2)} />)}
+        </g>
+      ))}
+    </g>
+    <g data-reset>
+      {loopPixels.map(([x, y]) => <rect x={x} y={y} width="1" height="1" />)}
+    </g>
   </svg>
 </button>
 
-<style is:inline set:html={faceCss}></style>
+<style is:inline set:html={faceCss + modeCss}></style>
 
 <script>
-  import { ACCENTS, nextAccent, nextFace } from '../lib/accents.js';
+  import { wireAccentToggle } from '../lib/accent-toggle.js';
 
-  const root = document.documentElement;
-  const btn = document.querySelector<HTMLButtonElement>('.accent-toggle')!;
-  const sync = () => {
-    const name = ACCENTS.find((a) => a.id === root.dataset.accent)?.name ?? ACCENTS[0].name;
-    const label = `Accent: ${name}. Re-roll`;
-    btn.setAttribute('aria-label', label);
-    btn.setAttribute('title', label);
-  };
-  btn.addEventListener('click', () => {
-    (window as any).__setAccent?.({
-      id: nextAccent(root.dataset.accent ?? ''),
-      face: nextFace(Number(root.dataset.accentFace)),
-    });
-    sync();
-  });
-  window.addEventListener('storage', (e) => { if (e.key === 'accent') sync(); });
-  sync();
+  wireAccentToggle(document.querySelector<HTMLButtonElement>('.accent-toggle')!);
 </script>
