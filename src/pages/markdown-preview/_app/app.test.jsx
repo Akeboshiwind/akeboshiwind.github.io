@@ -84,6 +84,12 @@ describe('Markdown Preview', () => {
     fireEvent.click(screen.getByRole('button', { name: '← Back' }));
     expect(screen.getByPlaceholderText('Write GitHub Flavoured Markdown here...').value).toBe('# Keep me');
   });
+
+  test('← Back sits in the bar along the bottom of the preview', () => {
+    render(<App />);
+    preview();
+    expect(screen.getByRole('button', { name: '← Back' }).closest('.pixel-bar')).toBeTruthy();
+  });
 });
 
 describe('storage contract', () => {
