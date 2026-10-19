@@ -9,16 +9,17 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import { parseArgs } from 'util';
 
 const THEMES = ['light', 'dark'];
-const USAGE = 'Usage: npm run shot -- <path>... [--theme light,dark] [--width 390,1280] [--out <dir>] [--steps <file>] [--touch]';
+const USAGE = 'Usage: npm run shot -- <path>... [--theme light,dark] [--width 390,1280] [--out <dir>] [--steps <file>] [--touch] [--viewport]';
 
 /**
  * Turns CLI paths and options into the screenshots to take.
  * `theme` and `width` are comma-separated lists, as typed on the command line.
  * `tmp` is the parent of the `shots/` directory used when `out` is absent.
- * Returns `{ dir, shots }`, each shot being `{ path, theme, width, file }`.
+ * `viewport` shoots only the window, where a shot is otherwise the whole page.
+ * Returns `{ dir, shots }`, each shot being `{ path, theme, width, file, fullPage }`.
  * Throws on a missing path, an unknown theme or a width that is not a positive integer.
  */
-export function planShots(paths, { tmp, out, theme = 'light,dark', width = '390,1280' }) {
+export function planShots(paths, { tmp, out, theme = 'light,dark', width = '390,1280', viewport = false }) {
   if (paths.length === 0) throw new Error(`Give at least one path to shoot.\n${USAGE}`);
 
   const themes = theme.split(',');
@@ -34,7 +35,7 @@ export function planShots(paths, { tmp, out, theme = 'light,dark', width = '390,
   const shots = paths.flatMap((path) => {
     const name = path.replace(/^\/+|\/+$/g, '').replaceAll('/', '-') || 'home';
     return themes.flatMap((t) => widths.map((w) => ({
-      path, theme: t, width: w, file: join(dir, `${name}-${t}-${w}.png`),
+      path, theme: t, width: w, file: join(dir, `${name}-${t}-${w}.png`), fullPage: !viewport,
     })));
   });
   return { dir, shots };
@@ -79,7 +80,7 @@ async function launchChromium(chromium) {
 async function main() {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
-    options: { theme: { type: 'string' }, width: { type: 'string' }, out: { type: 'string' }, steps: { type: 'string' }, touch: { type: 'boolean', default: false } },
+    options: { theme: { type: 'string' }, width: { type: 'string' }, out: { type: 'string' }, steps: { type: 'string' }, touch: { type: 'boolean', default: false }, viewport: { type: 'boolean', default: false } },
   });
   const { steps: stepsFile, touch, ...plan } = values;
   const tmp = process.env.CLAUDE_JOB_DIR ? join(process.env.CLAUDE_JOB_DIR, 'tmp') : tmpdir();
@@ -98,7 +99,7 @@ async function main() {
   const browser = await launchChromium(chromium).catch(async (e) => { await server.stop(); throw e; });
   try {
     const base = `http://localhost:${server.address.port}`;
-    for (const { path, theme, width, file } of shots) {
+    for (const { path, theme, width, file, fullPage } of shots) {
       const context = await browser.newContext(contextOptions({ theme, width, touch }));
       const page = await context.newPage();
       const response = await page.goto(base + path, { waitUntil: 'networkidle' });
@@ -108,7 +109,7 @@ async function main() {
       } catch (e) {
         throw new Error(`${stepsFile} failed on ${path} (${theme}, ${width}px)`, { cause: e });
       }
-      await page.screenshot({ path: file, fullPage: true });
+      await page.screenshot({ path: file, fullPage });
       await context.close();
       console.log(file);
     }

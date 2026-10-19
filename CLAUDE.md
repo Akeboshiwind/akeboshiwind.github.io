@@ -10,7 +10,7 @@ npm run build         # Build for production
 npm run preview       # Preview production build
 npm test              # Run all tests
 npm run favicons      # Regenerate public/ favicons from the header mark (cairn, seed 2)
-npm run shot -- /bill/ [--theme dark] [--width 390] [--steps steps.mjs] [--touch]  # Screenshot pages in both themes; prints the PNG paths
+npm run shot -- /bill/ [--theme dark] [--width 390] [--steps steps.mjs] [--touch] [--viewport]  # Screenshot pages in both themes; prints the PNG paths
 ```
 
 In a new worktree, run `npm ci` first (about 4s). Never symlink the main checkout's `node_modules`.
@@ -92,7 +92,7 @@ export default async (page, { path, theme, width, touch }) => {
 };
 ```
 
-`scripts/shot-steps/` has examples; a steps file can import another to share its setup. `--touch` emulates a phone, for steps that `tap()`.
+`scripts/shot-steps/` has examples; a steps file can import another to share its setup. `--touch` emulates a phone, for steps that `tap()`. A shot is the whole page, so a step's scroll only shows with `--viewport`, which shoots just the window.
 
 Key conventions the scaffold already sets up:
 - `PixelAppLayout` provides the HTML shell, the pixel theme, the app bar (← Home, History, accent and theme toggles) and the `<div id="app">` mount point

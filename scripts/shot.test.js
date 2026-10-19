@@ -27,6 +27,11 @@ describe('planShots', () => {
     expect(shots[0].file).toBe('/o/kit-light-1280.png');
   });
 
+  test('shoots the whole page by default, and only the window with --viewport', () => {
+    expect(planShots(['/'], { tmp: '/t' }).shots.every((s) => s.fullPage)).toBe(true);
+    expect(planShots(['/'], { tmp: '/t', viewport: true }).shots.some((s) => s.fullPage)).toBe(false);
+  });
+
   test('rejects a theme the site does not have', () => {
     expect(() => planShots(['/'], { tmp: '/t', theme: 'sepia' })).toThrow(/sepia/);
   });
