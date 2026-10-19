@@ -88,6 +88,27 @@ describe('Markdown Table Tools', () => {
     expect(output()).toBe('| a   |     |\n| --- | --- |');
   });
 
+  test("a row's delete button removes that row", () => {
+    render(<App />);
+    pasteTable('|a|\n|-|\n|1|\n|2|');
+    fireEvent.click(screen.getByRole('button', { name: 'Delete row 2' }));
+    expect(output()).toBe('| a   |\n| --- |\n| 2   |');
+  });
+
+  test("a column's delete button removes that column", () => {
+    render(<App />);
+    pasteTable('|a|b|\n|-|-|');
+    fireEvent.click(screen.getByRole('button', { name: 'Delete column 1' }));
+    expect(output()).toBe('| b   |\n| --- |');
+  });
+
+  test('the last row and column cannot be deleted', () => {
+    render(<App />);
+    pasteTable('|a|\n|-|');
+    expect(screen.getByRole('button', { name: 'Delete row 1' }).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Delete column 1' }).disabled).toBe(true);
+  });
+
   test('a newline in a cell becomes a space, since a Markdown cell is one line', () => {
     render(<App />);
     pasteTable('|a|\n|-|');

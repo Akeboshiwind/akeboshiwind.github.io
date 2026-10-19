@@ -6,6 +6,7 @@ import switchIcon from 'pixelarticons/svg/switch.svg?raw';
 import undoIcon from 'pixelarticons/svg/undo.svg?raw';
 import copyIcon from 'pixelarticons/svg/copy.svg?raw';
 import plusIcon from 'pixelarticons/svg/plus.svg?raw';
+import closeIcon from 'pixelarticons/svg/close.svg?raw';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
 import { SectionLabel } from '../../../components/pixel/SectionLabel.jsx';
 import { Sheet } from '../../../components/pixel/Sheet.jsx';
@@ -95,6 +96,8 @@ const Editor = ({ table, update, undo, canUndo, onNew }) => {
   const [open, setOpen] = useState(null);
   const [drag, setDrag] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [hover, setHover] = useState(null);
+  const [focus, setFocus] = useState(null);
   const grid = useRef(null);
   const justDragged = useRef(false);
 
@@ -193,31 +196,52 @@ const Editor = ({ table, update, undo, canUndo, onNew }) => {
     grid.current.querySelector(`[data-cell="${e.shiftKey ? r - 1 : r + 1},${c}"]`)?.focus();
   };
 
+  const showsDelete = (axis, index) => [hover, focus].some(at => at?.[axis] === index);
+  const deleteButton = (axis, index, next, disabled) => (
+    <button
+      type="button"
+      // Taking focus would blur the cell that revealed this button, and on touch the re-render swallows the tap's click.
+      onPointerDown={e => e.preventDefault()}
+      onClick={() => update(next)}
+      disabled={disabled}
+      aria-label={`Delete ${axis} ${index + 1}`}
+      title={`Delete ${axis}`}
+      data-variant="danger"
+      className={`pixel-icon-button ${showsDelete(axis, index) ? 'opacity-60 hover:opacity-100 disabled:opacity-30' : 'opacity-0 focus-visible:opacity-100'}`}
+    >
+      <Icon svg={closeIcon} className="w-4 h-4" />
+    </button>
+  );
+
   const handle = 'pixel-icon-button touch-none select-none cursor-grab active:cursor-grabbing';
   const alignClass = { left: 'text-left', center: 'text-center', right: 'text-right' };
 
   return (
     <>
       <div className="pixel-bleed mt-6 pb-2">
-        <table ref={grid} className="pixel-table w-auto mx-auto min-w-[min(100%,calc(720px-2rem))]">
+        <table ref={grid} onPointerLeave={() => setHover(null)} className="pixel-table w-auto mx-auto min-w-[min(100%,calc(720px-2rem))]">
           <tbody>
             <tr className="bg-none">
               <td aria-hidden="true" className="p-0" />
               {table.align.map((align, c) => (
-                <td key={c} data-column-handle className="p-0 text-center" style={cellStyle(-1, c)}>
-                  <button
-                    type="button"
-                    aria-label={`Column ${c + 1}`}
-                    title="Drag to move, click for options"
-                    onPointerDown={startDrag('column', c)}
-                    onClick={openHandle('column', c)}
-                    className={`${handle} w-full`}
-                  >
-                    <Icon svg={gripHorizontal} className="w-4 h-4" />
-                    {align && <span className="label ml-1 opacity-60">{{ left: ':--', center: ':-:', right: '--:' }[align]}</span>}
-                  </button>
+                <td key={c} data-column-handle onPointerEnter={() => setHover({ column: c })} className="p-0" style={cellStyle(-1, c)}>
+                  <div className="flex items-center">
+                    <button
+                      type="button"
+                      aria-label={`Column ${c + 1}`}
+                      title="Drag to move, click for options"
+                      onPointerDown={startDrag('column', c)}
+                      onClick={openHandle('column', c)}
+                      className={`${handle} flex-1`}
+                    >
+                      <Icon svg={gripHorizontal} className="w-4 h-4" />
+                      {align && <span className="label ml-1 opacity-60">{{ left: ':--', center: ':-:', right: '--:' }[align]}</span>}
+                    </button>
+                    {deleteButton('column', c, T.deleteColumn(table, c), columnCount === 1)}
+                  </div>
                 </td>
               ))}
+              <td aria-hidden="true" className="p-0" />
               <td rowSpan={rowCount + 1} className="relative w-8 p-0">
                 <button
                   type="button"
@@ -232,7 +256,7 @@ const Editor = ({ table, update, undo, canUndo, onNew }) => {
             </tr>
             {table.cells.map((row, r) => (
               <tr key={r}>
-                <td data-row-handle className="p-0 align-middle" style={cellStyle(r, -1)}>
+                <td data-row-handle onPointerEnter={() => setHover({ row: r })} className="p-0 align-middle" style={cellStyle(r, -1)}>
                   <button
                     type="button"
                     aria-label={`Row ${r + 1}`}
@@ -245,7 +269,7 @@ const Editor = ({ table, update, undo, canUndo, onNew }) => {
                   </button>
                 </td>
                 {row.map((value, c) => (
-                  <td key={c} className={`px-1 py-0.5 align-top ${dragging(r, c) ? 'opacity-40' : ''}`} style={cellStyle(r, c)}>
+                  <td key={c} onPointerEnter={() => setHover({ row: r, column: c })} className={`px-1 py-0.5 align-top ${dragging(r, c) ? 'opacity-40' : ''}`} style={cellStyle(r, c)}>
                     <div className={`pixel-grow min-w-32 max-w-80 ${r === 0 ? 'font-bold text-heading' : ''}`} data-value={value}>
                       <textarea
                         rows={1}
@@ -255,11 +279,16 @@ const Editor = ({ table, update, undo, canUndo, onNew }) => {
                         value={value}
                         onChange={e => update(T.setCell(table, r, c, e.target.value.replace(/\r?\n/g, ' ')), { typing: [r, c] })}
                         onKeyDown={moveOnEnter(r, c)}
+                        onFocus={() => setFocus({ row: r, column: c })}
+                        onBlur={() => setFocus(null)}
                         className={alignClass[table.align[c]]}
                       />
                     </div>
                   </td>
                 ))}
+                <td onPointerEnter={() => setHover({ row: r })} className="p-0 align-middle">
+                  {deleteButton('row', r, T.deleteRow(table, r), rowCount === 1)}
+                </td>
               </tr>
             ))}
             <tr className="bg-none">
