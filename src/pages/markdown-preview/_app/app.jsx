@@ -86,12 +86,14 @@ export function App() {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col pb-24">
       <Heading />
-      <button className="pixel-button self-start mb-6" onClick={() => setView('editor')}>
-        ← Back
-      </button>
       <div ref={previewRef} className={NOTE_PROSE} />
+      <div className="pixel-bar flex items-center gap-2">
+        <button className="pixel-button" onClick={() => setView('editor')}>
+          ← Back
+        </button>
+      </div>
     </div>
   );
 }
