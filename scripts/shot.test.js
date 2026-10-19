@@ -2,7 +2,7 @@
 import { describe, expect, test } from 'vitest';
 import { readdirSync } from 'fs';
 import { join } from 'path';
-import { loadSteps, planShots } from './shot.js';
+import { contextOptions, loadSteps, planShots } from './shot.js';
 
 const EXAMPLES = 'scripts/shot-steps';
 
@@ -37,6 +37,12 @@ describe('planShots', () => {
 
   test('needs at least one path', () => {
     expect(() => planShots([], { tmp: '/t' })).toThrow(/path/);
+  });
+});
+
+describe('contextOptions', () => {
+  test('a shot is taken in a window of its width, in its theme', () => {
+    expect(contextOptions({ theme: 'dark', width: 390 })).toEqual({ viewport: { width: 390, height: 900 }, colorScheme: 'dark' });
   });
 });
 

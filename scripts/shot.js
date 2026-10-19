@@ -40,6 +40,11 @@ export function planShots(paths, { tmp, out, theme = 'light,dark', width = '390,
   return { dir, shots };
 }
 
+/** The Playwright browser context a shot is taken in. */
+export function contextOptions({ theme, width }) {
+  return { viewport: { width, height: 900 }, colorScheme: theme };
+}
+
 /**
  * The steps that put a page into the state to shoot: the default export of `file`,
  * called as `steps(page, { path, theme, width })` after each load and before its screenshot.
@@ -94,7 +99,7 @@ async function main() {
   try {
     const base = `http://localhost:${server.address.port}`;
     for (const { path, theme, width, file } of shots) {
-      const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme });
+      const context = await browser.newContext(contextOptions({ theme, width }));
       const page = await context.newPage();
       const response = await page.goto(base + path, { waitUntil: 'networkidle' });
       if (!response.ok()) throw new Error(`${path} returned ${response.status()}`);
