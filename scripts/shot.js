@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import { parseArgs } from 'util';
 
 const THEMES = ['light', 'dark'];
-const USAGE = 'Usage: npm run shot -- <path>... [--theme light,dark] [--width 390,1280] [--out <dir>] [--steps <file>]';
+const USAGE = 'Usage: npm run shot -- <path>... [--theme light,dark] [--width 390,1280] [--out <dir>] [--steps <file>] [--touch]';
 
 /**
  * Turns CLI paths and options into the screenshots to take.
@@ -40,20 +40,20 @@ export function planShots(paths, { tmp, out, theme = 'light,dark', width = '390,
   return { dir, shots };
 }
 
-/** The Playwright browser context a shot is taken in. */
-export function contextOptions({ theme, width }) {
-  return { viewport: { width, height: 900 }, colorScheme: theme };
+/** The Playwright browser context a shot is taken in; `touch` emulates a phone, which `tap()` needs. */
+export function contextOptions({ theme, width, touch = false }) {
+  return { viewport: { width, height: 900 }, colorScheme: theme, ...(touch && { hasTouch: true, isMobile: true }) };
 }
 
 /**
  * The steps that put a page into the state to shoot: the default export of `file`,
- * called as `steps(page, { path, theme, width })` after each load and before its screenshot.
+ * called as `steps(page, { path, theme, width, touch })` after each load and before its screenshot.
  * Without a file, the steps do nothing.
  */
 export async function loadSteps(file) {
   if (file === undefined) return async () => {};
   const { default: steps } = await import(pathToFileURL(resolve(file)).href);
-  if (typeof steps !== 'function') throw new Error(`${file} needs a default export: async (page, { path, theme, width }) => { … }`);
+  if (typeof steps !== 'function') throw new Error(`${file} needs a default export: async (page, { path, theme, width, touch }) => { … }`);
   return steps;
 }
 
@@ -79,9 +79,9 @@ async function launchChromium(chromium) {
 async function main() {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
-    options: { theme: { type: 'string' }, width: { type: 'string' }, out: { type: 'string' }, steps: { type: 'string' } },
+    options: { theme: { type: 'string' }, width: { type: 'string' }, out: { type: 'string' }, steps: { type: 'string' }, touch: { type: 'boolean', default: false } },
   });
-  const { steps: stepsFile, ...plan } = values;
+  const { steps: stepsFile, touch, ...plan } = values;
   const tmp = process.env.CLAUDE_JOB_DIR ? join(process.env.CLAUDE_JOB_DIR, 'tmp') : tmpdir();
   const { dir, shots } = planShots(positionals, { tmp, ...plan });
   const steps = await loadSteps(stepsFile);
@@ -99,12 +99,12 @@ async function main() {
   try {
     const base = `http://localhost:${server.address.port}`;
     for (const { path, theme, width, file } of shots) {
-      const context = await browser.newContext(contextOptions({ theme, width }));
+      const context = await browser.newContext(contextOptions({ theme, width, touch }));
       const page = await context.newPage();
       const response = await page.goto(base + path, { waitUntil: 'networkidle' });
       if (!response.ok()) throw new Error(`${path} returned ${response.status()}`);
       try {
-        await steps(page, { path, theme, width });
+        await steps(page, { path, theme, width, touch });
       } catch (e) {
         throw new Error(`${stepsFile} failed on ${path} (${theme}, ${width}px)`, { cause: e });
       }

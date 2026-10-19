@@ -44,6 +44,10 @@ describe('contextOptions', () => {
   test('a shot is taken in a window of its width, in its theme', () => {
     expect(contextOptions({ theme: 'dark', width: 390 })).toEqual({ viewport: { width: 390, height: 900 }, colorScheme: 'dark' });
   });
+
+  test('--touch emulates a phone, so a step can tap', () => {
+    expect(contextOptions({ theme: 'light', width: 390, touch: true })).toMatchObject({ hasTouch: true, isMobile: true });
+  });
 });
 
 describe('loadSteps', () => {
