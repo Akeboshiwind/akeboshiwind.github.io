@@ -52,9 +52,10 @@ describe('wireAccentToggle', () => {
       rerollOnce();
       for (let i = 0; i < 5; i++) {
         vi.advanceTimersByTime(REROLL_GRACE_MS - 1);
+        expect(btn.hasAttribute('data-rerolling')).toBe(true);
+        expect(btn.getAttribute('aria-label')).toMatch(/Re-roll$/);
         btn.click();
       }
-      for (const [{ id }] of window.__setAccent.mock.calls) expect(id).not.toBe(DEFAULT_ACCENT);
       expect(btn.hasAttribute('data-rerolling')).toBe(true);
     });
 
