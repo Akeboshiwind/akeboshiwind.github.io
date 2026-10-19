@@ -183,6 +183,53 @@
     text-align: left;
   }
 
+  /* Breaks out of PixelAppLayout's centred column to the window's width; anything wider still scrolls sideways. */
+  .pixel-bleed {
+    width: 100vw;
+    margin-inline: calc(50% - 50vw);
+    padding-inline: 1rem;
+    overflow-x: auto;
+  }
+
+  /* A borderless textarea that grows to fit its text, for editing in place. The caller mirrors the text into data-value:
+     the hidden ::after copy sizes the shared grid cell, so the textarea shows it all and a table column widens to it. */
+  .pixel-grow {
+    display: grid;
+    min-width: 3rem;
+  }
+
+  .pixel-grow::after {
+    content: attr(data-value) " ";
+    visibility: hidden;
+    white-space: pre-wrap;
+  }
+
+  .pixel-grow > textarea, .pixel-grow::after {
+    grid-area: 1 / 1;
+    margin: 0;
+    padding: 0.125rem 0.25rem;
+    border: 0;
+    font: inherit;
+    overflow-wrap: break-word;
+  }
+
+  .pixel-grow > textarea {
+    width: 100%;
+    resize: none;
+    overflow: hidden;
+    background: transparent;
+    color: inherit;
+  }
+
+  .pixel-grow > textarea:hover {
+    background: var(--code-bg);
+  }
+
+  .pixel-grow > textarea:focus {
+    outline: 2px solid var(--accent);
+    background: var(--code-bg);
+  }
+
   .pixel-num {
     font-family: var(--font-pixel);
     font-size: var(--text-pixel-md);

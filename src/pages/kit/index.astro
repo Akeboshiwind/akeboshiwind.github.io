@@ -165,6 +165,18 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
           <p class="pixel-num">£1,203.19</p>
           <p class="label opacity-60">.pixel-table · .pixel-num, 11px inside a table on phones</p>
 
+          <SectionLabel class="mt-4 mb-2">Bleed</SectionLabel>
+          <div class="pixel-bleed">
+            <div class="pixel-panel bg-code-bg p-3 mx-auto w-[60rem]">Wider than the column: centred in the window, scrolling sideways once the window is narrower.</div>
+          </div>
+          <p class="label opacity-60">.pixel-bleed · out of the 720px column to the window's width, for a wide table</p>
+
+          <SectionLabel class="mt-4 mb-2">Growing field</SectionLabel>
+          <div class="pixel-grow max-w-80" data-value="Click to edit. The box grows to fit the text, so nothing is cut off.">
+            <textarea rows="1" cols="1" aria-label="Growing field" oninput="this.parentNode.dataset.value = this.value">Click to edit. The box grows to fit the text, so nothing is cut off.</textarea>
+          </div>
+          <p class="label opacity-60">.pixel-grow · a borderless textarea for editing in place, e.g. a table cell · mirror its text into data-value</p>
+
           <SectionLabel class="mt-4 mb-2">Toolbar</SectionLabel>
           <div class="pixel-panel">
             <div class="h-16"></div>
