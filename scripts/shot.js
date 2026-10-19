@@ -4,21 +4,22 @@ import { spawnSync } from 'child_process';
 import { mkdirSync } from 'fs';
 import { createServer } from 'net';
 import { tmpdir } from 'os';
-import { join } from 'path';
-import { fileURLToPath } from 'url';
+import { join, resolve } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { parseArgs } from 'util';
 
 const THEMES = ['light', 'dark'];
-const USAGE = 'Usage: npm run shot -- <path>... [--theme light,dark] [--width 390,1280] [--out <dir>]';
+const USAGE = 'Usage: npm run shot -- <path>... [--theme light,dark] [--width 390,1280] [--out <dir>] [--steps <file>] [--touch] [--viewport]';
 
 /**
  * Turns CLI paths and options into the screenshots to take.
  * `theme` and `width` are comma-separated lists, as typed on the command line.
  * `tmp` is the parent of the `shots/` directory used when `out` is absent.
- * Returns `{ dir, shots }`, each shot being `{ path, theme, width, file }`.
+ * `viewport` shoots only the window, where a shot is otherwise the whole page.
+ * Returns `{ dir, shots }`, each shot being `{ path, theme, width, file, fullPage }`.
  * Throws on a missing path, an unknown theme or a width that is not a positive integer.
  */
-export function planShots(paths, { tmp, out, theme = 'light,dark', width = '390,1280' }) {
+export function planShots(paths, { tmp, out, theme = 'light,dark', width = '390,1280', viewport = false }) {
   if (paths.length === 0) throw new Error(`Give at least one path to shoot.\n${USAGE}`);
 
   const themes = theme.split(',');
@@ -34,10 +35,27 @@ export function planShots(paths, { tmp, out, theme = 'light,dark', width = '390,
   const shots = paths.flatMap((path) => {
     const name = path.replace(/^\/+|\/+$/g, '').replaceAll('/', '-') || 'home';
     return themes.flatMap((t) => widths.map((w) => ({
-      path, theme: t, width: w, file: join(dir, `${name}-${t}-${w}.png`),
+      path, theme: t, width: w, file: join(dir, `${name}-${t}-${w}.png`), fullPage: !viewport,
     })));
   });
   return { dir, shots };
+}
+
+/** The Playwright browser context a shot is taken in; `touch` emulates a phone, which `tap()` needs. */
+export function contextOptions({ theme, width, touch = false }) {
+  return { viewport: { width, height: 900 }, colorScheme: theme, ...(touch && { hasTouch: true, isMobile: true }) };
+}
+
+/**
+ * The steps that put a page into the state to shoot: the default export of `file`,
+ * called as `steps(page, { path, theme, width, touch })` after each load and before its screenshot.
+ * Without a file, the steps do nothing.
+ */
+export async function loadSteps(file) {
+  if (file === undefined) return async () => {};
+  const { default: steps } = await import(pathToFileURL(resolve(file)).href);
+  if (typeof steps !== 'function') throw new Error(`${file} needs a default export: async (page, { path, theme, width, touch }) => { … }`);
+  return steps;
 }
 
 function freePort() {
@@ -62,10 +80,12 @@ async function launchChromium(chromium) {
 async function main() {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
-    options: { theme: { type: 'string' }, width: { type: 'string' }, out: { type: 'string' } },
+    options: { theme: { type: 'string' }, width: { type: 'string' }, out: { type: 'string' }, steps: { type: 'string' }, touch: { type: 'boolean', default: false }, viewport: { type: 'boolean', default: false } },
   });
+  const { steps: stepsFile, touch, ...plan } = values;
   const tmp = process.env.CLAUDE_JOB_DIR ? join(process.env.CLAUDE_JOB_DIR, 'tmp') : tmpdir();
-  const { dir, shots } = planShots(positionals, { tmp, ...values });
+  const { dir, shots } = planShots(positionals, { tmp, ...plan });
+  const steps = await loadSteps(stepsFile);
   mkdirSync(dir, { recursive: true });
 
   const { dev } = await import('astro');
@@ -79,12 +99,17 @@ async function main() {
   const browser = await launchChromium(chromium).catch(async (e) => { await server.stop(); throw e; });
   try {
     const base = `http://localhost:${server.address.port}`;
-    for (const { path, theme, width, file } of shots) {
-      const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme });
+    for (const { path, theme, width, file, fullPage } of shots) {
+      const context = await browser.newContext(contextOptions({ theme, width, touch }));
       const page = await context.newPage();
       const response = await page.goto(base + path, { waitUntil: 'networkidle' });
       if (!response.ok()) throw new Error(`${path} returned ${response.status()}`);
-      await page.screenshot({ path: file, fullPage: true });
+      try {
+        await steps(page, { path, theme, width, touch });
+      } catch (e) {
+        throw new Error(`${stepsFile} failed on ${path} (${theme}, ${width}px)`, { cause: e });
+      }
+      await page.screenshot({ path: file, fullPage });
       await context.close();
       console.log(file);
     }
@@ -97,6 +122,7 @@ async function main() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((e) => {
     console.error(e.message);
+    if (e.cause) console.error(e.cause.stack);
     process.exit(1);
   });
 }
