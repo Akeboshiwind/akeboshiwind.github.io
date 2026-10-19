@@ -10,7 +10,7 @@ npm run build         # Build for production
 npm run preview       # Preview production build
 npm test              # Run all tests
 npm run favicons      # Regenerate public/ favicons from the header mark (cairn, seed 2)
-npm run shot -- /bill/ [--theme dark] [--width 390]  # Screenshot pages in both themes; prints the PNG paths
+npm run shot -- /bill/ [--theme dark] [--width 390] [--steps steps.mjs]  # Screenshot pages in both themes; prints the PNG paths
 ```
 
 In a new worktree, run `npm ci` first (about 4s). Never symlink the main checkout's `node_modules`.
@@ -82,6 +82,17 @@ All apps are built through Astro's Vite pipeline — no separate build step need
    The tone for each value is `IMAGE_TONES` in `src/lib/dither-dom.js`.
 
 To check a page visually, use `npm run shot`, not a hand-rolled Playwright script. It serves on a free port, so parallel worktrees don't clash, and fails on a non-2xx response.
+
+To shoot a page in a state you reach by using it — after a paste, a click, a hover — write a throwaway steps file in your scratchpad and pass it with `--steps`. Its default export runs after each load, before the screenshot:
+
+```js
+export default async (page, { path, theme, width }) => {
+  await page.getByLabel('Paste a Markdown table').fill('| a |\n| - |');
+  await page.getByRole('button', { name: 'Edit table' }).click();
+};
+```
+
+`scripts/shot-steps/` has examples; a steps file can import another to share its setup.
 
 Key conventions the scaffold already sets up:
 - `PixelAppLayout` provides the HTML shell, the pixel theme, the app bar (← Home, History, accent and theme toggles) and the `<div id="app">` mount point

@@ -4,12 +4,12 @@ import { spawnSync } from 'child_process';
 import { mkdirSync } from 'fs';
 import { createServer } from 'net';
 import { tmpdir } from 'os';
-import { join } from 'path';
-import { fileURLToPath } from 'url';
+import { join, resolve } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { parseArgs } from 'util';
 
 const THEMES = ['light', 'dark'];
-const USAGE = 'Usage: npm run shot -- <path>... [--theme light,dark] [--width 390,1280] [--out <dir>]';
+const USAGE = 'Usage: npm run shot -- <path>... [--theme light,dark] [--width 390,1280] [--out <dir>] [--steps <file>]';
 
 /**
  * Turns CLI paths and options into the screenshots to take.
@@ -40,6 +40,18 @@ export function planShots(paths, { tmp, out, theme = 'light,dark', width = '390,
   return { dir, shots };
 }
 
+/**
+ * The steps that put a page into the state to shoot: the default export of `file`,
+ * called as `steps(page, { path, theme, width })` after each load and before its screenshot.
+ * Without a file, the steps do nothing.
+ */
+export async function loadSteps(file) {
+  if (file === undefined) return async () => {};
+  const { default: steps } = await import(pathToFileURL(resolve(file)).href);
+  if (typeof steps !== 'function') throw new Error(`${file} needs a default export: async (page, { path, theme, width }) => { … }`);
+  return steps;
+}
+
 function freePort() {
   return new Promise((resolve, reject) => {
     const server = createServer().once('error', reject).listen(0, () => {
@@ -62,10 +74,12 @@ async function launchChromium(chromium) {
 async function main() {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
-    options: { theme: { type: 'string' }, width: { type: 'string' }, out: { type: 'string' } },
+    options: { theme: { type: 'string' }, width: { type: 'string' }, out: { type: 'string' }, steps: { type: 'string' } },
   });
+  const { steps: stepsFile, ...plan } = values;
   const tmp = process.env.CLAUDE_JOB_DIR ? join(process.env.CLAUDE_JOB_DIR, 'tmp') : tmpdir();
-  const { dir, shots } = planShots(positionals, { tmp, ...values });
+  const { dir, shots } = planShots(positionals, { tmp, ...plan });
+  const steps = await loadSteps(stepsFile);
   mkdirSync(dir, { recursive: true });
 
   const { dev } = await import('astro');
@@ -84,6 +98,11 @@ async function main() {
       const page = await context.newPage();
       const response = await page.goto(base + path, { waitUntil: 'networkidle' });
       if (!response.ok()) throw new Error(`${path} returned ${response.status()}`);
+      try {
+        await steps(page, { path, theme, width });
+      } catch (e) {
+        throw new Error(`${stepsFile} failed on ${path} (${theme}, ${width}px)`, { cause: e });
+      }
       await page.screenshot({ path: file, fullPage: true });
       await context.close();
       console.log(file);
@@ -97,6 +116,7 @@ async function main() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((e) => {
     console.error(e.message);
+    if (e.cause) console.error(e.cause.stack);
     process.exit(1);
   });
 }
