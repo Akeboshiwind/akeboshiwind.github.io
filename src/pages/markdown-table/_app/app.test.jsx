@@ -70,6 +70,39 @@ describe('Markdown Table Tools', () => {
     expect(output()).toBe('|   a |\n| --: |');
   });
 
+  test('add row sits under the table and appends a row', () => {
+    render(<App />);
+    pasteTable('|a|\n|-|');
+    const add = screen.getByRole('button', { name: 'Add row' });
+    expect(add.closest('tbody')).toBeTruthy();
+    fireEvent.click(add);
+    expect(output()).toBe('| a   |\n| --- |\n|     |');
+  });
+
+  test('add column sits beside the table and appends a column', () => {
+    render(<App />);
+    pasteTable('|a|\n|-|');
+    const add = screen.getByRole('button', { name: 'Add column' });
+    expect(add.closest('table')).toBeTruthy();
+    fireEvent.click(add);
+    expect(output()).toBe('| a   |     |\n| --- | --- |');
+  });
+
+  test('a newline in a cell becomes a space, since a Markdown cell is one line', () => {
+    render(<App />);
+    pasteTable('|a|\n|-|');
+    fireEvent.change(cell(0, 0), { target: { value: 'two\nlines' } });
+    expect(cell(0, 0).value).toBe('two lines');
+  });
+
+  test('Enter moves to the cell below', () => {
+    render(<App />);
+    pasteTable('|a|\n|-|\n|1|');
+    cell(0, 0).focus();
+    fireEvent.keyDown(cell(0, 0), { key: 'Enter' });
+    expect(document.activeElement).toBe(cell(1, 0));
+  });
+
   test('the table survives a reload', () => {
     const { unmount } = render(<App />);
     pasteTable('|kept|\n|-|');

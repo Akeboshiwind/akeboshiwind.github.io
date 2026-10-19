@@ -187,18 +187,24 @@ const Editor = ({ table, update, undo, canUndo, onNew }) => {
     } catch { /* the Markdown is still on screen to select by hand */ }
   };
 
+  const moveOnEnter = (r, c) => e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    grid.current.querySelector(`[data-cell="${e.shiftKey ? r - 1 : r + 1},${c}"]`)?.focus();
+  };
+
   const handle = 'pixel-icon-button touch-none select-none cursor-grab active:cursor-grabbing';
   const alignClass = { left: 'text-left', center: 'text-center', right: 'text-right' };
 
   return (
     <>
-      <div className="mt-6 overflow-x-auto pb-2">
-        <table ref={grid} className="border-collapse">
-          <thead>
-            <tr>
-              <th aria-hidden="true" />
+      <div className="pixel-bleed mt-6 pb-2">
+        <table ref={grid} className="pixel-table w-auto mx-auto min-w-[min(100%,calc(720px-2rem))]">
+          <tbody>
+            <tr className="bg-none">
+              <td aria-hidden="true" className="p-0" />
               {table.align.map((align, c) => (
-                <th key={c} data-column-handle className="p-0 text-center" style={cellStyle(-1, c)}>
+                <td key={c} data-column-handle className="p-0 text-center" style={cellStyle(-1, c)}>
                   <button
                     type="button"
                     aria-label={`Column ${c + 1}`}
@@ -210,11 +216,20 @@ const Editor = ({ table, update, undo, canUndo, onNew }) => {
                     <Icon svg={gripHorizontal} className="w-4 h-4" />
                     {align && <span className="label ml-1 opacity-60">{{ left: ':--', center: ':-:', right: '--:' }[align]}</span>}
                   </button>
-                </th>
+                </td>
               ))}
+              <td rowSpan={rowCount + 1} className="relative w-8 p-0">
+                <button
+                  type="button"
+                  onClick={() => update(T.insertColumn(table, columnCount))}
+                  aria-label="Add column"
+                  title="Add column"
+                  className="pixel-icon-button absolute inset-0 w-full opacity-60 hover:opacity-100"
+                >
+                  <Icon svg={plusIcon} className="w-4 h-4" />
+                </button>
+              </td>
             </tr>
-          </thead>
-          <tbody>
             {table.cells.map((row, r) => (
               <tr key={r}>
                 <td data-row-handle className="p-0 align-middle" style={cellStyle(r, -1)}>
@@ -230,17 +245,37 @@ const Editor = ({ table, update, undo, canUndo, onNew }) => {
                   </button>
                 </td>
                 {row.map((value, c) => (
-                  <td key={c} className={`p-0.5 ${r === 0 ? 'pb-1.5' : ''} ${dragging(r, c) ? 'opacity-40' : ''}`} style={cellStyle(r, c)}>
-                    <input
-                      aria-label={`Row ${r + 1}, column ${c + 1}`}
-                      value={value}
-                      onChange={e => update(T.setCell(table, r, c, e.target.value), { typing: [r, c] })}
-                      className={`pixel-field w-full min-w-[7rem] ${alignClass[table.align[c]] ?? ''} ${r === 0 ? 'font-bold bg-code-bg' : ''}`}
-                    />
+                  <td key={c} className={`px-1 py-0.5 align-top ${dragging(r, c) ? 'opacity-40' : ''}`} style={cellStyle(r, c)}>
+                    <div className={`pixel-grow min-w-32 max-w-80 ${r === 0 ? 'font-bold text-heading' : ''}`} data-value={value}>
+                      <textarea
+                        rows={1}
+                        cols={1}
+                        data-cell={`${r},${c}`}
+                        aria-label={`Row ${r + 1}, column ${c + 1}`}
+                        value={value}
+                        onChange={e => update(T.setCell(table, r, c, e.target.value.replace(/\r?\n/g, ' ')), { typing: [r, c] })}
+                        onKeyDown={moveOnEnter(r, c)}
+                        className={alignClass[table.align[c]]}
+                      />
+                    </div>
                   </td>
                 ))}
               </tr>
             ))}
+            <tr className="bg-none">
+              <td className="p-0" />
+              <td colSpan={columnCount} className="p-0">
+                <button
+                  type="button"
+                  onClick={() => update(T.insertRow(table, rowCount))}
+                  aria-label="Add row"
+                  title="Add row"
+                  className="pixel-icon-button w-full opacity-60 hover:opacity-100"
+                >
+                  <Icon svg={plusIcon} className="w-4 h-4" />
+                </button>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -252,12 +287,6 @@ const Editor = ({ table, update, undo, canUndo, onNew }) => {
       <div className="pixel-bar flex flex-wrap items-center gap-2">
         <button type="button" onClick={() => update(T.transpose(table))} className="pixel-button inline-flex items-center gap-1">
           <Icon svg={switchIcon} className="w-4 h-4" />Transpose
-        </button>
-        <button type="button" onClick={() => update(T.insertRow(table, rowCount))} aria-label="Add row" className="pixel-button inline-flex items-center gap-1">
-          <Icon svg={plusIcon} className="w-4 h-4" />Row
-        </button>
-        <button type="button" onClick={() => update(T.insertColumn(table, columnCount))} aria-label="Add column" className="pixel-button inline-flex items-center gap-1">
-          <Icon svg={plusIcon} className="w-4 h-4" />Column
         </button>
         <button type="button" onClick={undo} disabled={!canUndo} aria-label="Undo" title="Undo" className="pixel-button inline-flex items-center">
           <Icon svg={undoIcon} className="w-4 h-4" />
