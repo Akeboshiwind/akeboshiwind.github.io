@@ -3,9 +3,6 @@
   "stage": "scribble",
   "published": "2026-05-02",
   "description": "Generate a QR code from text or a URL and download it as a PNG.",
-  "tags": [
-    "tool"
-  ],
   "category": "utilities",
   "icon": "qr-code",
   "dither": "ui"

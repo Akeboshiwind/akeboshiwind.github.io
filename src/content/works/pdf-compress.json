@@ -4,7 +4,6 @@
   "published": "2026-05-03",
   "description": "Compress PDFs in the browser with Ghostscript WASM. No upload — everything stays local.",
   "tags": [
-    "tool",
     "pdf"
   ],
   "category": "utilities",

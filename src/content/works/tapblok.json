@@ -3,9 +3,6 @@
   "stage": "scribble",
   "published": "2026-08-02",
   "description": "The TapBlok toggle QR code, kept behind a lock screen — tap to unlock it, then scan to start or stop a monitoring session.",
-  "tags": [
-    "tool"
-  ],
   "category": "utilities",
   "icon": "lock-open"
 }

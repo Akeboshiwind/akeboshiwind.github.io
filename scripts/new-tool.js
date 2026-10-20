@@ -80,7 +80,7 @@ writeFileSync(worksFile, JSON.stringify({
   stage: 'scribble',
   published: today,
   description: '',
-  tags: ['tool'],
+  tags: [],
   category: 'utilities',
   icon: 'wrench',
   dither: 'ui',

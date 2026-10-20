@@ -3,9 +3,6 @@
   "stage": "scribble",
   "published": "2026-10-19",
   "description": "Paste a Markdown table or start a blank one, then edit cells, drag rows and columns into place, transpose it and copy the Markdown back out.",
-  "tags": [
-    "tool"
-  ],
   "category": "utilities",
   "icon": "grid-3x3",
   "dither": "ui"

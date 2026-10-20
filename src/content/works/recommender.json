@@ -5,7 +5,6 @@
   "description": "AI-powered recommendation lists that learn from your feedback using the Anthropic Claude API.",
   "pinned": true,
   "tags": [
-    "tool",
     "ai"
   ],
   "category": "ai",
