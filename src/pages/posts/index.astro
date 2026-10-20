@@ -29,11 +29,6 @@ const grouped = years.map(year => ({
 <Layout title="Posts" description="Everything written on this site, newest first.">
   <Tabs active="posts" />
 
-  <h1 class="page-title mt-6 mb-2">Posts</h1>
-  <p class="page-sub mt-0 mb-4">
-    {items.length} {items.length === 1 ? 'post' : 'posts'}, newest first. Dates are last updated.
-  </p>
-
   {grouped.map(group => (
     <section class="mb-6">
       <SectionLabel class="mt-8 mb-1">{group.year}</SectionLabel>
