@@ -1,0 +1,80 @@
+/* The board fills the window below the app bar; min-height undoes the layout's 100vh, which runs past a phone's toolbars. */
+body {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.scoreboard:fullscreen {
+  padding: 1rem;
+}
+
+.scoreboard-bar, .scoreboard-side {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.scoreboard-side {
+  container-type: size;
+  min-width: 0;
+  min-height: 0;
+  touch-action: none;
+}
+
+/* round() keeps the digits on Departure Mono's 11px grid, off which they blur. */
+.scoreboard-score {
+  font-family: var(--font-pixel);
+  font-size: round(down, min(70cqh, 50cqw), 11px);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.scoreboard-score[data-dir="up"] {
+  animation: scoreboard-up 0.2s step-end;
+}
+
+.scoreboard-score[data-dir="down"] {
+  animation: scoreboard-down 0.2s step-end;
+}
+
+@keyframes scoreboard-up {
+  from { transform: scale(1.1); }
+}
+
+@keyframes scoreboard-down {
+  from { transform: scale(0.9); opacity: 0.6; }
+}
+
+.scoreboard-time {
+  font-family: var(--font-pixel);
+  font-size: 44px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+/* currentColor, so the bar shows on the button's accent fill while it is pressed. */
+.scoreboard-hold {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  background: currentColor;
+  animation: scoreboard-hold linear forwards;
+  animation-timing-function: steps(6);
+}
+
+@keyframes scoreboard-hold {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scoreboard-score[data-dir] {
+    animation: none;
+  }
+}
