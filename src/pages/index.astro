@@ -25,35 +25,29 @@ const allItems = [
   ...notes.map(note => ({
     url: `${base}${note.slug}/`,
     title: note.data.title,
+    type: 'post' as const,
     stage: note.data.stage,
+    tags: note.data.tags,
     date: note.data.updated ?? note.data.published,
-    pinned: note.data.pinned,
   })),
   ...works.map(work => ({
     url: workUrl(work),
     title: work.data.title,
+    type: 'tool' as const,
     stage: work.data.stage,
+    tags: work.data.tags,
     description: work.data.description,
     date: work.data.updated ?? work.data.published,
     image: thumbnail(work),
-    pinned: work.data.pinned,
   })),
 ];
 
-const pinned = allItems.filter(i => i.pinned).sort((a, b) => b.date.getTime() - a.date.getTime());
-const rest = allItems.filter(i => !i.pinned).sort((a, b) => b.date.getTime() - a.date.getTime());
+const items = allItems.sort((a, b) => b.date.getTime() - a.date.getTime());
 ---
 
 <Layout>
   <Tabs active="main" />
 
-  {pinned.length > 0 && (
-    <>
-      <SectionLabel class="mt-8 mb-1">Pinned</SectionLabel>
-      <CardList items={pinned} />
-    </>
-  )}
-
   <SectionLabel class="mt-8 mb-1">Recent</SectionLabel>
-  <CardList items={rest} />
+  <CardList items={items} />
 </Layout>

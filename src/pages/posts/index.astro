@@ -14,6 +14,7 @@ const items = notes
     url: `${base}${note.slug}/`,
     title: note.data.title,
     stage: note.data.stage,
+    tags: note.data.tags,
     date: note.data.updated ?? note.data.published,
   }))
   .sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -30,7 +31,7 @@ const grouped = years.map(year => ({
 
   <h1 class="page-title mt-6 mb-2">Posts</h1>
   <p class="page-sub mt-0 mb-4">
-    {items.length} {items.length === 1 ? 'post' : 'posts'}, newest first. Dates are last updated.
+    {items.length} {items.length === 1 ? 'post' : 'posts'}, newest first.
   </p>
 
   {grouped.map(group => (
