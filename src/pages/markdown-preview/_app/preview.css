@@ -12,6 +12,10 @@
   gap: 0.5em;
 }
 
+.markdown-preview :is(h1, h2, h3, h4, h5, h6) {
+  scroll-margin-top: 1rem;
+}
+
 .markdown-preview pre.mermaid {
   background: transparent;
   padding: 0;
@@ -53,4 +57,26 @@
 
 .markdown-preview .hljs-strong {
   font-weight: bold;
+}
+
+/* A table may spread past the column to the window's gutters, then scrolls; a narrow one still spans the column. */
+.markdown-preview {
+  container-type: inline-size;
+}
+
+.markdown-preview-table {
+  width: calc(100vw - 2rem);
+  margin-inline: calc(50% - 50vw + 1rem);
+  overflow-x: auto;
+}
+
+.markdown-preview-table > table {
+  width: auto;
+  min-width: 100cqi;
+  margin-inline: auto;
+}
+
+/* 100vw counts a classic scrollbar, which would otherwise let the page scroll sideways. */
+body:has(.markdown-preview-table) {
+  overflow-x: clip;
 }

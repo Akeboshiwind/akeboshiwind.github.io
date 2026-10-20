@@ -5,6 +5,7 @@ import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js/lib/common';
 import mermaid from 'mermaid';
 import DOMPurify from 'dompurify';
+import GithubSlugger from 'github-slugger';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
 import '../../../styles/global.css';
 import './preview.css';
@@ -51,21 +52,55 @@ const Heading = () => (
   </>
 );
 
+function render(target, text) {
+  target.innerHTML = DOMPurify.sanitize(marked.parse(text));
+  target.querySelectorAll('input[type="checkbox"]').forEach((box) => box.classList.add('pixel-check'));
+  const slugger = new GithubSlugger();
+  target.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((h) => { h.id = slugger.slug(h.textContent); });
+  target.querySelectorAll('table').forEach((table) => {
+    const scroller = document.createElement('div');
+    scroller.className = 'markdown-preview-table';
+    table.replaceWith(scroller);
+    scroller.append(table);
+  });
+  const dark = document.documentElement.dataset.theme === 'dark';
+  mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral' });
+  return Promise.resolve(mermaid.run({ nodes: target.querySelectorAll('.mermaid') }));
+}
+
+function scrollToHash() {
+  const id = decodeURIComponent(window.location.hash.slice(1));
+  if (id) document.getElementById(id)?.scrollIntoView();
+}
+
 export function App() {
   const [text, setText] = useLocalStorage('markdown-preview:text', '');
-  const [view, setView] = useState('editor');
+  const [view, setView] = useState(() => (text && window.location.hash ? 'preview' : 'editor'));
+  const [pasteFailed, setPasteFailed] = useState(false);
   const previewRef = useRef(null);
 
   useEffect(() => {
     if (view === 'preview' && previewRef.current) {
-      const html = marked.parse(text);
-      previewRef.current.innerHTML = DOMPurify.sanitize(html);
-      previewRef.current.querySelectorAll('input[type="checkbox"]').forEach((box) => box.classList.add('pixel-check'));
-      const dark = document.documentElement.dataset.theme === 'dark';
-      mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral' });
-      mermaid.run({ nodes: previewRef.current.querySelectorAll('.mermaid') });
+      scrollToHash();
+      render(previewRef.current, text).finally(scrollToHash);
     }
+  }, [view, text]);
+
+  const replaceWith = (pasted) => {
+    setPasteFailed(false);
+    setText(pasted);
+    window.scrollTo(0, 0);
+  };
+
+  useEffect(() => {
+    if (view !== 'preview') return;
+    const onPaste = (e) => replaceWith(e.clipboardData.getData('text/plain'));
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
   }, [view]);
+
+  const pasteFromClipboard = () =>
+    navigator.clipboard.readText().then(replaceWith, () => setPasteFailed(true));
 
   if (view === 'editor') {
     return (
@@ -93,6 +128,12 @@ export function App() {
         <button className="pixel-button" onClick={() => setView('editor')}>
           ← Back
         </button>
+        <button className="pixel-button" onClick={pasteFromClipboard}>
+          Paste
+        </button>
+        {pasteFailed && (
+          <span role="status" className="label">Can't read the clipboard. Paste with Ctrl+V or ⌘V.</span>
+        )}
       </div>
     </div>
   );
