@@ -2,7 +2,6 @@
 import Layout from '../layouts/Layout.astro';
 import CardList from '../components/CardList.astro';
 import Tabs from '../components/Tabs.astro';
-import SectionLabel from '../components/pixel/SectionLabel.astro';
 import { getCollection } from 'astro:content';
 
 const base = import.meta.env.BASE_URL;
@@ -48,6 +47,5 @@ const items = allItems.sort((a, b) => b.date.getTime() - a.date.getTime());
 <Layout>
   <Tabs active="main" />
 
-  <SectionLabel class="mt-8 mb-1">Recent</SectionLabel>
   <CardList items={items} />
 </Layout>
