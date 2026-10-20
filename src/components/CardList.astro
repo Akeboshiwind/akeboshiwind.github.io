@@ -9,6 +9,7 @@ interface CardItem {
   stage?: 'scribble' | 'draft' | 'tale';
   tags?: string[];
   description?: string;
+  date?: Date;
   image?: { src: ImageMetadata; dither: 'ui' | 'image' };
 }
 
@@ -29,6 +30,11 @@ const { items, showImages = true } = Astro.props;
           {item.type && <span class="label opacity-50">{item.type}</span>}
           {item.stage && <a href="/stages/" class="label text-accent no-underline hover:underline">{item.stage}</a>}
           {item.tags?.map(tag => <span class="label opacity-50">#{tag}</span>)}
+          {item.date && (
+            <time datetime={item.date.toISOString().split('T')[0]} class="label opacity-50">
+              {item.date.toISOString().split('T')[0]}
+            </time>
+          )}
         </div>
         {item.description && (
           <p class="font-pixel text-pixel m-0 mt-1 text-text leading-normal opacity-80">{item.description}</p>
