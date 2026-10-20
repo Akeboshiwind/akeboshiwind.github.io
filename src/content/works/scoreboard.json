@@ -1,0 +1,13 @@
+{
+  "title": "Scoreboard",
+  "stage": "scribble",
+  "published": "2026-05-16",
+  "description": "A two-sided scoreboard with a match timer. Tap a side to add a point, swipe down to take one away; tap the timer to start or pause it, hold it to reset. Counts down a match or up as a stopwatch, with a buzzer at full time.",
+  "tags": [
+    "tool",
+    "sports"
+  ],
+  "category": "fun",
+  "icon": "trophy",
+  "dither": "ui"
+}
