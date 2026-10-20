@@ -3,8 +3,6 @@ import { useState, useEffect, useRef } from 'react';
 import playSvg from 'pixelarticons/svg/play.svg?raw';
 import pauseSvg from 'pixelarticons/svg/pause.svg?raw';
 import slidersSvg from 'pixelarticons/svg/sliders.svg?raw';
-import expandSvg from 'pixelarticons/svg/expand.svg?raw';
-import collapseSvg from 'pixelarticons/svg/collapse.svg?raw';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
 import { Icon } from '../../../components/pixel/Icon.jsx';
 import { Sheet } from '../../../components/pixel/Sheet.jsx';
@@ -23,7 +21,10 @@ const INCREMENTS = [1, 2, 3, 5];
 const UP_KEYS = ['Enter', ' ', 'ArrowUp', '+'];
 const DOWN_KEYS = ['ArrowDown', '-', 'Backspace'];
 
-const fullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+// False on iPhone, where Safari only lets a <video> go fullscreen.
+const fullscreenEnabled = () => Boolean(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+
+const fullscreenElement =() => document.fullscreenElement || document.webkitFullscreenElement || null;
 
 const vibe = (enabled, pattern) => {
   if (enabled && navigator.vibrate) {
@@ -293,19 +294,9 @@ export function App() {
           <span className="scoreboard-time">{fmtTime(value)}</span>
           {holding && <span aria-hidden="true" className="scoreboard-hold" style={{ animationDuration: `${HOLD_MS}ms` }} />}
         </button>
-        <span className="flex gap-1 justify-self-end">
-          <button type="button" aria-label="Settings" onClick={openSettings} className="pixel-icon-button">
-            <Icon svg={slidersSvg} />
-          </button>
-          <button
-            type="button"
-            aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-            onClick={toggleFullscreen}
-            className="pixel-icon-button"
-          >
-            <Icon svg={isFullscreen ? collapseSvg : expandSvg} />
-          </button>
-        </span>
+        <button type="button" aria-label="Settings" onClick={openSettings} className="pixel-icon-button justify-self-end">
+          <Icon svg={slidersSvg} />
+        </button>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 landscape:flex-row">
@@ -369,10 +360,12 @@ export function App() {
                 <input type="checkbox" checked={wake} onChange={() => setWake(!wake)} className="pixel-check" />
                 Keep screen awake
               </label>
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={isFullscreen} onChange={toggleFullscreen} className="pixel-check" />
-                Fullscreen
-              </label>
+              {fullscreenEnabled() && (
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={isFullscreen} onChange={toggleFullscreen} className="pixel-check" />
+                  Fullscreen
+                </label>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-2">

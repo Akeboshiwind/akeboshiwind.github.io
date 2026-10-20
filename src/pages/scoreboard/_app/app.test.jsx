@@ -117,6 +117,27 @@ describe('Scoreboard', () => {
     expect(screen.getByRole('button', { name: /pause timer/i }).textContent).toContain('01:05');
   });
 
+  test('fullscreen lives in settings, not on the board', () => {
+    render(<App />);
+    expect(screen.queryByRole('button', { name: /fullscreen/i })).toBeNull();
+  });
+
+  test('settings offer fullscreen only where the browser supports it', () => {
+    const { unmount } = render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    expect(screen.queryByLabelText('Fullscreen')).toBeNull();
+    unmount();
+
+    Object.defineProperty(document, 'fullscreenEnabled', { value: true, configurable: true });
+    try {
+      render(<App />);
+      fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+      expect(screen.getByLabelText('Fullscreen')).toBeTruthy();
+    } finally {
+      delete document.fullscreenEnabled;
+    }
+  });
+
   test('reset everything zeroes the scores and the timer', () => {
     vi.useFakeTimers();
     render(<App />);
