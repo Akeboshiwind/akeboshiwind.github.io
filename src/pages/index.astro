@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import CardList from '../components/CardList.astro';
 import Tabs from '../components/Tabs.astro';
+import SectionLabel from '../components/pixel/SectionLabel.astro';
 import { getCollection } from 'astro:content';
 
 const base = import.meta.env.BASE_URL;
@@ -42,10 +43,21 @@ const allItems = [
 ];
 
 const items = allItems.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+const years = [...new Set(items.map(i => i.date.getFullYear()))].sort((a, b) => b - a);
+const grouped = years.map(year => ({
+  year,
+  items: items.filter(i => i.date.getFullYear() === year),
+}));
 ---
 
 <Layout>
   <Tabs active="main" />
 
-  <CardList items={items} />
+  {grouped.map(group => (
+    <section class="mb-6">
+      <SectionLabel class="mt-8 mb-1">{group.year}</SectionLabel>
+      <CardList items={group.items} />
+    </section>
+  ))}
 </Layout>
