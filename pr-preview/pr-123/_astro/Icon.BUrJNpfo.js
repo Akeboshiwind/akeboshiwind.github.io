@@ -1,1 +1,0 @@
-import{j as n}from"./jsx-runtime.D_zvdyIk.js";const o=({svg:s,className:e="w-5 h-5"})=>n.jsx("span",{"aria-hidden":"true",className:`pixel-icon ${e}`,dangerouslySetInnerHTML:{__html:s}});export{o as I};
