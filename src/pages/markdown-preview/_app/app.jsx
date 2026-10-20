@@ -1,7 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { useState, useEffect, useRef } from 'react';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
-import { render } from './render.js';
 import '../../../styles/global.css';
 import './preview.css';
 
@@ -18,6 +17,8 @@ const Heading = () => (
   </>
 );
 
+const loadRender = () => import('./render.js');
+
 function scrollToHash() {
   const id = decodeURIComponent(window.location.hash.slice(1));
   if (id) document.getElementById(id)?.scrollIntoView();
@@ -27,13 +28,28 @@ export function App() {
   const [text, setText] = useLocalStorage('markdown-preview:text', '');
   const [view, setView] = useState(() => (text && window.location.hash ? 'preview' : 'editor'));
   const [pasteFailed, setPasteFailed] = useState(false);
+  const [busy, setBusy] = useState(true);
   const previewRef = useRef(null);
 
   useEffect(() => {
-    if (view === 'preview' && previewRef.current) {
+    loadRender();
+  }, []);
+
+  useEffect(() => {
+    if (view !== 'preview') return;
+    let live = true;
+    let stopDrawing = () => {};
+    loadRender().then(({ render }) => {
+      if (!live) return;
+      stopDrawing = render(previewRef.current, text);
+      setBusy(false);
       scrollToHash();
-      render(previewRef.current, text).finally(scrollToHash);
-    }
+    });
+    return () => {
+      live = false;
+      stopDrawing();
+      setBusy(true);
+    };
   }, [view, text]);
 
   const replaceWith = (pasted) => {
@@ -73,7 +89,8 @@ export function App() {
   return (
     <div className="flex flex-col pb-24">
       <Heading />
-      <div ref={previewRef} className={NOTE_PROSE} />
+      {busy && <progress className="pixel-progress w-full" aria-label="Loading the preview" />}
+      <div ref={previewRef} className={NOTE_PROSE} aria-busy={busy} />
       <div className="pixel-bar flex items-center gap-2">
         <button className="pixel-button" onClick={() => setView('editor')}>
           ← Back

@@ -21,6 +21,41 @@
   padding: 0;
 }
 
+/* The hidden source holds roughly the diagram's height until it is drawn. */
+.markdown-preview pre.mermaid:not([data-processed]) {
+  position: relative;
+  padding: 1rem;
+  border: 2px dashed var(--border);
+  color: transparent;
+}
+
+.markdown-preview pre.mermaid:not([data-processed])::before {
+  content: "Drawing diagram…";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-pixel);
+  font-size: var(--text-pixel);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.markdown-preview pre.mermaid[data-processed="error"] {
+  padding: 1rem;
+  border: 2px dashed var(--border);
+}
+
+.markdown-preview pre.mermaid[data-processed="error"]::before {
+  content: "Couldn't draw this diagram:\A\A";
+  white-space: pre;
+}
+
+/* keepReadingPlace in render.js does this scroll compensation itself; the browser's would double it. */
+.markdown-preview {
+  overflow-anchor: none;
+}
+
 .markdown-preview .hljs-comment,
 .markdown-preview .hljs-code,
 .markdown-preview .hljs-formula,
