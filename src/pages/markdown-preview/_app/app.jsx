@@ -88,7 +88,6 @@ export function App() {
 
   return (
     <div className="flex flex-col pb-24">
-      <Heading />
       {busy && <progress className="pixel-progress w-full" aria-label="Loading the preview" />}
       <div ref={previewRef} className={NOTE_PROSE} aria-busy={busy} />
       <div className="pixel-bar flex items-center gap-2">
