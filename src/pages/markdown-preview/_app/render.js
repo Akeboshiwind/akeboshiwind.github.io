@@ -38,6 +38,12 @@ export function render(target, text) {
   target.querySelectorAll('input[type="checkbox"]').forEach((box) => box.classList.add('pixel-check'));
   const slugger = new GithubSlugger();
   target.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((h) => { h.id = slugger.slug(h.textContent); });
+  target.querySelectorAll('a[href]').forEach((a) => {
+    if (!leadsSomewhere(a.getAttribute('href'), target)) {
+      a.addEventListener('click', ignore);
+      a.addEventListener('auxclick', ignore);
+    }
+  });
   target.querySelectorAll('table').forEach((table) => {
     const scroller = document.createElement('div');
     scroller.className = 'markdown-preview-table';
@@ -46,6 +52,18 @@ export function render(target, text) {
   });
   return drawDiagramsNearViewport(target.querySelectorAll('.mermaid'));
 }
+
+const isExternal = (href) => /^([a-z][a-z\d+.-]*:|\/\/)/i.test(href);
+
+// A local link points into the repo the Markdown came from, which isn't here; only its own sections are.
+function leadsSomewhere(href, root) {
+  if (isExternal(href)) return true;
+  if (!href.startsWith('#')) return false;
+  const id = decodeURIComponent(href.slice(1));
+  return [...root.querySelectorAll('[id]')].some((el) => el.id === id);
+}
+
+const ignore = (e) => e.preventDefault();
 
 let mermaidModule;
 let mermaidTheme;
