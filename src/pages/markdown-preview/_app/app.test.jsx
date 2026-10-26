@@ -141,6 +141,14 @@ describe('Markdown Preview', () => {
     expect(screen.getByPlaceholderText('Write GitHub Flavoured Markdown here...').value).toBe('# Keep me');
   });
 
+  test('the title heads the editor but not the preview', async () => {
+    render(<App />);
+    expect(screen.getByRole('heading', { name: 'Markdown Preview' })).toBeTruthy();
+    await preview();
+    expect(screen.queryByRole('heading', { name: 'Markdown Preview' })).toBeNull();
+    expect(screen.queryByText(/Saved as you type/)).toBeNull();
+  });
+
   test('← Back sits in the bar along the bottom of the preview', async () => {
     render(<App />);
     await preview();
@@ -285,6 +293,31 @@ describe('heading links', () => {
     history.replaceState(null, '', '/#anything');
     render(<App />);
     expect(screen.getByPlaceholderText('Write GitHub Flavoured Markdown here...')).toBeTruthy();
+  });
+});
+
+describe('links', () => {
+  const click = async (name) => {
+    render(<App />);
+    write('## Notes\n\n[away](https://example.com) [notes](#notes) [missing](#missing) [file](./other.md) [root](/other/)');
+    await preview();
+    const link = screen.getByRole('link', { name });
+    return { followed: fireEvent.click(link), link };
+  };
+
+  test('a link to another website is followed', async () => {
+    expect((await click('away')).followed).toBe(true);
+  });
+
+  test('a link to a section in this document is followed', async () => {
+    expect((await click('notes')).followed).toBe(true);
+  });
+
+  test.each(['missing', 'file', 'root'])('a local link that is not a section here (%s) still looks like a link but does nothing', async (name) => {
+    const { followed, link } = await click(name);
+    expect(followed).toBe(false);
+    expect(link.tagName).toBe('A');
+    expect(fireEvent(link, new MouseEvent('auxclick', { bubbles: true, cancelable: true, button: 1 }))).toBe(false);
   });
 });
 
