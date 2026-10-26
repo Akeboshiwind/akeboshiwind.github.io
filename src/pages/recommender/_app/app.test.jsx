@@ -166,13 +166,15 @@ describe('creating a list', () => {
     expect(screen.getByText('Hardcore History')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Podcasts' })).toBeTruthy();
 
-    const [saved] = storedLists();
-    expect(saved).toMatchObject({ name: 'Podcasts', description: 'Story-driven audio' });
-    expect(saved.recommendations.map(r => [r.text, r.status, r.round])).toEqual([
-      ['Serial', 'pending', 1],
-      ['Radiolab', 'pending', 1],
-      ['Hardcore History', 'pending', 1],
-    ]);
+    await waitFor(() => {
+      const [saved] = storedLists();
+      expect(saved).toMatchObject({ name: 'Podcasts', description: 'Story-driven audio' });
+      expect(saved.recommendations.map(r => [r.text, r.status, r.round])).toEqual([
+        ['Serial', 'pending', 1],
+        ['Radiolab', 'pending', 1],
+        ['Hardcore History', 'pending', 1],
+      ]);
+    });
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.messages[0].content).toContain('Story-driven audio');
   });
@@ -214,11 +216,13 @@ describe('recommendations', () => {
 
     expect(await screen.findByText('Solaris')).toBeTruthy();
     expect(screen.queryByText('Hyperion')).toBeNull();
-    const recs = storedList('list-1').recommendations;
-    expect(recs.filter(r => r.status === 'seen').map(r => r.text)).toEqual(['Dune', 'Foundation', 'Blindsight']);
-    expect(recs.filter(r => r.status === 'pending').map(r => [r.text, r.round])).toEqual([
-      ['Solaris', 3], ['Contact', 3], ['Annihilation', 3],
-    ]);
+    await waitFor(() => {
+      const recs = storedList('list-1').recommendations;
+      expect(recs.filter(r => r.status === 'seen').map(r => r.text)).toEqual(['Dune', 'Foundation', 'Blindsight']);
+      expect(recs.filter(r => r.status === 'pending').map(r => [r.text, r.round])).toEqual([
+        ['Solaris', 3], ['Contact', 3], ['Annihilation', 3],
+      ]);
+    });
   });
 
   test('marking one as seen takes a note and moves it out of the pending list', () => {
