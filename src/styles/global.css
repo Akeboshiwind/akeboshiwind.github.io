@@ -22,6 +22,37 @@
 }
 
 /* Prose overrides stay un-layered: the typography plugin emits into @layer utilities, which would beat any lower layer. */
+/* `width: auto` because Astro writes width and height attributes: without it, a capped image squashes. */
+.prose :where(img) {
+  max-height: 70dvh;
+  width: auto;
+  margin-inline: auto;
+}
+
+.prose[data-lightbox] :where(img:not(a img)) {
+  cursor: zoom-in;
+}
+
+.prose-lightbox {
+  max-width: 100vw;
+  max-height: 100dvh;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-out;
+}
+
+.prose-lightbox::backdrop {
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+}
+
+.prose-lightbox img {
+  max-width: 100vw;
+  max-height: 100dvh;
+  object-fit: contain;
+}
+
 .prose :where(hr) {
   border: 0;
   margin: 2.5em 0;

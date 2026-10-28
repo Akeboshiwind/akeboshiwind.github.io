@@ -62,4 +62,11 @@ const historyUrl = historyFromPath(`src/content/notes/${note.id}`);
       </p>
     )}
   </article>
+  <dialog class="prose-lightbox" aria-label="Full-size image"><img alt="" /></dialog>
 </Layout>
+
+<script>
+  import { wireImageLightbox } from '../lib/image-lightbox.js';
+
+  wireImageLightbox(document.querySelector('article')!, document.querySelector<HTMLDialogElement>('.prose-lightbox')!);
+</script>
