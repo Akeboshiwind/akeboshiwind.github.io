@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { wireImageLightbox, zoomScroll } from './image-lightbox.js';
+import { nextZoom, wireImageLightbox, zoomScroll } from './image-lightbox.js';
 
 describe('wireImageLightbox', () => {
   let article, dialog, img, linked, shown, closeButton;
@@ -22,14 +22,19 @@ describe('wireImageLightbox', () => {
     wireImageLightbox(article, dialog);
   });
 
-  const zoomed = () => dialog.hasAttribute('data-zoomed');
+  const zoom = () => dialog.dataset.zoom;
+  const sized = (naturalWidth, fittedWidth) => {
+    Object.defineProperty(shown, 'naturalWidth', { value: naturalWidth });
+    Object.defineProperty(shown, 'naturalHeight', { value: naturalWidth });
+    shown.getBoundingClientRect = () => ({ left: 0, top: 0, width: fittedWidth, height: fittedWidth });
+  };
 
   it('opens the clicked image in the dialog, fitted to the screen', () => {
     img.click();
     expect(dialog.open).toBe(true);
     expect(shown.src).toBe(new URL('/a.webp', location.href).href);
     expect(shown.alt).toBe('A cat');
-    expect(zoomed()).toBe(false);
+    expect(zoom()).toBeUndefined();
   });
 
   it('opens from the keyboard', () => {
@@ -44,13 +49,19 @@ describe('wireImageLightbox', () => {
     expect(linked.tabIndex).toBe(-1);
   });
 
-  it('toggles between fitted and actual size when the shown image is clicked', () => {
+  it('steps through actual size and 2x, then back to fitted, when the shown image is clicked', () => {
+    sized(2000, 400);
     img.click();
     shown.click();
-    expect(zoomed()).toBe(true);
-    expect(dialog.open).toBe(true);
+    expect(zoom()).toBe('1');
+    expect(shown.style.width).toBe('2000px');
     shown.click();
-    expect(zoomed()).toBe(false);
+    expect(zoom()).toBe('2');
+    expect(shown.style.width).toBe('4000px');
+    shown.click();
+    expect(zoom()).toBeUndefined();
+    expect(shown.style.width).toBe('');
+    expect(dialog.open).toBe(true);
   });
 
   it('closes on the close button or the backdrop, and reopens fitted', () => {
@@ -60,28 +71,41 @@ describe('wireImageLightbox', () => {
     expect(dialog.open).toBe(false);
 
     img.click();
-    expect(zoomed()).toBe(false);
+    expect(zoom()).toBeUndefined();
+    expect(shown.style.width).toBe('');
     dialog.click();
     expect(dialog.open).toBe(false);
+  });
+});
+
+describe('nextZoom', () => {
+  it('goes from fitted to actual size, to 2x, and back to fitted', () => {
+    expect(nextZoom(0, { natural: 2000, fitted: 400 })).toBe(1);
+    expect(nextZoom(1, { natural: 2000, fitted: 2000 })).toBe(2);
+    expect(nextZoom(2, { natural: 2000, fitted: 4000 })).toBe(0);
+  });
+
+  it('skips actual size when the image already fits at it', () => {
+    expect(nextZoom(0, { natural: 300, fitted: 300 })).toBe(2);
   });
 });
 
 describe('zoomScroll', () => {
   const viewport = { width: 400, height: 800 };
   const rect = { left: 0, top: 200, width: 400, height: 400 };
-  const natural = { width: 2000, height: 2000 };
+  const size = { width: 2000, height: 2000 };
 
   it('keeps the clicked point of the image under the pointer', () => {
     // The middle of the fitted image is (1000, 1000) at actual size; it should land at the pointer (200, 400).
-    expect(zoomScroll({ x: 200, y: 400, rect, natural, viewport })).toEqual({ left: 800, top: 600 });
+    expect(zoomScroll({ x: 200, y: 400, rect, size, viewport })).toEqual({ left: 800, top: 600 });
   });
 
   it('stays within the scrollable range', () => {
-    expect(zoomScroll({ x: 0, y: 200, rect, natural, viewport })).toEqual({ left: 0, top: 0 });
-    expect(zoomScroll({ x: 400, y: 600, rect, natural, viewport })).toEqual({ left: 1600, top: 1200 });
+    expect(zoomScroll({ x: 0, y: 200, rect, size, viewport })).toEqual({ left: 0, top: 0 });
+    expect(zoomScroll({ x: 400, y: 600, rect, size, viewport })).toEqual({ left: 1600, top: 1200 });
   });
 
   it('does not scroll along an axis the image fits', () => {
-    expect(zoomScroll({ x: 200, y: 400, rect, natural: { width: 300, height: 2000 }, viewport }).left).toBe(0);
+    expect(zoomScroll({ x: 200, y: 400, rect, size: { width: 300, height: 2000 }, viewport }).left).toBe(0);
   });
 });

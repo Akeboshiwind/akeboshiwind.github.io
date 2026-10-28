@@ -61,15 +61,19 @@ html:has(.prose-lightbox[open]) {
 /* `margin: auto` rather than centring the flex box: a centred item wider than the box can't be scrolled to its start. */
 .prose-lightbox img {
   margin: auto;
-  max-width: 100vw;
-  max-height: 100dvh;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100dvh - 2rem);
+  border: 2px solid var(--border);
   object-fit: contain;
   cursor: zoom-in;
 }
 
-.prose-lightbox[data-zoomed] img {
+.prose-lightbox[data-zoom] img {
   max-width: none;
   max-height: none;
+}
+
+.prose-lightbox[data-zoom="2"] img {
   cursor: zoom-out;
 }
 
