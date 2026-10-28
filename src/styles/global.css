@@ -29,13 +29,55 @@
   margin-inline: auto;
 }
 
-.prose[data-image-expand] :where(img:not(a img)) {
+.prose[data-lightbox] :where(img:not(a img)) {
   cursor: zoom-in;
 }
 
-.prose[data-image-expand] :where(img[data-expanded]) {
+html:has(.prose-lightbox[open]) {
+  overflow: hidden;
+}
+
+.prose-lightbox {
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.prose-lightbox[open] {
+  display: flex;
+}
+
+.prose-lightbox::backdrop {
+  background: transparent;
+}
+
+/* `margin: auto` rather than centring the flex box: a centred item wider than the box can't be scrolled to its start. */
+.prose-lightbox img {
+  margin: auto;
+  max-width: 100vw;
+  max-height: 100dvh;
+  object-fit: contain;
+  cursor: zoom-in;
+}
+
+.prose-lightbox[data-zoomed] img {
+  max-width: none;
   max-height: none;
   cursor: zoom-out;
+}
+
+.prose-lightbox-close {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: var(--bg);
 }
 
 .prose :where(hr) {
