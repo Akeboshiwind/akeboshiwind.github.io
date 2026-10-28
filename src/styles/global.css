@@ -22,6 +22,13 @@
 }
 
 /* Prose overrides stay un-layered: the typography plugin emits into @layer utilities, which would beat any lower layer. */
+/* `width: auto` because Astro writes width and height attributes: without it, a capped image squashes. */
+.prose :where(img) {
+  max-height: 70dvh;
+  width: auto;
+  margin-inline: auto;
+}
+
 .prose :where(hr) {
   border: 0;
   margin: 2.5em 0;

@@ -5,6 +5,9 @@ import Icon from '../../components/pixel/Icon.astro';
 import FileDrop from '../../components/pixel/FileDrop.astro';
 import Sheet from '../../components/pixel/Sheet.astro';
 import Menu from '../../components/pixel/Menu.astro';
+import Lightbox from '../../components/pixel/Lightbox.astro';
+import { Image } from 'astro:assets';
+import lightboxSample from '../../assets/works/bill.png';
 
 const themes = ['light', 'dark'];
 const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent', 'danger', 'ok', 'warn'];
@@ -197,6 +200,10 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
           </div>
           <p class="label opacity-60">&lt;Sheet&gt; · .pixel-scrim .pixel-sheet · from the bottom edge on phones, centred from sm</p>
 
+          <SectionLabel class="mt-4 mb-2">Lightbox</SectionLabel>
+          <Image src={lightboxSample} alt="The Bill Splitter" class="pixel-panel w-40 h-auto" />
+          <p class="label opacity-60">&lt;Lightbox&gt; · .pixel-lightbox .pixel-lightbox-close · wireImageLightbox · click the image: fit, actual size, 2x · locks the page behind it</p>
+
           <SectionLabel class="mt-4 mb-2">Bottom bar</SectionLabel>
           <div class="pixel-panel relative h-32 overflow-hidden">
             <p class="p-3">The page above the bar.</p>
@@ -243,4 +250,11 @@ const swatches = ['bg', 'code-bg', 'border', 'text', 'heading', 'link', 'accent'
       ))}
     </div>
   </main>
+  <Lightbox />
 </PixelAppLayout>
+
+<script>
+  import { wireImageLightbox } from '../../lib/image-lightbox.js';
+
+  wireImageLightbox(document.querySelector('main')!, document.querySelector<HTMLDialogElement>('.pixel-lightbox')!);
+</script>

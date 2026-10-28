@@ -1,0 +1,12 @@
+---
+// The markup only: the page's script wires the images that open in it, with wireImageLightbox. Keep it outside the
+// element it's wired to, or a click on the shown image would reopen it.
+import Icon from './Icon.astro';
+---
+
+<dialog class="pixel-lightbox" aria-label="Full-size image">
+  <button type="button" aria-label="Close" class="pixel-button pixel-lightbox-close">
+    <Icon name="close" class="w-4 h-4" />
+  </button>
+  <img alt="" />
+</dialog>
