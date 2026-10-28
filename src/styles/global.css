@@ -29,61 +29,6 @@
   margin-inline: auto;
 }
 
-.prose[data-lightbox] :where(img:not(a img)) {
-  cursor: zoom-in;
-}
-
-html:has(.prose-lightbox[open]) {
-  overflow: hidden;
-}
-
-.prose-lightbox {
-  width: 100vw;
-  height: 100dvh;
-  max-width: none;
-  max-height: none;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  overflow: auto;
-  overscroll-behavior: contain;
-}
-
-.prose-lightbox[open] {
-  display: flex;
-}
-
-.prose-lightbox::backdrop {
-  background: transparent;
-}
-
-/* `margin: auto` rather than centring the flex box: a centred item wider than the box can't be scrolled to its start. */
-.prose-lightbox img {
-  margin: auto;
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100dvh - 2rem);
-  border: 2px solid var(--border);
-  object-fit: contain;
-  cursor: zoom-in;
-}
-
-.prose-lightbox[data-zoom] img {
-  max-width: none;
-  max-height: none;
-}
-
-.prose-lightbox[data-zoom="2"] img {
-  cursor: zoom-out;
-}
-
-.prose-lightbox-close {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  background: var(--bg);
-}
-
 .prose :where(hr) {
   border: 0;
   margin: 2.5em 0;

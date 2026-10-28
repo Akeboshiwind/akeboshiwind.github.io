@@ -448,6 +448,61 @@
     outline: none;
   }
 
+  [data-lightbox] :where(img:not(a img)) {
+    cursor: zoom-in;
+  }
+
+  html:has(.pixel-lightbox[open]) {
+    overflow: hidden;
+  }
+
+  .pixel-lightbox {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .pixel-lightbox[open] {
+    display: flex;
+  }
+
+  .pixel-lightbox::backdrop {
+    background: transparent;
+  }
+
+  /* `margin: auto` rather than centring the flex box: a centred item wider than the box can't be scrolled to its start. */
+  .pixel-lightbox img {
+    margin: auto;
+    max-width: calc(100vw - 2rem);
+    max-height: calc(100dvh - 2rem);
+    border: 2px solid var(--border);
+    object-fit: contain;
+    cursor: zoom-in;
+  }
+
+  .pixel-lightbox[data-zoom] img {
+    max-width: none;
+    max-height: none;
+  }
+
+  .pixel-lightbox[data-zoom="2"] img {
+    cursor: zoom-out;
+  }
+
+  .pixel-lightbox-close {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    background: var(--bg);
+  }
+
   .pixel-button, .pixel-chip {
     padding: 0.25rem 0.5rem;
     border: 2px solid var(--border);

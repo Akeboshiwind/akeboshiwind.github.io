@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 import { historyFromPath } from '../lib/history.js';
-import Icon from '../components/pixel/Icon.astro';
+import Lightbox from '../components/pixel/Lightbox.astro';
 
 export async function getStaticPaths() {
   const notes = await getCollection('notes');
@@ -63,16 +63,11 @@ const historyUrl = historyFromPath(`src/content/notes/${note.id}`);
       </p>
     )}
   </article>
-  <dialog class="prose-lightbox" aria-label="Full-size image">
-    <button type="button" aria-label="Close" class="pixel-button prose-lightbox-close">
-      <Icon name="close" class="w-4 h-4" />
-    </button>
-    <img alt="" />
-  </dialog>
+  <Lightbox />
 </Layout>
 
 <script>
   import { wireImageLightbox } from '../lib/image-lightbox.js';
 
-  wireImageLightbox(document.querySelector('article')!, document.querySelector<HTMLDialogElement>('.prose-lightbox')!);
+  wireImageLightbox(document.querySelector('article')!, document.querySelector<HTMLDialogElement>('.pixel-lightbox')!);
 </script>
