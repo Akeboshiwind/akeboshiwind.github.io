@@ -29,28 +29,13 @@
   margin-inline: auto;
 }
 
-.prose[data-lightbox] :where(img:not(a img)) {
+.prose[data-image-expand] :where(img:not(a img)) {
   cursor: zoom-in;
 }
 
-.prose-lightbox {
-  max-width: 100vw;
-  max-height: 100dvh;
-  margin: auto;
-  padding: 0;
-  border: 0;
-  background: transparent;
+.prose[data-image-expand] :where(img[data-expanded]) {
+  max-height: none;
   cursor: zoom-out;
-}
-
-.prose-lightbox::backdrop {
-  background: color-mix(in srgb, var(--bg) 90%, transparent);
-}
-
-.prose-lightbox img {
-  max-width: 100vw;
-  max-height: 100dvh;
-  object-fit: contain;
 }
 
 .prose :where(hr) {
