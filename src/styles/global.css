@@ -90,10 +90,14 @@
 }
 
 .prose details > :not(summary) {
-  margin: 0;
+  margin-inline: 1em;
 }
 
-.prose details :where(.expressive-code) {
+.prose details > :last-child {
+  margin-bottom: 1em;
+}
+
+.prose details .expressive-code {
   margin: 0;
   overflow: hidden;
 }
