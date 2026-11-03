@@ -1,0 +1,13 @@
+{
+  "title": "Touchstone",
+  "stage": "draft",
+  "published": "2026-11-02",
+  "description": "An iOS alarm you can only stop by getting up and scanning an NFC tag. AlarmKit + Core NFC, no snooze.",
+  "url": "https://github.com/Akeboshiwind/touchstone",
+  "tags": [
+    "personal"
+  ],
+  "category": "health",
+  "icon": "alarm-clock",
+  "dither": "image"
+}
