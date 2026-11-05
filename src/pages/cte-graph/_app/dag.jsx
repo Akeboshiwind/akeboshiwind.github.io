@@ -40,7 +40,26 @@ function Box({ x, y, width, height, copies, materialized }) {
   );
 }
 
-const EDGE_LABEL = 'fill-text stroke-bg [stroke-width:3px] [paint-order:stroke] text-[10px]';
+/**
+ * A read count's size at 10px, from Departure Mono's metrics in its 550 units to the em: every glyph advances 350,
+ * and its line ascends 550 and descends 150. elk is told this size, so it can keep the label clear of the nodes.
+ */
+const LABEL = { size: 10, advance: (10 * 350) / 550, ascent: (10 * 550) / 550, height: (10 * 700) / 550 };
+
+const labelOf = (n) => {
+  const text = `×${n}`;
+  return { text, width: text.length * LABEL.advance, height: LABEL.height };
+};
+
+const READS = labelOf('n');
+
+/** `text` in the box whose top-left is `x`, `y`. */
+function EdgeLabel({ x, y, text }) {
+  return (
+    <text x={x} y={y + LABEL.ascent} fontSize={LABEL.size}
+      className="fill-text stroke-bg [stroke-width:3px] [paint-order:stroke]">{text}</text>
+  );
+}
 
 function Swatch({ label, children }) {
   return (
@@ -74,14 +93,15 @@ export function Key() {
       </Swatch>
       <Swatch label="n reads">
         <Heads id="cte-key-reads" />
-        <Edge points={[{ x: 9, y: 2 }, { x: 9, y: 27 }]} n={2} heads="cte-key-reads" />
-        <text x={14} y={18} className={EDGE_LABEL}>×n</text>
+        <Edge points={[{ x: 22, y: 2 }, { x: 22, y: 27 }]} n={2} heads="cte-key-reads" />
+        <EdgeLabel {...READS} x={20 - READS.width} y={14.5 - READS.height / 2} />
       </Swatch>
     </ul>
   );
 }
 
-async function layout({ defs }) {
+/** Where elk places each CTE, each read, and each read count over one. */
+export async function layout({ defs }) {
   const { default: ELK } = await import('elkjs/lib/elk.bundled.js');
   const reads = defs.flatMap((d) => [...d.refs].map(([cte, n]) => ({ from: d.id, to: cte.id, n })));
   const out = await new ELK().layout({
@@ -90,12 +110,18 @@ async function layout({ defs }) {
       'elk.algorithm': 'layered',
       'elk.direction': 'DOWN',
       'elk.edgeRouting': 'ORTHOGONAL',
+      'elk.edgeLabels.placement': 'CENTER',
       'elk.spacing.nodeNode': '16',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '44',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '16',
       'elk.padding': '[top=8,left=8,bottom=8,right=8]',
     },
     children: defs.map((d) => ({ id: String(d.id), width: widthOf(nameOf(d)), height: H })),
-    edges: reads.map((e) => ({ id: `${e.from}>${e.to}`, sources: [String(e.from)], targets: [String(e.to)] })),
+    edges: reads.map((e) => ({
+      id: `${e.from}>${e.to}`,
+      sources: [String(e.from)],
+      targets: [String(e.to)],
+      labels: e.n > 1 ? [labelOf(e.n)] : [],
+    })),
   });
   const at = new Map(out.children.map((c) => [c.id, c]));
   return {
@@ -103,9 +129,8 @@ async function layout({ defs }) {
     height: out.height,
     nodes: defs.map((def) => ({ def, ...at.get(String(def.id)) })),
     edges: reads.map((e, i) => {
-      const { startPoint, bendPoints = [], endPoint } = out.edges[i].sections[0];
-      const points = [startPoint, ...bendPoints, endPoint];
-      return { ...e, key: out.edges[i].id, points, middle: points[Math.floor((points.length - 1) / 2)] };
+      const { id, sections: [{ startPoint, bendPoints = [], endPoint }], labels: [label] = [] } = out.edges[i];
+      return { ...e, key: id, points: [startPoint, ...bendPoints, endPoint], label };
     }),
   };
 }
@@ -142,7 +167,7 @@ export function Dag({ model, copies }) {
           {laid.edges.map((e) => (
             <g key={e.key} data-edge={e.key}>
               <Edge points={e.points} n={e.n} heads="cte-head" />
-              {e.n > 1 && <text x={e.middle.x + 4} y={e.middle.y + 4} className={EDGE_LABEL}>×{e.n}</text>}
+              {e.label && <EdgeLabel {...e.label} />}
             </g>
           ))}
           {laid.nodes.map(({ def, x, y, width: w }) => {
