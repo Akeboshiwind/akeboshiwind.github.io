@@ -13,7 +13,8 @@
     "new-tool": "node scripts/new-tool.js",
     "prepare": "husky",
     "favicons": "node scripts/favicons.js",
-    "shot": "node scripts/shot.js"
+    "shot": "node scripts/shot.js",
+    "cte-grammar": "node scripts/cte-grammar.js"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.13",
@@ -21,9 +22,11 @@
     "@tailwindcss/vite": "^4.2.0",
     "@vitejs/plugin-react": "^5.1.4",
     "ably": "^2.17.1",
+    "antlr4ng": "^3.0.16",
     "astro": "^5.16.15",
     "astro-expressive-code": "^0.41.7",
     "dompurify": "^3.3.2",
+    "elkjs": "^0.12.1",
     "github-slugger": "^2.0.0",
     "highlight.js": "^11.11.1",
     "lucide-static": "^1.14.0",
@@ -43,6 +46,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "antlr4ng-cli": "^2.0.0",
     "happy-dom": "^20.7.0",
     "husky": "^9.1.7",
     "playwright": "1.64.0",

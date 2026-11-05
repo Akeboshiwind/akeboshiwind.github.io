@@ -1,0 +1,12 @@
+{
+  "title": "CTE Graph",
+  "stage": "scribble",
+  "published": "2026-11-05",
+  "description": "Paste an XTDB query to see its CTEs as a graph: each CTE once, the CTEs it reads, and how many copies of it inlining puts in the plan.",
+  "tags": [
+    "sql"
+  ],
+  "category": "utilities",
+  "icon": "git-branch",
+  "dither": "ui"
+}
