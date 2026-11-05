@@ -8,5 +8,6 @@ They, the patches to them in `patches/`, and the parser ANTLR generates here are
 from it with these patches applied, in order; each says at its top what it changes and why:
 
 - `patches/1-typescript.patch`
+- `patches/2-speed.patch`
 
 Change the patches, not the generated files.

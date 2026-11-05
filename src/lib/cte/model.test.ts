@@ -90,6 +90,49 @@ describe('parse resolves CTE names as XTDB does', () => {
   });
 });
 
+describe('parse counts CTE references in', () => {
+  test('a derived table with no alias', () => {
+    expect(copiesOf('WITH a AS (SELECT * FROM t) SELECT * FROM (SELECT * FROM a)')).toEqual([['query', 1], ['a', 1]]);
+  });
+
+  test('BETWEEN bounds, alongside AND', () => {
+    expect(copiesOf(`
+      WITH a AS (SELECT * FROM t)
+      SELECT * FROM a
+      WHERE x NOT BETWEEN (SELECT MIN(y) FROM a) AND 2 AND z BETWEEN 1 AND (SELECT MAX(y) FROM a)`))
+      .toEqual([['query', 1], ['a', 3]]);
+  });
+
+  test('aggregates and window functions, with and without OVER', () => {
+    expect(copiesOf(`
+      WITH a AS (SELECT * FROM t)
+      SELECT SUM(x) OVER (PARTITION BY y), COUNT(*), ROW_NUMBER() OVER w
+      FROM a WINDOW w AS (ORDER BY x)`)).toEqual([['query', 1], ['a', 1]]);
+  });
+
+  test('a function call in FROM, which is not a table', () => {
+    expect(copiesOf('WITH a AS (SELECT * FROM t) SELECT * FROM a, f(a.x) AS y')).toEqual([['query', 1], ['a', 1]]);
+  });
+
+  test('qualified columns and asterisks', () => {
+    expect(copiesOf('WITH a AS (SELECT * FROM t) SELECT a.b.*, a.c.d, (a.e).f FROM a')).toEqual([['query', 1], ['a', 1]]);
+  });
+
+  test('a query of 40 chained CTEs', () => {
+    const ctes = Array.from({ length: 40 }, (_, i) => `c${i} AS (
+      SELECT p.k,
+        ROW_NUMBER() OVER (PARTITION BY p.k ORDER BY p.ts DESC) AS rn,
+        SUM(p.v) OVER (PARTITION BY p.k) AS total,
+        CASE WHEN p.v BETWEEN 1 AND 10 THEN 'low' ELSE 'high' END AS band
+      FROM ${i === 0 ? 't' : `c${i - 1}`} AS p
+      LEFT JOIN (SELECT q.k FROM u AS q WHERE q.k IN (SELECT k FROM v)) AS b ON b.k = p.k
+      WHERE p.status <> 'closed'
+      GROUP BY p.k, p.ts, p.v, p.status)`);
+    expect(copiesOf(`WITH ${ctes.join(',\n')} SELECT * FROM c39`))
+      .toEqual([['query', 1], ...ctes.map((_, i) => [`c${i}`, 1])]);
+  });
+});
+
 describe('parse rejects', () => {
   test('a syntax error, with where it is', () => {
     expect(parse('SELECT * FROM')).toEqual({ ok: false, error: expect.stringMatching(/^Line 1:\d+: /) });

@@ -1,0 +1,58 @@
+Parses faster. ANTLR's full-context prediction spends most of a long query's
+parse on four decisions: a table reference that could be an expression, BETWEEN's
+left operand, an aggregate with or without OVER, and a column reference's dotted
+chain. These rewrite each so a short lookahead decides it.
+
+ExprDerivedTable is guarded, not removed: `FROM f(x) AS y`, `FROM $1` and
+`FROM ARRAY[1, 2]` still need it. The guard is a TypeScript predicate, so this
+applies after 1-typescript.patch. DerivedTable's alias becomes optional, since
+`FROM (SELECT …)` without one used to parse only as ExprDerivedTable.
+
+The parser then accepts some SQL that XTDB rejects, and builds different trees for
+some it accepts; the tool reads only the WITH clauses and the tables a query names,
+which these leave as they were.
+
+--- a/Sql.g4
++++ b/Sql.g4
+@@ -238,7 +238,7 @@
+ // Alternative order is precedence, tightest first, following PostgreSQL's operator precedence table:
+ // predicates, then comparisons, then IS, NOT, AND, OR.
+ expr
+-    : commonValueExpr NOT? 'BETWEEN' (ASYMMETRIC | SYMMETRIC)? commonValueExpr 'AND' commonValueExpr # BetweenPredicate
++    : expr NOT? 'BETWEEN' (ASYMMETRIC | SYMMETRIC)? commonValueExpr 'AND' commonValueExpr # BetweenPredicate
+     | expr NOT? 'IN' inPredicateValue # InPredicate
+     | expr 'NOT'? ('LIKE' | 'ILIKE') likePattern=commonValueExpr ('ESCAPE' likeEscape=commonValueExpr)? # LikePredicate
+     | expr 'NOT'? 'LIKE_REGEX' xqueryPattern=commonValueExpr ('FLAG' xqueryOptionFlag=commonValueExpr)? # LikeRegexPredicate
+@@ -298,8 +298,8 @@
+     | commonValueExpr op=(CONCAT | AMPERSAND | BITWISE_OR | BITWISE_XOR | BITWISE_SHIFT_LEFT | BITWISE_SHIFT_RIGHT) commonValueExpr #ConcatOrBitwiseExpr
+ 
+     | parameterSpecification # ParamExpr
+-    | columnReference # ColumnExpr
+-    | aggregateFunction # AggregateFunctionExpr
++    | identifier # ColumnExpr
++    | aggregateFunction ('OVER' windowNameOrSpecification)? # AggregateFunctionExpr
+     | windowFunctionType 'OVER' windowNameOrSpecification # WindowFunctionExpr
+     | nestedWindowFunction # NestedWindowFunctionExpr
+     | 'NEST_ONE' subquery # NestOneSubqueryExpr
+@@ -435,7 +435,6 @@
+ windowFunctionType
+     : rankFunctionType '(' ')' # RankWindowFunction
+     | 'ROW_NUMBER' '(' ')' # RowNumberWindowFunction
+-    | aggregateFunction # AggregateWindowFunction
+     | 'NTILE' '(' numberOfTiles ')' # NtileWindowFunction
+ 
+     | ('LEAD' | 'LAG') '('
+@@ -563,11 +562,11 @@
+     | tableReference joinType? 'JOIN' tableReference joinSpecification # JoinTable
+     | tableReference 'CROSS' 'JOIN' tableReference # CrossJoinTable
+     | tableReference 'NATURAL' joinType? 'JOIN' tableReference # NaturalJoinTable
+-    | subquery tableAlias tableProjection? # DerivedTable
++    | subquery (tableAlias tableProjection?)? # DerivedTable
+     | 'LATERAL' subquery tableAlias tableProjection? # LateralDerivedTable
+     | 'UNNEST' '(' expr ')' withOrdinality? tableAlias tableProjection? # CollectionDerivedTable
+     | generateSeries withOrdinality? tableAlias tableProjection? # GenerateSeriesTable
+-    | expr withOrdinality? (tableAlias tableProjection?)? # ExprDerivedTable
++    | {this.tokenStream.LA(2) === Sql.LPAREN || ![Sql.REGULAR_IDENTIFIER, Sql.DELIMITED_IDENTIFIER, Sql.LPAREN].includes(this.tokenStream.LA(1))}? expr withOrdinality? (tableAlias tableProjection?)? # ExprDerivedTable
+     | '(' tableReference ')' # WrappedTableReference
+     ;
+ 
