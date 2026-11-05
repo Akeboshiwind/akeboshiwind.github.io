@@ -1,0 +1,47 @@
+Targets TypeScript: both grammars declare Java, and the lexer's dollar-quoting
+keeps its tag in a Java field and compares it with Java calls.
+
+--- a/SqlLexer.g4
++++ b/SqlLexer.g4
+@@ -1,12 +1,12 @@
+ lexer grammar SqlLexer;
+
+ options {
+-  language = Java;
++  language = TypeScript;
+   caseInsensitive = true;
+ }
+
+ @members {
+-    String dollarTag = null;
++    dollarTag: string | null = null;
+ }
+
+ BLOCK_COMMENT : '/*' ( BLOCK_COMMENT | . )*? '*/'  -> skip ;
+@@ -402,7 +402,7 @@
+
+ fragment DOLLAR_TAG_NAME : (LETTER | '_') (LETTER | DIGIT | '_' )* ;
+
+-DOLLAR_TAG : '$' DOLLAR_TAG_NAME? '$' {dollarTag = getText();} -> pushMode(DOLLAR_MODE);
++DOLLAR_TAG : '$' DOLLAR_TAG_NAME? '$' {this.dollarTag = this.text;} -> pushMode(DOLLAR_MODE);
+
+ REGULAR_IDENTIFIER : (LETTER | '_') (LETTER | DIGIT | '$' | '_' )* ;
+
+@@ -413,5 +413,5 @@
+
+ mode DOLLAR_MODE;
+
+-DM_END_TAG : '$' DOLLAR_TAG_NAME? '$' { dollarTag.equals(getText()) }? { dollarTag = null; } -> popMode;
++DM_END_TAG : '$' DOLLAR_TAG_NAME? '$' { this.dollarTag === this.text }? { this.dollarTag = null; } -> popMode;
+ DM_TEXT: (~'$')+ | '$' ;
+--- a/Sql.g4
++++ b/Sql.g4
+@@ -1,7 +1,7 @@
+ parser grammar Sql;
+
+ options {
+-  language = Java;
++  language = TypeScript;
+   caseInsensitive = true;
+   tokenVocab = SqlLexer;
+ }
