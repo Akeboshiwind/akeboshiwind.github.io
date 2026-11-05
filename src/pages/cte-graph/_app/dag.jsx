@@ -6,12 +6,78 @@ const widthOf = (name) => Math.max(76, name.length * 7 + 20);
 
 const nameOf = (def) => (def.kind === 'cte' ? def.name : 'query');
 
-function Head({ id, size }) {
+function Heads({ id }) {
   return (
-    <marker id={id} viewBox="0 0 2 2" refX="2" refY="1" markerWidth={size} markerHeight={size}
-      markerUnits="userSpaceOnUse" orient="auto-start-reverse">
-      <path d="M0,0L2,1L0,2z" className="fill-text" />
-    </marker>
+    <defs>
+      {[['1', 8], ['n', 12]].map(([n, size]) => (
+        <marker key={n} id={`${id}-${n}`} viewBox="0 0 2 2" refX="2" refY="1" markerWidth={size} markerHeight={size}
+          markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+          <path d="M0,0L2,1L0,2z" className="fill-text" />
+        </marker>
+      ))}
+    </defs>
+  );
+}
+
+/** A read of `n`, headed at `points[0]`, the reader; `heads` is the id given to `Heads` in the same svg. */
+function Edge({ points, n, heads }) {
+  return (
+    <path d={`M${points.map((p) => `${p.x},${p.y}`).join('L')}`}
+      markerStart={`url(#${heads}-${n > 1 ? 'n' : '1'})`}
+      className={`fill-none stroke-text ${n > 1 ? '[stroke-width:3px]' : '[stroke-width:1px]'}`} />
+  );
+}
+
+function Box({ x, y, width, height, copies, materialized }) {
+  return (
+    <>
+      <rect x={x} y={y} width={width} height={height}
+        className={copies > 1 ? 'fill-accent/15 stroke-accent [stroke-width:3px]' : 'fill-bg stroke-text [stroke-width:1px]'} />
+      {materialized && (
+        <rect data-materialized x={x + 4} y={y + 4} width={width - 8} height={height - 8} className="fill-none stroke-text [stroke-width:1px]" />
+      )}
+    </>
+  );
+}
+
+const EDGE_LABEL = 'fill-text stroke-bg [stroke-width:3px] [paint-order:stroke] text-[10px]';
+
+function Swatch({ label, children }) {
+  return (
+    <li className="flex items-center gap-1">
+      <svg aria-hidden="true" width="30" height="28" viewBox="0 0 30 28" className="font-pixel">{children}</svg>
+      <span>{label}</span>
+    </li>
+  );
+}
+
+/** A swatch of each of the graph's marks, drawn as the graph draws it, with what it means. */
+export function Key() {
+  return (
+    <ul aria-label="Key" className="label flex flex-wrap items-center gap-x-4 gap-y-1">
+      <Swatch label="one copy">
+        <Box x={2} y={5} width={26} height={18} copies={1} />
+        <text x={15} y={18} textAnchor="middle" className="fill-text text-[10px]">×1</text>
+      </Swatch>
+      <Swatch label="n copies">
+        <Box x={2} y={5} width={26} height={18} copies={2} />
+        <text x={15} y={18} textAnchor="middle" className="fill-text text-[10px]">×n</text>
+      </Swatch>
+      <Swatch label="MATERIALIZED">
+        <Box x={2} y={5} width={26} height={18} copies={1} materialized />
+      </Swatch>
+      <Swatch label="rows flow">
+        <Heads id="cte-key-flow" />
+        <Box x={7} y={1} width={16} height={6} copies={1} />
+        <Edge points={[{ x: 15, y: 7 }, { x: 15, y: 21 }]} n={1} heads="cte-key-flow" />
+        <Box x={7} y={21} width={16} height={6} copies={1} />
+      </Swatch>
+      <Swatch label="n reads">
+        <Heads id="cte-key-reads" />
+        <Edge points={[{ x: 9, y: 2 }, { x: 9, y: 27 }]} n={2} heads="cte-key-reads" />
+        <text x={14} y={18} className={EDGE_LABEL}>×n</text>
+      </Swatch>
+    </ul>
   );
 }
 
@@ -72,21 +138,11 @@ export function Dag({ model, copies }) {
         <svg role="img" aria-label="Each CTE once, with the CTEs it reads" viewBox={`0 0 ${width} ${height}`}
           className="block mx-auto font-pixel"
           style={{ width, maxWidth: '100%', height: 'auto' }}>
-          <defs>
-            <Head id="cte-head-1" size={8} />
-            <Head id="cte-head-n" size={12} />
-          </defs>
+          <Heads id="cte-head" />
           {laid.edges.map((e) => (
             <g key={e.key} data-edge={e.key}>
-              <path d={`M${e.points.map((p) => `${p.x},${p.y}`).join('L')}`}
-                markerStart={`url(#cte-head-${e.n > 1 ? 'n' : '1'})`}
-                className={`fill-none stroke-text ${e.n > 1 ? '[stroke-width:3px]' : '[stroke-width:1px]'}`} />
-              {e.n > 1 && (
-                <text x={e.middle.x + 4} y={e.middle.y + 4}
-                  className="fill-text stroke-bg [stroke-width:3px] [paint-order:stroke] text-[10px]">
-                  ×{e.n}
-                </text>
-              )}
+              <Edge points={e.points} n={e.n} heads="cte-head" />
+              {e.n > 1 && <text x={e.middle.x + 4} y={e.middle.y + 4} className={EDGE_LABEL}>×{e.n}</text>}
             </g>
           ))}
           {laid.nodes.map(({ def, x, y, width: w }) => {
@@ -95,11 +151,7 @@ export function Dag({ model, copies }) {
             return (
               <g key={def.id} data-node={nameOf(def)}>
                 <title>{`${nameOf(def)}: ${n} ${n === 1 ? 'copy' : 'copies'}${materialized ? ', MATERIALIZED' : ''}`}</title>
-                <rect x={x} y={y} width={w} height={H}
-                  className={n > 1 ? 'fill-accent/15 stroke-accent [stroke-width:3px]' : 'fill-bg stroke-text [stroke-width:1px]'} />
-                {materialized && (
-                  <rect data-materialized x={x + 4} y={y + 4} width={w - 8} height={H - 8} className="fill-none stroke-text [stroke-width:1px]" />
-                )}
+                <Box x={x} y={y} width={w} height={H} copies={n} materialized={materialized} />
                 <text x={x + w / 2} y={y + 16} textAnchor="middle" className="fill-text text-[11px]">{nameOf(def)}</text>
                 <text x={x + w / 2} y={y + 30} textAnchor="middle" className="fill-text text-[10px]">×{n}</text>
               </g>

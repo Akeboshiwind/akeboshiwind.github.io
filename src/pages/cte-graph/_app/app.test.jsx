@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
+import { render, screen, within, cleanup, fireEvent, act } from '@testing-library/react';
 import { parse } from '../../../lib/cte/parse.ts';
 import { App } from './app.jsx';
 
@@ -112,8 +112,22 @@ describe('CTE Graph', () => {
 
       const [, y] = start('0>4');
       expect(y).toBe(Number(rect('query').getAttribute('y')) + Number(rect('query').getAttribute('height')));
+    });
 
-      expect(screen.getByText(/^Arrows point the way rows flow, up from a CTE into what reads it/)).toBeTruthy();
+    test('keys the graph with a swatch of each mark, drawn as the graph draws it', async () => {
+      await graphed();
+      const key = screen.getByRole('list', { name: 'Key' });
+      const swatch = (label) => within(key).getByText(label).closest('li').querySelector('svg');
+
+      expect(within(key).getAllByRole('listitem').map((li) => li.lastChild.textContent))
+        .toEqual(['one copy', 'n copies', 'MATERIALIZED', 'rows flow', 'n reads']);
+      expect(swatch('one copy').querySelector('rect').getAttribute('class')).toContain('stroke-text');
+      expect(swatch('n copies').querySelector('rect').getAttribute('class')).toContain('stroke-accent');
+      expect(swatch('MATERIALIZED').querySelector('[data-materialized]')).toBeTruthy();
+      expect(swatch('rows flow').querySelector('path[marker-start]').getAttribute('class')).toContain('[stroke-width:1px]');
+      expect(swatch('n reads').querySelector('path[marker-start]').getAttribute('class')).toContain('[stroke-width:3px]');
+      expect(swatch('n reads').textContent).toBe('×n');
+      expect(screen.queryByText(/^Arrows point the way rows flow/)).toBeNull();
     });
   });
 

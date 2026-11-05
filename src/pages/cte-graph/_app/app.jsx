@@ -3,20 +3,13 @@ import { createRoot } from 'react-dom/client';
 import { copies } from '../../../lib/cte/model.ts';
 import { QueryInput } from '../../../lib/cte/QueryInput.jsx';
 import { useParser } from '../../../lib/cte/useParser.js';
-import { Dag } from './dag.jsx';
+import { Dag, Key } from './dag.jsx';
 
 function Graph({ model }) {
   const n = useMemo(() => copies(model), [model]);
   return (
     <section className="mt-6 flex flex-col gap-2">
-      <p className="text-sm opacity-70">
-        Each CTE once, with the CTEs it reads. One with more than one copy is drawn thick, and one MATERIALIZED has a
-        double border.
-      </p>
-      <p className="text-sm opacity-70">
-        Arrows point the way rows flow, up from a CTE into what reads it (×n where it's read n times): arrows into a
-        node's bottom are what it reads, and arrows out of its top are where its rows go.
-      </p>
+      <Key />
       <Dag model={model} copies={n} />
     </section>
   );
