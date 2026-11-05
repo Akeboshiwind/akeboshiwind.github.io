@@ -38,7 +38,7 @@ export function parse(sql: string): Parsed {
   if (errors.error) return { ok: false, error: errors.error };
   if (!(statement instanceof QueryExprContext)) return { ok: false, error: 'Only a query can be analysed.' };
 
-  const query: Query = { kind: 'query', id: 0, refs: new Map() };
+  const query: Query = { kind: 'query', id: 0, scans: 0, refs: new Map() };
   const defs: Model['defs'] = [query];
   type Scope = ReadonlyMap<string, Cte>;
 
@@ -48,7 +48,7 @@ export function parse(sql: string): Parsed {
       for (const element of node.withClause()!.withListElement()) {
         const cte: Cte = {
           kind: 'cte', id: defs.length, name: identifierName(element._queryName!), definer: body.id,
-          materialized: element.MATERIALIZED() !== null, refs: new Map(),
+          materialized: element.MATERIALIZED() !== null, start: element.start!.start, scans: 0, refs: new Map(),
         };
         defs.push(cte);
         walk(element.subquery()!, inner, cte);
@@ -61,10 +61,11 @@ export function parse(sql: string): Parsed {
       const parts = node.fromTableRef().identifier();
       const cte = parts.length === 1 ? scope.get(identifierName(parts[0])) : undefined;
       if (cte) body.refs.set(cte, (body.refs.get(cte) ?? 0) + 1);
+      else body.scans++;
     }
     for (let i = 0; i < node.getChildCount(); i++) walk(node.getChild(i)!, scope, body);
   };
 
   walk(statement, new Map(), query);
-  return { ok: true, model: { defs } };
+  return { ok: true, model: { sql, defs } };
 }

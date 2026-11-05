@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { copies, type Model } from './model.ts';
+import { copies, declared, scans, type Cte, type Model } from './model.ts';
 import { parse } from './parse.ts';
 
 const model = (sql: string): Model => {
@@ -50,6 +50,33 @@ describe('copies', () => {
     expect(copiesOf(`
       WITH a AS (WITH MATERIALIZED m AS (SELECT * FROM t) SELECT * FROM m, m AS m2)
       SELECT * FROM a, a AS a2`)).toEqual([['query', 1], ['a', 2], ['m', 2]]);
+  });
+});
+
+describe('scans', () => {
+  const ctes = (m: Model) => m.defs.filter((d): d is Cte => d.kind === 'cte');
+
+  test('count each base table once per copy of the body that names it', () => {
+    const m = model(`
+      WITH a AS (SELECT * FROM t, u),
+           b AS (SELECT * FROM a, a AS a2, v)
+      SELECT * FROM b, b AS b2, w`);
+    expect(scans(m, declared(m))).toBe(2 * 2 * 2 + 2 * 1 + 1);
+  });
+
+  test('count a MATERIALIZED body once', () => {
+    const m = model(`
+      WITH a AS (SELECT * FROM t),
+           b AS (SELECT * FROM a, a AS a2)
+      SELECT * FROM b, b AS b2`);
+    const [a, b] = ctes(m);
+    expect([new Set<Cte>(), new Set([a]), new Set([b]), new Set([a, b])].map((set) => scans(m, set)))
+      .toEqual([4, 1, 2, 1]);
+  });
+
+  test('count a name that is not a CTE in scope, including in subqueries', () => {
+    const m = model('WITH a AS (SELECT * FROM t) SELECT * FROM s.a WHERE x IN (SELECT y FROM u)');
+    expect(scans(m, declared(m))).toBe(2);
   });
 });
 
