@@ -1,6 +1,6 @@
 {
   "title": "Materialise Like Postgres",
-  "stage": "scribble",
+  "stage": "tale",
   "published": "2026-11-05",
   "description": "Paste an XTDB query to apply Postgres's rule to it: every CTE named more than once is MATERIALIZED. Copy the query back out, and see the table scans before and after.",
   "tags": [
