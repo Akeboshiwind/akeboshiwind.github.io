@@ -13,7 +13,11 @@ vi.mock('elkjs/lib/elk.bundled.js', () => ({
       return Promise.resolve({
         ...elk.size,
         children: graph.children.map((c, i) => ({ ...c, x: 8, y: 8 + i * 82 })),
-        edges: graph.edges.map((e) => ({ id: e.id, sections: [{ startPoint: { x: 40, y: 46 }, endPoint: { x: 40, y: 90 } }] })),
+        edges: graph.edges.map((e) => ({
+          id: e.id,
+          sections: [{ startPoint: { x: 40, y: 46 }, endPoint: { x: 40, y: 90 } }],
+          labels: e.labels.map((l) => ({ ...l, x: 43, y: 62 })),
+        })),
       });
     }
   },
@@ -24,8 +28,8 @@ afterEach(() => {
   elk.size = null;
 });
 
-const draw = () => {
-  const { model } = parse('WITH a AS (SELECT * FROM t) SELECT * FROM a');
+const draw = (sql = 'WITH a AS (SELECT * FROM t) SELECT * FROM a') => {
+  const { model } = parse(sql);
   render(<Dag model={model} copies={copies(model)} />);
 };
 
@@ -45,5 +49,12 @@ describe('Dag', () => {
     expect(svg.getAttribute('class')).not.toMatch(/min-w/);
     expect(svg.getAttribute('class')).toMatch(/mx-auto/);
     expect(svg.parentElement.getAttribute('class')).toMatch(/min-w-\[min\(100%,calc\(720px-2rem\)\)\]/);
+  });
+
+  test('draws a read count where elk placed it, its top-left at the label\'s x and y', async () => {
+    elk.size = { width: 96, height: 136 };
+    draw('WITH a AS (SELECT * FROM t) SELECT * FROM a, a AS a_2');
+    const label = await screen.findByText('×2', { selector: '[data-edge] text' });
+    expect([label.getAttribute('x'), label.getAttribute('y')]).toEqual(['43', '72']);
   });
 });
