@@ -1,8 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { edgeSpeed } from './list.js';
+import { trace } from './debug.js';
 
 const SLOP = 10;
 const HOLD = 300;
+
+// Which way a second finger scrolls, while iOS jitters: `?finger=screen` (default) | `client` | `native`.
+const MODE = (typeof location !== 'undefined' && new URLSearchParams(location.search).get('finger')) || 'screen';
+const fingerY = e => (MODE === 'client' ? e.clientY : e.screenY);
 
 /**
  * What a Dragology list in a scrolling page needs from the page. Dragology reads the pointer
@@ -32,15 +37,16 @@ export function useDrag() {
       if (!s.pointer) s.pointer = { id: e.pointerId, type: e.pointerType, x: e.clientX, y: e.clientY };
       else if (isOther(e) && s.dragging) {
         e.stopImmediatePropagation();
-        e.preventDefault();
-        s.others.set(e.pointerId, { y0: e.screenY, y: e.screenY, scroll0: window.scrollY });
+        if (MODE !== 'native') e.preventDefault();
+        s.others.set(e.pointerId, { y0: fingerY(e), y: fingerY(e), scroll0: window.scrollY });
       }
     };
     const onMove = e => {
       if (isOther(e)) {
         if (!s.others.has(e.pointerId)) return;
         e.stopImmediatePropagation();
-        s.others.get(e.pointerId).y = e.screenY;
+        s.others.get(e.pointerId).y = fingerY(e);
+        trace({ mv: '', sY: e.screenY, cY: e.clientY, sc: window.scrollY, vvT: window.visualViewport?.offsetTop, vvH: window.visualViewport?.height, iH: window.innerHeight });
         return;
       }
       if (!s.pointer) return;
@@ -61,10 +67,12 @@ export function useDrag() {
       s.block = false;
       s.others.clear();
     };
-    const onTouchMove = e => { if (s.dragging || s.block) e.preventDefault(); };
+    const native = e => MODE === 'native' && e.touches?.length > 1;
+    const onTouchMove = e => { if ((s.dragging || s.block) && !native(e)) e.preventDefault(); };
     // iOS takes a second finger as a pan or pinch of the viewport, fighting the scroll above.
-    const onTouchStart = e => { if (s.dragging && e.touches.length > 1) e.preventDefault(); };
-    const onGesture = e => { if (s.dragging) e.preventDefault(); };
+    const onTouchStart = e => { if (s.dragging && e.touches.length > 1 && MODE !== 'native') e.preventDefault(); };
+    const onGesture = e => { if (s.dragging && MODE !== 'native') e.preventDefault(); };
+    const onScroll = () => { if (s.dragging && MODE === 'native') resend(); };
 
     window.addEventListener('pointerdown', onDown, true);
     window.addEventListener('pointermove', onMove, true);
@@ -74,6 +82,7 @@ export function useDrag() {
     document.addEventListener('touchstart', onTouchStart, { passive: false });
     document.addEventListener('gesturestart', onGesture);
     document.addEventListener('gesturechange', onGesture);
+    window.addEventListener('scroll', onScroll, { passive: true });
     s.resend = resend;
     return () => {
       window.removeEventListener('pointerdown', onDown, true);
@@ -84,6 +93,7 @@ export function useDrag() {
       document.removeEventListener('touchstart', onTouchStart);
       document.removeEventListener('gesturestart', onGesture);
       document.removeEventListener('gesturechange', onGesture);
+      window.removeEventListener('scroll', onScroll);
       document.documentElement.style.touchAction = '';
       cancelHold();
       cancelAnimationFrame(s.frame);
@@ -100,12 +110,15 @@ export function useDrag() {
     if (!s.dragging) return;
     const finger = [...s.others.values()].at(-1);
     const max = document.documentElement.scrollHeight - window.innerHeight;
-    const target = finger
+    const target = finger && MODE === 'native'
+      ? window.scrollY
+      : finger
       ? Math.round(Math.min(max, Math.max(0, finger.scroll0 + finger.y0 - finger.y)))
       : window.scrollY + (s.pointer ? edgeSpeed(s.pointer.y, { top: 0, bottom: window.innerHeight }) : 0);
     if (Math.abs(target - window.scrollY) >= 1) {
       const before = window.scrollY;
       window.scrollTo(0, target);
+      if (finger) trace({ set: '', to: target, sc: window.scrollY });
       if (window.scrollY !== before) s.resend();
     }
     s.frame = requestAnimationFrame(tick);
@@ -115,7 +128,7 @@ export function useDrag() {
     const dragging = status.type === 'dragging';
     if (dragging && !s.dragging) s.frame = requestAnimationFrame(tick);
     // A finger that lands mid-drag takes its touch-action from where it lands.
-    if (dragging !== s.dragging) document.documentElement.style.touchAction = dragging ? 'none' : '';
+    if (dragging !== s.dragging && MODE !== 'native') document.documentElement.style.touchAction = dragging ? 'none' : '';
     s.dragging = dragging;
   };
 
