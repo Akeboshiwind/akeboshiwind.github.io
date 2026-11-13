@@ -129,7 +129,7 @@ export function App() {
           dragologyOnDrag={editing === item.id ? undefined : () => d.closest(reorders(state.items, item.id)).withFloating()}
         >
           <rect width={width} height={ROW} className="fill-bg stroke-border" strokeWidth={draggedId === rowId(item) ? 2 : 0} />
-          <line x1={0} y1={ROW - 1} x2={width} y2={ROW - 1} className="stroke-border" strokeWidth={2} strokeDasharray="2 2" />
+          <line x1={0} y1={ROW - 1} x2={width} y2={ROW - 1} className="stroke-border" strokeWidth={2} strokeDasharray="2 2" strokeOpacity={draggedId === rowId(item) ? 0 : 1} />
           <Check item={item} onToggle={() => toggle(item.id)} />
           <foreignObject transform={translate(TEXT_X, 0)} width={width - TEXT_X} height={ROW}>
             <Title
@@ -163,7 +163,7 @@ export function App() {
       <p className="label opacity-60">Drag a to-do to move it. Drag + to where a new one goes, or tap it to add one at the end.</p>
       <div
         ref={boxRef} {...bind}
-        className="[&_svg]:[touch-action:pan-y]! [-webkit-touch-callout:none] pb-6"
+        className="[&_svg]:[touch-action:pan-y]! [-webkit-touch-callout:none] select-none pb-6"
       >
         <DraggableRenderer
           draggable={draggable}
