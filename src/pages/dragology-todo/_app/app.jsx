@@ -4,7 +4,6 @@ import { DraggableRenderer, translate } from 'dragology';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
 import { insertAt, insertions, reorders } from './list.js';
 import { useDrag } from './useDrag.js';
-import { DebugTrace } from './debug.js';
 
 const PREFIX = 'dragology-todo_';
 const ROW = 44;
@@ -162,7 +161,6 @@ export function App() {
 
   return (
     <main className="flex flex-col gap-2">
-      <DebugTrace />
       <h1 className="page-title">Dragology Todo</h1>
       <p>
         A demo of <a href="https://declarative-dragging.github.io/" target="_blank" rel="noopener noreferrer" className="text-link underline">Dragology</a>,
