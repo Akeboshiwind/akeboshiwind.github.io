@@ -33,14 +33,14 @@ export function useDrag() {
       else if (isOther(e) && s.dragging) {
         e.stopImmediatePropagation();
         e.preventDefault();
-        s.others.set(e.pointerId, { y0: e.screenY, y: e.screenY, scroll0: window.scrollY });
+        s.others.set(e.pointerId, { y0: e.clientY, y: e.clientY, scroll0: window.scrollY });
       }
     };
     const onMove = e => {
       if (isOther(e)) {
         if (!s.others.has(e.pointerId)) return;
         e.stopImmediatePropagation();
-        s.others.get(e.pointerId).y = e.screenY;
+        s.others.get(e.pointerId).y = e.clientY;
         return;
       }
       if (!s.pointer) return;
@@ -92,7 +92,7 @@ export function useDrag() {
 
   /**
    * Once a frame: a second finger sets the scroll outright, to where it was when the finger
-   * landed plus how far the finger has moved since (in screenY, which scrolling can't change).
+   * landed plus how far the finger has moved since. In clientY: iOS adds the scroll to screenY.
    * Stepping by each move instead drifts against iOS's lagging scroll position, and jitters.
    * Only with no second finger down does the edge scroll.
    */
