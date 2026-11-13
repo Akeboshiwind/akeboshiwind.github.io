@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { edgeSpeed } from './list.js';
 
+const MOVE = 4;
 const SLOP = 10;
 const HOLD = 300;
 
@@ -8,9 +9,11 @@ const HOLD = 300;
  * What a Dragology list in a scrolling page needs from the page. Dragology reads the pointer
  * only on `pointermove`, takes moves and ups from any pointer, and makes its svg
  * `touch-action: none`. So this:
- *  - holds a touch on a row before handing it to Dragology, so a swipe still scrolls the page
- *    (the svg must be `touch-action: pan-y` for that);
- *  - lets a touch on a `[data-lift-now]` element through at once;
+ *  - hands a press to Dragology only once it is a drag. A press Dragology sees redraws what was
+ *    pressed, and the browser then drops its click, so a tap must never reach it;
+ *  - takes a touch on a row as a drag once held, so a swipe still scrolls the page
+ *    (the svg must be `touch-action: pan-y` for that), and a mouse, or a touch on a
+ *    `[data-lift-now]` element, once it moves;
  *  - scrolls the page while the pointer is near its top or bottom edge;
  *  - scrolls the page with any other finger, which Dragology never sees;
  * re-sending the dragging pointer after each scroll, so Dragology sees where it now is.
@@ -18,14 +21,28 @@ const HOLD = 300;
  * Spread `bind` on an element around the renderer and pass `onDragStatus` to it.
  */
 export function useDrag() {
-  const s = useRef({ dragging: false, pointer: null, hold: null, block: false, passing: false, others: new Map() }).current;
+  const s = useRef({ dragging: false, pointer: null, press: null, block: false, passing: false, others: new Map() }).current;
+
+  const cancelPress = () => { clearTimeout(s.press?.timer); s.press = null; };
+  /** Gives Dragology the press it was kept from, where it began. */
+  const handOff = () => {
+    const p = s.press;
+    cancelPress();
+    if (!s.pointer) return;
+    if (p.type === 'touch') s.block = true;
+    s.passing = true;
+    p.target.dispatchEvent(new PointerEvent('pointerdown', {
+      pointerId: s.pointer.id, pointerType: p.type, isPrimary: true, button: 0, buttons: 1,
+      clientX: p.x, clientY: p.y, bubbles: true, cancelable: true, composed: true,
+    }));
+    s.passing = false;
+  };
 
   useEffect(() => {
     const resend = (type = 'pointermove') => {
       const p = s.pointer;
       if (p) document.dispatchEvent(new PointerEvent(type, { pointerId: p.id, pointerType: p.type, clientX: p.x, clientY: p.y, bubbles: true }));
     };
-    const cancelHold = () => { clearTimeout(s.hold?.timer); s.hold = null; };
     const isOther = e => s.pointer && e.pointerId !== s.pointer.id;
 
     const onDown = e => {
@@ -46,7 +63,11 @@ export function useDrag() {
       if (!s.pointer) return;
       s.pointer.x = e.clientX;
       s.pointer.y = e.clientY;
-      if (s.hold && Math.hypot(e.clientX - s.hold.x, e.clientY - s.hold.y) > SLOP) cancelHold();
+      const p = s.press;
+      if (!p) return;
+      const moved = Math.hypot(e.clientX - p.x, e.clientY - p.y);
+      if (p.timer) { if (moved > SLOP) cancelPress(); }
+      else if (moved > MOVE) handOff();
     };
     const onEnd = e => {
       if (isOther(e)) {
@@ -54,7 +75,7 @@ export function useDrag() {
         return;
       }
       if (!s.pointer) return;
-      cancelHold();
+      cancelPress();
       // Dragology ends a drag only on pointerup; a cancelled touch must end it too.
       if (e.type === 'pointercancel' && s.dragging) resend('pointerup');
       s.pointer = null;
@@ -85,7 +106,7 @@ export function useDrag() {
       document.removeEventListener('gesturestart', onGesture);
       document.removeEventListener('gesturechange', onGesture);
       document.documentElement.style.touchAction = '';
-      cancelHold();
+      cancelPress();
       cancelAnimationFrame(s.frame);
     };
   }, []);
@@ -121,27 +142,17 @@ export function useDrag() {
 
   const bind = {
     onPointerDownCapture: e => {
-      if (s.passing || e.pointerType !== 'touch' || e.target.closest('input, textarea')) return;
-      if (e.target.closest('[data-lift-now]')) { s.block = true; return; }
+      if (s.passing || e.button !== 0 || e.target.closest('input, textarea')) return;
       e.stopPropagation();
-      const target = e.target;
-      s.hold = {
-        x: e.clientX, y: e.clientY,
-        timer: setTimeout(() => {
-          s.hold = null;
-          if (!s.pointer) return;
-          s.block = true;
-          navigator.vibrate?.(10);
-          s.passing = true;
-          target.dispatchEvent(new PointerEvent('pointerdown', {
-            pointerId: s.pointer.id, pointerType: 'touch', isPrimary: true, button: 0, buttons: 1,
-            clientX: s.pointer.x, clientY: s.pointer.y, bubbles: true, cancelable: true, composed: true,
-          }));
-          s.passing = false;
-        }, HOLD),
+      const touch = e.pointerType === 'touch';
+      const hold = touch && !e.target.closest('[data-lift-now]');
+      if (touch && !hold) s.block = true;
+      s.press = {
+        target: e.target, type: e.pointerType, x: e.clientX, y: e.clientY,
+        timer: hold ? setTimeout(() => { navigator.vibrate?.(10); handOff(); }, HOLD) : null,
       };
     },
-    onContextMenu: e => { if (s.hold || s.block) e.preventDefault(); },
+    onContextMenu: e => { if (s.press || s.block) e.preventDefault(); },
   };
 
   return { bind, onDragStatus };
