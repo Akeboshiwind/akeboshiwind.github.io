@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { App } from './app.jsx';
 
@@ -6,7 +6,7 @@ const seed = titles => localStorage.setItem('dragology-todo_items', JSON.stringi
   titles.map((title, i) => ({ id: `t${i}`, title, done: false }))));
 const titles = () => screen.getAllByRole('checkbox').map(c => c.getAttribute('aria-label'));
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe('Dragology Todo', () => {
   beforeEach(() => { localStorage.clear(); });
@@ -32,6 +32,14 @@ describe('Dragology Todo', () => {
     fireEvent.change(input, { target: { value: 'Bread' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(titles()).toEqual(['Milk', 'Bread']);
+  });
+
+  test('+ works over plain http, where there is no crypto.randomUUID', () => {
+    vi.spyOn(crypto, 'randomUUID', 'get').mockReturnValue(undefined);
+    seed(['Milk']);
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'New to-do' }));
+    expect(screen.getByRole('textbox', { name: 'To-do' })).toBeTruthy();
   });
 
   test('a to-do left empty goes away', async () => {

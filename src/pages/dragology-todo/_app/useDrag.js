@@ -33,15 +33,16 @@ export function useDrag() {
       else if (isOther(e) && s.dragging) {
         e.stopImmediatePropagation();
         e.preventDefault();
-        s.others.set(e.pointerId, e.clientY);
+        s.others.set(e.pointerId, e.screenY);
       }
     };
     const onMove = e => {
       if (isOther(e)) {
         if (!s.others.has(e.pointerId)) return;
         e.stopImmediatePropagation();
-        window.scrollBy(0, s.others.get(e.pointerId) - e.clientY);
-        s.others.set(e.pointerId, e.clientY);
+        // screenY, not clientY, so the scroll this causes can't feed back into the next move.
+        window.scrollBy(0, s.others.get(e.pointerId) - e.screenY);
+        s.others.set(e.pointerId, e.screenY);
         resend();
         return;
       }
@@ -64,12 +65,18 @@ export function useDrag() {
       s.others.clear();
     };
     const onTouchMove = e => { if (s.dragging || s.block) e.preventDefault(); };
+    // iOS takes a second finger as a pan or pinch of the viewport, fighting the scroll above.
+    const onTouchStart = e => { if (s.dragging && e.touches.length > 1) e.preventDefault(); };
+    const onGesture = e => { if (s.dragging) e.preventDefault(); };
 
     window.addEventListener('pointerdown', onDown, true);
     window.addEventListener('pointermove', onMove, true);
     window.addEventListener('pointerup', onEnd, true);
     window.addEventListener('pointercancel', onEnd, true);
     document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchstart', onTouchStart, { passive: false });
+    document.addEventListener('gesturestart', onGesture);
+    document.addEventListener('gesturechange', onGesture);
     s.resend = resend;
     return () => {
       window.removeEventListener('pointerdown', onDown, true);
@@ -77,6 +84,10 @@ export function useDrag() {
       window.removeEventListener('pointerup', onEnd, true);
       window.removeEventListener('pointercancel', onEnd, true);
       document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('gesturestart', onGesture);
+      document.removeEventListener('gesturechange', onGesture);
+      document.documentElement.style.touchAction = '';
       cancelHold();
       cancelAnimationFrame(s.frame);
     };
@@ -96,6 +107,8 @@ export function useDrag() {
   const onDragStatus = status => {
     const dragging = status.type === 'dragging';
     if (dragging && !s.dragging) s.frame = requestAnimationFrame(tick);
+    // A finger that lands mid-drag takes its touch-action from where it lands.
+    if (dragging !== s.dragging) document.documentElement.style.touchAction = dragging ? 'none' : '';
     s.dragging = dragging;
   };
 

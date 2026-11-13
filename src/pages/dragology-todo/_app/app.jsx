@@ -18,7 +18,9 @@ const SEED = [
   'Fix the bike light', 'Plan the weekend', 'Send birthday card', 'Back up photos', 'Clean the oven', 'Reply to Sam',
 ].map((title, i) => ({ id: `seed-${i}`, title, done: false }));
 
-const newItem = () => ({ id: crypto.randomUUID(), title: '', done: false });
+// Not crypto.randomUUID: it exists only in secure contexts, so not on a phone over http://<lan-ip>.
+const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+const newItem = () => ({ id: newId(), title: '', done: false });
 const rowId = item => `row-${item.id}`;
 
 function Title({ item, editing, onEdit, onSave }) {
