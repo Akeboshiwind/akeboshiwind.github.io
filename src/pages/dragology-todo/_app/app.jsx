@@ -160,6 +160,11 @@ export function App() {
   return (
     <main className="flex flex-col gap-2">
       <h1 className="page-title">Dragology Todo</h1>
+      <p>
+        A demo of <a href="https://declarative-dragging.github.io/" target="_blank" rel="noopener noreferrer" className="text-link underline">Dragology</a>,
+        a library for declarative dragging. Each to-do declares the lists it could be dropped into, and the + declares
+        a new to-do it could drop anywhere; Dragology works out the drag between them.
+      </p>
       <p className="label opacity-60">Drag a to-do to move it. Drag + to where a new one goes, or tap it to add one at the end.</p>
       <div
         ref={boxRef} {...bind}

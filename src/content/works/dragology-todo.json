@@ -2,7 +2,7 @@
   "title": "Dragology Todo",
   "stage": "scribble",
   "published": "2026-11-13",
-  "description": "A to-do list you rearrange by dragging, built on Dragology's declarative dragging: pick up a to-do and drop it elsewhere, or drag the + to the spot a new one should go. Dragging near the top or bottom scrolls the list, as does a second finger.",
+  "description": "A demo of Dragology, a library for declarative dragging, as a Things-style to-do list. Each to-do declares the lists it could be dropped into, and the + a new to-do it could drop anywhere. Holding near the top or bottom scrolls the page, as does a second finger.",
   "tags": ["drag-and-drop", "dragology", "react"],
   "category": "utilities",
   "icon": "checkbox",
