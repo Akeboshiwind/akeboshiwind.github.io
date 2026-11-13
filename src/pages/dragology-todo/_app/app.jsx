@@ -44,7 +44,7 @@ function Title({ item, editing, onEdit, onSave }) {
   return (
     <button
       type="button" onClick={onEdit}
-      className={`h-full w-full text-left truncate ${item.done ? 'line-through opacity-50' : 'text-heading'}`}
+      className={`h-full w-full text-left truncate ${item.done ? 'line-through text-text/50' : 'text-heading'}`}
     >
       {item.title}
     </button>

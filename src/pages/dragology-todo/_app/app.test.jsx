@@ -24,6 +24,14 @@ describe('Dragology Todo', () => {
     expect(screen.getByRole('checkbox', { name: 'Milk' }).getAttribute('aria-checked')).toBe('true');
   });
 
+  // Safari draws HTML in a <foreignObject> at the svg's origin once it has its own layer, as opacity gives it.
+  test('a done to-do fades by colour, not opacity', () => {
+    localStorage.setItem('dragology-todo_items', JSON.stringify([{ id: 't0', title: 'Milk', done: true }]));
+    render(<App />);
+    const title = screen.getByRole('button', { name: 'Milk' });
+    expect(title.closest('foreignObject').innerHTML).not.toMatch(/opacity|transform|will-change/);
+  });
+
   test('a tap on + adds a to-do at the end to type into', () => {
     seed(['Milk']);
     render(<App />);
