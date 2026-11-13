@@ -33,17 +33,14 @@ export function useDrag() {
       else if (isOther(e) && s.dragging) {
         e.stopImmediatePropagation();
         e.preventDefault();
-        s.others.set(e.pointerId, e.screenY);
+        s.others.set(e.pointerId, { y0: e.screenY, y: e.screenY, scroll0: window.scrollY });
       }
     };
     const onMove = e => {
       if (isOther(e)) {
         if (!s.others.has(e.pointerId)) return;
         e.stopImmediatePropagation();
-        // screenY, not clientY, so the scroll this causes can't feed back into the next move.
-        window.scrollBy(0, s.others.get(e.pointerId) - e.screenY);
-        s.others.set(e.pointerId, e.screenY);
-        resend();
+        s.others.get(e.pointerId).y = e.screenY;
         return;
       }
       if (!s.pointer) return;
@@ -93,12 +90,22 @@ export function useDrag() {
     };
   }, []);
 
+  /**
+   * Once a frame: a second finger sets the scroll outright, to where it was when the finger
+   * landed plus how far the finger has moved since (in screenY, which scrolling can't change).
+   * Stepping by each move instead drifts against iOS's lagging scroll position, and jitters.
+   * Only with no second finger down does the edge scroll.
+   */
   const tick = () => {
     if (!s.dragging) return;
-    const v = s.pointer ? edgeSpeed(s.pointer.y, { top: 0, bottom: window.innerHeight }) : 0;
-    if (v) {
+    const finger = [...s.others.values()].at(-1);
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const target = finger
+      ? Math.round(Math.min(max, Math.max(0, finger.scroll0 + finger.y0 - finger.y)))
+      : window.scrollY + (s.pointer ? edgeSpeed(s.pointer.y, { top: 0, bottom: window.innerHeight }) : 0);
+    if (Math.abs(target - window.scrollY) >= 1) {
       const before = window.scrollY;
-      window.scrollBy(0, v);
+      window.scrollTo(0, target);
       if (window.scrollY !== before) s.resend();
     }
     s.frame = requestAnimationFrame(tick);
