@@ -1,0 +1,1 @@
+import{j as s}from"./jsx-runtime.D_zvdyIk.js";const n=({children:a,action:e,className:t=""})=>s.jsxs("h2",{className:`section-label ${t}`,children:[s.jsx("span",{children:a}),s.jsx("span",{"data-dither":"fade-x",className:"section-fade","aria-hidden":"true"}),e]});export{n as S};
