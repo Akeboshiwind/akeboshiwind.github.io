@@ -126,7 +126,7 @@ const Viewer = ({ source, delimiter, setDelimiter, header, setHeader, onNew }) =
                           type="button"
                           onClick={() => setSort(s => nextSort(s, c))}
                           title="Sort"
-                          className="whitespace-pre-wrap text-inherit uppercase hover:text-accent"
+                          className="whitespace-pre text-inherit uppercase hover:text-accent"
                         >
                           {name}
                           {direction && <span aria-hidden="true" className="text-accent">{direction === 'asc' ? ' ▲' : ' ▼'}</span>}
@@ -141,7 +141,7 @@ const Viewer = ({ source, delimiter, setDelimiter, header, setHeader, onNew }) =
                   <tr key={r}>
                     <td className="pixel-num text-right opacity-60 align-top">{r + 1}</td>
                     {body[r].map((value, c) => (
-                      <td key={c} className={`align-top whitespace-pre-wrap break-words max-w-80 ${numeric[c] ? 'pixel-num text-right' : ''}`}>{value}</td>
+                      <td key={c} className={`align-top whitespace-pre ${numeric[c] ? 'pixel-num text-right' : ''}`}>{value}</td>
                     ))}
                   </tr>
                 ))}
