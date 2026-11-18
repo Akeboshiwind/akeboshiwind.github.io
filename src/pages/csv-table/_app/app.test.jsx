@@ -73,12 +73,13 @@ describe('CSV Viewer', () => {
   });
 
   test('a long table shows in pages', () => {
+    const bodyRows = () => table().querySelectorAll('tbody tr').length;
     render(<App />);
     paste(['n', ...Array.from({ length: 450 }, (_, i) => i)].join('\n'));
-    expect(column(1)).toHaveLength(200);
+    expect(bodyRows()).toBe(200);
     fireEvent.click(screen.getByRole('button', { name: 'Show 200 more' }));
     fireEvent.click(screen.getByRole('button', { name: 'Show 50 more' }));
-    expect(column(1)).toHaveLength(450);
+    expect(bodyRows()).toBe(450);
   });
 
   test('a chosen file opens, under its name', async () => {
