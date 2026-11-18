@@ -99,5 +99,5 @@ export const numericColumns = rows =>
     return filled.length > 0 && filled.every(cell => NUMBER.test(cell));
   });
 
-/** For exports that write a line break as the two characters `\n` (or `\r\n`). */
-export const showEscapedNewlines = text => text.replace(/\\r\\n|\\n/g, '\n');
+/** For exports that write a line break as the two characters `\n` (or `\r\n`), or as `⏎`. */
+export const showEscapedNewlines = text => text.replace(/\\r\\n|\\n|⏎/g, '\n');

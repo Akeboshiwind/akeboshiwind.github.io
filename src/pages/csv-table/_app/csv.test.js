@@ -108,6 +108,10 @@ describe('showEscapedNewlines', () => {
     expect(showEscapedNewlines('one\\ntwo\\r\\nthree')).toBe('one\ntwo\nthree');
   });
 
+  test('turns a ⏎ into a line break', () => {
+    expect(showEscapedNewlines('one⏎two')).toBe('one\ntwo');
+  });
+
   test('leaves other backslashes alone', () => {
     expect(showEscapedNewlines('C:\\temp\\x')).toBe('C:\\temp\\x');
   });

@@ -111,7 +111,7 @@ const Viewer = ({ source, delimiter, setDelimiter, header, setHeader, escapes, s
         </label>
         <label className="flex items-center gap-2 pb-1">
           <input type="checkbox" checked={escapes} onChange={e => setEscapes(e.target.checked)} className="pixel-check" />
-          <span className="label">Show <span className="normal-case">\n</span> as a line break</span>
+          <span className="label">Show <span className="normal-case">\n</span> and ⏎ as line breaks</span>
         </label>
       </div>
 

@@ -105,7 +105,7 @@ describe('CSV Viewer', () => {
     const { unmount } = render(<App />);
     paste('note\none\\ntwo');
     expect(column(1)).toEqual(['one\\ntwo']);
-    fireEvent.click(screen.getByLabelText('Show \\n as a line break'));
+    fireEvent.click(screen.getByLabelText('Show \\n and ⏎ as line breaks'));
     expect(column(1)).toEqual(['one\ntwo']);
     fireEvent.click(screen.getByRole('button', { name: 'New' }));
     unmount();
