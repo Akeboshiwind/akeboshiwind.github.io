@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { parse, detectDelimiter, rowOrder, numericColumns } from './csv.js';
+import { parse, detectDelimiter, rowOrder, numericColumns, showEscapedNewlines } from './csv.js';
 
 describe('parse', () => {
   test('splits rows and fields', () => {
@@ -100,5 +100,15 @@ describe('rowOrder', () => {
 describe('numericColumns', () => {
   test('a column is numeric when every filled cell is a number', () => {
     expect(numericColumns([['1', 'a', '', '1.5'], ['-2', '3', '', ''], ['1e3', '4', '', '.5']])).toEqual([true, false, false, true]);
+  });
+});
+
+describe('showEscapedNewlines', () => {
+  test('turns a written \\n or \\r\\n into a line break', () => {
+    expect(showEscapedNewlines('one\\ntwo\\r\\nthree')).toBe('one\ntwo\nthree');
+  });
+
+  test('leaves other backslashes alone', () => {
+    expect(showEscapedNewlines('C:\\temp\\x')).toBe('C:\\temp\\x');
   });
 });

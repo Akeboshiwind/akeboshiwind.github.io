@@ -63,7 +63,7 @@ const nextSort = (sort, column) => {
   return sort.direction === 'asc' ? { column, direction: 'desc' } : null;
 };
 
-const Viewer = ({ source, delimiter, setDelimiter, header, setHeader, onNew }) => {
+const Viewer = ({ source, delimiter, setDelimiter, header, setHeader, escapes, setEscapes, onNew }) => {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState(null);
   const [limit, setLimit] = useState(PAGE);
@@ -109,6 +109,10 @@ const Viewer = ({ source, delimiter, setDelimiter, header, setHeader, onNew }) =
           <input type="checkbox" checked={header} onChange={e => setHeader(e.target.checked)} className="pixel-check" />
           <span className="label">First row is a header</span>
         </label>
+        <label className="flex items-center gap-2 pb-1">
+          <input type="checkbox" checked={escapes} onChange={e => setEscapes(e.target.checked)} className="pixel-check" />
+          <span className="label">Show <span className="normal-case">\n</span> as a line break</span>
+        </label>
       </div>
 
       {result.ok ? (
@@ -141,7 +145,7 @@ const Viewer = ({ source, delimiter, setDelimiter, header, setHeader, onNew }) =
                   <tr key={r}>
                     <td className="pixel-num text-right opacity-60 align-top">{r + 1}</td>
                     {body[r].map((value, c) => (
-                      <td key={c} className={`align-top whitespace-pre ${numeric[c] ? 'pixel-num text-right' : ''}`}>{value}</td>
+                      <td key={c} className={`align-top whitespace-pre ${numeric[c] ? 'pixel-num text-right' : ''}`}>{escapes ? CSV.showEscapedNewlines(value) : value}</td>
                     ))}
                   </tr>
                 ))}
@@ -172,6 +176,7 @@ export function App() {
   const [source, setSource] = useLocalStorage('source', null, { prefix: PREFIX });
   const [delimiter, setDelimiter] = useLocalStorage('delimiter', 'auto', { prefix: PREFIX });
   const [header, setHeader] = useLocalStorage('header', true, { prefix: PREFIX });
+  const [escapes, setEscapes] = useLocalStorage('escapes', false, { prefix: PREFIX });
 
   const start = next => {
     setDelimiter('auto');
@@ -184,7 +189,7 @@ export function App() {
       <h1 className="page-title">CSV Viewer</h1>
       <p className="page-sub">Open or paste a CSV to read it as a table; sort by a column, or filter the rows.</p>
       {source
-        ? <Viewer key={source.text} source={source} delimiter={delimiter} setDelimiter={setDelimiter} header={header} setHeader={setHeader} onNew={() => start(null)} />
+        ? <Viewer key={source.text} source={source} delimiter={delimiter} setDelimiter={setDelimiter} header={header} setHeader={setHeader} escapes={escapes} setEscapes={setEscapes} onNew={() => start(null)} />
         : <Start onSource={start} />}
     </main>
   );

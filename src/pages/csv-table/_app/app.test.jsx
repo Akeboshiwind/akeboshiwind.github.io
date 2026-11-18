@@ -99,4 +99,17 @@ describe('CSV Viewer', () => {
     expect(screen.queryByRole('table')).toBeNull();
     expect(screen.getByLabelText('Paste CSV')).toBeTruthy();
   });
+
+  test('can show a written \\n as a line break, and remembers to', () => {
+    const { unmount } = render(<App />);
+    paste('note\none\\ntwo');
+    expect(column(1)).toEqual(['one\\ntwo']);
+    fireEvent.click(screen.getByLabelText('Show \\n as a line break'));
+    expect(column(1)).toEqual(['one\ntwo']);
+    fireEvent.click(screen.getByRole('button', { name: 'New' }));
+    unmount();
+    render(<App />);
+    paste('note\na\\nb');
+    expect(column(1)).toEqual(['a\nb']);
+  });
 });
