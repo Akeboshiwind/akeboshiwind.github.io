@@ -1,0 +1,10 @@
+{
+  "title": "CSV Viewer",
+  "stage": "scribble",
+  "published": "2026-11-18",
+  "description": "Open or paste a CSV and read it as a table: the delimiter is worked out for you, and you can sort by any column or filter the rows.",
+  "tags": [],
+  "category": "utilities",
+  "icon": "grid-3x2",
+  "dither": "ui"
+}
