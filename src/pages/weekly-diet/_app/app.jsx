@@ -21,9 +21,33 @@ const Meal = ({ slot, meal }) => (
       <span className="label text-heading">{SLOT_NAMES[slot]}</span>
       <span className="label opacity-70">{LIBRARY.times[slot] ?? ''}</span>
     </div>
-    <p className="mt-1">{meal.text}</p>
+    <MealBody meal={meal} />
   </li>
 );
+
+// A meal is parts eaten together (+), each part one or more options (or).
+export const MealBody = ({ meal }) => {
+  if (!meal.parts?.length) return <p className="mt-1">{meal.text}</p>;
+  return (
+    <div className="mt-1 flex flex-col gap-1">
+      {meal.parts.map((part, i) => (
+        <div key={i} className="flex gap-2">
+          <span className="label w-3 shrink-0 pt-1 text-accent" aria-hidden="true">{i === 0 ? '' : '+'}</span>
+          <div className="min-w-0">
+            {part.options.map((option, j) => (
+              <span key={j}>
+                {j > 0 && <span className="label mx-2 opacity-70">or</span>}
+                <span>{option}</span>
+              </span>
+            ))}
+            {part.note && <span className="label ml-2 opacity-70">({part.note})</span>}
+          </div>
+        </div>
+      ))}
+      {meal.notes?.length > 0 && <p className="label opacity-70">{meal.notes.join(' · ')}</p>}
+    </div>
+  );
+};
 
 const Tips = ({ title, open, onToggle, children }) => (
   <section className="mt-6">
