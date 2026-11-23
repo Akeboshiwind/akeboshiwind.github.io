@@ -233,6 +233,17 @@ function nextWeek(state, index, lib) {
   const base = baseOf(meals.dinner);
   st.dinnerRun = base === st.dinnerBase ? st.dinnerRun + 1 : 1;
   st.dinnerBase = base;
+  // A pinned week replaces the generated meals; later weeks carry on from it.
+  const pinned = OVERRIDES[weekStart(index).toISOString().slice(0, 10)];
+  if (pinned) {
+    used.clear();
+    for (const [slot, text] of Object.entries(pinned)) {
+      meals[slot] = text && (s[slot].find(x => x.text === text) ?? { text, proteins: [] });
+      meals[slot]?.proteins.forEach(p => used.add(p));
+    }
+    for (const slot of SLOT_ORDER) if (!(slot in pinned)) meals[slot] = null;
+  }
+
   const lbase = baseOf(meals.lunch);
   st.lunchRun = lbase === st.lunchBase ? st.lunchRun + 1 : 1;
   st.lunchBase = lbase;
@@ -245,6 +256,19 @@ function nextWeek(state, index, lib) {
     state: st,
   };
 }
+
+// Weeks pinned by hand, keyed by the week's Monday (YYYY-MM-DD). Each value maps a
+// slot to the exact library line to show; slots left out are empty that week.
+export const OVERRIDES = {
+  '2026-11-23': {
+    early_morning: 'Warm water',
+    breakfast: '½ tsp pumpkin mix; Veg sandwich with Cheese slice',
+    lunch: 'Kodo millet with veg + curd',
+    evening: 'Herbal tea + biscuits; Salad or Makhane',
+    dinner: 'Tofu with stir fried veggies + Veg soup/Bread',
+    late_night: 'Repeat morning drink',
+  },
+};
 
 export const FIRST_WEEK = -104;
 let cache = null;

@@ -2,7 +2,7 @@ import { describe, test, expect, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { App, weekLabel } from './app.jsx';
-import { planForWeek, weekIndex, weekStart, SLOT_ORDER, FIRST_WEEK, FRUIT, CURD, grainsOf } from './plan.js';
+import { planForWeek, weekIndex, weekStart, SLOT_ORDER, FIRST_WEEK, FRUIT, CURD, grainsOf, OVERRIDES } from './plan.js';
 import { LIBRARY } from './meals.js';
 
 afterEach(cleanup);
@@ -51,6 +51,16 @@ describe('Weekly Diet Plan', () => {
 describe('week plans', () => {
   const now = weekIndex(TODAY);
   const range = Array.from({ length: 200 }, (_, i) => FIRST_WEEK + i + 1);
+
+  test('a pinned week shows exactly its lines, and the next week still follows the protein rule', () => {
+    for (const [monday, slots] of Object.entries(OVERRIDES)) {
+      const i = weekIndex(new Date(`${monday}T12:00:00`));
+      const week = planForWeek(i);
+      for (const [slot, text] of Object.entries(slots)) expect(week.meals[slot].text).toBe(text);
+      const next = planForWeek(i + 1).proteins;
+      expect(next.filter(p => week.proteins.includes(p))).toEqual([]);
+    }
+  });
 
   test('weekIndex maps every day of a week to its Monday', () => {
     const monday = weekStart(now);
