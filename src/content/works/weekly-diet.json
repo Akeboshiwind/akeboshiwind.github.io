@@ -1,0 +1,13 @@
+{
+  "title": "Weekly Diet Plan",
+  "stage": "scribble",
+  "published": "2026-11-22",
+  "description": "A weekly diet plan generator built from a set of real dietician-written plans. One daily routine per week that changes gradually, with tips for travelling and for weeks when weight stalls.",
+  "tags": [
+    "food",
+    "tool"
+  ],
+  "category": "health",
+  "icon": "heart-pulse",
+  "dither": "ui"
+}
