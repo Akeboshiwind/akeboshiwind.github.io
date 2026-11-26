@@ -2,7 +2,7 @@ import { describe, test, expect, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { App, weekLabel } from './app.jsx';
-import { planForWeek, weekIndex, weekStart, SLOT_ORDER, FIRST_WEEK, FRUIT, CURD, grainsOf, OVERRIDES } from './plan.js';
+import { planForWeek, weekIndex, weekStart, SLOT_ORDER, FIRST_WEEK, FRUIT, CURD, grainsOf, OVERRIDES, isWinter } from './plan.js';
 import { LIBRARY } from './meals.js';
 
 afterEach(cleanup);
@@ -101,6 +101,19 @@ describe('week plans', () => {
     const share = same / (range.length - 1);
     expect(share).toBeGreaterThan(0.15);
     expect(share).toBeLessThan(0.45);
+  });
+
+  test('no smoothies in a week that touches December, January or February', () => {
+    expect(isWinter(weekIndex(new Date(2026, 10, 30)))).toBe(true); // Mon 30 Nov – Sun 6 Dec
+    expect(isWinter(weekIndex(new Date(2026, 1, 23)))).toBe(true); // Mon 23 Feb – Sun 1 Mar
+    expect(isWinter(weekIndex(new Date(2026, 2, 2)))).toBe(false);
+    expect(isWinter(weekIndex(TODAY))).toBe(false);
+    const winters = range.filter(isWinter);
+    expect(winters.length).toBeGreaterThan(20);
+    for (const i of winters) {
+      const week = planForWeek(i);
+      for (const s of SLOT_ORDER) if (week.meals[s]) expect(week.meals[s].text).not.toMatch(/smoothie/i);
+    }
   });
 
   test('lunch and dinner never share a grain', () => {
