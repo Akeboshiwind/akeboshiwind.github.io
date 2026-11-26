@@ -15,6 +15,7 @@
 // - fruit and curd appear in at most one meal a day; lunch and dinner never
 //   share a grain, and besan isn't at both breakfast and dinner
 // - lunch and dinner lines aren't repeated within 3 weeks
+// - no smoothies in a week that touches winter (December to February)
 // Weeks are generated in order from FIRST_WEEK, so every week is fixed: going
 // back always shows the same plan.
 import { LIBRARY } from './meals.js';
@@ -65,6 +66,11 @@ function pickWeighted(rand, items, weight = () => 1) {
   }
   return items[items.length - 1];
 }
+
+const WINTER_MONTHS = [11, 0, 1];
+export const isWinter = index => Array.from({ length: 7 }, (_, d) => new Date(weekStart(index).getTime() + d * DAY))
+  .some(day => WINTER_MONTHS.includes(day.getUTCMonth()));
+const SMOOTHIE = /smoothie/i;
 
 const between = (rand, lo, hi) => lo + Math.floor(rand() * (hi - lo + 1));
 
@@ -133,7 +139,9 @@ function startState() {
 
 function nextWeek(state, index, lib) {
   const rand = rng(index * 2654435761 + 12345);
-  const s = lib.slots;
+  const winter = isWinter(index);
+  const s = Object.fromEntries(Object.entries(lib.slots)
+    .map(([slot, lines]) => [slot, winter ? lines.filter(x => !SMOOTHIE.test(x.text)) : lines]));
   const era = eraAt(index);
   const st = { ...state };
 
