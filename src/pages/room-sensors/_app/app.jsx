@@ -2,7 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { SectionLabel } from '../../../components/pixel/SectionLabel.jsx';
 import { useLocalStorage } from '../../../lib/useLocalStorage.js';
-import { FP300, perimeterPoint, snapToPerimeter } from './geometry.js';
+import { perimeterPoint, snapToPerimeter } from './geometry.js';
 import { sampleScene, seenByAny, score } from './scoring.js';
 import { SENSOR_LIMITS, edit, parsePlan } from './plan.js';
 import { bestPair, bestSingle } from './search.js';
@@ -180,6 +180,16 @@ function Slider({ label, limits, value, onChange }) {
 
 const metres = (m) => String(Number(m.toFixed(2)));
 
+function SpecSliders({ spec, onChange }) {
+  const set = (key) => (value) => onChange({ [key]: value });
+  return (
+    <>
+      <Slider label={`Angle ${spec.fovDegrees}°`} limits={SENSOR_LIMITS.fovDegrees} value={spec.fovDegrees} onChange={set('fovDegrees')} />
+      <Slider label={`Range ${metres(spec.range)} m`} limits={SENSOR_LIMITS.range} value={spec.range} onChange={set('range')} />
+    </>
+  );
+}
+
 function Placed({ plan, onEdit }) {
   const { furniture, door, seats, sensors } = plan;
   if (!door && !furniture.length && !seats.length && !sensors.length) return <p>Nothing placed yet.</p>;
@@ -211,15 +221,11 @@ function Placed({ plan, onEdit }) {
       {seats.map((_, index) => (
         <Item key={`seat ${index}`} name={`Seat ${index + 1}`} onRemove={remove('seat', index)} />
       ))}
-      {sensors.map((sensor, index) => {
-        const set = (key) => (value) => onEdit({ type: 'spec', index, spec: { [key]: value } });
-        return (
-          <Item key={`sensor ${index}`} name={`Sensor ${index + 1}`} onRemove={remove('sensor', index)}>
-            <Slider label={`Angle ${sensor.fovDegrees}°`} limits={SENSOR_LIMITS.fovDegrees} value={sensor.fovDegrees} onChange={set('fovDegrees')} />
-            <Slider label={`Range ${metres(sensor.range)} m`} limits={SENSOR_LIMITS.range} value={sensor.range} onChange={set('range')} />
-          </Item>
-        );
-      })}
+      {sensors.map((sensor, index) => (
+        <Item key={`sensor ${index}`} name={`Sensor ${index + 1}`} onRemove={remove('sensor', index)}>
+          <SpecSliders spec={sensor} onChange={(spec) => onEdit({ type: 'spec', index, spec })} />
+        </Item>
+      ))}
     </ul>
   );
 }
@@ -243,7 +249,7 @@ export function App() {
 
   useEffect(() => setTool(room ? 'furniture' : 'room'), [room]);
 
-  const find = (search) => () => onEdit({ type: 'found', sensors: search({ room, furniture, door, seats }, FP300).sensors });
+  const find = (search) => () => onEdit({ type: 'found', sensors: search({ room, furniture, door, seats }, plan.searchWith).sensors });
 
   return (
     <main className="flex flex-col gap-2">
@@ -263,7 +269,10 @@ export function App() {
       <Plan plan={plan} view={view} tool={tool} onEdit={onEdit} />
 
       <SectionLabel className="mt-6">Find sensors</SectionLabel>
-      <p>Search the walls for where FP300s see the most, and replace the sensors placed with them.</p>
+      <p>Search the walls for where sensors with this viewing angle and range see the most, and replace the sensors placed with them.</p>
+      <div role="group" aria-label="Search with" className="flex flex-wrap gap-x-4 gap-y-2">
+        <SpecSliders spec={plan.searchWith} onChange={(spec) => onEdit({ type: 'search with', spec })} />
+      </div>
       <div className="flex flex-wrap gap-2">
         <button className="pixel-button" data-variant="primary" disabled={!room} onClick={find(bestSingle)}>Find 1 sensor</button>
         <button className="pixel-button" data-variant="primary" disabled={!room} onClick={find(bestPair)}>Find 2 sensors</button>

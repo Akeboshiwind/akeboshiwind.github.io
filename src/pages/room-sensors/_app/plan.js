@@ -1,5 +1,5 @@
 /**
- * The plan the user draws: the room, the draft of the next one, and what is placed in it.
+ * The plan the user draws: the room, the draft of the next one, what is placed in it, and the sensor a search looks for.
  * The door and sensors stand on the room's walls, so they exist only while the room does.
  */
 import { FP300, parseRoom, pointInPolygon, snapToPerimeter, fitDoor } from './geometry.js';
@@ -12,7 +12,7 @@ export const SENSOR_LIMITS = Object.freeze({
   range: Object.freeze({ min: 0.5, max: 10, step: 0.5 }),
 });
 
-export const EMPTY = Object.freeze({ draft: [], room: null, furniture: [], door: null, seats: [], sensors: [] });
+export const EMPTY = Object.freeze({ draft: [], room: null, furniture: [], door: null, seats: [], sensors: [], searchWith: FP300 });
 
 const placeDoor = (plan, at) => {
   const placement = fitDoor(plan.room, snapToPerimeter(plan.room, at), DOOR_WIDTH);
@@ -64,6 +64,8 @@ export const edit = (plan, action) => {
       return action.swing === 'in' || action.swing === 'out' ? rehang(plan, { swing: action.swing }) : plan;
     case 'spec':
       return fitsSensor(action.spec) ? change(plan, 'sensors', action.index, (sensor) => ({ ...sensor, ...action.spec })) : plan;
+    case 'search with':
+      return fitsSensor(action.spec) ? { ...plan, searchWith: { ...plan.searchWith, ...action.spec } } : plan;
     case 'remove':
       return remove(plan, action.kind, action.index);
     case 'clear':
@@ -118,12 +120,12 @@ const door = (room, v) => {
   return { ...at, width, hinge: oneOf(v.hinge, ['start', 'end']), swing: oneOf(v.swing, ['in', 'out']) };
 };
 
-const sensor = (room, v) => ({
-  ...placement(room, v),
-  facing: number(v.facing),
-  fovDegrees: within(v.fovDegrees, SENSOR_LIMITS.fovDegrees),
-  range: within(v.range, SENSOR_LIMITS.range),
-});
+const sensorSpec = (v) => {
+  const { fovDegrees, range } = record(v);
+  return { fovDegrees: within(fovDegrees, SENSOR_LIMITS.fovDegrees), range: within(range, SENSOR_LIMITS.range) };
+};
+
+const sensor = (room, v) => ({ ...placement(room, v), facing: number(v.facing), ...sensorSpec(v) });
 
 const parse = (v) => {
   const plan = record(v);
@@ -136,6 +138,7 @@ const parse = (v) => {
     door: nullable(plan.door, (d) => door(onWalls(), d)),
     seats: list(plan.seats, facingPoint),
     sensors: list(plan.sensors, (s) => sensor(onWalls(), s)),
+    searchWith: sensorSpec(plan.searchWith),
   };
 };
 

@@ -98,6 +98,20 @@ describe('Room Sensors', () => {
       expect(sensorsListed()).toBe(count);
       expect(Number.parseInt(total())).toBeGreaterThanOrEqual(Number.parseInt(placedByHand));
     });
+
+    test('looks for sensors of the angle and range set beside the buttons, FP300 until changed', () => {
+      render(<App />);
+      drawSquareRoom();
+      const search = within(screen.getByRole('group', { name: 'Search with' }));
+      const angle = search.getByRole('slider', { name: /Angle/ });
+      const range = search.getByRole('slider', { name: /Range/ });
+      expect([angle.value, range.value]).toEqual(['120', '6']);
+      fireEvent.change(angle, { target: { value: '60' } });
+      fireEvent.change(range, { target: { value: '3' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Find 1 sensor' }));
+      const found = within(screen.getByRole('listitem', { name: 'Sensor 1' }));
+      expect([found.getByRole('slider', { name: /Angle/ }).value, found.getByRole('slider', { name: /Range/ }).value]).toEqual(['60', '3']);
+    });
   });
 
   describe('what is placed', () => {

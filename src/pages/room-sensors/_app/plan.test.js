@@ -157,6 +157,32 @@ describe('editing what is placed', () => {
   });
 });
 
+describe('the sensor a search looks for', () => {
+  test('is an FP300 until it is told otherwise', () => {
+    expect(EMPTY.searchWith).toEqual(FP300);
+  });
+
+  test('changes its viewing angle and range on their own', () => {
+    const narrow = edit(room, { type: 'search with', spec: { fovDegrees: 90 } });
+    expect(narrow.searchWith).toEqual({ ...FP300, fovDegrees: 90 });
+    expect(edit(narrow, { type: 'search with', spec: { range: 3.5 } }).searchWith).toEqual({ fovDegrees: 90, range: 3.5 });
+  });
+
+  test.each([
+    { fovDegrees: SENSOR_LIMITS.fovDegrees.max + 1 },
+    { range: SENSOR_LIMITS.range.min - 0.1 },
+    { facing: 0 },
+  ])('refuses %o', (spec) => {
+    expect(edit(room, { type: 'search with', spec })).toBe(room);
+  });
+
+  test('is kept when a new room is drawn', () => {
+    const narrow = edit(room, { type: 'search with', spec: { range: 2 } });
+    const redrawn = [...corners.map((point) => ({ type: 'corner', point })), { type: 'close' }].reduce(edit, narrow);
+    expect(redrawn.searchWith).toEqual({ ...FP300, range: 2 });
+  });
+});
+
 test('clearing starts again', () => {
   expect(edit(room, { type: 'clear' })).toBe(EMPTY);
 });
@@ -171,6 +197,7 @@ describe('loading a stored plan', () => {
     { type: 'seat', seat: { x: 2, y: 3, facing: 0 } },
     { type: 'sensor', sensor: { edge: 1, t: 0.5, facing: Math.PI } },
     { type: 'spec', index: 0, spec: { fovDegrees: 90, range: 3.5 } },
+    { type: 'search with', spec: { fovDegrees: 60, range: 4 } },
   ].reduce(edit, room);
   const stored = (plan) => JSON.parse(JSON.stringify(plan));
 
@@ -215,6 +242,8 @@ describe('loading a stored plan', () => {
     ['a sensor on a fractional wall', broken((p) => { p.sensors[0].edge = 0.5; })],
     ['a sensor wider than the limits', broken((p) => { p.sensors[0].fovDegrees = SENSOR_LIMITS.fovDegrees.max + 1; })],
     ['a sensor with no range', broken((p) => { delete p.sensors[0].range; })],
+    ['a search for a sensor beyond the limits', broken((p) => { p.searchWith.range = SENSOR_LIMITS.range.max + 1; })],
+    ['a search for no sensor', broken((p) => { delete p.searchWith; })],
   ])('%s loads as an empty plan', (_, value) => {
     expect(parsePlan(value)).toBe(EMPTY);
   });
