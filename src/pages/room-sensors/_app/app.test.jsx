@@ -253,6 +253,23 @@ describe('Room Sensors', () => {
       expect(within(selected()).getByRole('button', { name: 'Flip hinge' })).toBeTruthy();
     });
 
+    test('makes selected furniture tall, or short again', () => {
+      render(<App />);
+      const canvas = drawSquareRoom();
+      choose('Furniture');
+      fireEvent.pointerDown(canvas, at(2, 2));
+      fireEvent.pointerMove(canvas, at(3, 3));
+      fireEvent.pointerUp(canvas, at(3, 3));
+      choose('Select');
+      click(canvas, 2.5, 2.5);
+      const tall = within(selected()).getByRole('checkbox', { name: 'Tall, blocks sensors' });
+      const placed = within(screen.getByRole('listitem', { name: 'Furniture 1' })).getByRole('checkbox', { name: /Tall/ });
+      fireEvent.click(tall);
+      expect([tall.checked, placed.checked]).toEqual([true, true]);
+      fireEvent.click(tall);
+      expect([tall.checked, placed.checked]).toEqual([false, false]);
+    });
+
     test('lets go of what is removed some other way', () => {
       render(<App />);
       const canvas = drawSquareRoom();

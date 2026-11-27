@@ -266,7 +266,7 @@ function Placed({ plan, onEdit }) {
 const KINDS = { room: 'Room', door: 'Door', furniture: 'Furniture', seat: 'Seat', sensor: 'Sensor' };
 const nameOf = ({ kind, index }) => (index === undefined ? KINDS[kind] : `${KINDS[kind]} ${index + 1}`);
 
-function Selected({ selection, door, onEdit, onDelete }) {
+function Selected({ selection, door, furniture, onEdit, onDelete }) {
   const name = nameOf(selection);
   return (
     <div role="group" aria-label={`Selected: ${name}`} className="flex flex-wrap items-center gap-2">
@@ -276,6 +276,17 @@ function Selected({ selection, door, onEdit, onDelete }) {
           <button className="pixel-button" onClick={() => onEdit({ type: 'flip hinge' })}>Flip hinge</button>
           <button className="pixel-button" onClick={() => onEdit({ type: 'swing', swing: door.swing === 'in' ? 'out' : 'in' })}>Flip swing</button>
         </>
+      )}
+      {selection.kind === 'furniture' && (
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            className="pixel-check"
+            checked={furniture[selection.index].tall}
+            onChange={(e) => onEdit({ type: 'tall', index: selection.index, tall: e.target.checked })}
+          />
+          Tall, blocks sensors
+        </label>
       )}
       {selection.kind !== 'room' && <button className="pixel-button" data-variant="danger" onClick={onDelete}>Delete</button>}
     </div>
@@ -336,7 +347,7 @@ export function App() {
       </div>
       <p className="label">{TOOLS.find(({ id }) => id === tool).hint}</p>
       <Plan plan={plan} view={view} tool={tool} selected={selected} onEdit={onEdit} onSelect={setSelection} onDelete={deleteSelected} />
-      {selected && <Selected selection={selected} door={door} onEdit={onEdit} onDelete={deleteSelected} />}
+      {selected && <Selected selection={selected} door={door} furniture={furniture} onEdit={onEdit} onDelete={deleteSelected} />}
 
       <SectionLabel className="mt-6">Find sensors</SectionLabel>
       <p>Search the walls for where sensors with this viewing angle and range see the most, and replace the sensors placed with them.</p>
