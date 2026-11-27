@@ -1,0 +1,10 @@
+{
+  "title": "Room Sensors",
+  "stage": "scribble",
+  "published": "2026-11-27",
+  "description": "Draw a room, its furniture, door and seats, place presence sensors on its walls, and see how much of the room and the people in it they see.",
+  "tags": [],
+  "category": "utilities",
+  "icon": "smart-home",
+  "dither": "ui"
+}
