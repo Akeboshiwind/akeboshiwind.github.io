@@ -146,3 +146,21 @@ describe('dragging the door', () => {
     expect(dragTo(square, by(pt(3.5, 1)), pt(3.5, 1.4))).toBeNull();
   });
 });
+
+describe('dragging a room corner', () => {
+  const room = { kind: 'room' };
+  const by = (part, corner, from) => ({ selection: room, part, corner, from });
+
+  test('takes a corner of the selected room', () => {
+    expect(grab(plan, room, pt(6.05, 5.95), REACH)).toEqual(by('corner', 2, pt(6.05, 5.95)));
+  });
+
+  test('moves the corner as far as the pointer moves, to the grid', () => {
+    expect(dragTo(plan, by('corner', 2, pt(6.05, 5.95)), pt(7.1, 6.4))).toEqual({ type: 'move corner', index: 2, to: pt(7, 6.5) });
+  });
+
+  test('makes no edit until it would move, nor by a wall', () => {
+    expect(dragTo(plan, by('corner', 2, pt(6, 6)), pt(6.1, 5.9))).toBeNull();
+    expect(dragTo(plan, by('body', undefined, pt(6, 3)), pt(7, 3))).toBeNull();
+  });
+});

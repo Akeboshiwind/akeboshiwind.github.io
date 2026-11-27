@@ -68,6 +68,21 @@ describe('Room Sensors', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Close room' }));
       expect([pressed('Room'), pressed('Furniture')]).toEqual(['false', 'true']);
     });
+
+    test('closed in place of another', () => {
+      render(<App />);
+      drawSquareRoom();
+      fireEvent.click(screen.getByRole('button', { name: 'Room' }));
+      drawSquareRoom();
+      expect([pressed('Room'), pressed('Furniture')]).toEqual(['false', 'true']);
+    });
+
+    test('until it is cleared', () => {
+      render(<App />);
+      drawSquareRoom();
+      fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      expect([pressed('Room'), pressed('Furniture')]).toEqual(['true', 'false']);
+    });
   });
 
   test('a sensor on a wall, aimed into the room, scores what it sees', () => {
@@ -381,6 +396,17 @@ describe('Room Sensors', () => {
       click(canvas, 5, 3);
       expect(selected()).toBe('Selected: Door');
       click(canvas, 3, 5);
+      expect(selected()).toBe('Selected: Room');
+    });
+
+    test('moves a corner of the selected room, staying on Select', () => {
+      render(<App />);
+      const canvas = drawSquareRoom();
+      choose('Select');
+      click(canvas, 5, 3);
+      dragOn(canvas, [5, 5], [7, 5]);
+      expect(screen.getByRole('button', { name: 'Select' }).getAttribute('aria-pressed')).toBe('true');
+      click(canvas, 6, 3);
       expect(selected()).toBe('Selected: Room');
     });
 

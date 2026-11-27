@@ -19,7 +19,7 @@ const UP = -Math.PI / 2;
 const REACH_PX = 16;
 
 const TOOLS = [
-  { id: 'select', label: 'Select', hint: 'Click something placed to select it; Delete removes it. Drag furniture or a seat to move it, a sensor or the door to slide it along the walls, furniture’s corners to resize it, or the handle ahead of a seat or sensor to turn it.' },
+  { id: 'select', label: 'Select', hint: 'Click something placed to select it; Delete removes it. Drag furniture or a seat to move it, a sensor or the door to slide it along the walls, furniture’s corners to resize it, the room’s corners to move them, or the handle ahead of a seat or sensor to turn it.' },
   { id: 'room', label: 'Room', hint: 'Click each corner, then click the first again or Close room.' },
   { id: 'furniture', label: 'Furniture', hint: 'Drag out a piece of furniture.' },
   { id: 'door', label: 'Door', hint: 'Click a wall at least 90 cm long.' },
@@ -300,7 +300,12 @@ export function App() {
   const view = useMemo(() => samples && { samples, flags: seenByAny(room, samples, sensors) }, [room, samples, sensors]);
   const result = view && score(view.samples, view.flags);
 
-  useEffect(() => setTool(room ? 'furniture' : 'room'), [room]);
+  // Keyed on whether there is a room and a draft, not on the room itself, which a moved corner replaces.
+  const drafting = plan.draft.length > 0;
+  const hasRoom = room !== null;
+  useEffect(() => {
+    if (!drafting) setTool(hasRoom ? 'furniture' : 'room');
+  }, [drafting, hasRoom]);
 
   const selected = tool === 'select' ? current(plan, selection) : null;
   const choose = (id) => {

@@ -37,7 +37,21 @@ const fitsSensor = (spec) =>
 
 const onWall = (room, { edge, t }) => has(room, edge) && t >= 0 && t <= 1;
 
+/** The room `points` draw, where `parseRoom` gives them back unchanged, as the door and sensors are placed by its edges' order; else null. */
+const roomAsDrawn = (points) => {
+  const room = parseRoom(points);
+  return room && room.length === points.length && room.every((p, i) => p === points[i]) ? room : null;
+};
+
 const rehang = (plan, door) => (plan.door ? { ...plan, door: { ...plan.door, ...door } } : plan);
+
+const moveCorner = (plan, index, { x, y }) => {
+  const room = plan.room && has(plan.room, index) && Number.isFinite(x) && Number.isFinite(y) && roomAsDrawn(plan.room.with(index, { x, y }));
+  if (!room) return plan;
+  if (!plan.door) return { ...plan, room };
+  const at = fitDoor(room, plan.door, plan.door.width);
+  return at ? rehang({ ...plan, room }, at) : plan;
+};
 
 /** The plan after `action`; the same plan where the action has nowhere to go. */
 export const edit = (plan, action) => {
@@ -74,6 +88,8 @@ export const edit = (plan, action) => {
       const at = plan.room && plan.door && onWall(plan.room, action.at) && fitDoor(plan.room, action.at, plan.door.width);
       return at ? rehang(plan, at) : plan;
     }
+    case 'move corner':
+      return moveCorner(plan, action.index, action.to);
     case 'tall':
       return typeof action.tall === 'boolean' ? change(plan, 'furniture', action.index, (f) => ({ ...f, tall: action.tall })) : plan;
     case 'flip hinge':
@@ -113,12 +129,7 @@ const point = (v) => {
 
 const facingPoint = (v) => ({ ...point(v), facing: number(v.facing) });
 
-/** Only a room `parseRoom` would give back unchanged, as the door and sensors are placed by its edges' order. */
-const storedRoom = (v) => {
-  const points = list(v, point);
-  const room = parseRoom(points);
-  return room && room.length === points.length && room.every((p, i) => p === points[i]) ? room : reject();
-};
+const storedRoom = (v) => roomAsDrawn(list(v, point)) ?? reject();
 
 const placement = (room, v) => {
   const { edge, t } = record(v);

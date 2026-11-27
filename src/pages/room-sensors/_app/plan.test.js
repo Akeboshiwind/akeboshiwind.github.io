@@ -138,6 +138,36 @@ describe('editing what is placed', () => {
     expect(edit(room, { type: 'move door', at: { edge: 0, t: 0.5 } })).toBe(room);
   });
 
+  test('a room corner moves, and the door and sensors slide with their walls', () => {
+    const moved = edit(placed, { type: 'move corner', index: 2, to: pt(6, 5) });
+    expect(moved.room).toEqual([pt(0, 0), pt(4, 0), pt(6, 5), pt(0, 4)]);
+    expect({ ...moved, room: placed.room }).toEqual(placed);
+  });
+
+  test('a room corner moves, and the door is refitted into its wall as the wall shortens', () => {
+    const cornered = edit(placed, { type: 'move door', at: { edge: 0, t: 1 } });
+    const moved = edit(cornered, { type: 'move corner', index: 1, to: pt(2, 0) });
+    expect(moved.door).toEqual({ ...cornered.door, t: 1 - DOOR_WIDTH / 2 / 2 });
+  });
+
+  test.each([
+    ['where its wall gets shorter than the door', 1, pt(0.5, 0)],
+    ['onto the corner beside it', 1, pt(0, 0)],
+    ['so far the room turns inside out', 2, pt(-8, -8)],
+    ['to nowhere', 2, pt(NaN, 4)],
+    ['when the room lacks it', 4, pt(5, 5)],
+  ])('a room corner is not moved %s', (_, index, to) => {
+    expect(edit(placed, { type: 'move corner', index, to })).toBe(placed);
+  });
+
+  test('a room with no door moves its corner however short the wall gets', () => {
+    expect(edit(room, { type: 'move corner', index: 1, to: pt(0.5, 0) }).room).toEqual([pt(0, 0), pt(0.5, 0), pt(4, 4), pt(0, 4)]);
+  });
+
+  test('with no room there is no corner to move', () => {
+    expect(edit(EMPTY, { type: 'move corner', index: 0, to: pt(1, 1) })).toBe(EMPTY);
+  });
+
   test('furniture is made tall, and short again', () => {
     const tall = edit(placed, { type: 'tall', index: 1, tall: true });
     expect(tall.furniture.map((f) => f.tall)).toEqual([false, true]);

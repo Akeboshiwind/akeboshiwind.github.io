@@ -9,6 +9,7 @@ import { handlesOf, pick } from './select.js';
 const near = (a, b, reach) => Math.hypot(a.x - b.x, a.y - b.y) <= reach;
 const plus = (p, by) => ({ x: p.x + by.x, y: p.y + by.y });
 const sameRect = (a, b) => a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
+const samePoint = (a, b) => a.x === b.x && a.y === b.y;
 const samePlace = (a, b) => a.edge === b.edge && a.t === b.t;
 const angle = (v) => Math.atan2(v.y, v.x);
 
@@ -64,6 +65,13 @@ function dragDoor(plan, by) {
   return at && !samePlace(at, door) ? { type: 'move door', at } : null;
 }
 
+function dragCorner(plan, { part, corner }, by) {
+  if (part !== 'corner') return null;
+  const at = plan.room[corner];
+  const to = snap(plus(at, by));
+  return samePoint(to, at) ? null : { type: 'move corner', index: corner, to };
+}
+
 /** The one edit that dragging `grab`, taken of `plan`, to `p` makes; null where it changes nothing. */
 export const dragTo = (plan, grab, p) => {
   const by = { x: p.x - grab.from.x, y: p.y - grab.from.y };
@@ -76,6 +84,8 @@ export const dragTo = (plan, grab, p) => {
       return dragSensor(plan, grab, by, p);
     case 'door':
       return dragDoor(plan, by);
+    case 'room':
+      return dragCorner(plan, grab, by);
   }
   return null;
 };
