@@ -1,5 +1,7 @@
 import { describe, test, expect } from 'vitest';
-import { FP300, parseRoom, pointInPolygon, segmentsCross, perimeterPoint, snapToPerimeter, doorGeometry } from './geometry.js';
+import {
+  FP300, parseRoom, pointInPolygon, segmentsCross, perimeterPoint, snapToPerimeter, doorGeometry, wallSegments, inRect, rectEdges,
+} from './geometry.js';
 
 const pt = (x, y) => ({ x, y });
 const square = [pt(0, 0), pt(4, 0), pt(4, 4), pt(0, 4)];
@@ -139,5 +141,36 @@ describe('doorGeometry', () => {
     const tip = (swing) => doorGeometry(lShape, { edge: 3, t: 0.5, width: 0.8, hinge: 'start', swing }).leaf.open[1];
     expect(pointInPolygon(tip('in'), lShape)).toBe(true);
     expect(pointInPolygon(tip('out'), lShape)).toBe(false);
+  });
+});
+
+describe('wallSegments', () => {
+  test('without a door, the walls run corner to corner', () => {
+    expect(wallSegments(square, null)).toEqual([
+      [pt(0, 0), pt(4, 0)], [pt(4, 0), pt(4, 4)], [pt(4, 4), pt(0, 4)], [pt(0, 4), pt(0, 0)],
+    ]);
+  });
+
+  test('a door leaves a gap in its wall', () => {
+    const door = { edge: 1, t: 0.5, width: 1, hinge: 'start', swing: 'in' };
+    expect(wallSegments(square, door)).toEqual([
+      [pt(0, 0), pt(4, 0)], [pt(4, 0), pt(4, 1.5)], [pt(4, 2.5), pt(4, 4)], [pt(4, 4), pt(0, 4)], [pt(0, 4), pt(0, 0)],
+    ]);
+  });
+});
+
+describe('furniture rectangles', () => {
+  const table = { x: 1, y: 2, w: 2, h: 1 };
+
+  test('a point is in a rectangle up to and including its edges', () => {
+    expect(inRect(pt(2, 2.5), table)).toBe(true);
+    expect(inRect(pt(3, 3), table)).toBe(true);
+    expect(inRect(pt(3.01, 2.5), table)).toBe(false);
+  });
+
+  test('a rectangle’s edges go round its corners', () => {
+    expect(rectEdges(table)).toEqual([
+      [pt(1, 2), pt(3, 2)], [pt(3, 2), pt(3, 3)], [pt(3, 3), pt(1, 3)], [pt(1, 3), pt(1, 2)],
+    ]);
   });
 });

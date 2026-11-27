@@ -94,3 +94,20 @@ export const doorGeometry = (room, { edge, t, width, hinge, swing }) => {
   const tip = { x: pivot.x + w.normal.x * reach, y: pivot.y + w.normal.y * reach };
   return { gap: [start, end], leaf: { closed: [pivot, latch], open: [pivot, tip] } };
 };
+
+/** The walls as segments, with a gap where `door` (or null) stands. */
+export const wallSegments = (room, door) =>
+  room.flatMap((a, edge) => {
+    const b = room[(edge + 1) % room.length];
+    if (door?.edge !== edge) return [[a, b]];
+    const [start, end] = doorGeometry(room, door).gap;
+    return [[a, start], [end, b]];
+  });
+
+/** Furniture stands as an axis-aligned rectangle `{ x, y, w, h }` from its top-left corner. */
+export const inRect = (p, { x, y, w, h }) => p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h;
+
+export const rectEdges = ({ x, y, w, h }) => {
+  const corners = [{ x, y }, { x: x + w, y }, { x: x + w, y: y + h }, { x, y: y + h }];
+  return corners.map((c, i) => [c, corners[(i + 1) % 4]]);
+};
