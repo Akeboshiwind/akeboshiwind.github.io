@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { SectionLabel } from '../../../components/pixel/SectionLabel.jsx';
-import { perimeterPoint, snapToPerimeter } from './geometry.js';
+import { FP300, perimeterPoint, snapToPerimeter } from './geometry.js';
 import { sampleScene, seenByAny, score } from './scoring.js';
 import { EMPTY, SENSOR_LIMITS, edit } from './plan.js';
+import { bestPair, bestSingle } from './search.js';
 import { WORLD, drawPlan } from './canvas.js';
 
 const GRID = 0.25;
@@ -230,6 +231,8 @@ export function App() {
   const view = useMemo(() => samples && { samples, flags: seenByAny(room, samples, sensors) }, [room, samples, sensors]);
   const result = view && score(view.samples, view.flags);
 
+  const find = (search) => () => onEdit({ type: 'found', sensors: search({ room, furniture, door, seats }, FP300).sensors });
+
   const clear = () => {
     onEdit({ type: 'clear' });
     setTool('room');
@@ -251,6 +254,13 @@ export function App() {
       </div>
       <p className="label">{TOOLS.find(({ id }) => id === tool).hint}</p>
       <Plan plan={plan} view={view} tool={tool} onEdit={onEdit} />
+
+      <SectionLabel className="mt-6">Find sensors</SectionLabel>
+      <p>Search the walls for where FP300s see the most, and replace the sensors placed with them.</p>
+      <div className="flex flex-wrap gap-2">
+        <button className="pixel-button" data-variant="primary" disabled={!room} onClick={find(bestSingle)}>Find 1 sensor</button>
+        <button className="pixel-button" data-variant="primary" disabled={!room} onClick={find(bestPair)}>Find 2 sensors</button>
+      </div>
 
       <SectionLabel className="mt-6">Score</SectionLabel>
       {result ? <Score result={result} /> : <p>Close a room to score it.</p>}

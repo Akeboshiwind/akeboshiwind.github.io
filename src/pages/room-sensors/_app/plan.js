@@ -54,6 +54,8 @@ export const edit = (plan, action) => {
       return plan.room && pointInPolygon(action.seat, plan.room) ? { ...plan, seats: [...plan.seats, action.seat] } : plan;
     case 'sensor':
       return plan.room ? { ...plan, sensors: [...plan.sensors, { ...FP300, ...action.sensor }] } : plan;
+    case 'found':
+      return plan.room ? { ...plan, sensors: action.sensors } : plan;
     case 'tall':
       return typeof action.tall === 'boolean' ? change(plan, 'furniture', action.index, (f) => ({ ...f, tall: action.tall })) : plan;
     case 'flip hinge':

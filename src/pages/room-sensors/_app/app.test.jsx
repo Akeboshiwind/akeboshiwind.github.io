@@ -60,6 +60,27 @@ describe('Room Sensors', () => {
     expect(roomRow.textContent).not.toContain('0%');
   });
 
+  describe('finding sensors', () => {
+    const sensorsListed = () => screen.queryAllByRole('listitem', { name: /^Sensor / }).length;
+
+    test('waits for a room', () => {
+      render(<App />);
+      ['Find 1 sensor', 'Find 2 sensors'].forEach((name) => expect(screen.getByRole('button', { name }).disabled).toBe(true));
+    });
+
+    test.each([
+      ['Find 1 sensor', 1],
+      ['Find 2 sensors', 2],
+    ])('%s replaces the sensors placed with what it finds', (name, count) => {
+      render(<App />);
+      placeSensor(drawSquareRoom());
+      const placedByHand = total();
+      fireEvent.click(screen.getByRole('button', { name }));
+      expect(sensorsListed()).toBe(count);
+      expect(Number.parseInt(total())).toBeGreaterThanOrEqual(Number.parseInt(placedByHand));
+    });
+  });
+
   describe('what is placed', () => {
     const item = (name) => screen.getByRole('listitem', { name });
 

@@ -71,8 +71,14 @@ describe('placing things', () => {
     expect(edit(room, { type: 'sensor', sensor }).sensors).toEqual([{ ...FP300, ...sensor }]);
   });
 
-  test.each(['door', 'seat', 'sensor'])('without a room there is nowhere for a %s', (type) => {
-    const action = { type, at: pt(1, 1), seat: { x: 1, y: 1, facing: 0 }, sensor: { edge: 0, t: 0.5, facing: 0 } };
+  test('sensors found by a search replace those placed', () => {
+    const placed = edit(room, { type: 'sensor', sensor: { edge: 1, t: 0.25, facing: Math.PI } });
+    const found = [{ ...FP300, edge: 0, t: 0.5, facing: Math.PI / 2 }, { ...FP300, edge: 2, t: 0.5, facing: -Math.PI / 2 }];
+    expect(edit(placed, { type: 'found', sensors: found }).sensors).toEqual(found);
+  });
+
+  test.each(['door', 'seat', 'sensor', 'found'])('without a room there is nowhere for a %s', (type) => {
+    const action = { type, at: pt(1, 1), seat: { x: 1, y: 1, facing: 0 }, sensor: { edge: 0, t: 0.5, facing: 0 }, sensors: [{ ...FP300, edge: 0, t: 0.5, facing: 0 }] };
     expect(edit(EMPTY, action)).toBe(EMPTY);
   });
 });
