@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { SectionLabel } from '../../../components/pixel/SectionLabel.jsx';
 import { perimeterPoint, snapToPerimeter } from './geometry.js';
 import { sampleScene, seenByAny, score } from './scoring.js';
-import { EMPTY, edit } from './plan.js';
+import { EMPTY, SENSOR_LIMITS, edit } from './plan.js';
 import { WORLD, drawPlan } from './canvas.js';
 
 const GRID = 0.25;
@@ -156,6 +156,71 @@ function Score({ result }) {
   );
 }
 
+function Item({ name, onRemove, children }) {
+  return (
+    <li aria-label={name} className="flex flex-wrap items-center gap-x-4 gap-y-2 p-2">
+      <span className="text-heading">{name}</span>
+      {children}
+      <button className="pixel-button ml-auto" onClick={onRemove}>Remove</button>
+    </li>
+  );
+}
+
+function Slider({ label, limits, value, onChange }) {
+  return (
+    <label className="flex flex-col gap-1 min-w-32 flex-1">
+      <span className="label">{label}</span>
+      <input type="range" className="pixel-range" {...limits} value={value} onChange={(e) => onChange(Number(e.target.value))} />
+    </label>
+  );
+}
+
+const metres = (m) => String(Number(m.toFixed(2)));
+
+function Placed({ plan, onEdit }) {
+  const { furniture, door, seats, sensors } = plan;
+  if (!door && !furniture.length && !seats.length && !sensors.length) return <p>Nothing placed yet.</p>;
+  const remove = (kind, index) => () => onEdit({ type: 'remove', kind, index });
+
+  return (
+    <ul className="pixel-panel divide-y-2 divide-border">
+      {door && (
+        <Item name="Door" onRemove={remove('door')}>
+          <button className="pixel-button" onClick={() => onEdit({ type: 'flip hinge' })}>Flip hinge</button>
+          <span className="flex gap-2">
+            {['in', 'out'].map((swing) => (
+              <button key={swing} className="pixel-chip" aria-pressed={door.swing === swing} onClick={() => onEdit({ type: 'swing', swing })}>
+                Swings {swing}
+              </button>
+            ))}
+          </span>
+        </Item>
+      )}
+      {furniture.map((f, index) => (
+        <Item key={`furniture ${index}`} name={`Furniture ${index + 1}`} onRemove={remove('furniture', index)}>
+          <span className="pixel-num">{metres(f.w)} × {metres(f.h)} m</span>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" className="pixel-check" checked={f.tall} onChange={(e) => onEdit({ type: 'tall', index, tall: e.target.checked })} />
+            Tall, blocks sensors
+          </label>
+        </Item>
+      ))}
+      {seats.map((_, index) => (
+        <Item key={`seat ${index}`} name={`Seat ${index + 1}`} onRemove={remove('seat', index)} />
+      ))}
+      {sensors.map((sensor, index) => {
+        const set = (key) => (value) => onEdit({ type: 'spec', index, spec: { [key]: value } });
+        return (
+          <Item key={`sensor ${index}`} name={`Sensor ${index + 1}`} onRemove={remove('sensor', index)}>
+            <Slider label={`Angle ${sensor.fovDegrees}°`} limits={SENSOR_LIMITS.fovDegrees} value={sensor.fovDegrees} onChange={set('fovDegrees')} />
+            <Slider label={`Range ${metres(sensor.range)} m`} limits={SENSOR_LIMITS.range} value={sensor.range} onChange={set('range')} />
+          </Item>
+        );
+      })}
+    </ul>
+  );
+}
+
 export function App() {
   const [plan, onEdit] = useReducer(edit, EMPTY);
   const [tool, setTool] = useState('room');
@@ -189,6 +254,9 @@ export function App() {
 
       <SectionLabel className="mt-6">Score</SectionLabel>
       {result ? <Score result={result} /> : <p>Close a room to score it.</p>}
+
+      <SectionLabel className="mt-6">Placed</SectionLabel>
+      <Placed plan={plan} onEdit={onEdit} />
     </main>
   );
 }

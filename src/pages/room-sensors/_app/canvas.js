@@ -142,8 +142,8 @@ export function drawPlan(canvas, { plan, view, gesture }) {
   ctx.fillRect(0, 0, width, height);
   drawGrid(ctx, scale, width, height, colors.border);
   if (view) drawView(p, view.samples, view.flags, colors);
-  plan.furniture.forEach(({ x, y, w, h }) => {
-    ctx.fillStyle = colors.border;
+  plan.furniture.forEach(({ x, y, w, h, tall }) => {
+    ctx.fillStyle = tall ? colors.text : colors.border;
     ctx.fillRect(x * scale, y * scale, w * scale, h * scale);
   });
   if (plan.room) p.stroke(plan.room, { color: colors.heading, closed: true });
