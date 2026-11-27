@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import {
-  FP300, parseRoom, pointInPolygon, segmentsCross, perimeterPoint, snapToPerimeter, doorGeometry, wallSegments, inRect, rectEdges,
+  FP300, parseRoom, pointInPolygon, segmentsCross, perimeterPoint, snapToPerimeter, fitDoor, doorGeometry, wallSegments, inRect, rectEdges,
 } from './geometry.js';
 
 const pt = (x, y) => ({ x, y });
@@ -116,6 +116,26 @@ describe('snapToPerimeter', () => {
     const placement = { edge: 4, t: 0.3 };
     const { point } = perimeterPoint(lShape, placement);
     expect(snapToPerimeter(lShape, point)).toEqual({ edge: 4, t: expect.closeTo(0.3) });
+  });
+});
+
+describe('fitDoor', () => {
+  const corridor = [pt(0, 0), pt(4, 0), pt(4, 0.5), pt(0, 0.5)];
+
+  test('keeps a door that fits where it is', () => {
+    expect(fitDoor(square, { edge: 0, t: 0.5 }, 1)).toEqual({ edge: 0, t: 0.5 });
+  });
+
+  test.each([[0, 0.125], [0.05, 0.125], [1, 0.875], [0.95, 0.875]])('slides a door at t = %s along its wall until it fits, to t = %s', (t, fitted) => {
+    expect(fitDoor(square, { edge: 0, t }, 1)).toEqual({ edge: 0, t: fitted });
+  });
+
+  test('fills a wall exactly as long as the door', () => {
+    expect(fitDoor(corridor, { edge: 1, t: 0.2 }, 0.5)).toEqual({ edge: 1, t: 0.5 });
+  });
+
+  test('refuses a wall shorter than the door', () => {
+    expect(fitDoor(corridor, { edge: 1, t: 0.5 }, 0.9)).toBeNull();
   });
 });
 

@@ -80,6 +80,14 @@ export const snapToPerimeter = (room, p) => {
   return { edge: best.edge, t: best.t };
 };
 
+/** The placement nearest `{ edge, t }` where a door `width` wide fits within its wall, or null where the wall is shorter than the door. */
+export const fitDoor = (room, { edge, t }, width) => {
+  const { length } = wall(room, edge);
+  if (length < width) return null;
+  const margin = width / 2 / length;
+  return { edge, t: clamp(t, margin, 1 - margin) };
+};
+
 /**
  * A door `{ edge, t, width, hinge, swing }` is centred on its placement. `hinge` is the end of the gap nearer the wall's
  * start ('start') or end ('end'); `swing` is 'in' or 'out' of the room. Each segment of the leaf runs from the hinge.

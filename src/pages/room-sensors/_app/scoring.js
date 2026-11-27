@@ -48,6 +48,7 @@ const outsideCells = (room, door) => {
 
 /**
  * The scene's samples, each `{ kind, point, blockers }`, front samples with the unit vector `faces` too.
+ * People and fronts each come in the order of `seats`.
  * The room, its people and their fronts are seen with the door shut; the door area and outside with it open.
  * Nothing is hidden by the furniture it is in, so a seat on a tall sofa is seen.
  */
@@ -97,6 +98,9 @@ export const seenBy = (room, samples, { edge, t, facing, fovDegrees, range }) =>
 
 /** The flags of two views together: seen by either. */
 export const union = (a, b) => a.map((v, i) => v | b[i]);
+
+export const seenByAny = (room, samples, sensors) =>
+  sensors.map((sensor) => seenBy(room, samples, sensor)).reduce(union, new Uint8Array(samples.length));
 
 /**
  * The fraction seen of each kind — null where there is none — and the total: the weighted mean of the parts

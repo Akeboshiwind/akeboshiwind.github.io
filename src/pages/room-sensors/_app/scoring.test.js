@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { FP300, parseRoom, pointInPolygon } from './geometry.js';
-import { sampleScene, seenBy, union, score, WEIGHTS, OUTSIDE_PENALTY } from './scoring.js';
+import { sampleScene, seenBy, seenByAny, union, score, WEIGHTS, OUTSIDE_PENALTY } from './scoring.js';
 
 const pt = (x, y) => ({ x, y });
 const square = [pt(0, 0), pt(4, 0), pt(4, 4), pt(0, 4)];
@@ -167,6 +167,19 @@ describe('seenBy', () => {
 describe('union', () => {
   test('a sample is seen when either sensor sees it', () => {
     expect(union(Uint8Array.of(1, 0, 1, 0), Uint8Array.of(1, 1, 0, 0))).toEqual(Uint8Array.of(1, 1, 1, 0));
+  });
+});
+
+describe('seenByAny', () => {
+  const samples = sampleScene(empty);
+
+  test('no sensors see nothing', () => {
+    expect(seenByAny(square, samples, [])).toEqual(new Uint8Array(samples.length));
+  });
+
+  test('several sensors see what any of them sees', () => {
+    const [a, b] = [sensor(0, 0.5, DOWN), sensor(2, 0.5, UP)];
+    expect(seenByAny(square, samples, [a, b])).toEqual(union(seenBy(square, samples, a), seenBy(square, samples, b)));
   });
 });
 
