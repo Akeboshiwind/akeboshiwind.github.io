@@ -119,3 +119,13 @@ export const score = (samples, flags) => {
   const gain = weight ? inside.reduce((s, k) => s + WEIGHTS[k] * parts[k], 0) / weight : 0;
   return { parts, total: gain - OUTSIDE_PENALTY * (parts.outside ?? 0) };
 };
+
+/** Each sample's share of the total: a view's total is the sum of the shares of the samples it sees. */
+export const shares = (samples) => {
+  const counts = Object.fromEntries(KINDS.map((k) => [k, 0]));
+  samples.forEach(({ kind }) => (counts[kind] += 1));
+  const weight = Object.keys(WEIGHTS).reduce((s, k) => s + (counts[k] ? WEIGHTS[k] : 0), 0);
+  return Float64Array.from(samples, ({ kind }) =>
+    kind === 'outside' ? -OUTSIDE_PENALTY / counts.outside : WEIGHTS[kind] / (weight * counts[kind]),
+  );
+};

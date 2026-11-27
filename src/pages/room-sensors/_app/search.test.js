@@ -77,4 +77,34 @@ describe('bestPair', () => {
     expect(pair.parts.room).toBeGreaterThan(single.parts.room);
     expect(pair.total).toBeGreaterThan(single.total);
   });
+
+  test('is no worse than any pair of candidates', () => {
+    const closet = [pt(0, 0), pt(2, 0), pt(2, 1.5), pt(0, 1.5)];
+    const scene = {
+      room: closet,
+      furniture: [{ x: 0.5, y: 0.5, w: 0.5, h: 0.5, tall: true }],
+      door: { edge: 0, t: 0.5, width: 0.9, hinge: 'start', swing: 'in' },
+      seats: [{ x: 1.5, y: 1, facing: DOWN }],
+    };
+    const samples = sampleScene(scene);
+    const views = candidates(closet, FP300).map((c) => seenBy(closet, samples, c));
+    const { score: s } = bestPair(scene, FP300);
+    views.forEach((a, i) => views.slice(i + 1).forEach((b) => expect(score(samples, union(a, b)).total).toBeLessThanOrEqual(s.total + 1e-12)));
+  });
+
+  test('finds the sensor that fills a nook, though it is weak alone and the strong ones crowd together', () => {
+    const nook = [pt(0, 0), pt(8, 0), pt(8, 4), pt(1, 4), pt(1, 5), pt(0, 5)];
+    const scene = { ...empty, room: nook };
+    const strongest = candidates(nook, FP300)
+      .map((c) => ({ c, total: rescore(scene, [c]).total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 60)
+      .map(({ c }) => c);
+    const bestOfStrongest = Math.max(...strongest.flatMap((a, i) => strongest.slice(i + 1).map((b) => rescore(scene, [a, b]).total)));
+
+    const { score: s } = bestPair(scene, FP300);
+    expect(s.parts.room).toBe(1);
+    expect(s.total).toBeGreaterThan(bestOfStrongest);
+  });
 });
+

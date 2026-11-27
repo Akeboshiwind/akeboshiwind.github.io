@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { FP300, parseRoom, pointInPolygon } from './geometry.js';
-import { sampleScene, seenBy, seenByAny, union, score, WEIGHTS, OUTSIDE_PENALTY } from './scoring.js';
+import { sampleScene, seenBy, seenByAny, union, score, shares, WEIGHTS, OUTSIDE_PENALTY } from './scoring.js';
 
 const pt = (x, y) => ({ x, y });
 const square = [pt(0, 0), pt(4, 0), pt(4, 4), pt(0, 4)];
@@ -211,5 +211,21 @@ describe('score', () => {
     const { parts, total } = score(roomOnly, Uint8Array.of(1, 0));
     expect(parts).toEqual({ room: 0.5, people: null, front: null, door: null, outside: null });
     expect(total).toBeCloseTo(0.5);
+  });
+});
+
+describe('shares', () => {
+  const total = (samples, flags) => shares(samples).reduce((s, share, i) => s + share * flags[i], 0);
+
+  test.each([
+    ['every kind', ['room', 'room', 'room', 'people', 'front', 'door', 'door', 'outside', 'outside', 'outside']],
+    ['some kinds missing', ['room', 'room', 'front', 'outside']],
+    ['the room alone', ['room', 'room', 'room']],
+  ])('sum, over what a view sees, to its total — %s', (_, kinds) => {
+    const samples = kinds.map((kind) => ({ kind }));
+    for (let bits = 0; bits < 2 ** samples.length; bits++) {
+      const flags = Uint8Array.from(samples, (_, i) => (bits >> i) & 1);
+      expect(total(samples, flags)).toBeCloseTo(score(samples, flags).total, 12);
+    }
   });
 });
