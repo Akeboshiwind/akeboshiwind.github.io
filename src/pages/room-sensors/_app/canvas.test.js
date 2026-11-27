@@ -9,16 +9,18 @@ const PX = 100;
 
 function recordingCanvas() {
   const texts = [];
+  const fills = [];
   const noop = () => {};
   const ctx = new Proxy({}, {
     get: (_, key) => {
       if (key === 'fillText') return (text, x, y) => texts.push({ text, x: x / PX, y: y / PX });
+      if (key === 'fillRect') return (x, y, w, h) => fills.push({ x: x / PX, y: y / PX, w: w / PX, h: h / PX });
       if (key === 'measureText') return (text) => ({ width: text.length * 8 });
       return noop;
     },
     set: () => true,
   });
-  return { canvas: { width: WORLD.width * PX, height: WORLD.height * PX, getContext: () => ctx }, texts };
+  return { canvas: { width: WORLD.width * PX, height: WORLD.height * PX, getContext: () => ctx }, texts, fills };
 }
 
 const pt = (x, y) => ({ x, y });
@@ -47,5 +49,19 @@ describe('drawPlan', () => {
     expect(numbered(plan.seats)).toEqual(['1', '2', '3']);
     expect(numbered(plan.sensors.map((sensor) => perimeterPoint(room, sensor).point))).toEqual(['1', '2']);
     expect(texts).toHaveLength(7);
+  });
+
+  test('draws a handle around what it marks, never over it, so a seat still shows whether it is seen', () => {
+    const at = pt(2.5, 2.5);
+    const { canvas, fills } = recordingCanvas();
+
+    drawPlan(canvas, { plan: EMPTY, view: null, gesture: null, handles: [{ part: 'body', at }] });
+
+    const [background, ...drawn] = fills;
+    expect(background).toMatchObject({ w: WORLD.width, h: WORLD.height });
+    const covers = ({ x, y, w, h }, p, by) => x < p.x + by && p.x - by < x + w && y < p.y + by && p.y - by < y + h;
+    const handle = drawn.filter((fill) => covers(fill, at, 0.2));
+    expect(handle).not.toHaveLength(0);
+    expect(handle.filter((fill) => covers(fill, at, 0.07))).toEqual([]);
   });
 });

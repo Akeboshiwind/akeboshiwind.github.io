@@ -60,6 +60,8 @@ export const edit = (plan, action) => {
       const { x, y, w, h } = action.rect;
       return w > 0 && h > 0 ? change(plan, 'furniture', action.index, (f) => ({ ...f, x, y, w, h })) : plan;
     }
+    case 'set seat':
+      return plan.room && pointInPolygon(action.seat, plan.room) ? change(plan, 'seats', action.index, () => action.seat) : plan;
     case 'tall':
       return typeof action.tall === 'boolean' ? change(plan, 'furniture', action.index, (f) => ({ ...f, tall: action.tall })) : plan;
     case 'flip hinge':

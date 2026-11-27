@@ -312,6 +312,41 @@ describe('Room Sensors', () => {
       expect(size()).toBe('2.5 × 2 m');
     });
 
+    const seat = () => {
+      const canvas = drawSquareRoom();
+      placeSensor(canvas);
+      choose('Seat');
+      click(canvas, 3, 3);
+      choose('Select');
+      return canvas;
+    };
+    const dragOn = (canvas, from, to) => {
+      fireEvent.pointerDown(canvas, at(...from));
+      fireEvent.pointerMove(canvas, at(...to));
+      fireEvent.pointerUp(canvas, at(...to));
+    };
+    const front = () => within(screen.getByRole('table')).getByText('People from the front').closest('tr').lastChild.textContent;
+
+    test('moves a seat by its body, selecting it, and keeps it in the room', () => {
+      render(<App />);
+      const canvas = seat();
+      dragOn(canvas, [3, 3], [2, 4]);
+      dragOn(canvas, [2, 4], [6, 4]);
+      click(canvas, 3, 3);
+      expect(selected()).toBeUndefined();
+      click(canvas, 2, 4);
+      expect(selected()).toBe('Selected: Seat 1');
+    });
+
+    test('turns a selected seat by its facing handle', () => {
+      render(<App />);
+      const canvas = seat();
+      expect(front()).toBe('100%');
+      click(canvas, 3, 3);
+      dragOn(canvas, [3, 2.4], [3, 4]);
+      expect(front()).toBe('0%');
+    });
+
     test('a drag let go of some other way changes nothing', () => {
       render(<App />);
       const canvas = furnish();

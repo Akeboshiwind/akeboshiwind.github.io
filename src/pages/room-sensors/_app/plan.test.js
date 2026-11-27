@@ -106,6 +106,12 @@ describe('editing what is placed', () => {
     expect(edit(placed, { type: 'rect', index: 0, rect })).toBe(placed);
   });
 
+  test('a seat moves and turns, inside the room, not outside it', () => {
+    const seat = { x: 3, y: 1, facing: Math.PI };
+    expect(edit(placed, { type: 'set seat', index: 0, seat }).seats).toEqual([seat]);
+    expect(edit(placed, { type: 'set seat', index: 0, seat: { ...seat, x: 5 } })).toBe(placed);
+  });
+
   test('furniture is made tall, and short again', () => {
     const tall = edit(placed, { type: 'tall', index: 1, tall: true });
     expect(tall.furniture.map((f) => f.tall)).toEqual([false, true]);
@@ -163,6 +169,7 @@ describe('editing what is placed', () => {
   test.each([
     { type: 'tall', index: 2, tall: true },
     { type: 'rect', index: 2, rect: { x: 0, y: 0, w: 1, h: 1 } },
+    { type: 'set seat', index: 1, seat: { x: 2, y: 2, facing: 0 } },
     { type: 'spec', index: 2, spec: { range: 3 } },
     { type: 'remove', kind: 'seat', index: 1 },
     { type: 'remove', kind: 'window', index: 0 },

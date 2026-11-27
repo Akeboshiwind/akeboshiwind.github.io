@@ -56,6 +56,17 @@ function painter(ctx, scale, font) {
       ctx.fillStyle = color;
       ctx.fillRect(Math.round(x - px / 2), Math.round(y - px / 2), px, px);
     },
+    /** Outlines the square `px` wide centred on `p` with a border `thickness` px wide, leaving what is inside it to show. */
+    frame(p, px, thickness, color) {
+      const [x, y] = at(p);
+      const left = Math.round(x - px / 2);
+      const top = Math.round(y - px / 2);
+      ctx.fillStyle = color;
+      ctx.fillRect(left, top, px, thickness);
+      ctx.fillRect(left, top + px - thickness, px, thickness);
+      ctx.fillRect(left, top, thickness, px);
+      ctx.fillRect(left + px - thickness, top, thickness, px);
+    },
     /** Writes `index + 1` centred on `p`, on a patch of background so it reads over anything drawn there. */
     number(p, index, colors) {
       const text = String(index + 1);
@@ -162,10 +173,7 @@ function drawGesture(p, gesture, colors) {
 }
 
 function drawHandles(p, handles, colors) {
-  handles.forEach(({ at }) => {
-    p.square(at, 8 * CELL, colors.heading);
-    p.square(at, 4 * CELL, colors.bg);
-  });
+  handles.forEach(({ at }) => p.frame(at, 12 * CELL, 2 * CELL, colors.heading));
 }
 
 export function drawPlan(canvas, { plan, view, gesture, handles }) {

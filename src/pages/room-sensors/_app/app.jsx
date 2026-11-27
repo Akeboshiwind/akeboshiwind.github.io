@@ -19,7 +19,7 @@ const UP = -Math.PI / 2;
 const REACH_PX = 16;
 
 const TOOLS = [
-  { id: 'select', label: 'Select', hint: 'Click something placed to select it; Delete removes it. Drag furniture to move it, or its corners to resize it.' },
+  { id: 'select', label: 'Select', hint: 'Click something placed to select it; Delete removes it. Drag furniture or a seat to move it, furniture’s corners to resize it, or the handle ahead of a seat to turn it.' },
   { id: 'room', label: 'Room', hint: 'Click each corner, then click the first again or Close room.' },
   { id: 'furniture', label: 'Furniture', hint: 'Drag out a piece of furniture.' },
   { id: 'door', label: 'Door', hint: 'Click a wall at least 90 cm long.' },

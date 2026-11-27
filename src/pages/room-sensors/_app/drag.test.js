@@ -10,6 +10,7 @@ const plan = {
   ...EMPTY,
   room: parseRoom([pt(1, 1), pt(6, 1), pt(6, 6), pt(1, 6)]),
   furniture: [{ x: 2, y: 2, w: 1, h: 1, tall: false }, { x: 2.5, y: 2.5, w: 1, h: 1, tall: true }],
+  seats: [{ x: 4.5, y: 4.5, facing: 0 }],
 };
 const first = { kind: 'furniture', index: 0 };
 
@@ -55,5 +56,28 @@ describe('dragging furniture', () => {
   test('makes no edit until it would move', () => {
     expect(dragTo(plan, by('body', undefined, pt(2.2, 2.2)), pt(2.3, 2.1))).toBeNull();
     expect(dragTo(plan, by('corner', 2, pt(3, 3)), pt(3.1, 2.9))).toBeNull();
+  });
+});
+
+describe('dragging a seat', () => {
+  const seat = { kind: 'seat', index: 0 };
+  const by = (part, from) => ({ selection: seat, part, from });
+
+  test('takes the seat by its body, or by the handle ahead of it that turns it', () => {
+    expect(grab(plan, seat, pt(4.5, 4.5), REACH)).toEqual(by('body', pt(4.5, 4.5)));
+    expect(grab(plan, seat, pt(5.1, 4.5), REACH)).toEqual(by('facing', pt(5.1, 4.5)));
+  });
+
+  test('by its body moves it as far as the pointer moves, to the grid, facing the way it faced', () => {
+    expect(dragTo(plan, by('body', pt(4.6, 4.4)), pt(3.1, 3.4))).toEqual({ type: 'set seat', index: 0, seat: { x: 3, y: 3.5, facing: 0 } });
+  });
+
+  test('by its facing handle turns it towards the pointer, where it stands', () => {
+    expect(dragTo(plan, by('facing', pt(5.1, 4.5)), pt(4.5, 5.5))).toEqual({ type: 'set seat', index: 0, seat: { x: 4.5, y: 4.5, facing: Math.PI / 2 } });
+  });
+
+  test('makes no edit until it would move or turn', () => {
+    expect(dragTo(plan, by('body', pt(4.5, 4.5)), pt(4.6, 4.4))).toBeNull();
+    expect(dragTo(plan, by('facing', pt(5.1, 4.6)), pt(5.2, 4.5))).toBeNull();
   });
 });

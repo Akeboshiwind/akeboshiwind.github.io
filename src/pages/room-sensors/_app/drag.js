@@ -31,12 +31,23 @@ function dragFurniture(plan, { selection: { index }, part, corner, from }, by) {
   return rect.w >= GRID && rect.h >= GRID && !sameRect(rect, furniture) ? { type: 'rect', index, rect } : null;
 }
 
+function dragSeat(plan, { selection: { index }, part }, by, p) {
+  const seat = plan.seats[index];
+  const moved =
+    part === 'body'
+      ? { ...snap(plus(seat, by)), facing: seat.facing }
+      : { x: seat.x, y: seat.y, facing: Math.atan2(p.y - seat.y, p.x - seat.x) };
+  return moved.x === seat.x && moved.y === seat.y && moved.facing === seat.facing ? null : { type: 'set seat', index, seat: moved };
+}
+
 /** The one edit that dragging `grab`, taken of `plan`, to `p` makes; null where it changes nothing. */
 export const dragTo = (plan, grab, p) => {
   const by = { x: p.x - grab.from.x, y: p.y - grab.from.y };
   switch (grab.selection.kind) {
     case 'furniture':
       return dragFurniture(plan, grab, by);
+    case 'seat':
+      return dragSeat(plan, grab, by, p);
   }
   return null;
 };
