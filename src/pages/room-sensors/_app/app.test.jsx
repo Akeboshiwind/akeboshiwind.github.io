@@ -164,6 +164,102 @@ describe('Room Sensors', () => {
     });
   });
 
+  describe('selecting on the plan', () => {
+    const choose = (name) => fireEvent.click(screen.getByRole('button', { name }));
+    const selected = () => screen.queryByRole('group', { name: /^Selected/ });
+    const placeDoor = (canvas) => {
+      choose('Door');
+      click(canvas, 3, 5);
+    };
+
+    test('waits for a room', () => {
+      render(<App />);
+      expect(screen.getByRole('button', { name: 'Select' }).disabled).toBe(true);
+    });
+
+    test('picks what is clicked, and nothing where nothing is', () => {
+      render(<App />);
+      const canvas = drawSquareRoom();
+      placeSensor(canvas);
+      choose('Select');
+      click(canvas, 3, 1);
+      expect(selected().getAttribute('aria-label')).toBe('Selected: Sensor 1');
+      click(canvas, 3, 4);
+      expect(selected()).toBeNull();
+      click(canvas, 5, 3);
+      expect(selected().getAttribute('aria-label')).toBe('Selected: Room');
+    });
+
+    test('reaches what is a few screen pixels from the pointer', () => {
+      render(<App />);
+      const canvas = drawSquareRoom();
+      placeSensor(canvas);
+      choose('Select');
+      fireEvent.pointerDown(canvas, { clientX: 3 * PX + 10, clientY: 1 * PX + 10, pointerId: 1 });
+      expect(selected().getAttribute('aria-label')).toBe('Selected: Sensor 1');
+    });
+
+    test.each([
+      ['with its button', () => choose('Delete')],
+      ['with the Delete key', () => fireEvent.keyDown(screen.getByLabelText('Room plan'), { key: 'Delete' })],
+      ['with the Backspace key, which Mac keyboards label delete', () => fireEvent.keyDown(screen.getByLabelText('Room plan'), { key: 'Backspace' })],
+    ])('deletes the selection %s', (_, del) => {
+      render(<App />);
+      const canvas = drawSquareRoom();
+      placeSensor(canvas);
+      choose('Select');
+      click(canvas, 3, 1);
+      del();
+      expect(screen.queryByRole('listitem', { name: 'Sensor 1' })).toBeNull();
+      expect(selected()).toBeNull();
+    });
+
+    test('keeps the room, which Clear removes', () => {
+      render(<App />);
+      const canvas = drawSquareRoom();
+      choose('Select');
+      click(canvas, 1, 3);
+      expect(within(selected()).queryByRole('button', { name: 'Delete' })).toBeNull();
+      fireEvent.keyDown(canvas, { key: 'Delete' });
+      expect(total()).toBe('0%');
+    });
+
+    test('flips a selected door on its hinge and its swing', () => {
+      render(<App />);
+      const canvas = drawSquareRoom();
+      placeDoor(canvas);
+      choose('Select');
+      click(canvas, 3, 5);
+      const door = within(screen.getByRole('listitem', { name: 'Door' }));
+      fireEvent.click(within(selected()).getByRole('button', { name: 'Flip swing' }));
+      expect(door.getByRole('button', { name: 'Swings out' }).getAttribute('aria-pressed')).toBe('true');
+      fireEvent.click(within(selected()).getByRole('button', { name: 'Flip swing' }));
+      expect(door.getByRole('button', { name: 'Swings in' }).getAttribute('aria-pressed')).toBe('true');
+      expect(within(selected()).getByRole('button', { name: 'Flip hinge' })).toBeTruthy();
+    });
+
+    test('lets go of what is removed some other way', () => {
+      render(<App />);
+      const canvas = drawSquareRoom();
+      placeSensor(canvas);
+      choose('Select');
+      click(canvas, 3, 1);
+      fireEvent.click(within(screen.getByRole('listitem', { name: 'Sensor 1' })).getByRole('button', { name: 'Remove' }));
+      expect(selected()).toBeNull();
+    });
+
+    test('lets go on choosing another tool', () => {
+      render(<App />);
+      const canvas = drawSquareRoom();
+      placeSensor(canvas);
+      choose('Select');
+      click(canvas, 3, 1);
+      choose('Seat');
+      choose('Select');
+      expect(selected()).toBeNull();
+    });
+  });
+
   describe('the plan is kept between visits', () => {
     test('as it was left', () => {
       render(<App />);

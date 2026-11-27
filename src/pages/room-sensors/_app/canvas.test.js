@@ -39,7 +39,7 @@ describe('drawPlan', () => {
     const view = { samples, flags: seenByAny(room, samples, plan.sensors) };
     const { canvas, texts } = recordingCanvas();
 
-    drawPlan(canvas, { plan, view, gesture: null });
+    drawPlan(canvas, { plan, view, gesture: null, handles: [] });
 
     const nearest = (p) => texts.reduce((a, b) => (Math.hypot(a.x - p.x, a.y - p.y) <= Math.hypot(b.x - p.x, b.y - p.y) ? a : b));
     const numbered = (items) => items.map((p) => nearest(p).text);

@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import {
   FP300, parseRoom, pointInPolygon, segmentsCross, perimeterPoint, snapToPerimeter, fitDoor, doorGeometry, wallSegments, inRect, rectEdges,
+  distanceToSegment,
 } from './geometry.js';
 
 const pt = (x, y) => ({ x, y });
@@ -192,5 +193,18 @@ describe('furniture rectangles', () => {
     expect(rectEdges(table)).toEqual([
       [pt(1, 2), pt(3, 2)], [pt(3, 2), pt(3, 3)], [pt(3, 3), pt(1, 3)], [pt(1, 3), pt(1, 2)],
     ]);
+  });
+});
+
+describe('distanceToSegment', () => {
+  const wall = [pt(1, 1), pt(4, 1)];
+
+  test('beside the segment, it is the distance square to it', () => {
+    expect(distanceToSegment(pt(2, 3), wall)).toBeCloseTo(2);
+  });
+
+  test('past an end, it is the distance to that end', () => {
+    expect(distanceToSegment(pt(7, 5), wall)).toBeCloseTo(5);
+    expect(distanceToSegment(pt(0, 1), wall)).toBeCloseTo(1);
   });
 });

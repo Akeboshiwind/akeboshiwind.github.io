@@ -161,7 +161,14 @@ function drawGesture(p, gesture, colors) {
   }
 }
 
-export function drawPlan(canvas, { plan, view, gesture }) {
+function drawHandles(p, handles, colors) {
+  handles.forEach(({ at }) => {
+    p.square(at, 8 * CELL, colors.heading);
+    p.square(at, 4 * CELL, colors.bg);
+  });
+}
+
+export function drawPlan(canvas, { plan, view, gesture, handles }) {
   const ctx = canvas.getContext('2d');
   const { width, height } = canvas;
   const scale = width / WORLD.width;
@@ -181,5 +188,6 @@ export function drawPlan(canvas, { plan, view, gesture }) {
     p.stroke(plan.draft, { color: colors.heading, dash: [CELL * 3, CELL * 2] });
     plan.draft.forEach((corner, i) => p.square(corner, (i ? 4 : 7) * CELL, colors.heading));
   }
+  drawHandles(p, handles, colors);
   if (gesture) drawGesture(p, gesture, colors);
 }

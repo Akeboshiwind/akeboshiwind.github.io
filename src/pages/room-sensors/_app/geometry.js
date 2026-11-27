@@ -80,6 +80,12 @@ export const snapToPerimeter = (room, p) => {
   return { edge: best.edge, t: best.t };
 };
 
+export const distanceToSegment = (p, [a, b]) => {
+  const ab = sub(b, a);
+  const t = clamp(dot(sub(p, a), ab) / dot(ab, ab), 0, 1);
+  return distance(p, { x: a.x + ab.x * t, y: a.y + ab.y * t });
+};
+
 /** The placement nearest `{ edge, t }` where a door `width` wide fits within its wall, or null where the wall is shorter than the door. */
 export const fitDoor = (room, { edge, t }, width) => {
   const { length } = wall(room, edge);

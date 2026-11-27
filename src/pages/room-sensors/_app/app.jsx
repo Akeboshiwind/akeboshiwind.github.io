@@ -8,13 +8,17 @@ import { SENSOR_LIMITS, edit, parsePlan } from './plan.js';
 import { bestPair, bestSingle } from './search.js';
 import { WORLD, drawPlan } from './canvas.js';
 import { GRID, rectBetween, snap } from './grid.js';
+import { current, handlesOf, pick } from './select.js';
 
 const PREFIX = 'room-sensors_';
 // How far the pointer moves, in metres, before a drag aims rather than a click placing.
 const AIM_FROM = 0.15;
 const UP = -Math.PI / 2;
+// How far from the pointer, in screen px, a click reaches for something to select, so a finger can pick a small item.
+const REACH_PX = 16;
 
 const TOOLS = [
+  { id: 'select', label: 'Select', hint: 'Click something placed to select it; Delete removes it.' },
   { id: 'room', label: 'Room', hint: 'Click each corner, then click the first again or Close room.' },
   { id: 'furniture', label: 'Furniture', hint: 'Drag out a piece of furniture.' },
   { id: 'door', label: 'Door', hint: 'Click a wall at least 90 cm long.' },
@@ -90,7 +94,7 @@ function useWidth(ref) {
   return width;
 }
 
-function Plan({ plan, view, tool, onEdit }) {
+function Plan({ plan, view, tool, handles, onEdit, onSelect, onDelete }) {
   const canvas = useRef(null);
   const width = useWidth(canvas);
   const theme = useThemeVersion();
@@ -100,15 +104,20 @@ function Plan({ plan, view, tool, onEdit }) {
     const el = canvas.current;
     el.width = width;
     el.height = Math.round((width * WORLD.height) / WORLD.width);
-    drawPlan(el, { plan, view, gesture });
-  }, [plan, view, gesture, width, theme]);
+    drawPlan(el, { plan, view, gesture, handles });
+  }, [plan, view, gesture, handles, width, theme]);
 
   const toWorld = (e) => {
     const r = canvas.current.getBoundingClientRect();
     return { x: ((e.clientX - r.left) / r.width) * WORLD.width, y: ((e.clientY - r.top) / r.height) * WORLD.height };
   };
+  const reach = () => (REACH_PX * WORLD.width) / canvas.current.getBoundingClientRect().width;
 
   const onPointerDown = (e) => {
+    if (tool === 'select') {
+      onSelect(pick(plan, toWorld(e), reach()));
+      return;
+    }
     const started = press(tool, plan, toWorld(e));
     if (started.edit) onEdit(started.edit);
     if (started.gesture) {
@@ -123,17 +132,24 @@ function Plan({ plan, view, tool, onEdit }) {
     if (made) onEdit(made);
     setGesture(null);
   };
+  const onKeyDown = (e) => {
+    if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+    e.preventDefault();
+    onDelete();
+  };
 
   return (
     <canvas
       ref={canvas}
       aria-label="Room plan"
+      tabIndex={0}
       className="w-full pixel-panel touch-none select-none [image-rendering:pixelated]"
       style={{ aspectRatio: `${WORLD.width} / ${WORLD.height}` }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={() => setGesture(null)}
+      onKeyDown={onKeyDown}
     />
   );
 }
@@ -227,6 +243,25 @@ function Placed({ plan, onEdit }) {
   );
 }
 
+const KINDS = { room: 'Room', door: 'Door', furniture: 'Furniture', seat: 'Seat', sensor: 'Sensor' };
+const nameOf = ({ kind, index }) => (index === undefined ? KINDS[kind] : `${KINDS[kind]} ${index + 1}`);
+
+function Selected({ selection, door, onEdit, onDelete }) {
+  const name = nameOf(selection);
+  return (
+    <div role="group" aria-label={`Selected: ${name}`} className="flex flex-wrap items-center gap-2">
+      <span className="label">Selected: {name}</span>
+      {selection.kind === 'door' && (
+        <>
+          <button className="pixel-button" onClick={() => onEdit({ type: 'flip hinge' })}>Flip hinge</button>
+          <button className="pixel-button" onClick={() => onEdit({ type: 'swing', swing: door.swing === 'in' ? 'out' : 'in' })}>Flip swing</button>
+        </>
+      )}
+      {selection.kind !== 'room' && <button className="pixel-button" data-variant="danger" onClick={onDelete}>Delete</button>}
+    </div>
+  );
+}
+
 /** The plan, loaded once from storage and stored again after each edit. */
 function usePlan() {
   const [stored, store] = useLocalStorage('plan', null, { prefix: PREFIX });
@@ -238,6 +273,7 @@ function usePlan() {
 export function App() {
   const [plan, onEdit] = usePlan();
   const [tool, setTool] = useState('room');
+  const [selection, setSelection] = useState(null);
   const { room, furniture, door, seats, sensors } = plan;
 
   const samples = useMemo(() => room && sampleScene({ room, furniture, door, seats }), [room, furniture, door, seats]);
@@ -245,6 +281,18 @@ export function App() {
   const result = view && score(view.samples, view.flags);
 
   useEffect(() => setTool(room ? 'furniture' : 'room'), [room]);
+
+  const selected = tool === 'select' ? current(plan, selection) : null;
+  const handles = useMemo(() => handlesOf(plan, selected), [plan, selected]);
+  const choose = (id) => {
+    setTool(id);
+    setSelection(null);
+  };
+  const deleteSelected = () => {
+    if (!selected || selected.kind === 'room') return;
+    onEdit({ type: 'remove', ...selected });
+    setSelection(null);
+  };
 
   const find = (search) => () => onEdit({ type: 'found', sensors: search({ room, furniture, door, seats }, plan.searchWith).sensors });
 
@@ -255,7 +303,7 @@ export function App() {
 
       <div className="flex flex-wrap gap-2">
         {TOOLS.map(({ id, label }) => (
-          <button key={id} className="pixel-chip" aria-pressed={tool === id} disabled={id !== 'room' && !room} onClick={() => setTool(id)}>
+          <button key={id} className="pixel-chip" aria-pressed={tool === id} disabled={id !== 'room' && !room} onClick={() => choose(id)}>
             {label}
           </button>
         ))}
@@ -263,7 +311,8 @@ export function App() {
         <button className="pixel-button" data-variant="danger" onClick={() => onEdit({ type: 'clear' })}>Clear</button>
       </div>
       <p className="label">{TOOLS.find(({ id }) => id === tool).hint}</p>
-      <Plan plan={plan} view={view} tool={tool} onEdit={onEdit} />
+      <Plan plan={plan} view={view} tool={tool} handles={handles} onEdit={onEdit} onSelect={setSelection} onDelete={deleteSelected} />
+      {selected && <Selected selection={selected} door={door} onEdit={onEdit} onDelete={deleteSelected} />}
 
       <SectionLabel className="mt-6">Find sensors</SectionLabel>
       <p>Search the walls for where sensors with this viewing angle and range see the most, and replace the sensors placed with them.</p>
