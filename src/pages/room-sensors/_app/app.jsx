@@ -7,9 +7,9 @@ import { sampleScene, seenByAny, score } from './scoring.js';
 import { SENSOR_LIMITS, edit, parsePlan } from './plan.js';
 import { bestPair, bestSingle } from './search.js';
 import { WORLD, drawPlan } from './canvas.js';
+import { GRID, rectBetween, snap } from './grid.js';
 
 const PREFIX = 'room-sensors_';
-const GRID = 0.25;
 // How far the pointer moves, in metres, before a drag aims rather than a click placing.
 const AIM_FROM = 0.15;
 const UP = -Math.PI / 2;
@@ -30,11 +30,8 @@ const PARTS = [
   ['outside', 'Outside the door, lower is better'],
 ];
 
-const snap = (p) => ({ x: Math.round(p.x / GRID) * GRID, y: Math.round(p.y / GRID) * GRID });
 const same = (a, b) => a.x === b.x && a.y === b.y;
 const percent = (fraction) => (fraction === null ? '–' : `${Math.round(fraction * 100)}%`);
-
-const rectBetween = (a, b) => ({ x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(a.x - b.x), h: Math.abs(a.y - b.y) });
 
 const aimed = (gesture, p) =>
   Math.hypot(p.x - gesture.at.x, p.y - gesture.at.y) < AIM_FROM ? gesture : { ...gesture, facing: Math.atan2(p.y - gesture.at.y, p.x - gesture.at.x) };
