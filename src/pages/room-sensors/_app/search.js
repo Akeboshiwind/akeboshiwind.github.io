@@ -47,7 +47,12 @@ export const bestSingle = (scene, spec) => {
  */
 const packed = (samples, views) => {
   const share = shares(samples);
-  const kinds = [...Map.groupBy(samples.keys(), (i) => samples[i].kind).values()];
+  const byKind = new Map();
+  samples.forEach(({ kind }, i) => {
+    if (!byKind.has(kind)) byKind.set(kind, []);
+    byKind.get(kind).push(i);
+  });
+  const kinds = [...byKind.values()];
   const words = kinds.reduce((n, kind) => n + Math.ceil(kind.length / 32), 0);
   const bits = new Uint32Array(views.length * words);
   const wordShares = new Float64Array(words);
