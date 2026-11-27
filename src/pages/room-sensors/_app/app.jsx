@@ -231,12 +231,9 @@ export function App() {
   const view = useMemo(() => samples && { samples, flags: seenByAny(room, samples, sensors) }, [room, samples, sensors]);
   const result = view && score(view.samples, view.flags);
 
-  const find = (search) => () => onEdit({ type: 'found', sensors: search({ room, furniture, door, seats }, FP300).sensors });
+  useEffect(() => setTool(room ? 'furniture' : 'room'), [room]);
 
-  const clear = () => {
-    onEdit({ type: 'clear' });
-    setTool('room');
-  };
+  const find = (search) => () => onEdit({ type: 'found', sensors: search({ room, furniture, door, seats }, FP300).sensors });
 
   return (
     <main className="flex flex-col gap-2">
@@ -250,7 +247,7 @@ export function App() {
           </button>
         ))}
         {tool === 'room' && plan.draft.length >= 3 && <button className="pixel-button" onClick={() => onEdit({ type: 'close' })}>Close room</button>}
-        <button className="pixel-button" data-variant="danger" onClick={clear}>Clear</button>
+        <button className="pixel-button" data-variant="danger" onClick={() => onEdit({ type: 'clear' })}>Clear</button>
       </div>
       <p className="label">{TOOLS.find(({ id }) => id === tool).hint}</p>
       <Plan plan={plan} view={view} tool={tool} onEdit={onEdit} />

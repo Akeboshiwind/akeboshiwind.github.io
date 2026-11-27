@@ -51,6 +51,24 @@ describe('Room Sensors', () => {
     expect(total()).toBe('0%');
   });
 
+  describe('once the room closes, the next click furnishes it rather than starting another', () => {
+    const pressed = (name) => screen.getByRole('button', { name }).getAttribute('aria-pressed');
+
+    test('closed by clicking the first corner', () => {
+      render(<App />);
+      drawSquareRoom();
+      expect([pressed('Room'), pressed('Furniture')]).toEqual(['false', 'true']);
+    });
+
+    test('closed with Close room', () => {
+      render(<App />);
+      const canvas = screen.getByLabelText('Room plan');
+      [[1, 1], [5, 1], [5, 5]].forEach(([x, y]) => click(canvas, x, y));
+      fireEvent.click(screen.getByRole('button', { name: 'Close room' }));
+      expect([pressed('Room'), pressed('Furniture')]).toEqual(['false', 'true']);
+    });
+  });
+
   test('a sensor on a wall, aimed into the room, scores what it sees', () => {
     render(<App />);
     const canvas = drawSquareRoom();
