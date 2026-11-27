@@ -4,7 +4,7 @@ import { App } from './app.jsx';
 import { WORLD } from './canvas.js';
 
 const noop = () => {};
-const fakeContext = new Proxy({}, { get: () => noop, set: () => true });
+const fakeContext = new Proxy({}, { get: (_, key) => (key === 'measureText' ? () => ({ width: 0 }) : noop), set: () => true });
 // One CSS px per centimetre of the plan.
 const PX = 100;
 
