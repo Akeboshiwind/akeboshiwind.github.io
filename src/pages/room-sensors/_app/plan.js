@@ -56,6 +56,10 @@ export const edit = (plan, action) => {
       return plan.room ? { ...plan, sensors: [...plan.sensors, { ...FP300, ...action.sensor }] } : plan;
     case 'found':
       return plan.room ? { ...plan, sensors: action.sensors } : plan;
+    case 'rect': {
+      const { x, y, w, h } = action.rect;
+      return w > 0 && h > 0 ? change(plan, 'furniture', action.index, (f) => ({ ...f, x, y, w, h })) : plan;
+    }
     case 'tall':
       return typeof action.tall === 'boolean' ? change(plan, 'furniture', action.index, (f) => ({ ...f, tall: action.tall })) : plan;
     case 'flip hinge':

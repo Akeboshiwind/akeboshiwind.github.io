@@ -260,6 +260,69 @@ describe('Room Sensors', () => {
     });
   });
 
+  describe('dragging on the plan', () => {
+    const choose = (name) => fireEvent.click(screen.getByRole('button', { name }));
+    const size = () => within(screen.getByRole('listitem', { name: 'Furniture 1' })).getByText(/ m$/).textContent;
+    const selected = () => screen.queryByRole('group', { name: /^Selected/ })?.getAttribute('aria-label');
+    const furnish = () => {
+      const canvas = drawSquareRoom();
+      choose('Furniture');
+      fireEvent.pointerDown(canvas, at(2, 2));
+      fireEvent.pointerMove(canvas, at(3, 3));
+      fireEvent.pointerUp(canvas, at(3, 3));
+      choose('Select');
+      return canvas;
+    };
+
+    test('moves furniture by its body, selecting it', () => {
+      render(<App />);
+      const canvas = furnish();
+      fireEvent.pointerDown(canvas, at(2.5, 2.5));
+      fireEvent.pointerMove(canvas, at(3.5, 3));
+      fireEvent.pointerUp(canvas, at(3.5, 3));
+      expect(size()).toBe('1 × 1 m');
+      click(canvas, 2.2, 2.2);
+      expect(selected()).toBeUndefined();
+      click(canvas, 3.8, 3.3);
+      expect(selected()).toBe('Selected: Furniture 1');
+    });
+
+    test('resizes selected furniture by a corner', () => {
+      render(<App />);
+      const canvas = furnish();
+      click(canvas, 2.5, 2.5);
+      fireEvent.pointerDown(canvas, at(3, 3));
+      fireEvent.pointerMove(canvas, at(4, 3.5));
+      fireEvent.pointerUp(canvas, at(4, 3.5));
+      expect(size()).toBe('2 × 1.5 m');
+    });
+
+    test('changes the plan once, on letting go', () => {
+      render(<App />);
+      const canvas = furnish();
+      const stored = () => Object.values(localStorage)[0];
+      const before = stored();
+      click(canvas, 2.5, 2.5);
+      fireEvent.pointerDown(canvas, at(3, 3));
+      fireEvent.pointerMove(canvas, at(4, 3.5));
+      fireEvent.pointerMove(canvas, at(4.5, 4));
+      expect(size()).toBe('1 × 1 m');
+      expect(stored()).toBe(before);
+      fireEvent.pointerUp(canvas, at(4.5, 4));
+      expect(size()).toBe('2.5 × 2 m');
+    });
+
+    test('a drag let go of some other way changes nothing', () => {
+      render(<App />);
+      const canvas = furnish();
+      fireEvent.pointerDown(canvas, at(2.5, 2.5));
+      fireEvent.pointerMove(canvas, at(3.5, 3));
+      fireEvent.pointerCancel(canvas, at(3.5, 3));
+      click(canvas, 2.2, 2.2);
+      expect(selected()).toBe('Selected: Furniture 1');
+    });
+  });
+
   describe('the plan is kept between visits', () => {
     test('as it was left', () => {
       render(<App />);

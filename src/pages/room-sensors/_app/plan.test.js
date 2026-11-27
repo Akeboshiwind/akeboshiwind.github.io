@@ -93,6 +93,19 @@ describe('editing what is placed', () => {
     { type: 'sensor', sensor: { edge: 2, t: 0.5, facing: -Math.PI / 2 } },
   ].reduce(edit, room);
 
+  test('furniture moves and changes size, and stays as tall as it was', () => {
+    const tall = edit(placed, { type: 'tall', index: 1, tall: true });
+    const moved = edit(tall, { type: 'rect', index: 1, rect: { x: 0.5, y: 2, w: 2, h: 0.5 } });
+    expect(moved.furniture).toEqual([placed.furniture[0], { x: 0.5, y: 2, w: 2, h: 0.5, tall: true }]);
+  });
+
+  test.each([
+    ['no width', { x: 1, y: 1, w: 0, h: 1 }],
+    ['no height', { x: 1, y: 1, w: 1, h: 0 }],
+  ])('furniture is not made %s', (_, rect) => {
+    expect(edit(placed, { type: 'rect', index: 0, rect })).toBe(placed);
+  });
+
   test('furniture is made tall, and short again', () => {
     const tall = edit(placed, { type: 'tall', index: 1, tall: true });
     expect(tall.furniture.map((f) => f.tall)).toEqual([false, true]);
@@ -149,6 +162,7 @@ describe('editing what is placed', () => {
 
   test.each([
     { type: 'tall', index: 2, tall: true },
+    { type: 'rect', index: 2, rect: { x: 0, y: 0, w: 1, h: 1 } },
     { type: 'spec', index: 2, spec: { range: 3 } },
     { type: 'remove', kind: 'seat', index: 1 },
     { type: 'remove', kind: 'window', index: 0 },

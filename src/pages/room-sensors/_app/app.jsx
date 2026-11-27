@@ -8,7 +8,8 @@ import { SENSOR_LIMITS, edit, parsePlan } from './plan.js';
 import { bestPair, bestSingle } from './search.js';
 import { WORLD, drawPlan } from './canvas.js';
 import { GRID, rectBetween, snap } from './grid.js';
-import { current, handlesOf, pick } from './select.js';
+import { current, handlesOf } from './select.js';
+import { dragTo, grab } from './drag.js';
 
 const PREFIX = 'room-sensors_';
 // How far the pointer moves, in metres, before a drag aims rather than a click placing.
@@ -18,7 +19,7 @@ const UP = -Math.PI / 2;
 const REACH_PX = 16;
 
 const TOOLS = [
-  { id: 'select', label: 'Select', hint: 'Click something placed to select it; Delete removes it.' },
+  { id: 'select', label: 'Select', hint: 'Click something placed to select it; Delete removes it. Drag furniture to move it, or its corners to resize it.' },
   { id: 'room', label: 'Room', hint: 'Click each corner, then click the first again or Close room.' },
   { id: 'furniture', label: 'Furniture', hint: 'Drag out a piece of furniture.' },
   { id: 'door', label: 'Door', hint: 'Click a wall at least 90 cm long.' },
@@ -60,10 +61,21 @@ function press(tool, plan, p) {
   }
 }
 
-const drag = (gesture, p) => (gesture.tool === 'furniture' ? { ...gesture, rect: rectBetween(gesture.from, snap(p)) } : aimed(gesture, p));
+function drag(gesture, p) {
+  switch (gesture.tool) {
+    case 'select':
+      return { ...gesture, made: dragTo(gesture.plan, gesture.grabbed, p) };
+    case 'furniture':
+      return { ...gesture, rect: rectBetween(gesture.from, snap(p)) };
+    default:
+      return aimed(gesture, p);
+  }
+}
 
 function release(gesture) {
   switch (gesture.tool) {
+    case 'select':
+      return gesture.made;
     case 'furniture':
       return gesture.rect.w >= GRID && gesture.rect.h >= GRID ? { type: 'furniture', rect: gesture.rect } : null;
     case 'seat':
@@ -72,6 +84,9 @@ function release(gesture) {
       return { type: 'sensor', sensor: { ...gesture.placement, facing: gesture.facing } };
   }
 }
+
+const preview = (plan, gesture) =>
+  gesture?.tool === 'select' ? { plan: gesture.made ? edit(plan, gesture.made) : plan, gesture: null } : { plan, gesture };
 
 /** A count that ticks whenever the page's theme or accent changes, as the canvas takes its colours from them. */
 function useThemeVersion() {
@@ -94,18 +109,20 @@ function useWidth(ref) {
   return width;
 }
 
-function Plan({ plan, view, tool, handles, onEdit, onSelect, onDelete }) {
+function Plan({ plan, view, tool, selected, onEdit, onSelect, onDelete }) {
   const canvas = useRef(null);
   const width = useWidth(canvas);
   const theme = useThemeVersion();
   const [gesture, setGesture] = useState(null);
+  const shown = useMemo(() => preview(plan, gesture), [plan, gesture]);
+  const handles = useMemo(() => handlesOf(shown.plan, selected), [shown, selected]);
 
   useEffect(() => {
     const el = canvas.current;
     el.width = width;
     el.height = Math.round((width * WORLD.height) / WORLD.width);
-    drawPlan(el, { plan, view, gesture, handles });
-  }, [plan, view, gesture, handles, width, theme]);
+    drawPlan(el, { ...shown, view, handles });
+  }, [shown, view, handles, width, theme]);
 
   const toWorld = (e) => {
     const r = canvas.current.getBoundingClientRect();
@@ -113,17 +130,20 @@ function Plan({ plan, view, tool, handles, onEdit, onSelect, onDelete }) {
   };
   const reach = () => (REACH_PX * WORLD.width) / canvas.current.getBoundingClientRect().width;
 
+  const hold = (e, held) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setGesture(held);
+  };
   const onPointerDown = (e) => {
     if (tool === 'select') {
-      onSelect(pick(plan, toWorld(e), reach()));
+      const grabbed = grab(plan, selected, toWorld(e), reach());
+      onSelect(grabbed?.selection ?? null);
+      if (grabbed) hold(e, { tool, grabbed, plan, made: null });
       return;
     }
     const started = press(tool, plan, toWorld(e));
     if (started.edit) onEdit(started.edit);
-    if (started.gesture) {
-      e.currentTarget.setPointerCapture(e.pointerId);
-      setGesture(started.gesture);
-    }
+    if (started.gesture) hold(e, started.gesture);
   };
   const onPointerMove = (e) => gesture && setGesture(drag(gesture, toWorld(e)));
   const onPointerUp = () => {
@@ -283,7 +303,6 @@ export function App() {
   useEffect(() => setTool(room ? 'furniture' : 'room'), [room]);
 
   const selected = tool === 'select' ? current(plan, selection) : null;
-  const handles = useMemo(() => handlesOf(plan, selected), [plan, selected]);
   const choose = (id) => {
     setTool(id);
     setSelection(null);
@@ -311,7 +330,7 @@ export function App() {
         <button className="pixel-button" data-variant="danger" onClick={() => onEdit({ type: 'clear' })}>Clear</button>
       </div>
       <p className="label">{TOOLS.find(({ id }) => id === tool).hint}</p>
-      <Plan plan={plan} view={view} tool={tool} handles={handles} onEdit={onEdit} onSelect={setSelection} onDelete={deleteSelected} />
+      <Plan plan={plan} view={view} tool={tool} selected={selected} onEdit={onEdit} onSelect={setSelection} onDelete={deleteSelected} />
       {selected && <Selected selection={selected} door={door} onEdit={onEdit} onDelete={deleteSelected} />}
 
       <SectionLabel className="mt-6">Find sensors</SectionLabel>
