@@ -71,3 +71,80 @@ export const edit = (plan, action) => {
   }
   throw new Error(`Unknown edit: ${action.type}`);
 };
+
+class Unparsable extends Error {}
+const reject = () => {
+  throw new Unparsable();
+};
+
+const record = (v) => (typeof v === 'object' && v !== null && !Array.isArray(v) ? v : reject());
+const list = (v, parse) => (Array.isArray(v) ? v.map(parse) : reject());
+const nullable = (v, parse) => (v === null ? null : parse(v));
+const number = (v) => (Number.isFinite(v) ? v : reject());
+const positive = (v) => (number(v) > 0 ? v : reject());
+const within = (v, { min, max }) => (number(v) >= min && v <= max ? v : reject());
+const oneOf = (v, options) => (options.includes(v) ? v : reject());
+const index = (v, length) => (Number.isInteger(v) && v >= 0 && v < length ? v : reject());
+
+const point = (v) => {
+  const { x, y } = record(v);
+  return { x: number(x), y: number(y) };
+};
+
+const facingPoint = (v) => ({ ...point(v), facing: number(v.facing) });
+
+/** Only a room `parseRoom` would give back unchanged, as the door and sensors are placed by its edges' order. */
+const storedRoom = (v) => {
+  const points = list(v, point);
+  const room = parseRoom(points);
+  return room && room.length === points.length && room.every((p, i) => p === points[i]) ? room : reject();
+};
+
+const placement = (room, v) => {
+  const { edge, t } = record(v);
+  return { edge: index(edge, room.length), t: within(t, { min: 0, max: 1 }) };
+};
+
+const furnishing = (v) => {
+  const { x, y, w, h, tall } = record(v);
+  return { x: number(x), y: number(y), w: positive(w), h: positive(h), tall: oneOf(tall, [true, false]) };
+};
+
+const door = (room, v) => {
+  const at = placement(room, v);
+  const width = positive(v.width);
+  const fitted = fitDoor(room, at, width);
+  if (!fitted || fitted.t !== at.t) reject();
+  return { ...at, width, hinge: oneOf(v.hinge, ['start', 'end']), swing: oneOf(v.swing, ['in', 'out']) };
+};
+
+const sensor = (room, v) => ({
+  ...placement(room, v),
+  facing: number(v.facing),
+  fovDegrees: within(v.fovDegrees, SENSOR_LIMITS.fovDegrees),
+  range: within(v.range, SENSOR_LIMITS.range),
+});
+
+const parse = (v) => {
+  const plan = record(v);
+  const room = nullable(plan.room, storedRoom);
+  const onWalls = () => room ?? reject();
+  return {
+    draft: list(plan.draft, point),
+    room,
+    furniture: list(plan.furniture, furnishing),
+    door: nullable(plan.door, (d) => door(onWalls(), d)),
+    seats: list(plan.seats, facingPoint),
+    sensors: list(plan.sensors, (s) => sensor(onWalls(), s)),
+  };
+};
+
+/** The plan stored as `value`, which may be stale or malformed; EMPTY where any part of it is malformed or no longer fits its room. */
+export const parsePlan = (value) => {
+  try {
+    return parse(value);
+  } catch (error) {
+    if (error instanceof Unparsable) return EMPTY;
+    throw error;
+  }
+};

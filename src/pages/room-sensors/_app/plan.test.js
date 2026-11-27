@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { FP300 } from './geometry.js';
-import { EMPTY, DOOR_WIDTH, SENSOR_LIMITS, edit } from './plan.js';
+import { EMPTY, DOOR_WIDTH, SENSOR_LIMITS, edit, parsePlan } from './plan.js';
 
 const pt = (x, y) => ({ x, y });
 const corners = [pt(0, 0), pt(4, 0), pt(4, 4), pt(0, 4)];
@@ -159,4 +159,63 @@ describe('editing what is placed', () => {
 
 test('clearing starts again', () => {
   expect(edit(room, { type: 'clear' })).toBe(EMPTY);
+});
+
+describe('loading a stored plan', () => {
+  const furnished = [
+    { type: 'corner', point: pt(9, 9) },
+    { type: 'furniture', rect: { x: 1, y: 1, w: 1, h: 2 } },
+    { type: 'tall', index: 0, tall: true },
+    { type: 'door', at: pt(2, 0) },
+    { type: 'swing', swing: 'out' },
+    { type: 'seat', seat: { x: 2, y: 3, facing: 0 } },
+    { type: 'sensor', sensor: { edge: 1, t: 0.5, facing: Math.PI } },
+    { type: 'spec', index: 0, spec: { fovDegrees: 90, range: 3.5 } },
+  ].reduce(edit, room);
+  const stored = (plan) => JSON.parse(JSON.stringify(plan));
+
+  test('a plan comes back as it was stored', () => {
+    expect(parsePlan(stored(furnished))).toEqual(furnished);
+    expect(parsePlan(stored(EMPTY))).toEqual(EMPTY);
+  });
+
+  test('fields it does not know are dropped', () => {
+    const extra = stored(furnished);
+    extra.colour = 'red';
+    extra.sensors[0].brand = 'Aqara';
+    expect(parsePlan(extra)).toEqual(furnished);
+  });
+
+  const broken = (change) => {
+    const plan = stored(furnished);
+    change(plan);
+    return plan;
+  };
+
+  test.each([
+    ['nothing', null],
+    ['a number', 42],
+    ['a list', []],
+    ['an empty object', {}],
+    ['a draft corner that is not a point', broken((p) => { p.draft = [{ x: 1 }]; })],
+    ['a room of two corners', broken((p) => { p.room = p.room.slice(0, 2); })],
+    ['a room wound the other way', broken((p) => { p.room.reverse(); })],
+    ['a room with a repeated corner', broken((p) => { p.room.push(p.room[0]); })],
+    ['furniture with no size', broken((p) => { delete p.furniture[0].w; })],
+    ['furniture neither tall nor short', broken((p) => { p.furniture[0].tall = 'yes'; })],
+    ['a door with no room', broken((p) => { p.room = null; p.sensors = []; })],
+    ['a door on a wall that is not there', broken((p) => { p.door.edge = 4; })],
+    ['a door hanging off the end of its wall', broken((p) => { p.door.t = 0.05; })],
+    ['a door wider than its wall', broken((p) => { p.door.width = 5; })],
+    ['a door hinged sideways', broken((p) => { p.door.hinge = 'middle'; })],
+    ['a door swinging sideways', broken((p) => { p.door.swing = 'up'; })],
+    ['a seat facing nowhere', broken((p) => { p.seats[0].facing = null; })],
+    ['a sensor with no room', broken((p) => { p.room = null; p.door = null; })],
+    ['a sensor off its wall', broken((p) => { p.sensors[0].t = 1.5; })],
+    ['a sensor on a fractional wall', broken((p) => { p.sensors[0].edge = 0.5; })],
+    ['a sensor wider than the limits', broken((p) => { p.sensors[0].fovDegrees = SENSOR_LIMITS.fovDegrees.max + 1; })],
+    ['a sensor with no range', broken((p) => { delete p.sensors[0].range; })],
+  ])('%s loads as an empty plan', (_, value) => {
+    expect(parsePlan(value)).toBe(EMPTY);
+  });
 });

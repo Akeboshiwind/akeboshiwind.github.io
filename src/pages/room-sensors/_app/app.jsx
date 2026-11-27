@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { SectionLabel } from '../../../components/pixel/SectionLabel.jsx';
+import { useLocalStorage } from '../../../lib/useLocalStorage.js';
 import { FP300, perimeterPoint, snapToPerimeter } from './geometry.js';
 import { sampleScene, seenByAny, score } from './scoring.js';
-import { EMPTY, SENSOR_LIMITS, edit } from './plan.js';
+import { SENSOR_LIMITS, edit, parsePlan } from './plan.js';
 import { bestPair, bestSingle } from './search.js';
 import { WORLD, drawPlan } from './canvas.js';
 
+const PREFIX = 'room-sensors_';
 const GRID = 0.25;
 // How far the pointer moves, in metres, before a drag aims rather than a click placing.
 const AIM_FROM = 0.15;
@@ -222,8 +224,16 @@ function Placed({ plan, onEdit }) {
   );
 }
 
+/** The plan, loaded once from storage and stored again after each edit. */
+function usePlan() {
+  const [stored, store] = useLocalStorage('plan', null, { prefix: PREFIX });
+  const [plan, onEdit] = useReducer(edit, stored, parsePlan);
+  useEffect(() => store(plan), [plan, store]);
+  return [plan, onEdit];
+}
+
 export function App() {
-  const [plan, onEdit] = useReducer(edit, EMPTY);
+  const [plan, onEdit] = usePlan();
   const [tool, setTool] = useState('room');
   const { room, furniture, door, seats, sensors } = plan;
 

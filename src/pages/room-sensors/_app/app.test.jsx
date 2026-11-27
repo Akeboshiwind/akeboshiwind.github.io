@@ -9,6 +9,7 @@ const fakeContext = new Proxy({}, { get: (_, key) => (key === 'measureText' ? ()
 const PX = 100;
 
 beforeEach(() => {
+  localStorage.clear();
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(fakeContext);
   vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: WORLD.width * PX, height: WORLD.height * PX });
   HTMLCanvasElement.prototype.setPointerCapture = noop;
@@ -146,6 +147,29 @@ describe('Room Sensors', () => {
       fireEvent.click(within(item('Sensor 1')).getByRole('button', { name: 'Remove' }));
       expect(screen.queryByRole('listitem', { name: 'Sensor 1' })).toBeNull();
       expect(total()).toBe('0%');
+    });
+  });
+
+  describe('the plan is kept between visits', () => {
+    test('as it was left', () => {
+      render(<App />);
+      placeSensor(drawSquareRoom());
+      const left = total();
+      cleanup();
+      render(<App />);
+      expect(screen.getByRole('listitem', { name: 'Sensor 1' })).toBeTruthy();
+      expect(total()).toBe(left);
+    });
+
+    test('unless what was stored is no longer a plan', () => {
+      render(<App />);
+      drawSquareRoom();
+      const stored = Object.keys(localStorage);
+      expect(stored).toHaveLength(1);
+      localStorage.setItem(stored[0], JSON.stringify({ room: 'square' }));
+      cleanup();
+      render(<App />);
+      expect(screen.getByText('Close a room to score it.')).toBeTruthy();
     });
   });
 });
