@@ -112,6 +112,32 @@ describe('editing what is placed', () => {
     expect(edit(placed, { type: 'set seat', index: 0, seat: { ...seat, x: 5 } })).toBe(placed);
   });
 
+  test('a sensor moves along the walls and turns, keeping its viewing angle and range', () => {
+    const sensor = { edge: 3, t: 0.25, facing: 0 };
+    expect(edit(placed, { type: 'set sensor', index: 1, sensor }).sensors).toEqual([placed.sensors[0], { ...placed.sensors[1], ...sensor }]);
+  });
+
+  test.each([
+    ['a wall the room lacks', { edge: 4, t: 0.5, facing: 0 }],
+    ['beyond the end of its wall', { edge: 0, t: 1.5, facing: 0 }],
+    ['no facing', { edge: 0, t: 0.5, facing: NaN }],
+  ])('a sensor is not moved to %s', (_, sensor) => {
+    expect(edit(placed, { type: 'set sensor', index: 0, sensor })).toBe(placed);
+  });
+
+  test('the door moves along the walls, fitted in its wall, hung and swinging as it was', () => {
+    const flipped = edit(edit(placed, { type: 'flip hinge' }), { type: 'swing', swing: 'out' });
+    const margin = DOOR_WIDTH / 2 / 4;
+    expect(edit(flipped, { type: 'move door', at: { edge: 3, t: 0.99 } }).door).toEqual({ ...flipped.door, edge: 3, t: 1 - margin });
+  });
+
+  test('the door is not moved onto a wall shorter than it, or one the room lacks, nor is a door the plan lacks', () => {
+    const cornered = edit(drawn([pt(0, 0), pt(4, 0), pt(4, 4), pt(0.5, 4), pt(0, 3.5)]), { type: 'door', at: pt(2, 0) });
+    expect(edit(cornered, { type: 'move door', at: { edge: 3, t: 0.5 } })).toBe(cornered);
+    expect(edit(cornered, { type: 'move door', at: { edge: 5, t: 0.5 } })).toBe(cornered);
+    expect(edit(room, { type: 'move door', at: { edge: 0, t: 0.5 } })).toBe(room);
+  });
+
   test('furniture is made tall, and short again', () => {
     const tall = edit(placed, { type: 'tall', index: 1, tall: true });
     expect(tall.furniture.map((f) => f.tall)).toEqual([false, true]);
@@ -170,6 +196,7 @@ describe('editing what is placed', () => {
     { type: 'tall', index: 2, tall: true },
     { type: 'rect', index: 2, rect: { x: 0, y: 0, w: 1, h: 1 } },
     { type: 'set seat', index: 1, seat: { x: 2, y: 2, facing: 0 } },
+    { type: 'set sensor', index: 2, sensor: { edge: 0, t: 0.5, facing: 0 } },
     { type: 'spec', index: 2, spec: { range: 3 } },
     { type: 'remove', kind: 'seat', index: 1 },
     { type: 'remove', kind: 'window', index: 0 },

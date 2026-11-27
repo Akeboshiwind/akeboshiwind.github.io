@@ -81,3 +81,68 @@ describe('dragging a seat', () => {
     expect(dragTo(plan, by('facing', pt(5.1, 4.6)), pt(5.2, 4.5))).toBeNull();
   });
 });
+
+describe('dragging a sensor', () => {
+  const aimed = Math.PI / 2 + 0.25;
+  const onTop = { ...plan, sensors: [{ edge: 0, t: 0.5, facing: aimed, fovDegrees: 120, range: 6 }] };
+  const sensor = { kind: 'sensor', index: 0 };
+  const by = (part, from) => ({ selection: sensor, part, from });
+
+  test('takes the sensor by its body, or by the handle ahead of it that turns it', () => {
+    expect(grab(onTop, sensor, pt(3.5, 1), REACH)).toEqual(by('body', pt(3.5, 1)));
+    expect(grab(onTop, sensor, pt(3.5 + 0.6 * Math.cos(aimed), 1 + 0.6 * Math.sin(aimed)), REACH)).toMatchObject({ selection: sensor, part: 'facing' });
+  });
+
+  test('by its body slides it along its wall as far as the pointer moves along it, aimed as it was', () => {
+    expect(dragTo(onTop, by('body', pt(3.6, 1.1)), pt(4.85, 1.4))).toEqual({ type: 'set sensor', index: 0, sensor: { edge: 0, t: 0.75, facing: aimed } });
+  });
+
+  test('by its body keeps it on the walls, at the nearest point to where the pointer takes it', () => {
+    expect(dragTo(onTop, by('body', pt(3.5, 1)), pt(0, 0))).toMatchObject({ sensor: { edge: 0, t: 0 } });
+  });
+
+  test('by its body takes it round onto another wall, turned with the wall', () => {
+    const { sensor: moved } = dragTo(onTop, by('body', pt(3.5, 1)), pt(5.8, 3.5));
+    expect(moved).toMatchObject({ edge: 1, t: 0.5 });
+    expect(moved.facing).toBeCloseTo(aimed + Math.PI / 2);
+  });
+
+  test('by its facing handle turns it towards the pointer, where it stands', () => {
+    expect(dragTo(onTop, by('facing', pt(3.5, 1.6)), pt(4.5, 1))).toEqual({ type: 'set sensor', index: 0, sensor: { edge: 0, t: 0.5, facing: 0 } });
+  });
+
+  test('makes no edit until it would move or turn', () => {
+    expect(dragTo(onTop, by('body', pt(3.5, 1)), pt(3.5, 1.4))).toBeNull();
+    expect(dragTo(onTop, by('facing', pt(3.5, 1.6)), pt(3.5 + Math.cos(aimed), 1 + Math.sin(aimed)))).toBeNull();
+  });
+});
+
+describe('dragging the door', () => {
+  const door = { kind: 'door' };
+  const by = (from) => ({ selection: door, part: 'body', from });
+  const hung = (room) => ({ ...plan, room: parseRoom(room), door: { edge: 0, t: 0.5, width: 1, hinge: 'end', swing: 'out' } });
+  const square = hung([pt(1, 1), pt(6, 1), pt(6, 6), pt(1, 6)]);
+
+  test('takes the door by its body, by the middle of its gap or by its leaf', () => {
+    expect(grab(square, door, pt(3.5, 1), REACH)).toEqual(by(pt(3.5, 1)));
+    expect(grab(square, null, pt(4, 0.5), REACH)).toEqual(by(pt(4, 0.5)));
+  });
+
+  test('slides it along its wall as far as the pointer moves along it', () => {
+    expect(dragTo(square, by(pt(3.6, 0.9)), pt(4.85, 1.2))).toEqual({ type: 'move door', at: { edge: 0, t: 0.75 } });
+  });
+
+  test('takes it round onto another wall', () => {
+    expect(dragTo(square, by(pt(3.5, 1)), pt(5.8, 3.5))).toEqual({ type: 'move door', at: { edge: 1, t: 0.5 } });
+  });
+
+  test('keeps it fitted in its wall, short of the corner', () => {
+    expect(dragTo(square, by(pt(3.5, 1)), pt(6, 0.5))).toEqual({ type: 'move door', at: { edge: 0, t: 0.9 } });
+  });
+
+  test('makes no edit onto a wall shorter than the door, or until it would move', () => {
+    const cornered = hung([pt(1, 1), pt(6, 1), pt(6, 6), pt(1.5, 6), pt(1, 5.5)]);
+    expect(dragTo(cornered, by(pt(3.5, 1)), pt(1.1, 5.9))).toBeNull();
+    expect(dragTo(square, by(pt(3.5, 1)), pt(3.5, 1.4))).toBeNull();
+  });
+});

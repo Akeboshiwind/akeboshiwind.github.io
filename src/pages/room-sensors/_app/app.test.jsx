@@ -347,6 +347,43 @@ describe('Room Sensors', () => {
       expect(front()).toBe('0%');
     });
 
+    test('slides a sensor along the walls, round onto another, aimed into the room as it was', () => {
+      render(<App />);
+      const canvas = drawSquareRoom();
+      placeSensor(canvas);
+      choose('Select');
+      const before = total();
+      dragOn(canvas, [3, 1], [4.9, 3]);
+      expect(total()).toBe(before);
+      click(canvas, 5, 3);
+      expect(selected()).toBe('Selected: Sensor 1');
+      click(canvas, 3, 1);
+      expect(selected()).toBe('Selected: Room');
+    });
+
+    test('turns a selected sensor by its facing handle', () => {
+      render(<App />);
+      const canvas = drawSquareRoom();
+      placeSensor(canvas);
+      choose('Select');
+      click(canvas, 3, 1);
+      dragOn(canvas, [3, 1.6], [3, 0.5]);
+      expect(total()).toBe('0%');
+    });
+
+    test('slides the door along the walls', () => {
+      render(<App />);
+      const canvas = drawSquareRoom();
+      choose('Door');
+      click(canvas, 3, 5);
+      choose('Select');
+      dragOn(canvas, [3, 5], [5.1, 3]);
+      click(canvas, 5, 3);
+      expect(selected()).toBe('Selected: Door');
+      click(canvas, 3, 5);
+      expect(selected()).toBe('Selected: Room');
+    });
+
     test('a drag let go of some other way changes nothing', () => {
       render(<App />);
       const canvas = furnish();

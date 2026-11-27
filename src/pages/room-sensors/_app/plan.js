@@ -35,6 +35,8 @@ const remove = (plan, kind, index) => {
 const fitsSensor = (spec) =>
   Object.entries(spec).every(([key, value]) => Object.hasOwn(SENSOR_LIMITS, key) && value >= SENSOR_LIMITS[key].min && value <= SENSOR_LIMITS[key].max);
 
+const onWall = (room, { edge, t }) => has(room, edge) && t >= 0 && t <= 1;
+
 const rehang = (plan, door) => (plan.door ? { ...plan, door: { ...plan.door, ...door } } : plan);
 
 /** The plan after `action`; the same plan where the action has nowhere to go. */
@@ -62,6 +64,16 @@ export const edit = (plan, action) => {
     }
     case 'set seat':
       return plan.room && pointInPolygon(action.seat, plan.room) ? change(plan, 'seats', action.index, () => action.seat) : plan;
+    case 'set sensor': {
+      const { edge, t, facing } = action.sensor;
+      return plan.room && onWall(plan.room, action.sensor) && Number.isFinite(facing)
+        ? change(plan, 'sensors', action.index, (sensor) => ({ ...sensor, edge, t, facing }))
+        : plan;
+    }
+    case 'move door': {
+      const at = plan.room && plan.door && onWall(plan.room, action.at) && fitDoor(plan.room, action.at, plan.door.width);
+      return at ? rehang(plan, at) : plan;
+    }
     case 'tall':
       return typeof action.tall === 'boolean' ? change(plan, 'furniture', action.index, (f) => ({ ...f, tall: action.tall })) : plan;
     case 'flip hinge':
